@@ -1,12 +1,752 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+/**
+ * =========================
+ * ENUMS
+ * =========================
+ */
+
+enum Role {
+  ADMIN
+  DOCTOR
+  STAFF
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+  DELETED
+}
+
+enum PetGender {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum ScheduleStatus {
+  AVAILABLE
+  BOOKED
+  IN_PROGRESS
+  DONE
+  OFF
+}
+
+enum AppointmentType {
+  MEDICAL
+  GROOMING
+  BOARDING
+  MIXED
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ServiceType {
+  MEDICAL
+  GROOMING
+  BOARDING
+  VACCINE
+  FOOD
+  OTHER
+}
+
+enum ServiceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum GroomingStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CageStatus {
+  AVAILABLE
+  OCCUPIED
+  CLEANING
+  MAINTENANCE
+}
+
+enum BoardingStatus {
+  BOOKED
+  CHECKED_IN
+  STAYING
+  CHECKED_OUT
+  CANCELLED
+}
+
+enum InvoiceItemSourceType {
+  SERVICE
+  MEDICAL_VISIT
+  VACCINATION
+  GROOMING
+  BOARDING
+  EXTRA
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  VNPAY
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum NotificationType {
+  APPOINTMENT
+  PAYMENT
+  VACCINE
+  GROOMING
+  BOARDING
+  SYSTEM
+}
+
+enum ReviewTargetType {
+  DOCTOR
+  GROOMING
+  BOARDING
+  SERVICE
+  CENTER
+}
+
+/**
+ * =========================
+ * USERS / ROLES
+ * =========================
+ */
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+  role         Role       @default(CUSTOMER)
+  status       UserStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  customer Customer?
+  doctor   Doctor?
+  staff    Staff?
+
+  notifications  Notification[]
+  repliedReviews Review[]       @relation("ReviewRepliedBy")
+
+  @@map("users")
+}
+
+model Customer {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique @map("user_id")
+  fullName String  @map("full_name") @db.VarChar(150)
+  phone    String? @db.VarChar(20)
+  address  String? @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pets    Pet[]
+  reviews Review[]
+
+  @@map("customers")
+}
+
+model Staff {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique @map("user_id")
+  fullName String  @map("full_name") @db.VarChar(150)
+  phone    String? @db.VarChar(20)
+  address  String? @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  appointments         Appointment[]
+  groomingRecords      GroomingRecord[]
+  boardingDailyUpdates BoardingDailyUpdate[]
+
+  @@map("staffs")
+}
+
+model Doctor {
+  id              Int     @id @default(autoincrement())
+  userId          Int     @unique @map("user_id")
+  fullName        String  @map("full_name") @db.VarChar(150)
+  specialization  String? @db.VarChar(150)
+  degree          String? @db.VarChar(150)
+  experienceYears Int?    @map("experience_years")
+  roomName        String? @map("room_name") @db.VarChar(100)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  schedules    DoctorSchedule[]
+  appointments Appointment[]
+
+  @@map("doctors")
+}
+
+/**
+ * =========================
+ * DOCTOR SCHEDULES
+ * =========================
+ */
+
+model DoctorSchedule {
+  id       Int @id @default(autoincrement())
+  doctorId Int @map("doctor_id")
+
+  workDate  DateTime       @map("work_date") @db.Date
+  startTime DateTime       @map("start_time") @db.Time(6)
+  endTime   DateTime       @map("end_time") @db.Time(6)
+  roomName  String?        @map("room_name") @db.VarChar(100)
+  status    ScheduleStatus @default(AVAILABLE)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+
+  appointment Appointment?
+
+  @@unique([id, doctorId])
+  @@index([doctorId])
+  @@index([workDate])
+  @@map("doctor_schedules")
+}
+
+/**
+ * =========================
+ * PETS / SPECIES / BREEDS
+ * =========================
+ */
+
+model AnimalSpecies {
+  id              Int     @id @default(autoincrement())
+  name            String  @unique @db.VarChar(100)
+  description     String? @db.Text
+  careInstruction String? @map("care_instruction") @db.Text
+
+  breeds Breed[]
+  pets   Pet[]
+
+  @@map("animal_species")
+}
+
+model Breed {
+  id        Int @id @default(autoincrement())
+  speciesId Int @map("species_id")
+
+  name        String  @db.VarChar(100)
+  description String? @db.Text
+
+  species AnimalSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+
+  pets Pet[]
+
+  @@unique([speciesId, name])
+  @@index([speciesId])
+  @@map("breeds")
+}
+
+model Pet {
+  id         Int  @id @default(autoincrement())
+  customerId Int  @map("customer_id")
+  speciesId  Int  @map("species_id")
+  breedId    Int? @map("breed_id")
+
+  name            String    @db.VarChar(100)
+  gender          PetGender @default(UNKNOWN)
+  dob             DateTime? @db.Date
+  weight          Decimal?  @db.Decimal(6, 2)
+  color           String?   @db.VarChar(100)
+  imgUrl          String?   @map("img_url") @db.Text
+  allergies       String?   @db.Text
+  chronicDiseases String?   @map("chronic_diseases") @db.Text
+  specialNote     String?   @map("special_note") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  species  AnimalSpecies @relation(fields: [speciesId], references: [id], onDelete: Restrict)
+  breed    Breed?        @relation(fields: [breedId], references: [id], onDelete: SetNull)
+
+  appointments Appointment[]
+  vaccinations Vaccination[]
+
+  @@index([customerId])
+  @@index([speciesId])
+  @@index([breedId])
+  @@map("pets")
+}
+
+/**
+ * =========================
+ * APPOINTMENTS / SERVICES
+ * =========================
+ */
+
+model Appointment {
+  id Int @id @default(autoincrement())
+
+  petId            Int  @map("pet_id")
+  doctorId         Int? @map("doctor_id")
+  staffId          Int? @map("staff_id")
+  doctorScheduleId Int? @unique @map("doctor_schedule_id")
+
+  appointmentType AppointmentType   @default(MEDICAL) @map("appointment_type")
+  status          AppointmentStatus @default(PENDING)
+
+  note         String? @db.Text
+  cancelReason String? @map("cancel_reason") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  pet            Pet             @relation(fields: [petId], references: [id], onDelete: Restrict)
+  doctor         Doctor?         @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  staff          Staff?          @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  doctorSchedule DoctorSchedule? @relation(fields: [doctorScheduleId], references: [id], onDelete: Restrict)
+
+  appointmentServices AppointmentService[]
+  medicalVisit        MedicalVisit?
+  vaccinations        Vaccination[]
+  groomingRecords     GroomingRecord[]
+  boarding            Boarding?
+  invoice             Invoice?
+  reviews             Review[]
+
+  @@index([petId])
+  @@index([doctorId])
+  @@index([staffId])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Service {
+  id Int @id @default(autoincrement())
+
+  name        String      @db.VarChar(150)
+  type        ServiceType
+  price       Decimal     @db.Decimal(12, 2)
+  description String?     @db.Text
+  isActive    Boolean     @default(true) @map("is_active")
+
+  appointmentServices AppointmentService[]
+  invoiceItems        InvoiceItem[]
+
+  @@index([type])
+  @@index([isActive])
+  @@map("services")
+}
+
+model AppointmentService {
+  id Int @id @default(autoincrement())
+
+  appointmentId Int @map("appointment_id")
+  serviceId     Int @map("service_id")
+
+  quantity  Int           @default(1)
+  unitPrice Decimal       @map("unit_price") @db.Decimal(12, 2)
+  status    ServiceStatus @default(PENDING)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service     Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  groomingRecords GroomingRecord[]
+  invoiceItems    InvoiceItem[]
+
+  @@index([appointmentId])
+  @@index([serviceId])
+  @@map("appointment_services")
+}
+
+/**
+ * =========================
+ * MEDICAL / DISEASES
+ * =========================
+ */
+
+model Disease {
+  id Int @id @default(autoincrement())
+
+  name        String  @unique @db.VarChar(150)
+  description String? @db.Text
+  symptoms    String? @db.Text
+
+  medicalVisitDiseases MedicalVisitDisease[]
+
+  @@map("diseases")
+}
+
+model MedicalVisit {
+  id Int @id @default(autoincrement())
+
+  appointmentId Int @unique @map("appointment_id")
+
+  symptoms      String?   @db.Text
+  clinicalExam  String?   @map("clinical_exam") @db.Text
+  diagnosisNote String?   @map("diagnosis_note") @db.Text
+  nextVisitDate DateTime? @map("next_visit_date") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  medicalVisitDiseases MedicalVisitDisease[]
+  prescriptions        Prescription[]
+  invoiceItems         InvoiceItem[]
+
+  @@map("medical_visits")
+}
+
+model MedicalVisitDisease {
+  id Int @id @default(autoincrement())
+
+  medicalVisitId Int @map("medical_visit_id")
+  diseaseId      Int @map("disease_id")
+
+  note String? @db.Text
+
+  medicalVisit MedicalVisit @relation(fields: [medicalVisitId], references: [id], onDelete: Cascade)
+  disease      Disease      @relation(fields: [diseaseId], references: [id], onDelete: Restrict)
+
+  @@unique([medicalVisitId, diseaseId])
+  @@index([medicalVisitId])
+  @@index([diseaseId])
+  @@map("medical_visit_diseases")
+}
+
+/**
+ * =========================
+ * PRESCRIPTIONS
+ * =========================
+ */
+
+model Prescription {
+  id Int @id @default(autoincrement())
+
+  medicalVisitId Int @map("medical_visit_id")
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  medicalVisit MedicalVisit @relation(fields: [medicalVisitId], references: [id], onDelete: Cascade)
+
+  items PrescriptionItem[]
+
+  @@index([medicalVisitId])
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id Int @id @default(autoincrement())
+
+  prescriptionId Int @map("prescription_id")
+
+  medicineName String  @map("medicine_name") @db.VarChar(150)
+  dosage       String  @db.VarChar(100)
+  frequency    String  @db.VarChar(100)
+  durationDays Int?    @map("duration_days")
+  instructions String? @db.Text
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+  @@map("prescription_items")
+}
+
+/**
+ * =========================
+ * VACCINATIONS
+ * =========================
+ */
+
+model Vaccination {
+  id Int @id @default(autoincrement())
+
+  petId         Int  @map("pet_id")
+  appointmentId Int? @map("appointment_id")
+
+  vaccineName String    @map("vaccine_name") @db.VarChar(150)
+  dateGiven   DateTime  @map("date_given") @db.Date
+  nextDueDate DateTime? @map("next_due_date") @db.Date
+  note        String?   @db.Text
+
+  pet         Pet          @relation(fields: [petId], references: [id], onDelete: Restrict)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  invoiceItems InvoiceItem[]
+
+  @@index([petId])
+  @@index([appointmentId])
+  @@map("vaccinations")
+}
+
+/**
+ * =========================
+ * GROOMING
+ * =========================
+ */
+
+model GroomingRecord {
+  id Int @id @default(autoincrement())
+
+  appointmentId        Int  @map("appointment_id")
+  appointmentServiceId Int? @map("appointment_service_id")
+  staffId              Int? @map("staff_id")
+
+  status GroomingStatus @default(PENDING)
+
+  startedAt      DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz(6)
+  beforeImageUrl String?   @map("before_image_url") @db.Text
+  afterImageUrl  String?   @map("after_image_url") @db.Text
+  notes          String?   @db.Text
+
+  appointment        Appointment         @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentService AppointmentService? @relation(fields: [appointmentServiceId], references: [id], onDelete: SetNull)
+  staff              Staff?              @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  invoiceItems InvoiceItem[]
+
+  @@index([appointmentId])
+  @@index([appointmentServiceId])
+  @@index([staffId])
+  @@map("grooming_records")
+}
+
+/**
+ * =========================
+ * BOARDING / PET HOTEL
+ * =========================
+ */
+
+model Cage {
+  id Int @id @default(autoincrement())
+
+  cageNumber String     @unique @map("cage_number") @db.VarChar(50)
+  status     CageStatus @default(AVAILABLE)
+  note       String?    @db.Text
+
+  boardings Boarding[]
+
+  @@map("cages")
+}
+
+model Boarding {
+  id Int @id @default(autoincrement())
+
+  appointmentId Int @unique @map("appointment_id")
+  cageId        Int @map("cage_id")
+
+  checkIn  DateTime? @map("check_in") @db.Timestamptz(6)
+  checkOut DateTime? @map("check_out") @db.Timestamptz(6)
+
+  feedingInstruction String?   @map("feeding_instruction") @db.Text
+  habitNote          String?   @map("habit_note") @db.Text
+  specialNote        String?   @map("special_note") @db.Text
+  pickupReminderAt   DateTime? @map("pickup_reminder_at") @db.Timestamptz(6)
+
+  currentStatus BoardingStatus @default(BOOKED) @map("current_status")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  cage        Cage        @relation(fields: [cageId], references: [id], onDelete: Restrict)
+
+  dailyUpdates BoardingDailyUpdate[]
+  invoiceItems InvoiceItem[]
+
+  @@index([cageId])
+  @@index([currentStatus])
+  @@map("boarding")
+}
+
+model BoardingDailyUpdate {
+  id Int @id @default(autoincrement())
+
+  boardingId Int @map("boarding_id")
+  staffId    Int @map("staff_id")
+
+  date           DateTime @db.Date
+  eatingStatus   String?  @map("eating_status") @db.VarChar(150)
+  healthStatus   String?  @map("health_status") @db.VarChar(150)
+  activityStatus String?  @map("activity_status") @db.VarChar(150)
+  note           String?  @db.Text
+  imgUrl         String?  @map("img_url") @db.Text
+
+  boarding Boarding @relation(fields: [boardingId], references: [id], onDelete: Cascade)
+  staff    Staff    @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@index([boardingId])
+  @@index([staffId])
+  @@index([date])
+  @@map("boarding_daily_updates")
+}
+
+/**
+ * =========================
+ * INVOICES / PAYMENTS
+ * =========================
+ */
+
+model Invoice {
+  id Int @id @default(autoincrement())
+
+  appointmentId Int @unique @map("appointment_id")
+
+  subtotalAmount Decimal @default(0) @map("subtotal_amount") @db.Decimal(12, 2)
+  discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxAmount      Decimal @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  totalAmount    Decimal @default(0) @map("total_amount") @db.Decimal(12, 2)
+
+  paymentMethod   PaymentMethod? @map("payment_method")
+  paymentStatus   PaymentStatus  @default(UNPAID) @map("payment_status")
+  transactionCode String?        @map("transaction_code") @db.VarChar(255)
+  paidAt          DateTime?      @map("paid_at") @db.Timestamptz(6)
+
+  status InvoiceStatus @default(DRAFT)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  items InvoiceItem[]
+
+  @@index([status])
+  @@index([paymentStatus])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id Int @id @default(autoincrement())
+
+  invoiceId            Int  @map("invoice_id")
+  serviceId            Int? @map("service_id")
+  appointmentServiceId Int? @map("appointment_service_id")
+
+  medicalVisitId   Int? @map("medical_visit_id")
+  vaccinationId    Int? @map("vaccination_id")
+  groomingRecordId Int? @map("grooming_record_id")
+  boardingId       Int? @map("boarding_id")
+
+  sourceType InvoiceItemSourceType @map("source_type")
+
+  description String  @db.VarChar(255)
+  quantity    Int     @default(1)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 2)
+  totalPrice  Decimal @map("total_price") @db.Decimal(12, 2)
+
+  invoice            Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service            Service?            @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  appointmentService AppointmentService? @relation(fields: [appointmentServiceId], references: [id], onDelete: SetNull)
+
+  medicalVisit   MedicalVisit?   @relation(fields: [medicalVisitId], references: [id], onDelete: SetNull)
+  vaccination    Vaccination?    @relation(fields: [vaccinationId], references: [id], onDelete: SetNull)
+  groomingRecord GroomingRecord? @relation(fields: [groomingRecordId], references: [id], onDelete: SetNull)
+  boarding       Boarding?       @relation(fields: [boardingId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@index([serviceId])
+  @@index([appointmentServiceId])
+  @@index([medicalVisitId])
+  @@index([vaccinationId])
+  @@index([groomingRecordId])
+  @@index([boardingId])
+  @@index([sourceType])
+  @@map("invoice_items")
+}
+
+/**
+ * =========================
+ * NOTIFICATIONS
+ * =========================
+ */
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  userId Int @map("user_id")
+
+  title   String           @db.VarChar(150)
+  content String           @db.Text
+  type    NotificationType
+  isRead  Boolean          @default(false) @map("is_read")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@map("notifications")
+}
+
+/**
+ * =========================
+ * REVIEWS
+ * =========================
+ */
+
+model Review {
+  id Int @id @default(autoincrement())
+
+  customerId    Int  @map("customer_id")
+  appointmentId Int? @map("appointment_id")
+
+  targetType ReviewTargetType @map("target_type")
+  targetId   Int?             @map("target_id")
+
+  rating   Int
+  feedback String? @db.Text
+
+  replyContent    String?   @map("reply_content") @db.Text
+  repliedByUserId Int?      @map("replied_by_user_id")
+  repliedAt       DateTime? @map("replied_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  repliedBy   User?        @relation("ReviewRepliedBy", fields: [repliedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([appointmentId])
+  @@index([targetType])
+  @@index([targetId])
+  @@map("reviews")
 }
