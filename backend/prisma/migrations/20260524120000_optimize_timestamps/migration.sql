@@ -1,0 +1,16 @@
+ALTER TABLE "customers" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "staffs" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "doctors" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "animal_species" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "breeds" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "services" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "appointment_services" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "diseases" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "medical_visit_diseases" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "prescription_items" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "vaccinations" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "grooming_records" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "cages" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "boarding" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "boarding_daily_updates" DROP COLUMN "created_at", DROP COLUMN "updated_at";
+ALTER TABLE "invoice_items" DROP COLUMN "created_at", DROP COLUMN "updated_at";
