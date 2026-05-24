@@ -79,7 +79,9 @@ async function getUserAuthContext(user) {
 }
 
 async function loginWithCredentials(email, password) {
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedEmail = String(email || "")
+    .trim()
+    .toLowerCase();
   const inputPassword = String(password || "");
 
   if (!normalizedEmail || !inputPassword) {
@@ -88,7 +90,9 @@ async function loginWithCredentials(email, password) {
 
   const { data: user, error } = await supabase
     .from("users")
-    .select("id, email, password_hash, role, status, created_at, updated_at, deleted_at")
+    .select(
+      "id, email, password_hash, role, status, created_at, updated_at, deleted_at",
+    )
     .ilike("email", normalizedEmail)
     .maybeSingle();
 
@@ -111,7 +115,11 @@ async function loginWithCredentials(email, password) {
   }
 
   const authUser = await getUserAuthContext(user);
-  const token = signAuthToken({ sub: String(user.id), role: authUser.role, email: user.email });
+  const token = signAuthToken({
+    sub: String(user.id),
+    role: authUser.role,
+    email: user.email,
+  });
 
   return {
     token,
@@ -121,13 +129,18 @@ async function loginWithCredentials(email, password) {
 
 async function registerCustomer(input) {
   const fullName = String(input.name || "").trim();
-  const email = String(input.email || "").trim().toLowerCase();
+  const email = String(input.email || "")
+    .trim()
+    .toLowerCase();
   const phone = String(input.phone || "").trim();
   const password = String(input.password || "");
   const address = String(input.address || "").trim();
+  const now = new Date().toISOString();
 
   if (!fullName || !email || !phone || !password) {
-    throw new Error("Vui lòng nhập đầy đủ họ tên, email, số điện thoại và mật khẩu.");
+    throw new Error(
+      "Vui lòng nhập đầy đủ họ tên, email, số điện thoại và mật khẩu.",
+    );
   }
 
   if (password.length < 6) {
@@ -153,6 +166,7 @@ async function registerCustomer(input) {
       password_hash: passwordHash,
       role: "CUSTOMER",
       status: "ACTIVE",
+      updated_at: now,
     })
     .select("id, email, role, status")
     .single();
@@ -184,7 +198,11 @@ async function registerCustomer(input) {
     customerId: customer.id,
   });
 
-  const token = signAuthToken({ sub: String(insertedUser.id), role: authUser.role, email: insertedUser.email });
+  const token = signAuthToken({
+    sub: String(insertedUser.id),
+    role: authUser.role,
+    email: insertedUser.email,
+  });
 
   return {
     token,

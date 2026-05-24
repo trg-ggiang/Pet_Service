@@ -4,6 +4,18 @@ backend/node_modules/
 frontend/node_modules/
 
 # env files .env .env.* !.env.example backend/.env backend/.env.* !backend/.env.example frontend/.env frontend/.env.* !frontend/.env.example
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.*.example
+
+frontend/.env*
+!frontend/.env*.example
 
 # build
 dist/
@@ -20,3 +32,5 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+# database
+table.sql

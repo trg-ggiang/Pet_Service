@@ -85,11 +85,11 @@ export function getAuthHeaders() {
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
+    ...init,
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
-    ...init,
   });
 
   const payload = await response.json().catch(() => ({}));
@@ -101,13 +101,21 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-export async function login(input: { email: string; password: string; remember: boolean }) {
+export async function login(input: {
+  email: string;
+  password: string;
+  remember: boolean;
+}) {
   const payload = await requestJson<AuthResponse>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(input),
   });
 
-  return saveSession({ token: payload.token, user: payload.user, remember: input.remember });
+  return saveSession({
+    token: payload.token,
+    user: payload.user,
+    remember: input.remember,
+  });
 }
 
 export async function register(input: {
@@ -122,7 +130,11 @@ export async function register(input: {
     body: JSON.stringify(input),
   });
 
-  return saveSession({ token: payload.token, user: payload.user, remember: true });
+  return saveSession({
+    token: payload.token,
+    user: payload.user,
+    remember: true,
+  });
 }
 
 export async function restoreSession() {
@@ -133,11 +145,14 @@ export async function restoreSession() {
   }
 
   try {
-    const payload = await requestJson<{ ok: true; user: AuthUser }>("/api/auth/me", {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
+    const payload = await requestJson<{ ok: true; user: AuthUser }>(
+      "/api/auth/me",
+      {
+        headers: {
+          Authorization: `Bearer ${session.token}`,
+        },
       },
-    });
+    );
 
     const refreshedSession: AuthSession = {
       ...session,

@@ -29,7 +29,12 @@ function formatAge(dob) {
   }
 
   if (years <= 0) {
-    const months = Math.max(1, Math.floor((now.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const months = Math.max(
+      1,
+      Math.floor(
+        (now.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24 * 30),
+      ),
+    );
     return `${months} tháng`;
   }
 
@@ -57,16 +62,29 @@ function getPetColorId(speciesId) {
 }
 
 function pickLatestByDate(records, fieldName) {
-  return [...records].sort((left, right) => {
-    const leftTime = new Date(left?.[fieldName] ?? 0).getTime();
-    const rightTime = new Date(right?.[fieldName] ?? 0).getTime();
-    return rightTime - leftTime;
-  })[0] ?? null;
+  return (
+    [...records].sort((left, right) => {
+      const leftTime = new Date(left?.[fieldName] ?? 0).getTime();
+      const rightTime = new Date(right?.[fieldName] ?? 0).getTime();
+      return rightTime - leftTime;
+    })[0] ?? null
+  );
 }
 
-function buildPetSummary(pet, speciesMap, breedMap, vaccinations, medicalVisits, appointmentsByPetId) {
-  const petVaccinations = vaccinations.filter((record) => record.pet_id === pet.id);
-  const petVisits = medicalVisits.filter((record) => appointmentsByPetId[record.appointment_id] === pet.id);
+function buildPetSummary(
+  pet,
+  speciesMap,
+  breedMap,
+  vaccinations,
+  medicalVisits,
+  appointmentsByPetId,
+) {
+  const petVaccinations = vaccinations.filter(
+    (record) => record.pet_id === pet.id,
+  );
+  const petVisits = medicalVisits.filter(
+    (record) => appointmentsByPetId[record.appointment_id] === pet.id,
+  );
 
   const latestVaccination = pickLatestByDate(petVaccinations, "date_given");
   const latestVisit = pickLatestByDate(petVisits, "created_at");
@@ -96,7 +114,9 @@ function buildPetSummary(pet, speciesMap, breedMap, vaccinations, medicalVisits,
     specialNote: pet.special_note,
     healthy: !pet.chronic_diseases,
     lastVisit: latestVisit ? formatDate(latestVisit.created_at) : "Chưa có",
-    nextVaccine: latestVaccination ? formatDate(latestVaccination.next_due_date) : "Chưa có",
+    nextVaccine: latestVaccination
+      ? formatDate(latestVaccination.next_due_date)
+      : "Chưa có",
     latestVaccination: latestVaccination
       ? {
           vaccineName: latestVaccination.vaccine_name,
@@ -126,12 +146,28 @@ async function getCustomerPetDashboard(customerId) {
     throw new Error("Thiếu thông tin khách hàng");
   }
 
-  const [customerResult, petsResult, speciesResult, breedsResult] = await Promise.all([
-    supabase.from("customers").select("id, full_name, phone, address, user_id").eq("id", effectiveCustomerId).single(),
-    supabase.from("pets").select("*").eq("customer_id", effectiveCustomerId).order("created_at", { ascending: true }),
-    supabase.from("animal_species").select("id, name, description, care_instruction").order("id", { ascending: true }),
-    supabase.from("breeds").select("id, species_id, name, description").order("species_id", { ascending: true }).order("id", { ascending: true }),
-  ]);
+  const [customerResult, petsResult, speciesResult, breedsResult] =
+    await Promise.all([
+      supabase
+        .from("customers")
+        .select("id, full_name, phone, address, user_id")
+        .eq("id", effectiveCustomerId)
+        .single(),
+      supabase
+        .from("pets")
+        .select("*")
+        .eq("customer_id", effectiveCustomerId)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("animal_species")
+        .select("id, name, description, care_instruction")
+        .order("id", { ascending: true }),
+      supabase
+        .from("breeds")
+        .select("id, species_id, name, description")
+        .order("species_id", { ascending: true })
+        .order("id", { ascending: true }),
+    ]);
 
   if (customerResult.error) throw new Error(customerResult.error.message);
   if (petsResult.error) throw new Error(petsResult.error.message);
@@ -145,18 +181,34 @@ async function getCustomerPetDashboard(customerId) {
 
   const [vaccinationsResult, appointmentsResult] = await Promise.all([
     petIds.length > 0
-      ? supabase.from("vaccinations").select("id, pet_id, appointment_id, vaccine_name, date_given, next_due_date, note").in("pet_id", petIds).order("date_given", { ascending: false })
+      ? supabase
+          .from("vaccinations")
+          .select(
+            "id, pet_id, appointment_id, vaccine_name, date_given, next_due_date, note",
+          )
+          .in("pet_id", petIds)
+          .order("date_given", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
     petIds.length > 0
-      ? supabase.from("appointments").select("id, pet_id, appointment_type, status, note, cancel_reason, created_at, updated_at").in("pet_id", petIds).order("created_at", { ascending: false })
+      ? supabase
+          .from("appointments")
+          .select(
+            "id, pet_id, appointment_type, status, note, cancel_reason, created_at, updated_at",
+          )
+          .in("pet_id", petIds)
+          .order("created_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  if (vaccinationsResult.error) throw new Error(vaccinationsResult.error.message);
-  if (appointmentsResult.error) throw new Error(appointmentsResult.error.message);
+  if (vaccinationsResult.error)
+    throw new Error(vaccinationsResult.error.message);
+  if (appointmentsResult.error)
+    throw new Error(appointmentsResult.error.message);
 
   const appointments = appointmentsResult.data ?? [];
-  const appointmentsByPetId = Object.fromEntries(appointments.map((appointment) => [appointment.id, appointment.pet_id]));
+  const appointmentsByPetId = Object.fromEntries(
+    appointments.map((appointment) => [appointment.id, appointment.pet_id]),
+  );
 
   const speciesMap = new Map(species.map((entry) => [entry.id, entry]));
   const breedMap = new Map(breeds.map((entry) => [entry.id, entry]));
@@ -165,7 +217,16 @@ async function getCustomerPetDashboard(customerId) {
     customer: customerResult.data,
     species,
     breeds,
-    pets: pets.map((pet) => buildPetSummary(pet, speciesMap, breedMap, vaccinationsResult.data ?? [], appointmentsResult.data ?? [], appointmentsByPetId)),
+    pets: pets.map((pet) =>
+      buildPetSummary(
+        pet,
+        speciesMap,
+        breedMap,
+        vaccinationsResult.data ?? [],
+        appointmentsResult.data ?? [],
+        appointmentsByPetId,
+      ),
+    ),
   };
 }
 
@@ -182,11 +243,18 @@ async function getPetDetail(petId, customerId) {
 
   const [petResult, appointmentsResult] = await Promise.all([
     supabase.from("pets").select("*").eq("id", petIdNumber).single(),
-    supabase.from("appointments").select("id, pet_id, appointment_type, status, note, cancel_reason, created_at, updated_at").eq("pet_id", petIdNumber).order("created_at", { ascending: false }),
+    supabase
+      .from("appointments")
+      .select(
+        "id, pet_id, appointment_type, status, note, cancel_reason, created_at, updated_at",
+      )
+      .eq("pet_id", petIdNumber)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (petResult.error) throw new Error(petResult.error.message);
-  if (appointmentsResult.error) throw new Error(appointmentsResult.error.message);
+  if (appointmentsResult.error)
+    throw new Error(appointmentsResult.error.message);
 
   const appointments = appointmentsResult.data ?? [];
   if (petResult.data.customer_id !== effectiveCustomerId) {
@@ -194,24 +262,62 @@ async function getPetDetail(petId, customerId) {
   }
   const appointmentIds = appointments.map((appointment) => appointment.id);
 
-  const [vaccinationsResult, medicalVisitsResult, groomingResult, boardingResult, invoicesResult] = await Promise.all([
-    supabase.from("vaccinations").select("id, pet_id, appointment_id, vaccine_name, date_given, next_due_date, note").eq("pet_id", petIdNumber).order("date_given", { ascending: false }),
+  const [
+    vaccinationsResult,
+    medicalVisitsResult,
+    groomingResult,
+    boardingResult,
+    invoicesResult,
+  ] = await Promise.all([
+    supabase
+      .from("vaccinations")
+      .select(
+        "id, pet_id, appointment_id, vaccine_name, date_given, next_due_date, note",
+      )
+      .eq("pet_id", petIdNumber)
+      .order("date_given", { ascending: false }),
     appointmentIds.length > 0
-      ? supabase.from("medical_visits").select("id, appointment_id, symptoms, clinical_exam, diagnosis_note, next_visit_date, created_at, updated_at").in("appointment_id", appointmentIds).order("created_at", { ascending: false })
+      ? supabase
+          .from("medical_visits")
+          .select(
+            "id, appointment_id, symptoms, clinical_exam, diagnosis_note, next_visit_date, created_at, updated_at",
+          )
+          .in("appointment_id", appointmentIds)
+          .order("created_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
     appointmentIds.length > 0
-      ? supabase.from("grooming_records").select("id, appointment_id, appointment_service_id, staff_id, status, started_at, completed_at, before_image_url, after_image_url, notes").in("appointment_id", appointmentIds).order("started_at", { ascending: false })
+      ? supabase
+          .from("grooming_records")
+          .select(
+            "id, appointment_id, appointment_service_id, staff_id, status, started_at, completed_at, before_image_url, after_image_url, notes",
+          )
+          .in("appointment_id", appointmentIds)
+          .order("started_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
     appointmentIds.length > 0
-      ? supabase.from("boarding").select("id, appointment_id, cage_id, check_in, check_out, feeding_instruction, habit_note, special_note, pickup_reminder_at, current_status").in("appointment_id", appointmentIds).order("check_in", { ascending: false })
+      ? supabase
+          .from("boarding")
+          .select(
+            "id, appointment_id, cage_id, check_in, check_out, feeding_instruction, habit_note, special_note, pickup_reminder_at, current_status",
+          )
+          .in("appointment_id", appointmentIds)
+          .order("check_in", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
     appointmentIds.length > 0
-      ? supabase.from("invoices").select("id, appointment_id, subtotal_amount, discount_amount, tax_amount, total_amount, payment_method, payment_status, transaction_code, paid_at, status, created_at, updated_at").in("appointment_id", appointmentIds).order("created_at", { ascending: false })
+      ? supabase
+          .from("invoices")
+          .select(
+            "id, appointment_id, subtotal_amount, discount_amount, tax_amount, total_amount, payment_method, payment_status, transaction_code, paid_at, status, created_at, updated_at",
+          )
+          .in("appointment_id", appointmentIds)
+          .order("created_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  if (vaccinationsResult.error) throw new Error(vaccinationsResult.error.message);
-  if (medicalVisitsResult.error) throw new Error(medicalVisitsResult.error.message);
+  if (vaccinationsResult.error)
+    throw new Error(vaccinationsResult.error.message);
+  if (medicalVisitsResult.error)
+    throw new Error(medicalVisitsResult.error.message);
   if (groomingResult.error) throw new Error(groomingResult.error.message);
   if (boardingResult.error) throw new Error(boardingResult.error.message);
   if (invoicesResult.error) throw new Error(invoicesResult.error.message);
@@ -229,33 +335,105 @@ async function getPetDetail(petId, customerId) {
 
 async function createCustomerPet(input, customerId) {
   const effectiveCustomerId = Number(customerId);
-  const speciesId = Number(input.speciesId ?? input.species_id);
-  const breedId = input.breedId ? Number(input.breedId) : null;
+  const rawSpecies = input?.speciesId ?? input?.species_id;
+  let speciesId = Number(rawSpecies);
+
+  const rawBreed = input?.breedId ?? input?.breed_id;
+  let breedId =
+    rawBreed === "" || rawBreed === undefined || rawBreed === null
+      ? null
+      : Number(rawBreed);
+  if (breedId !== null && !Number.isFinite(breedId)) {
+    breedId = null;
+  }
 
   if (!Number.isFinite(effectiveCustomerId)) {
     throw new Error("Thiếu thông tin khách hàng");
   }
 
   // Debug: log parsed values to trace missing/invalid speciesId
-  console.debug("[service] createCustomerPet parsed:", { effectiveCustomerId, speciesId, breedId, name: input.name });
+  console.debug("[service] createCustomerPet parsed:", {
+    effectiveCustomerId,
+    speciesId,
+    breedId,
+    rawSpecies,
+    rawBreed,
+    name: input?.name,
+  });
 
   if (!Number.isFinite(speciesId)) {
-    throw new Error("speciesId is required");
+    const candidateName =
+      typeof input?.species === "string"
+        ? input.species
+        : typeof input?.speciesName === "string"
+          ? input.speciesName
+          : typeof rawSpecies === "string"
+            ? rawSpecies
+            : "";
+
+    const speciesName = String(candidateName || "").trim();
+
+    if (speciesName) {
+      const { data: speciesRow, error: speciesError } = await supabase
+        .from("animal_species")
+        .select("id")
+        .ilike("name", speciesName)
+        .maybeSingle();
+
+      if (speciesError) throw new Error(speciesError.message);
+      if (speciesRow?.id) {
+        speciesId = Number(speciesRow.id);
+      }
+    }
   }
+
+  if (!Number.isFinite(speciesId)) {
+    throw new Error("Vui lòng chọn giống loài hợp lệ.");
+  }
+
+  if (breedId === null) {
+    const candidateBreedName =
+      typeof input?.breed === "string"
+        ? input.breed
+        : typeof input?.breedName === "string"
+          ? input.breedName
+          : typeof rawBreed === "string"
+            ? rawBreed
+            : "";
+    const breedName = String(candidateBreedName || "").trim();
+
+    if (breedName) {
+      const { data: breedRow, error: breedError } = await supabase
+        .from("breeds")
+        .select("id")
+        .ilike("name", breedName)
+        .eq("species_id", speciesId)
+        .maybeSingle();
+
+      if (breedError) throw new Error(breedError.message);
+      if (breedRow?.id) {
+        breedId = Number(breedRow.id);
+      }
+    }
+  }
+
+  const imgUrl = input?.imgUrl ?? input?.img_url;
+  const chronicDiseases = input?.chronicDiseases ?? input?.chronic_diseases;
+  const specialNote = input?.specialNote ?? input?.special_note;
 
   const payload = {
     customer_id: effectiveCustomerId,
     species_id: speciesId,
     breed_id: breedId,
-    name: input.name?.trim(),
-    gender: input.gender ?? "UNKNOWN",
-    dob: input.dob || null,
-    weight: input.weight ? Number(input.weight) : null,
-    color: input.color?.trim() || null,
-    img_url: input.imgUrl?.trim() || null,
-    allergies: input.allergies?.trim() || null,
-    chronic_diseases: input.chronicDiseases?.trim() || null,
-    special_note: input.specialNote?.trim() || null,
+    name: input?.name?.trim(),
+    gender: input?.gender ?? "UNKNOWN",
+    dob: input?.dob || null,
+    weight: input?.weight ? Number(input.weight) : null,
+    color: input?.color?.trim() || null,
+    img_url: imgUrl?.trim() || null,
+    allergies: input?.allergies?.trim() || null,
+    chronic_diseases: chronicDiseases?.trim() || null,
+    special_note: specialNote?.trim() || null,
     updated_at: new Date().toISOString(),
   };
 

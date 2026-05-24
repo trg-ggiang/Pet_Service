@@ -200,11 +200,22 @@ export function CustomerPetProfilesModule() {
           <div className="grid md:grid-cols-2 gap-5">
             {dashboard.pets.map((pet) => {
               const clr = getPetColorById(pet.colorId);
-              const coverImage = getPetCoverImage(pet.species);
+              const coverImage = pet.image || getPetCoverImage(pet.species);
               return (
                 <div key={pet.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                   <div className="h-36 relative overflow-hidden">
-                    <img src={coverImage} alt={`${pet.species} ${pet.name}`} className="w-full h-full object-cover" />
+                    <img
+                      src={coverImage}
+                      alt={`${pet.species} ${pet.name}`}
+                      className="w-full h-full object-cover"
+                      onError={(event) => {
+                        const target = event.currentTarget as HTMLImageElement;
+                        const fallback = getPetCoverImage(pet.species);
+                        if (target.src !== fallback) {
+                          target.src = fallback;
+                        }
+                      }}
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/15 to-transparent" />
                     <div className="absolute left-5 bottom-4 flex items-center gap-2">
                       <span className="px-2.5 py-1 rounded-full bg-white/90 text-slate-800 text-[11px] font-bold shadow-sm backdrop-blur-sm">{pet.species}</span>
@@ -337,6 +348,7 @@ function AddPetModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [imgUrlBroken, setImgUrlBroken] = useState(false);
 
   const filteredBreeds = useMemo(
     () => breedOptions.filter((breed) => breed.species_id === form.speciesId),
@@ -354,13 +366,19 @@ function AddPetModal({
     }
   }, [breedOptions, filteredBreeds, form.breedId, form.speciesId, speciesOptions]);
 
-  const previewCover = form.imgUrl || (form.speciesId === 1
+  useEffect(() => {
+    setImgUrlBroken(false);
+  }, [form.imgUrl]);
+
+  const defaultCover = (form.speciesId === 1
     ? "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&h=520&fit=crop"
     : form.speciesId === 2
       ? "https://images.unsplash.com/photo-1513245543132-31f507417b26?w=800&h=520&fit=crop"
       : form.speciesId === 3
         ? "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&h=520&fit=crop"
         : "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=800&h=520&fit=crop");
+
+  const previewCover = !imgUrlBroken && form.imgUrl ? form.imgUrl : defaultCover;
 
   const validate = () => {
     if (!form.name.trim()) return "Vui lòng nhập tên thú cưng.";
@@ -423,11 +441,25 @@ function AddPetModal({
         <div className="p-6 overflow-y-auto space-y-4">
           <div className="relative rounded-3xl overflow-hidden border border-slate-200 bg-slate-50 mb-4">
             <div className="h-36 relative">
-              <img src={previewCover} alt="Preview cover" className="w-full h-full object-cover" />
+              <img
+                src={previewCover}
+                alt="Preview cover"
+                className="w-full h-full object-cover"
+                onError={() => setImgUrlBroken(true)}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-slate-950/10 to-transparent" />
             </div>
             <div className="absolute left-4 top-4 w-14 h-14 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-white/90 backdrop-blur-sm flex items-center justify-center">
-              <Camera size={22} className="text-slate-400" />
+              {form.imgUrl && !imgUrlBroken ? (
+                <img
+                  src={form.imgUrl}
+                  alt="Preview avatar"
+                  className="w-full h-full object-cover"
+                  onError={() => setImgUrlBroken(true)}
+                />
+              ) : (
+                <Camera size={22} className="text-slate-400" />
+              )}
             </div>
             <div className="absolute left-4 bottom-4 text-white">
               <div className="text-sm font-bold leading-tight">Ảnh bìa hồ sơ</div>
@@ -503,7 +535,19 @@ function AddPetModal({
             <Field label="Màu lông" value={form.color} onChange={(value) => setForm((prev) => ({ ...prev, color: value }))} placeholder="Xám xanh" />
           </div>
 
-          <Field label="Ảnh đại diện (URL)" value={form.imgUrl} onChange={(value) => setForm((prev) => ({ ...prev, imgUrl: value }))} placeholder="https://..." />
+          <div>
+            <Field
+              label="Ảnh đại diện (URL)"
+              value={form.imgUrl}
+              onChange={(value) => setForm((prev) => ({ ...prev, imgUrl: value }))}
+              placeholder="https://... (link ảnh trực tiếp)"
+            />
+            {form.imgUrl && imgUrlBroken && (
+              <p className="mt-1 text-[11px] text-red-600 font-semibold">
+                Link ảnh không tải được. Hãy dùng link ảnh trực tiếp/public (mở link ra phải thấy 1 ảnh, không phải trang web).
+              </p>
+            )}
+          </div>
 
           <Field label="Dị ứng" value={form.allergies} onChange={(value) => setForm((prev) => ({ ...prev, allergies: value }))} placeholder="VD: Không dùng sữa bò" />
           <Field label="Bệnh nền" value={form.chronicDiseases} onChange={(value) => setForm((prev) => ({ ...prev, chronicDiseases: value }))} placeholder="VD: Dễ tăng cân" />

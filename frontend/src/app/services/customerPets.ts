@@ -157,13 +157,13 @@ export type PetDetail = {
   }>;
 };
 
-const requestJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
+const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
+    ...init,
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
-    ...init,
   });
 
   const payload = await response.json().catch(() => ({}));
@@ -176,9 +176,12 @@ const requestJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
 };
 
 export async function fetchCustomerPetDashboard(): Promise<CustomerPetDashboard> {
-  const payload = await requestJson<{ ok: true } & CustomerPetDashboard>(`/api/customer/pets`, {
-    headers: getAuthHeaders(),
-  });
+  const payload = await requestJson<{ ok: true } & CustomerPetDashboard>(
+    `/api/customer/pets`,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
   return {
     customer: payload.customer,
     species: payload.species,
@@ -188,9 +191,12 @@ export async function fetchCustomerPetDashboard(): Promise<CustomerPetDashboard>
 }
 
 export async function fetchPetDetail(petId: number): Promise<PetDetail> {
-  const payload = await requestJson<{ ok: true } & PetDetail>(`/api/customer/pets/${petId}`, {
-    headers: getAuthHeaders(),
-  });
+  const payload = await requestJson<{ ok: true } & PetDetail>(
+    `/api/customer/pets/${petId}`,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
   return {
     pet: payload.pet,
     appointments: payload.appointments,
@@ -215,19 +221,22 @@ export async function createCustomerPet(input: {
   chronicDiseases?: string | null;
   specialNote?: string | null;
 }): Promise<{ id: number }> {
+  const speciesId = Number(input.speciesId);
+
   const payloadBody = {
     name: input.name,
     gender: input.gender,
     dob: input.dob ?? null,
     weight: input.weight ?? null,
     color: input.color ?? null,
-    img_url: input.imgUrl ?? null,
+    imgUrl: input.imgUrl ?? null,
     allergies: input.allergies ?? null,
-    chronic_diseases: input.chronicDiseases ?? null,
-    special_note: input.specialNote ?? null,
-    breed_id: input.breedId ?? null,
-    // ensure we send numeric species id only
-    species_id: Number(input.speciesId ?? input.species_id ?? 0),
+    chronicDiseases: input.chronicDiseases ?? null,
+    specialNote: input.specialNote ?? null,
+    breedId: input.breedId ?? null,
+    speciesId,
+    // compatibility: backend also accepts snake_case in some versions
+    species_id: speciesId,
   };
 
   // Debug: log the outgoing payload to help trace species_id issues
@@ -237,11 +246,14 @@ export async function createCustomerPet(input: {
   } catch (e) {
     // ignore
   }
-  const payload = await requestJson<{ ok: true; pet: { id: number } }>("/api/customer/pets", {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payloadBody),
-  });
+  const payload = await requestJson<{ ok: true; pet: { id: number } }>(
+    "/api/customer/pets",
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payloadBody),
+    },
+  );
 
   return payload.pet;
 }
