@@ -19,7 +19,7 @@ const BENEFITS = [
   { icon: Stethoscope, text: "Nhắc lịch tiêm phòng tự động" },
 ];
 
-export function RegisterPage({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
+export function RegisterPage({ onBack, onRegister }: { onBack: () => void; onRegister: (input: { name: string; email: string; phone: string; password: string; address?: string }) => Promise<void> }) {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "" });
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -45,12 +45,23 @@ export function RegisterPage({ onBack, onSuccess }: { onBack: () => void; onSucc
     return errs;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); onSuccess(); }, 1200);
+    try {
+      await onRegister({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+      });
+    } catch (error) {
+      setErrors((prev) => ({ ...prev, submit: error instanceof Error ? error.message : "Đăng ký thất bại." }));
+    } finally {
+      setLoading(false);
+    }
   }
 
   function Field({
@@ -228,6 +239,7 @@ export function RegisterPage({ onBack, onSuccess }: { onBack: () => void; onSucc
                 </span>
               </div>
               {errors.agreed && <p className="mt-1 text-[11px] text-red-500 font-medium ml-7">{errors.agreed}</p>}
+              {errors.submit && <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-xs font-medium text-red-600">{errors.submit}</div>}
             </div>
 
             <button

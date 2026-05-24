@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExamPage } from "./components/ExamPage";
 import { UsersPage } from "./components/UsersPage";
 import { ServicesPage } from "./components/ServicesPage";
@@ -8,12 +8,14 @@ import { SettingsPage } from "./components/SettingsPage";
 import { HelpPage } from "./components/HelpPage";
 import { AppointmentsPage } from "./components/AppointmentsPage";
 import { WelcomePage } from "./components/WelcomePage";
-import { LoginPage, type UserRole } from "./components/LoginPage";
+import { LoginPage } from "./components/LoginPage";
 import { RegisterPage } from "./components/RegisterPage";
 import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { CustomerPortal } from "./components/CustomerPortal";
 import { DoctorPortal } from "./components/DoctorPortal";
 import { StaffPortal } from "./components/StaffPortal";
+import { SplashScreen } from "./components/SplashScreen";
+import { clearSession, login, register, restoreSession, type AuthSession } from "./services/auth";
 import {
   LayoutDashboard, Calendar, Users, Scissors,
   BedDouble, Stethoscope, BarChart3, Settings, Bell,
@@ -1006,7 +1008,34 @@ type AuthScreen = "welcome" | "login" | "register" | "forgot" | "app";
 
 export default function App() {
   const [screen, setScreen] = useState<AuthScreen>("welcome");
-  const [role, setRole] = useState<UserRole>("admin");
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [booting, setBooting] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void (async () => {
+      const restoredSession = await restoreSession();
+      if (!mounted) return;
+
+      if (restoredSession) {
+        setSession(restoredSession);
+        setScreen("app");
+      }
+
+      setBooting(false);
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (booting) {
+    return <SplashScreen onDone={() => setBooting(false)} />;
+  }
+
+  const role = session?.user.role;
 
   if (screen === "welcome") {
     return (
@@ -1020,7 +1049,11 @@ export default function App() {
   if (screen === "login") {
     return (
       <LoginPage
-        onLogin={(r) => { setRole(r); setScreen("app"); }}
+        onLogin={async (input) => {
+          const nextSession = await login(input);
+          setSession(nextSession);
+          setScreen("app");
+        }}
         onRegister={() => setScreen("register")}
         onForgotPassword={() => setScreen("forgot")}
       />
@@ -1031,7 +1064,11 @@ export default function App() {
     return (
       <RegisterPage
         onBack={() => setScreen("login")}
-        onSuccess={() => setScreen("login")}
+        onRegister={async (input) => {
+          const nextSession = await register(input);
+          setSession(nextSession);
+          setScreen("app");
+        }}
       />
     );
   }
@@ -1045,11 +1082,15 @@ export default function App() {
   }
 
   // screen === "app"
-  const logout = () => setScreen("welcome");
+  const logout = () => {
+    clearSession();
+    setSession(null);
+    setScreen("welcome");
+  };
 
   if (role === "admin")    return <AdminRoot onLogout={logout} />;
   if (role === "doctor")   return <DoctorPortal onLogout={logout} />;
   if (role === "staff")    return <StaffPortal onLogout={logout} />;
-  if (role === "customer") return <CustomerPortal onLogout={logout} />;
+  if (role === "customer") return <CustomerPortal onLogout={logout} userName={session?.user.fullName ?? session?.user.email ?? "Khách hàng"} />;
   return null;
 }

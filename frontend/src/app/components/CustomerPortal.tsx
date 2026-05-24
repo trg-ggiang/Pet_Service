@@ -1,5 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, Clock, Bell, LogOut, ChevronRight, Plus, Heart, Star, CheckCircle2, Stethoscope, Syringe, MapPin, X, Edit2, Check, Camera, AlertTriangle, Info, Megaphone } from "lucide-react";
+import { CustomerPetProfilesModule } from "./CustomerPetProfilesModule";
+import {
+  createCustomerPet,
+  fetchCustomerPetDashboard,
+  type SpeciesOption,
+  type BreedOption,
+} from "../services/customerPets";
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -127,7 +134,7 @@ const NOTIF_CONFIG = {
   promo:  { icon: Megaphone,     bg: "#F5F3FF",  color: "#7C3AED", borderColor: "#DDD6FE", label: "Ưu đãi" },
 };
 
-export function CustomerPortal({ onLogout }: { onLogout: () => void }) {
+export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; userName: string }) {
   const [tab, setTab] = useState<"home" | "apts" | "pets" | "history" | "notifications">("home");
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
@@ -254,10 +261,10 @@ export function CustomerPortal({ onLogout }: { onLogout: () => void }) {
 
           <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
             <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-              <span className="text-sm font-bold text-white">NH</span>
+              <span className="text-sm font-bold text-white">{userName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
             </div>
             <div className="hidden sm:block">
-              <div className="text-sm font-semibold text-foreground">Nguyễn Thị Hà</div>
+              <div className="text-sm font-semibold text-foreground">{userName}</div>
               <div className="text-[11px] font-medium text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full inline-flex mt-0.5">Khách hàng</div>
             </div>
           </div>
@@ -333,7 +340,7 @@ export function CustomerPortal({ onLogout }: { onLogout: () => void }) {
             <div className="col-span-6 md:col-span-4 row-span-2 rounded-3xl p-6 text-white shadow-md relative overflow-hidden" style={{ background: "linear-gradient(135deg,#0891B2 0%,#06B6D4 100%)" }}>
               <div className="relative z-10 h-full flex flex-col">
                 <p className="text-sm font-medium opacity-90 mb-1">Xin chào trở lại 👋</p>
-                <h2 className="text-2xl font-bold">Nguyễn Thị Hà</h2>
+                <h2 className="text-2xl font-bold">{userName}</h2>
                 <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg text-sm font-medium w-fit">
                   <Calendar size={14} />
                   <span>Có <strong>{MOCK_APTS.length} lịch hẹn</strong> sắp tới</span>
@@ -362,13 +369,57 @@ export function CustomerPortal({ onLogout }: { onLogout: () => void }) {
 
             <button
               onClick={() => setTab("pets")}
-              className="col-span-3 md:col-span-2 row-span-2 bg-white border border-slate-200 rounded-2xl p-5 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex flex-col"
+              className="col-span-3 md:col-span-2 row-span-2 bg-white border border-slate-200 rounded-2xl p-5 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex flex-col overflow-hidden relative"
             >
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-auto group-hover:scale-110 transition-transform" style={{ background: "#FFF1F2" }}>
+              <div className="absolute right-0 top-0 w-36 h-28 overflow-hidden rounded-bl-[2.5rem] pointer-events-none">
+                <img
+                  src="https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&h=520&fit=crop"
+                  alt="Pet care cover"
+                  className="w-full h-full object-cover opacity-35"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-rose-50/20 via-rose-50/50 to-white" />
+              </div>
+              <div className="absolute right-4 top-4 w-20 h-20 rounded-full bg-rose-100/60 blur-2xl pointer-events-none" />
+              <div className="relative z-10 w-12 h-12 rounded-xl flex items-center justify-center mb-auto group-hover:scale-110 transition-transform" style={{ background: "#FFF1F2" }}>
                 <Heart size={22} style={{ color: "#E11D48" }} />
               </div>
-              <div className="text-lg font-bold text-slate-900 leading-tight mt-4">Hồ sơ thú cưng</div>
-              <div className="text-xs font-medium text-slate-500 mt-1">Xem tình trạng sức khoẻ</div>
+              <div className="relative z-10 mt-6 flex flex-1 flex-col justify-end">
+                <div className="min-w-0 max-w-[70%]">
+                  <div className="text-lg font-bold text-slate-900 leading-tight">Hồ sơ thú cưng</div>
+                  <div className="text-xs font-medium text-slate-500 mt-1">Xem tình trạng sức khoẻ</div>
+                  <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-bold ring-1 ring-inset ring-rose-100 w-fit max-w-full">
+                    <span className="min-w-5 h-5 px-1.5 rounded-full bg-white text-rose-600 text-[11px] leading-none flex items-center justify-center shadow-sm shrink-0">
+                      {pets.length}
+                    </span>
+                    <span className="tracking-tight break-words">
+                      hồ sơ đang theo dõi
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-5 flex items-center justify-end gap-2 shrink-0 pb-1 self-end">
+                  {pets.slice(0, 3).map((pet, index) => {
+                    const clr = getPetColorById(pet.colorId);
+                    return (
+                      <div
+                        key={pet.id}
+                        className="w-12 h-12 rounded-full border-2 border-white shadow-sm overflow-hidden"
+                        style={{ background: `linear-gradient(135deg, ${clr.from}, ${clr.to})`, transform: `translateY(${index % 2 === 0 ? 0 : 2}px)` }}
+                      >
+                        {pet.image ? (
+                          <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold">{pet.initials}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {pets.length > 3 && (
+                    <div className="w-12 h-12 rounded-full border-2 border-white bg-slate-100 shadow-sm flex items-center justify-center text-slate-600 text-xs font-bold">
+                      +{pets.length - 3}
+                    </div>
+                  )}
+                </div>
+              </div>
             </button>
 
             {/* Bottom Quick Actions - 2 smaller cards */}
@@ -656,81 +707,7 @@ export function CustomerPortal({ onLogout }: { onLogout: () => void }) {
         )}
 
         {/* ── PETS ── */}
-        {tab === "pets" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Thú cưng của tôi</h2>
-              <button
-                onClick={() => setIsAddPetModalOpen(true)}
-                className="flex items-center gap-2 h-10 px-5 rounded-xl text-sm font-bold text-white shadow-sm hover:shadow-md transition-all active:scale-95"
-                style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
-              >
-                <Plus size={16} strokeWidth={2.5} /> Thêm thú cưng
-              </button>
-            </div>
-            <div className="grid md:grid-cols-2 gap-5">
-              {pets.map((pet) => {
-                const clr = getPetColorById(pet.colorId);
-                return (
-                  <div key={pet.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
-                    <div className="p-6">
-                      <div className="flex items-center gap-4">
-                        {pet.image ? (
-                          <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 shadow-md" style={{ border: `3px solid ${clr.ring}` }}>
-                            <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div
-                            className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 shadow-md"
-                            style={{ background: `linear-gradient(135deg, ${clr.from}, ${clr.to})`, border: "3px solid white" }}
-                          >
-                            <span className="text-2xl font-bold text-white">{pet.initials}</span>
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-bold text-slate-900 text-xl tracking-tight">{pet.name}</div>
-                          <div className="text-sm font-medium text-slate-500 mt-0.5">{pet.species} • {pet.breed}</div>
-                          <div className="flex items-center gap-1.5 mt-2">
-                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg ring-1 ring-inset ring-emerald-200/50">Khoẻ mạnh</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3 mt-6 pt-5 border-t border-slate-100">
-                        {[
-                          { label: "Tuổi",      value: pet.age },
-                          { label: "Cân nặng",  value: pet.weight },
-                          { label: "Tiêm nhắc", value: pet.nextVaccine },
-                        ].map((info) => (
-                          <div key={info.label} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{info.label}</div>
-                            <div className="text-sm font-bold text-slate-800 mt-1">{info.value}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-3 mt-6">
-                        <button
-                          onClick={() => setViewingPet(pet)}
-                          className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
-                        >
-                          Hồ sơ đầy đủ
-                        </button>
-                        <button
-                          onClick={() => { setBookingPetName(pet.name); setIsNewAptOpen(true); }}
-                          className="flex-1 h-11 rounded-xl text-sm font-bold text-white shadow-sm transition-colors hover:shadow-md"
-                          style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
-                        >
-                          Đặt lịch khám
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {tab === "pets" && <CustomerPetProfilesModule />}
 
         {/* ── HISTORY ── */}
         {tab === "history" && (
@@ -1011,6 +988,73 @@ export function CustomerPortal({ onLogout }: { onLogout: () => void }) {
 
 function AddPetModal({ onClose, onAdd }: { onClose: () => void; onAdd: (pet: any) => void }) {
   const [formData, setFormData] = useState({ name: "", species: "Chó", breed: "", age: "", weight: "" });
+  const [speciesOptions, setSpeciesOptions] = useState<SpeciesOption[]>([]);
+  const [breedOptions, setBreedOptions] = useState<BreedOption[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      try {
+        const dash = await fetchCustomerPetDashboard();
+        if (!mounted) return;
+        setSpeciesOptions(dash.species ?? []);
+        setBreedOptions(dash.breeds ?? []);
+        // set default species if available
+        if (dash.species && dash.species.length > 0) {
+          setFormData((f) => ({ ...f, species: dash.species[0].name }));
+        }
+      } catch (err) {
+        // ignore — we'll still allow free-text species
+        console.error("Failed to load species/breeds", err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleSave = async () => {
+    if (!formData.name) return;
+    setLoading(true);
+    try {
+      const speciesObj = speciesOptions.find((s) => s.name === formData.species) ?? null;
+      const breedObj = breedOptions.find((b) => b.name === formData.breed && (!speciesObj || b.species_id === speciesObj.id)) ?? null;
+
+      const payload = {
+        name: formData.name,
+        speciesId: speciesObj ? speciesObj.id : 0,
+        breedId: breedObj ? breedObj.id : null,
+        gender: "UNKNOWN" as const,
+        dob: null,
+        weight: formData.weight || null,
+      };
+
+      // If we couldn't map species to an id, try to find by simple heuristic
+      if (!speciesObj) {
+        const guessed = speciesOptions.find((s) => s.name?.toLowerCase().includes(String(formData.species).toLowerCase()));
+        if (guessed) payload.speciesId = guessed.id;
+      }
+
+      // If still no numeric species id, don't call API — fallback to local add
+      if (!payload.speciesId || payload.speciesId === 0) {
+        onAdd({ id: Date.now(), name: formData.name, species: formData.species, breed: formData.breed, age: formData.age, weight: formData.weight, initials: formData.name.substring(0,2).toUpperCase(), colorId: "cyan", healthy: true, image: "", lastVisit: "Chưa có", nextVaccine: "Chưa có" });
+        setLoading(false);
+        onClose();
+        return;
+      }
+
+      const res = await createCustomerPet(payload as any);
+      // call parent with a minimal pet object (matches shape used in this file)
+      onAdd({ id: res.id, name: formData.name, species: formData.species, breed: formData.breed, age: formData.age, weight: formData.weight, initials: formData.name.substring(0,2).toUpperCase(), colorId: "cyan", healthy: true, image: "", lastVisit: "Chưa có", nextVaccine: "Chưa có" });
+      onClose();
+    } catch (err) {
+      console.error(err);
+      // still close modal and add locally as fallback
+      onAdd({ id: Date.now(), name: formData.name, species: formData.species, breed: formData.breed, age: formData.age, weight: formData.weight, initials: formData.name.substring(0,2).toUpperCase(), colorId: "cyan", healthy: true, image: "", lastVisit: "Chưa có", nextVaccine: "Chưa có" });
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -1048,9 +1092,15 @@ function AddPetModal({ onClose, onAdd }: { onClose: () => void; onAdd: (pet: any
                   onChange={(e) => setFormData({ ...formData, species: e.target.value })}
                   className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all appearance-none"
                 >
-                  <option value="Chó">Chó</option>
-                  <option value="Mèo">Mèo</option>
-                  <option value="Khác">Khác</option>
+                  {speciesOptions.length > 0 ? (
+                    speciesOptions.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)
+                  ) : (
+                    <>
+                      <option value="Chó">Chó</option>
+                      <option value="Mèo">Mèo</option>
+                      <option value="Khác">Khác</option>
+                    </>
+                  )}
                 </select>
               </div>
               <div>
@@ -1092,12 +1142,12 @@ function AddPetModal({ onClose, onAdd }: { onClose: () => void; onAdd: (pet: any
 
         <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
           <button
-            onClick={() => onAdd(formData)}
-            disabled={!formData.name}
+            onClick={handleSave}
+            disabled={!formData.name || loading}
             className="w-full h-12 rounded-xl text-sm font-bold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
           >
-            Lưu thú cưng
+            {loading ? "Đang lưu..." : "Lưu thú cưng"}
           </button>
         </div>
       </div>
