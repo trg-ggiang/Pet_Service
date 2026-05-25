@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  Eye, EyeOff, Shield, Stethoscope, UserCog, User,
-  ChevronRight, CheckCircle2, Calendar, BarChart3, FileText,
-} from "lucide-react";
-
-export type UserRole = "admin" | "doctor" | "staff" | "customer";
+import { Eye, EyeOff, CheckCircle2, ChevronRight, Calendar, BarChart3, FileText } from "lucide-react";
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -34,31 +29,23 @@ const FEATURES = [
   { icon: CheckCircle2, text: "Theo dõi sức khoẻ thú cưng toàn diện" },
 ];
 
-const DEV_ROLES: { id: UserRole; label: string; desc: string; icon: React.ElementType; color: string; bg: string }[] = [
-  { id: "admin",    label: "Quản trị viên", desc: "Toàn quyền hệ thống",  icon: Shield,      color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
-  { id: "doctor",   label: "Bác sĩ thú y",  desc: "Cổng khám bệnh",      icon: Stethoscope, color: "text-cyan-600",   bg: "bg-cyan-50 border-cyan-200" },
-  { id: "staff",    label: "Nhân viên",      desc: "Cổng tác nghiệp",     icon: UserCog,     color: "text-emerald-600",bg: "bg-emerald-50 border-emerald-200" },
-  { id: "customer", label: "Khách hàng",     desc: "Cổng khách hàng",     icon: User,        color: "text-amber-600",  bg: "bg-amber-50 border-amber-200" },
-];
-
 export function LoginPage({
   onLogin,
   onRegister,
   onForgotPassword,
 }: {
-  onLogin: (role: UserRole) => void;
+  onLogin: (input: { email: string; password: string; remember: boolean }) => Promise<void>;
   onRegister: () => void;
   onForgotPassword?: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
-  const [remember, setRemember] = useState(false);
-  const [devRole, setDevRole] = useState<UserRole>("admin");
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       setErr("Vui lòng nhập email và mật khẩu.");
@@ -66,10 +53,13 @@ export function LoginPage({
     }
     setErr("");
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await onLogin({ email, password, remember });
+    } catch (error) {
+      setErr(error instanceof Error ? error.message : "Đăng nhập thất bại.");
+    } finally {
       setLoading(false);
-      onLogin(devRole);
-    }, 1100);
+    }
   }
 
   return (
@@ -255,37 +245,6 @@ export function LoginPage({
             </p>
           </form>
 
-          {/* ── Dev mode role selector ── */}
-          <div className="mt-8 rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/60 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="px-2 py-0.5 bg-amber-400 text-amber-900 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                🧪 Test Mode
-              </span>
-              <span className="text-xs text-amber-700 font-medium">Chọn role để xem giao diện tương ứng</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {DEV_ROLES.map(r => {
-                const Icon = r.icon;
-                const active = devRole === r.id;
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => setDevRole(r.id)}
-                    className={`flex items-center gap-2 p-2.5 rounded-xl border-2 text-left transition-all ${
-                      active ? `${r.bg} border-current shadow-sm` : "bg-white border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    <Icon size={15} className={active ? r.color : "text-slate-400"} />
-                    <div>
-                      <div className={`text-[11px] font-bold ${active ? r.color : "text-slate-600"}`}>{r.label}</div>
-                      <div className="text-[9px] text-muted-foreground">{r.desc}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
     </div>

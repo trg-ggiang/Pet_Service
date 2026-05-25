@@ -2,6 +2,10 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const { isSupabaseConfigured } = require("./lib/supabaseClient");
+const authRoutes = require("./routes/authRoutes");
+const customerPetsRoutes = require("./routes/customerPetsRoutes");
+const { isPrismaConfigured } = require("./lib/prisma");
 
 const app = express();
 const port = process.env.PORT || 5050;
@@ -14,11 +18,15 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use("/api/auth", authRoutes);
+app.use("/api/customer", customerPetsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({
     ok: true,
     message: "Backend is running",
+    supabaseConfigured: isSupabaseConfigured,
+    prismaConfigured: isPrismaConfigured,
   });
 });
 
