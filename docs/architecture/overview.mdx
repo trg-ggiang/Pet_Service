@@ -1,0 +1,22 @@
+---
+title: Architecture Overview
+description: High-level system architecture for Pet Service.
+---
+
+# Architecture Overview
+
+## System shape
+
+Pet Service has a React/Vite frontend, Express backend API, PostgreSQL database managed with Prisma, and Mintlify documentation.
+
+## Frontend
+
+Frontend code lives under `frontend/src`.
+
+## Backend
+
+Backend code lives under `backend/src`. The server mounts `/api/auth`, `/api/customer`, and `/api/health`.
+
+## Data layer
+
+Prisma schema and migrations live under `backend/prisma`.

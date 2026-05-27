@@ -1,0 +1,62 @@
+---
+title: "Backend"
+description: "Backend structure, commands, and conventions."
+---
+
+## Stack
+
+- Node.js
+- Express 5
+- Prisma
+- PostgreSQL
+- Supabase server client
+- JWT and bcrypt
+
+## Structure
+
+```text
+backend/
+  src/
+    server.js
+    routes/
+    services/
+    middleware/
+    lib/
+  prisma/
+    schema.prisma
+    migrations/
+    seed.js
+```
+
+## Commands
+
+```powershell
+npm --prefix backend run dev
+npm --prefix backend run start
+npm --prefix backend run prisma:generate
+```
+
+## Environment
+
+```text
+PORT=5050
+CLIENT_URL=http://localhost:5173
+JWT_SECRET=
+DATABASE_URL=
+SUPABASE_URL=
+SUPABASE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+## Current Routes
+
+- `/api/health`
+- `/api/auth`
+- `/api/customer`
+
+## Rules
+
+- Keep route handlers focused on HTTP concerns.
+- Put business logic in `backend/src/services/`.
+- Keep database access behind Prisma or existing backend libraries.
+- Update API and database docs when contracts change.

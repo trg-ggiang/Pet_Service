@@ -1,0 +1,26 @@
+model = "gpt-5-codex"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+preferred_shell = "powershell"
+
+[project]
+name = "Pet Service"
+os = "windows"
+docs_dir = "docs"
+frontend_dir = "frontend"
+backend_dir = "backend"
+
+[safety]
+auto_commit = false
+protect_secrets = true
+update_docs = true
+destructive_commands = "never_without_explicit_user_request"
+
+[commands]
+install_root = "npm install"
+install_frontend = "npm --prefix frontend install"
+install_backend = "npm --prefix backend install"
+dev_frontend = "npm run dev:frontend"
+dev_backend = "npm run dev:backend"
+docs_dev = "npm run docs"
+docs_check = "npm run docs:check"

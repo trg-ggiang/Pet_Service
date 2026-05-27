@@ -1,0 +1,109 @@
+---
+title: "Session Log"
+description: "Ongoing development session notes."
+---
+
+## 2026-05-27 - AI Docs And Codex Setup
+
+### Goal
+
+Set up project documentation and AI coding configuration for Codex, Mintlify, and Understand Anything.
+
+### Work Completed
+
+- Added root onboarding docs and AI agent rules.
+- Added project-local Codex config and Codex-specific instructions.
+- Added Mintlify pages for quickstart, architecture, database, API, frontend, backend, AI workflow, developer setup, Git workflow, and reusable prompts.
+- Added root `.env.example` and scrubbed example env files so they do not contain project URLs, publishable keys, or secrets.
+- Updated `.gitignore` for Codex auth/session files, coverage, and safe VS Code exceptions.
+
+### Files Changed
+
+- `README.md`
+- `AGENTS.md`
+- `.codex/config.toml`
+- `.codex/AGENTS.md`
+- `.env.example`
+- `.gitignore`
+- `backend/.env.example`
+- `frontend/.env.local.example`
+- `docs/docs.json`
+- `docs/*.mdx`
+- `docs/dev/*.mdx`
+
+### Test
+
+- `npm run docs:check`
+
+### Result
+
+Pending final validation in this session.
+
+### Open Issues
+
+- Team must confirm production-safe migration and seed commands.
+- Team must fill real local env values outside Git.
+
+### Next Work
+
+- Add request/response examples to API docs once backend contracts stabilize.
+- Keep architecture docs updated after Understand Anything analysis.
+
+### Suggested Commit Message
+
+```text
+docs: setup codex and mintlify workflow
+```
+
+## 2026-05-27 - Frontend Structure Refactor
+
+### Goal
+
+Refactor the frontend source tree into clearer responsibility-based folders without changing existing behavior or UI.
+
+### Work Completed
+
+- Moved page and portal screens from `src/app/components` to `src/pages`.
+- Moved UI primitives to `src/components/ui`.
+- Moved Figma image fallback component to `src/components/figma`.
+- Moved API clients to `src/services`.
+- Moved shared types to `src/types`.
+- Moved reusable helpers to `src/utils`.
+- Moved responsive hook to `src/hooks`.
+- Added placeholder folders for `src/layouts`, `src/constants`, and `src/contexts`.
+- Updated imports after file moves.
+
+### Files Changed
+
+- `frontend/src/app/App.tsx`
+- `frontend/src/pages/*`
+- `frontend/src/components/*`
+- `frontend/src/services/*`
+- `frontend/src/types/*`
+- `frontend/src/utils/*`
+- `frontend/src/hooks/*`
+- `docs/frontend.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `npm --prefix frontend run lint`
+
+### Result
+
+Both checks passed. Vite reported a large chunk warning after build, but no build failure.
+
+### Open Issues
+
+- `frontend/src/app/App.tsx` is still large and should be split into smaller admin layout/dashboard components in a later scoped refactor.
+
+### Next Work
+
+- Extract admin dashboard data/constants and layout components from `App.tsx`.
+- Add code splitting for large portal/page chunks if bundle size becomes a performance issue.
+
+### Suggested Commit Message
+
+```text
+refactor: reorganize frontend source structure
+```

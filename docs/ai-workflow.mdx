@@ -1,0 +1,51 @@
+---
+title: "AI Workflow"
+description: "How the team uses Codex, Mintlify, and Understand Anything."
+---
+
+## Tools
+
+- Codex: coding assistant for implementation, refactor, tests, and docs updates.
+- Understand Anything: codebase graph and architecture exploration.
+- Mintlify: documentation site from `docs/`.
+
+## Start A Session
+
+1. Pull latest code.
+2. Read `README.md`, `AGENTS.md`, `.codex/AGENTS.md`, and relevant docs.
+3. Run install only if dependencies changed.
+4. Run the smallest useful check before editing when practical.
+5. Use Understand Anything to inspect unfamiliar modules, frontend/backend/database flow, or cross-module dependencies.
+
+## While Coding
+
+- Make small, clear changes.
+- Do not delete files without a clear reason.
+- Do not hardcode secrets.
+- Do not change schema/database behavior without updating docs.
+- Keep notes for important behavior or setup changes.
+
+## End A Session
+
+1. Run relevant format/lint/test/build/docs checks.
+2. Update README or Mintlify docs if setup, architecture, API, database, deployment, or workflow changed.
+3. Update `docs/dev/session-log.mdx` or create a work log under `docs/work-logs/`.
+4. Report changed files, verification, remaining risks, and suggested commit message.
+
+## Understand Anything Usage
+
+Use Understand Anything before changing unfamiliar code. Use it to inspect:
+
+- Overall project graph
+- Frontend screen/component relationships
+- Backend route/service/database flow
+- Database model relationships
+
+After analysis, verify findings against source code before editing. Do not let generated analysis change code automatically without review. If the analysis reveals architecture that should be preserved, update `docs/architecture.mdx`.
+
+## Mintlify Usage
+
+- Write docs in `.mdx`.
+- Keep navigation in `docs/docs.json`.
+- Run `npm run docs` for local preview.
+- Run `npm run docs:check` before ending docs-heavy work.

@@ -1,0 +1,40 @@
+---
+title: "Team Prompts"
+description: "Reusable prompts for Codex and Understand Anything sessions."
+---
+
+## Start Session
+
+```text
+Hãy bắt đầu phiên làm việc. Đọc README.md, AGENTS.md, .codex/AGENTS.md và docs liên quan. Chạy git status, tóm tắt stack, rủi ro, và đề xuất bước kiểm tra trước khi sửa.
+```
+
+## Read Project
+
+```text
+Hãy inspect project hiện tại bằng cách đọc cấu trúc thư mục, package.json frontend/backend/root, schema database, config dev server, README và docs. Chỉ tóm tắt, chưa sửa file.
+```
+
+## Implement Feature
+
+```text
+Hãy sửa feature sau: <mô tả>. Giữ nguyên UI/logic hiện có ngoài phạm vi yêu cầu, cập nhật import, chạy check liên quan, và cập nhật docs nếu behavior/setup/API/database thay đổi.
+```
+
+## Update Mintlify Docs
+
+```text
+Hãy cập nhật Mintlify docs trong /docs bằng .mdx, cập nhật docs/docs.json nếu thêm trang, chạy npm run docs:check, và báo cáo file docs đã sửa.
+```
+
+## End Session
+
+```text
+Hãy kết thúc phiên: chạy git status, tổng hợp file thay đổi, cập nhật docs/dev/session-log.mdx hoặc docs/work-logs, chạy check liên quan, và đề xuất commit message. Không commit.
+```
+
+## Understand Anything Analysis
+
+```text
+Hãy dùng Understand Anything để phân tích module <tên module>. Tập trung vào luồng frontend/backend/database, dependency quan trọng, rủi ro khi sửa, và docs nào cần cập nhật. Không tự động sửa code nếu chưa kiểm chứng source.
+```

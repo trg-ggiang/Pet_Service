@@ -1,0 +1,43 @@
+---
+title: "Developer Setup"
+description: "Local setup checklist for contributors."
+---
+
+## First-Time Setup
+
+```powershell
+git clone <repo-url>
+cd Pet_Sevice
+Copy-Item .env.example .env
+Copy-Item backend/.env.example backend/.env
+Copy-Item frontend/.env.local.example frontend/.env.local
+npm install
+npm --prefix frontend install
+npm --prefix backend install
+npm --prefix backend run prisma:generate
+```
+
+Fill env files locally. Never commit real env values.
+
+## Run App
+
+```powershell
+npm run dev:backend
+npm run dev:frontend
+```
+
+## Run Docs
+
+```powershell
+npm run docs
+```
+
+## Validate Docs
+
+```powershell
+npm run docs:check
+```
+
+## TODO
+
+- Add team-approved database migration and seed commands.

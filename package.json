@@ -8,7 +8,9 @@
     "build": "npm --prefix frontend run build",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
-    "dev:backend": "npm --prefix backend run dev"
+    "dev:backend": "npm --prefix backend run dev",
+    "docs": "cd docs && mint dev",
+    "docs:check": "cd docs && mint validate --telemetry false"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

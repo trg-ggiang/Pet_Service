@@ -1,0 +1,43 @@
+---
+title: "Git Workflow"
+description: "Team workflow for safe multi-person development."
+---
+
+## Daily Flow
+
+1. Pull latest code.
+2. Create a focused branch.
+3. Inspect affected files and docs.
+4. Make scoped changes.
+5. Run relevant checks.
+6. Update docs and session log for meaningful changes.
+7. Open a PR with summary, tests, and risks.
+
+## Branches
+
+Use clear branch names:
+
+```text
+feature/customer-pet-profile
+fix/auth-role-redirect
+docs/mintlify-setup
+refactor/frontend-structure
+```
+
+## Do Not Commit
+
+- `.env`
+- `.env.*` except example files
+- `.codex/auth.json`
+- `.codex/sessions/`
+- logs
+- database URLs
+- API keys
+- JWT secrets
+
+## PR Checklist
+
+- Code is scoped to the task.
+- Docs updated where needed.
+- Relevant checks were run.
+- Remaining risks are listed.

@@ -1,0 +1,57 @@
+# agent.mdx
+
+## Documentation
+
+Project docs live in `/docs` and use Mintlify.
+
+All documentation pages must use `.mdx` so they are compatible with Mintlify.
+
+## Before Coding
+
+Always read:
+
+- `/README.md`
+- `/AGENTS.md`
+- `/.codex/AGENTS.md`
+- `/docs/index.mdx`
+- `/docs/quickstart.mdx`
+- `/docs/brief.mdx`
+- `/docs/BRD.mdx`
+- `/docs/plans/master-plan.mdx`
+- related docs in `/docs/features`
+- related docs in `/docs/architecture`
+- related docs in `/docs/api`, `/docs/database`, or `/docs/deployment` when relevant
+
+## After Coding
+
+Always update:
+
+- related `.mdx` docs
+- `/docs/CHANGELOG.mdx`
+- `/docs/plans/master-plan.mdx` if phase status changes
+- `/docs/docs.json` if pages are added
+- a work log in `/docs/work-logs`
+
+Do not consider a task complete if docs are outdated.
+
+## Mintlify Validation
+
+Use:
+
+```bash
+npm run docs
+npm run docs:check
+```
+
+Current project script mapping:
+
+```json
+{
+  "docs": "cd docs && mint dev",
+  "docs:check": "cd docs && mint validate --telemetry false"
+}
+```
+
+## Scope Discipline
+
+When the request is only about docs setup, do not code product functionality.

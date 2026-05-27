@@ -1,0 +1,45 @@
+---
+title: "API Reference"
+description: "Current backend API surface."
+---
+
+## Base URL
+
+Local backend:
+
+```text
+http://localhost:5050
+```
+
+Frontend dev server proxies `/api` to the backend.
+
+## Health
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/health` | Checks backend, Supabase, and Prisma configuration status. |
+
+## Auth
+
+Routes are mounted under `/api/auth`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Register a user. |
+| `POST` | `/api/auth/login` | Login and receive auth data. |
+| `GET` | `/api/auth/me` | Get current authenticated user. |
+
+## Customer
+
+Routes are mounted under `/api/customer`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/customer/pets` | List current customer's pets. |
+| `POST` | `/api/customer/pets` | Create a customer pet. |
+| `GET` | `/api/customer/pets/:petId` | Get one customer pet. |
+
+## TODO
+
+- Add request/response schemas after API contracts stabilize.
+- Add auth header format and error response examples.
