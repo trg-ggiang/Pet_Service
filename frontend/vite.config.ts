@@ -24,7 +24,7 @@ export default defineConfig({
   envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   server: {
     proxy: {
-      '/api': 'http://localhost:5050',
+      '/api': 'http://127.0.0.1:5050',
     },
   },
   plugins: [

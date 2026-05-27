@@ -1,0 +1,56 @@
+---
+title: "Database"
+description: "Database model, Prisma setup, and safe database rules."
+---
+
+## Provider
+
+The project uses PostgreSQL through Prisma. Supabase can provide the hosted PostgreSQL database.
+
+## Schema
+
+Main schema file:
+
+```text
+backend/prisma/schema.prisma
+```
+
+Key domains currently modeled include:
+
+- Users and roles: `User`, `Customer`, `Staff`, `Doctor`
+- Pets: species, breeds, pet profiles
+- Appointments and doctor schedules
+- Services, grooming, boarding, invoices, payments
+- Notifications and reviews
+
+## Environment
+
+Required database-related variables:
+
+```text
+DATABASE_URL=
+SUPABASE_URL=
+SUPABASE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+Do not commit real values.
+
+## Commands
+
+Generate Prisma client:
+
+```powershell
+npm --prefix backend run prisma:generate
+```
+
+## Rules
+
+- Do not change `schema.prisma` without updating this page.
+- Run Prisma generation after schema changes.
+- Confirm migration and seed workflow with the team before applying data changes to shared environments.
+
+## TODO
+
+- Document approved migration command.
+- Document approved seed command and sample seed scope.

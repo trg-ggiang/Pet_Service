@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
-import { ExamPage } from "./components/ExamPage";
-import { UsersPage } from "./components/UsersPage";
-import { ServicesPage } from "./components/ServicesPage";
-import { StaffPage } from "./components/StaffPage";
-import { ReportsPage } from "./components/ReportsPage";
-import { SettingsPage } from "./components/SettingsPage";
-import { HelpPage } from "./components/HelpPage";
-import { AppointmentsPage } from "./components/AppointmentsPage";
-import { WelcomePage } from "./components/WelcomePage";
-import { LoginPage } from "./components/LoginPage";
-import { RegisterPage } from "./components/RegisterPage";
-import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
-import { CustomerPortal } from "./components/CustomerPortal";
-import { DoctorPortal } from "./components/DoctorPortal";
-import { StaffPortal } from "./components/StaffPortal";
-import { SplashScreen } from "./components/SplashScreen";
-import { clearSession, login, register, restoreSession, type AuthSession } from "./services/auth";
+import { ExamPage } from "../pages/ExamPage";
+import { UsersPage } from "../pages/UsersPage";
+import { ServicesPage } from "../pages/ServicesPage";
+import { StaffPage } from "../pages/StaffPage";
+import { ReportsPage } from "../pages/ReportsPage";
+import { SettingsPage } from "../pages/SettingsPage";
+import { HelpPage } from "../pages/HelpPage";
+import { AppointmentsPage } from "../pages/AppointmentsPage";
+import { WelcomePage } from "../pages/WelcomePage";
+import { LoginPage } from "../pages/LoginPage";
+import { RegisterPage } from "../pages/RegisterPage";
+import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
+import { CustomerPortal } from "../pages/CustomerPortal";
+import { DoctorPortal } from "../pages/DoctorPortal";
+import { StaffPortal } from "../pages/StaffPortal";
+import { SplashScreen } from "../pages/SplashScreen";
+import { clearSession, login, register, restoreSession, type AuthSession } from "../services/auth";
 import {
   LayoutDashboard, Calendar, Users, Scissors,
   BedDouble, Stethoscope, BarChart3, Settings, Bell,

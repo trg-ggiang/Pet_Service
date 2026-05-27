@@ -1,0 +1,88 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Pet Service Docs",
+  "theme": "mint",
+  "colors": {
+    "primary": "#16A34A"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "groups": [
+          {
+            "group": "Start Here",
+            "pages": [
+              "index",
+              "quickstart",
+              "brief",
+              "BRD",
+              "setup-guide",
+              "CHANGELOG"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Planning",
+        "groups": [
+          {
+            "group": "Plans",
+            "pages": [
+              "plans/master-plan",
+              "plans/phase-01-project-setup"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Product",
+        "groups": [
+          {
+            "group": "System Areas",
+            "pages": [
+              "architecture",
+              "frontend",
+              "backend",
+              "api-reference",
+              "database",
+              "features/overview",
+              "architecture/overview",
+              "api/overview",
+              "database/overview",
+              "deployment/overview"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "AI Workflow",
+        "groups": [
+          {
+            "group": "Workflow",
+            "pages": [
+              "ai-workflow",
+              "dev/setup",
+              "dev/git-workflow",
+              "dev/prompts",
+              "dev/session-log"
+            ]
+          },
+          {
+            "group": "Prompts",
+            "pages": [
+              "prompts/start-session",
+              "prompts/end-session"
+            ]
+          },
+          {
+            "group": "Work Logs",
+            "pages": [
+              "work-logs/2026-05-27-mintlify-restore"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

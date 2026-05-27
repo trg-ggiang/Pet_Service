@@ -1,0 +1,40 @@
+---
+title: "Architecture"
+description: "Current high-level architecture for Pet Service."
+---
+
+## Overview
+
+Pet Service is split into a Vite frontend and an Express API backend.
+
+```text
+React/Vite frontend
+  -> /api proxy in Vite
+  -> Express backend
+  -> Prisma client
+  -> PostgreSQL/Supabase database
+```
+
+## Frontend
+
+The frontend lives in `frontend/`. The app entrypoint is `frontend/src/main.tsx`, with application screens under `frontend/src/app/components/` and API clients under `frontend/src/app/services/`.
+
+Vite proxies `/api` requests to `http://localhost:5050` during development.
+
+## Backend
+
+The backend lives in `backend/`. `backend/src/server.js` configures Express, CORS, JSON parsing, auth routes, customer routes, and the health endpoint.
+
+Current route groups:
+
+- `/api/auth`
+- `/api/customer`
+- `/api/health`
+
+## Data
+
+Prisma schema is in `backend/prisma/schema.prisma`. The database provider is PostgreSQL. Supabase is used through `@supabase/supabase-js` where configured.
+
+## AI Architecture Maintenance
+
+Use Understand Anything before changing unfamiliar modules. If the generated graph reveals an important dependency or flow not documented here, update this page after verifying it against source code.

@@ -1,0 +1,81 @@
+---
+title: "Frontend"
+description: "Frontend structure, commands, and conventions."
+---
+
+## Stack
+
+- React 18
+- Vite
+- TypeScript
+- Tailwind CSS
+- Radix UI and MUI
+- Supabase browser client
+
+## Structure
+
+```text
+frontend/
+  src/
+    main.tsx
+    app/
+      App.tsx
+    components/
+      ui/
+      figma/
+    pages/
+    services/
+    hooks/
+    types/
+    utils/
+    constants/
+    contexts/
+    layouts/
+    styles/
+```
+
+## Commands
+
+```powershell
+npm --prefix frontend run dev
+npm --prefix frontend run build
+npm --prefix frontend run lint
+```
+
+## Environment
+
+Frontend Supabase variables are read from `NEXT_PUBLIC_*` first, with `VITE_*` fallback:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+```
+
+## API Access
+
+During local development, Vite proxies `/api` to `http://localhost:5050`.
+
+## Refactor Boundaries
+
+- `components/`: reusable UI components only.
+- `pages/`: page and portal screens.
+- `services/`: API clients and external service clients.
+- `hooks/`: custom React hooks prefixed with `use`.
+- `types/`: shared TypeScript types.
+- `utils/`: framework-agnostic helpers.
+- `constants/`: shared constants and route/config values.
+- `contexts/`: global React context/state providers.
+- `layouts/`: reusable layout shells.
+
+## Customer Portal UX Notes
+
+- Customer dashboard cards should keep child content inside their parent panel at desktop and mobile breakpoints.
+- Appointment and service-history filter bars should use available horizontal space to avoid sparse layouts.
+- Custom dropdown menus are preferred over native selects when option-list styling needs consistent spacing, hover states, and selected indicators.
+- Pet profile cover images and avatars should stay compact unless the surrounding layout is explicitly redesigned.
+
+## TODO
+
+- Continue splitting large page files into smaller domain components and hooks as behavior stabilizes.

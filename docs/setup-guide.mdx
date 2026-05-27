@@ -1,0 +1,48 @@
+---
+title: Setup Guide
+description: Local setup guide for the Pet Service project.
+---
+
+# Setup Guide
+
+## Prerequisites
+
+- Node.js and npm.
+- Mintlify CLI available as `mint`.
+- PostgreSQL or Supabase database connection for backend development.
+
+## Install dependencies
+
+```bash
+npm install
+npm --prefix frontend install
+npm --prefix backend install
+```
+
+## Environment files
+
+```bash
+copy frontend\.env.local.example frontend\.env.local
+copy backend\.env.example backend\.env
+```
+
+Do not commit real secrets.
+
+## Run app
+
+```bash
+npm run dev:frontend
+npm run dev:backend
+```
+
+## Run docs
+
+```bash
+npm run docs
+```
+
+## Validate docs
+
+```bash
+npm run docs:check
+```

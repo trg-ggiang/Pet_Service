@@ -1,0 +1,50 @@
+---
+title: "Quickstart"
+description: "Clone, configure, install, and run the Pet Service app locally."
+---
+
+## Prerequisites
+
+- Node.js and npm
+- PostgreSQL or Supabase database access
+- Windows PowerShell
+
+## Setup
+
+```powershell
+git clone <repo-url>
+cd Pet_Sevice
+Copy-Item .env.example .env
+Copy-Item backend/.env.example backend/.env
+Copy-Item frontend/.env.local.example frontend/.env.local
+npm install
+npm --prefix frontend install
+npm --prefix backend install
+```
+
+Fill the copied env files with local values. Do not commit real secrets.
+
+## Run
+
+```powershell
+npm run dev:backend
+npm run dev:frontend
+```
+
+Default local URLs:
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:5050`
+- Health check: `http://localhost:5050/api/health`
+
+## Docs
+
+```powershell
+npm run docs
+npm run docs:check
+```
+
+## TODO
+
+- Confirm the standard database migration command for the team.
+- Confirm whether seed data should be run by `node backend/prisma/seed.js` or through a Prisma seed script.
