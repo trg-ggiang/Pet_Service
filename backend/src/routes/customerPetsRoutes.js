@@ -4,6 +4,7 @@ const {
   getCustomerPetDashboard,
   getPetDetail,
   createCustomerPet,
+  updateCustomerPet,
 } = require("../services/customerPetsService");
 
 const router = express.Router();
@@ -38,6 +39,16 @@ router.post("/pets", async (req, res) => {
     res.status(201).json({ ok: true, pet: data });
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message || "Failed to create pet" });
+  }
+});
+
+router.put("/pets/:petId", async (req, res) => {
+  try {
+    console.debug("[routes] PUT /api/customer/pets/:petId body:", req.body, "customerId:", req.auth?.user?.customerId);
+    const data = await updateCustomerPet(req.params.petId, req.body ?? {}, req.auth.user.customerId);
+    res.json({ ok: true, pet: data });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message || "Failed to update pet" });
   }
 });
 
