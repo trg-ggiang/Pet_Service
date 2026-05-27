@@ -150,3 +150,76 @@ Build passed. Vite still reports the existing large chunk warning.
 ```text
 fix: adjust customer dashboard layout
 ```
+
+## 2026-05-27 - Add Pet Modal Input Enhancements
+
+### Goal
+
+Improve the add-pet profile modal so birthday and avatar inputs support both manual entry and picker-based selection.
+
+### Work Completed
+
+- Replaced the pet profile modal's native select controls with custom React dropdown menus.
+- Changed the birthday field to support manual typing plus calendar selection while preserving future-date validation.
+- Added local image file selection alongside the existing avatar URL input by converting the chosen file to a preview/data URL string.
+- Kept the existing create-pet payload shape unchanged.
+
+### Files Changed
+
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: improve add pet modal inputs
+```
+
+### Follow-up
+
+- Split birthday into separate year, month, and day inputs with per-field constraints.
+- Swapped the upload button text for an icon-only control.
+
+## 2026-05-27 - Pet Profile Edit And Required Fields
+
+### Goal
+
+Allow editing existing pet profiles and make the create flow require all fields.
+
+### Work Completed
+
+- Added a shared pet form modal that supports both create and edit modes.
+- Added a customer pet update endpoint in the backend and wired the frontend edit action to it.
+- Added an edit button to the pet detail modal so existing profiles can be edited from their detail view.
+- Made the create flow require all fields, including the health notes, and documented the "Không có" convention for empty allergy, disease, and special-note fields.
+
+### Files Changed
+
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/services/customerPets.ts`
+- `frontend/src/types/customerPets.ts`
+- `backend/src/services/customerPetsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: add pet profile edit flow
+```

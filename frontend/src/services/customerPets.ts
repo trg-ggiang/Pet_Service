@@ -4,6 +4,7 @@ import type {
   CreateCustomerPetInput,
   CustomerPetDashboard,
   PetDetail,
+  UpdateCustomerPetInput,
 } from "../types/customerPets";
 
 export type {
@@ -77,6 +78,36 @@ export async function createCustomerPet(input: CreateCustomerPetInput): Promise<
     "/api/customer/pets",
     {
       method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payloadBody),
+    },
+  );
+
+  return payload.pet;
+}
+
+export async function updateCustomerPet(petId: number, input: UpdateCustomerPetInput): Promise<{ id: number }> {
+  const speciesId = Number(input.speciesId);
+
+  const payloadBody = {
+    name: input.name,
+    gender: input.gender,
+    dob: input.dob ?? null,
+    weight: input.weight ?? null,
+    color: input.color ?? null,
+    imgUrl: input.imgUrl ?? null,
+    allergies: input.allergies ?? null,
+    chronicDiseases: input.chronicDiseases ?? null,
+    specialNote: input.specialNote ?? null,
+    breedId: input.breedId ?? null,
+    speciesId,
+    species_id: speciesId,
+  };
+
+  const payload = await requestJson<{ ok: true; pet: { id: number } }>(
+    `/api/customer/pets/${petId}`,
+    {
+      method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(payloadBody),
     },
