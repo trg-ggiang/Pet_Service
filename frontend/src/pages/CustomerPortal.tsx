@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Clock, Bell, LogOut, ChevronRight, Plus, Heart, Star, CheckCircle2, Stethoscope, Syringe, MapPin, X, Edit2, Check, Camera, AlertTriangle, Info, Megaphone } from "lucide-react";
+import { Calendar, Clock, Bell, LogOut, ChevronRight, ChevronDown, Plus, Heart, Star, CheckCircle2, Stethoscope, Syringe, MapPin, X, Edit2, Check, Camera, AlertTriangle, Info, Megaphone } from "lucide-react";
 import { CustomerPetProfilesModule } from "./CustomerPetProfilesModule";
 import {
   createCustomerPet,
@@ -146,6 +146,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "in_progress" | "completed" | "cancelled">("all");
   const [petFilter, setPetFilter] = useState<string>("all");
   const [serviceTypeFilter, setServiceTypeFilter] = useState<ServiceType | "all">("all");
+  const [openAptFilter, setOpenAptFilter] = useState<"pet" | "service" | null>(null);
 
   // History filters
   const [historyTypeFilter, setHistoryTypeFilter] = useState<"all" | "medical" | "vaccine" | "grooming" | "boarding">("all");
@@ -178,6 +179,15 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   });
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const serviceFilterOptions: Array<{ value: ServiceType | "all"; label: string }> = [
+    { value: "all", label: "Tất cả" },
+    { value: "Khám bệnh", label: "Khám bệnh" },
+    { value: "Tiêm phòng", label: "Tiêm phòng" },
+    { value: "Grooming", label: "Grooming" },
+    { value: "Lưu trú", label: "Lưu trú" },
+  ];
+  const selectedPetLabel = petFilter === "all" ? "Tất cả" : petFilter;
+  const selectedServiceLabel = serviceFilterOptions.find((option) => option.value === serviceTypeFilter)?.label ?? "Tất cả";
 
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   const markRead = (id: number) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
@@ -335,9 +345,9 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
         {/* ── HOME ── */}
         {tab === "home" && (
-          <div className="grid grid-cols-6 gap-4 auto-rows-[120px]">
-            {/* Welcome Card - Large, spans 4 columns and 2 rows */}
-            <div className="col-span-6 md:col-span-4 row-span-2 rounded-3xl p-6 text-white shadow-md relative overflow-hidden" style={{ background: "linear-gradient(135deg,#0891B2 0%,#06B6D4 100%)" }}>
+          <div className="grid grid-cols-6 gap-4 auto-rows-[88px]">
+            {/* Welcome Card - Large, spans 4 columns and 3 rows */}
+            <div className="col-span-6 md:col-span-4 md:col-start-1 md:row-start-1 row-span-3 rounded-3xl p-6 text-white shadow-md relative overflow-hidden" style={{ background: "linear-gradient(135deg,#0891B2 0%,#06B6D4 100%)" }}>
               <div className="relative z-10 h-full flex flex-col">
                 <p className="text-sm font-medium opacity-90 mb-1">Xin chào trở lại 👋</p>
                 <h2 className="text-2xl font-bold">{userName}</h2>
@@ -358,20 +368,20 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             {/* Quick Actions - 2 tall cards on the right */}
             <button
               onClick={() => setIsNewAptOpen(true)}
-              className="col-span-3 md:col-span-2 row-span-2 bg-white border border-slate-200 rounded-2xl p-5 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex flex-col"
+              className="col-span-6 md:col-span-2 md:col-start-5 md:row-start-1 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group grid grid-cols-[44px_1fr] items-center gap-x-3"
             >
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-auto group-hover:scale-110 transition-transform" style={{ background: "#ECFEFF" }}>
-                <Plus size={22} style={{ color: "#0891B2" }} />
+              <div className="w-11 h-11 row-span-2 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" style={{ background: "#ECFEFF" }}>
+                <Plus size={20} style={{ color: "#0891B2" }} />
               </div>
-              <div className="text-lg font-bold text-slate-900 leading-tight mt-4">Đặt lịch mới</div>
-              <div className="text-xs font-medium text-slate-500 mt-1">Chọn dịch vụ & bác sĩ</div>
+              <div className="self-end text-[15px] font-bold text-slate-900 leading-tight">Đặt lịch mới</div>
+              <div className="self-start text-xs font-medium text-slate-500 mt-0.5">Chọn dịch vụ & bác sĩ</div>
             </button>
 
             <button
               onClick={() => setTab("pets")}
-              className="col-span-3 md:col-span-2 row-span-2 bg-white border border-slate-200 rounded-2xl p-5 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex flex-col overflow-hidden relative"
+              className="col-span-3 md:col-span-2 row-span-3 bg-white border border-slate-200 rounded-2xl p-5 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex flex-col overflow-hidden relative"
             >
-              <div className="absolute right-0 top-0 w-36 h-28 overflow-hidden rounded-bl-[2.5rem] pointer-events-none">
+              <div className="absolute right-0 top-0 w-44 h-36 overflow-hidden rounded-bl-[2.5rem] pointer-events-none">
                 <img
                   src="https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&h=520&fit=crop"
                   alt="Pet care cover"
@@ -384,7 +394,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                 <Heart size={22} style={{ color: "#E11D48" }} />
               </div>
               <div className="relative z-10 mt-6 flex flex-1 flex-col justify-end">
-                <div className="min-w-0 max-w-[70%]">
+                <div className="min-w-0 max-w-[82%]">
                   <div className="text-lg font-bold text-slate-900 leading-tight">Hồ sơ thú cưng</div>
                   <div className="text-xs font-medium text-slate-500 mt-1">Xem tình trạng sức khoẻ</div>
                   <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-bold ring-1 ring-inset ring-rose-100 w-fit max-w-full">
@@ -396,7 +406,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                     </span>
                   </div>
                 </div>
-                <div className="mt-5 flex items-center justify-end gap-2 shrink-0 pb-1 self-end">
+                <div className="mt-6 flex items-center justify-end gap-2 shrink-0 pb-1 self-end">
                   {pets.slice(0, 3).map((pet, index) => {
                     const clr = getPetColorById(pet.colorId);
                     return (
@@ -425,7 +435,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             {/* Bottom Quick Actions - 2 smaller cards */}
             <button
               onClick={() => setTab("history")}
-              className="col-span-3 md:col-span-2 row-span-1 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex items-center gap-3"
+              className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-2 row-span-1 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex items-center gap-3"
             >
               <div className="w-11 h-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0" style={{ background: "#F5F3FF" }}>
                 <Clock size={20} style={{ color: "#7C3AED" }} />
@@ -437,7 +447,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             </button>
 
             <button
-              className="col-span-3 md:col-span-2 row-span-1 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex items-center gap-3"
+              className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-3 row-span-1 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex items-center gap-3"
             >
               <div className="w-11 h-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0" style={{ background: "#ECFDF5" }}>
                 <MapPin size={20} style={{ color: "#059669" }} />
@@ -449,7 +459,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             </button>
 
             {/* Upcoming Appointments - Wide card */}
-            <div className={`bg-white border border-slate-200 rounded-3xl p-6 ${unreadCount > 0 ? 'col-span-6 md:col-span-4' : 'col-span-6'} row-span-2`}>
+            <div className={`bg-white border border-slate-200 rounded-3xl p-6 ${unreadCount > 0 ? 'col-span-6 md:col-span-4' : 'col-span-6'} row-span-6`}>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-bold text-slate-900">Lịch hẹn sắp tới</h3>
                 <button onClick={() => setTab("apts")} className="text-sm font-semibold text-cyan-600 hover:text-cyan-700">Xem tất cả</button>
@@ -480,7 +490,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
             {/* Notification preview - appears only when there are unread notifications */}
             {unreadCount > 0 && (
-              <div className="col-span-6 md:col-span-2 row-span-2 bg-white border border-slate-200 rounded-3xl p-5 flex flex-col">
+              <div className="col-span-6 md:col-span-2 row-span-3 bg-white border border-slate-200 rounded-3xl p-5 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-slate-900">Thông báo mới</h3>
@@ -541,76 +551,132 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         {/* ── APPOINTMENTS ── */}
         {tab === "apts" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div>
               <h2 className="text-xl font-bold text-slate-900">Lịch hẹn của tôi</h2>
+              <p className="mt-1 text-sm font-medium text-slate-500">Theo dõi và lọc lịch hẹn chăm sóc thú cưng</p>
+            </div>
+
+            {/* Status filter tabs */}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="bg-white border border-slate-200 rounded-2xl p-1.5 flex w-full flex-1 gap-1 overflow-x-auto">
+                {[
+                  { id: "all" as const,         label: "Tất cả" },
+                  { id: "upcoming" as const,    label: "Sắp tới" },
+                  { id: "in_progress" as const, label: "Đang xử lý" },
+                  { id: "completed" as const,   label: "Đã hoàn thành" },
+                  { id: "cancelled" as const,   label: "Đã hủy" },
+                ].map((s) => {
+                  const active = statusFilter === s.id;
+                  const count = apts.filter((a) => {
+                    if (s.id === "all") return true;
+                    if (s.id === "upcoming") return ["PENDING", "CONFIRMED"].includes(a.status);
+                    if (s.id === "in_progress") return ["CHECKED_IN", "IN_PROGRESS"].includes(a.status);
+                    if (s.id === "completed") return a.status === "COMPLETED";
+                    if (s.id === "cancelled") return ["CANCELLED", "NO_SHOW"].includes(a.status);
+                    return false;
+                  }).length;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setStatusFilter(s.id)}
+                      className={`h-10 min-w-fit flex-1 whitespace-nowrap px-4 rounded-xl text-sm font-bold transition-all ${
+                        active ? "bg-cyan-500 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {s.label} <span className={active ? "opacity-80" : "text-slate-400"}>({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
               <button
                 onClick={() => setIsNewAptOpen(true)}
-                className="flex items-center gap-2 h-10 px-5 rounded-xl text-sm font-bold text-white shadow-sm hover:shadow-md transition-all active:scale-95"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md active:scale-95 lg:h-11"
                 style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
               >
                 <Plus size={16} strokeWidth={2.5} /> Đặt lịch mới
               </button>
             </div>
 
-            {/* Status filter tabs */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-1.5 inline-flex gap-1">
-              {[
-                { id: "all" as const,         label: "Tất cả" },
-                { id: "upcoming" as const,    label: "Sắp tới" },
-                { id: "in_progress" as const, label: "Đang xử lý" },
-                { id: "completed" as const,   label: "Đã hoàn thành" },
-                { id: "cancelled" as const,   label: "Đã hủy" },
-              ].map((s) => {
-                const active = statusFilter === s.id;
-                const count = apts.filter((a) => {
-                  if (s.id === "all") return true;
-                  if (s.id === "upcoming") return ["PENDING", "CONFIRMED"].includes(a.status);
-                  if (s.id === "in_progress") return ["CHECKED_IN", "IN_PROGRESS"].includes(a.status);
-                  if (s.id === "completed") return a.status === "COMPLETED";
-                  if (s.id === "cancelled") return ["CANCELLED", "NO_SHOW"].includes(a.status);
-                  return false;
-                }).length;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setStatusFilter(s.id)}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                      active ? "bg-cyan-500 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {s.label} <span className={active ? "opacity-80" : "text-slate-400"}>({count})</span>
-                  </button>
-                );
-              })}
-            </div>
-
             {/* Quick filters */}
-            <div className="flex gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Thú cưng:</label>
-                <select
-                  value={petFilter}
-                  onChange={(e) => setPetFilter(e.target.value)}
-                  className="h-9 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
-                >
-                  <option value="all">Tất cả</option>
-                  {pets.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
-                </select>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="group relative flex h-14 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all focus-within:border-cyan-300 focus-within:ring-4 focus-within:ring-cyan-500/10">
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500">
+                  <Heart size={19} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label className="block text-[12px] font-bold uppercase tracking-wide text-slate-400">Thú cưng</label>
+                  <button
+                    type="button"
+                    onClick={() => setOpenAptFilter((current) => current === "pet" ? null : "pet")}
+                    className="mt-0.5 flex w-full items-center justify-between gap-3 text-left text-[15px] font-extrabold leading-tight text-slate-900 outline-none"
+                  >
+                    <span className="truncate">{selectedPetLabel}</span>
+                    <ChevronDown size={17} className={`flex-shrink-0 text-slate-700 transition-transform ${openAptFilter === "pet" ? "rotate-180" : ""}`} strokeWidth={2.75} />
+                  </button>
+                </div>
+                {openAptFilter === "pet" && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+                    {[{ value: "all", label: "Tất cả" }, ...pets.map((pet) => ({ value: pet.name, label: pet.name }))].map((option) => {
+                      const selected = petFilter === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setPetFilter(option.value);
+                            setOpenAptFilter(null);
+                          }}
+                          className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-extrabold transition-colors ${
+                            selected ? "bg-cyan-50 text-cyan-700" : "text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          {selected && <Check size={15} strokeWidth={3} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Loại dịch vụ:</label>
-                <select
-                  value={serviceTypeFilter}
-                  onChange={(e) => setServiceTypeFilter(e.target.value as ServiceType | "all")}
-                  className="h-9 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
-                >
-                  <option value="all">Tất cả</option>
-                  <option value="Khám bệnh">Khám bệnh</option>
-                  <option value="Tiêm phòng">Tiêm phòng</option>
-                  <option value="Grooming">Grooming</option>
-                  <option value="Lưu trú">Lưu trú</option>
-                </select>
+              <div className="group relative flex h-14 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all focus-within:border-cyan-300 focus-within:ring-4 focus-within:ring-cyan-500/10">
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+                  <Stethoscope size={19} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label className="block text-[12px] font-bold uppercase tracking-wide text-slate-400">Dịch vụ</label>
+                  <button
+                    type="button"
+                    onClick={() => setOpenAptFilter((current) => current === "service" ? null : "service")}
+                    className="mt-0.5 flex w-full items-center justify-between gap-3 text-left text-[15px] font-extrabold leading-tight text-slate-900 outline-none"
+                  >
+                    <span className="truncate">{selectedServiceLabel}</span>
+                    <ChevronDown size={17} className={`flex-shrink-0 text-slate-700 transition-transform ${openAptFilter === "service" ? "rotate-180" : ""}`} strokeWidth={2.75} />
+                  </button>
+                </div>
+                {openAptFilter === "service" && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+                    {serviceFilterOptions.map((option) => {
+                      const selected = serviceTypeFilter === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setServiceTypeFilter(option.value);
+                            setOpenAptFilter(null);
+                          }}
+                          className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-extrabold transition-colors ${
+                            selected ? "bg-cyan-50 text-cyan-700" : "text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          {selected && <Check size={15} strokeWidth={3} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -715,7 +781,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             <h2 className="text-xl font-bold text-slate-900">Lịch sử dịch vụ</h2>
 
             {/* Type filter tabs */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-1.5 inline-flex gap-1 overflow-x-auto">
+            <div className="bg-white border border-slate-200 rounded-2xl p-1.5 flex w-full gap-1 overflow-x-auto">
               {[
                 { id: "all" as const,      label: "Tất cả", icon: CheckCircle2 },
                 { id: "medical" as const,  label: "Khám bệnh", icon: Stethoscope },
@@ -730,7 +796,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                   <button
                     key={t.id}
                     onClick={() => setHistoryTypeFilter(t.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+                    className={`flex min-w-fit flex-1 items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
                       active ? "bg-cyan-500 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >

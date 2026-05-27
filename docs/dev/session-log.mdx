@@ -107,3 +107,46 @@ Both checks passed. Vite reported a large chunk warning after build, but no buil
 ```text
 refactor: reorganize frontend source structure
 ```
+
+## 2026-05-27 - Customer Dashboard Layout Fix
+
+### Goal
+
+Adjust the customer home dashboard layout so the quick action cards and upcoming appointments section fit the requested visual structure.
+
+### Work Completed
+
+- Stacked the booking, service history, and clinic finder action cards beside the welcome card on desktop.
+- Converted the booking action card to the same compact horizontal style as the other action cards.
+- Increased the upcoming appointments container height so appointment cards stay inside the parent panel.
+- Matched the bottom edge of upcoming appointments with the unread notification panel in the desktop grid.
+- Moved the new appointment button onto the appointment status filter row.
+- Restyled the pet and service filters as compact selection cards with clearer typography and icons.
+- Restored pet profile image frames and avatars to their original compact presentation.
+- Extended the home pet summary card and upcoming appointments panel so child appointment cards fit within the parent container.
+- Replaced appointment pet/service native select menus with custom dropdown option lists while keeping the selector bars full width.
+- Expanded the service history type filter bar to match the width of the history list cards.
+- Expanded the appointment status filter bar so it fills the space before the new appointment button.
+
+### Files Changed
+
+- `frontend/src/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Open Issues
+
+- Browser plugin verification was unavailable in this session, so final validation used build output and source layout review.
+
+### Suggested Commit Message
+
+```text
+fix: adjust customer dashboard layout
+```
