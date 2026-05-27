@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Camera, CheckCircle2, ChevronLeft, ClipboardList, Heart, Loader2, Plus, Scissors, Syringe, X, Calendar as CalendarIcon } from "lucide-react";
+import { Camera, CheckCircle2, ChevronLeft, ClipboardList, Download, Heart, Loader2, Plus, Scissors, Syringe, X, Calendar as CalendarIcon } from "lucide-react";
 import {
   createCustomerPet,
+  downloadCustomerInvoicePdf,
   fetchCustomerPetDashboard,
   fetchPetDetail,
   type BreedOption,
@@ -583,9 +584,23 @@ function PetDetailModal({
   onClose: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<PetDetailTab>("overview");
+  const [downloadError, setDownloadError] = useState("");
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
   const clr = getPetColorById(pet.colorId);
   const latestVaccination = detail?.vaccinations?.[0] ?? null;
   const latestMedicalVisit = detail?.medicalVisits?.[0] ?? null;
+
+  const handleDownloadInvoice = async (invoiceId: number) => {
+    try {
+      setDownloadingInvoiceId(invoiceId);
+      setDownloadError("");
+      await downloadCustomerInvoicePdf(invoiceId);
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Khong the tai hoa don PDF.");
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -639,6 +654,12 @@ function PetDetailModal({
             </div>
           )}
 
+          {downloadError && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {downloadError}
+            </div>
+          )}
+
           {!loading && detail && activeTab === "overview" && (
             <div className="space-y-5">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -687,7 +708,34 @@ function PetDetailModal({
           {!loading && detail && activeTab === "vaccine" && <TimelineList rows={detail.vaccinations.map((row) => ({ title: row.vaccine_name, subtitle: row.note ?? "", meta: `${formatDate(row.date_given)} · nhắc ${formatDate(row.next_due_date)}` }))} emptyText="Chưa có lịch tiêm chủng." />}
           {!loading && detail && activeTab === "grooming" && <TimelineList rows={detail.groomingRecords.map((row) => ({ title: row.status, subtitle: row.notes ?? "", meta: formatDate(row.started_at) }))} emptyText="Chưa có dữ liệu grooming." />}
           {!loading && detail && activeTab === "boarding" && <TimelineList rows={detail.boardingRecords.map((row) => ({ title: row.current_status, subtitle: row.special_note ?? row.habit_note ?? "", meta: `${formatDate(row.check_in)} → ${formatDate(row.check_out)}` }))} emptyText="Chưa có dữ liệu lưu trú." />}
-          {!loading && detail && activeTab === "invoice" && <TimelineList rows={detail.invoices.map((row) => ({ title: `${formatCurrency(row.total_amount)} · ${row.payment_status}`, subtitle: row.transaction_code ?? row.status, meta: formatDate(row.created_at) }))} emptyText="Chưa có hóa đơn." />}
+          {!loading && detail && activeTab === "invoice" && (
+            detail.invoices.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center text-slate-500">Chưa có hóa đơn.</div>
+            ) : (
+              <div className="space-y-3">
+                {detail.invoices.map((row) => (
+                  <div key={row.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="text-sm font-bold text-slate-900">{formatCurrency(row.total_amount)} · {row.payment_status}</div>
+                        <div className="text-sm text-slate-500 mt-1">{row.transaction_code ?? row.status}</div>
+                        <div className="text-xs font-semibold text-slate-400 mt-1">{formatDate(row.created_at)}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void handleDownloadInvoice(row.id)}
+                        disabled={downloadingInvoiceId === row.id}
+                        className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {downloadingInvoiceId === row.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                        Tải PDF
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>

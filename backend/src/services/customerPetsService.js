@@ -322,6 +322,26 @@ async function getPetDetail(petId, customerId) {
   if (boardingResult.error) throw new Error(boardingResult.error.message);
   if (invoicesResult.error) throw new Error(invoicesResult.error.message);
 
+  const invoices = invoicesResult.data ?? [];
+  const invoiceIds = invoices.map((invoice) => invoice.id);
+  const invoiceItemsResult =
+    invoiceIds.length > 0
+      ? await supabase
+          .from("invoice_items")
+          .select("id, invoice_id, source_type, description, quantity, unit_price, total_price")
+          .in("invoice_id", invoiceIds)
+          .order("id", { ascending: true })
+      : { data: [], error: null };
+
+  if (invoiceItemsResult.error) throw new Error(invoiceItemsResult.error.message);
+
+  const itemsByInvoiceId = new Map();
+  (invoiceItemsResult.data ?? []).forEach((item) => {
+    const currentItems = itemsByInvoiceId.get(item.invoice_id) ?? [];
+    currentItems.push(item);
+    itemsByInvoiceId.set(item.invoice_id, currentItems);
+  });
+
   return {
     pet: petResult.data,
     appointments,
@@ -329,7 +349,10 @@ async function getPetDetail(petId, customerId) {
     medicalVisits: medicalVisitsResult.data ?? [],
     groomingRecords: groomingResult.data ?? [],
     boardingRecords: boardingResult.data ?? [],
-    invoices: invoicesResult.data ?? [],
+    invoices: invoices.map((invoice) => ({
+      ...invoice,
+      items: itemsByInvoiceId.get(invoice.id) ?? [],
+    })),
   };
 }
 

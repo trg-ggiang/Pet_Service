@@ -3,9 +3,12 @@ import { Calendar, Clock, Bell, LogOut, ChevronRight, ChevronDown, Plus, Heart, 
 import { CustomerPetProfilesModule } from "./CustomerPetProfilesModule";
 import {
   createCustomerPet,
+  downloadCustomerInvoicePdf,
   fetchCustomerPetDashboard,
+  fetchPetDetail,
   type SpeciesOption,
   type BreedOption,
+  type PetDetail,
 } from "../services/customerPets";
 
 function PawSVG({ className }: { className?: string }) {
@@ -94,6 +97,8 @@ const MOCK_APTS: Apt[] = [
 
 interface HistoryRecord {
   id: string;
+  invoiceId?: number;
+  sortAt?: string;
   date: string;
   service: string;
   pet: string;
@@ -104,12 +109,72 @@ interface HistoryRecord {
   details?: string;
 }
 
-const HISTORY: HistoryRecord[] = [
-  { id: "H-001", date: "12/05/2026", service: "Khám tổng quát",  pet: "Mochi", cost: "250.000₫", status: "completed", type: "medical", staff: "BS. Trần Hoài Nam", details: "Sức khỏe ổn định" },
-  { id: "H-002", date: "03/04/2026", service: "Grooming đầy đủ",  pet: "Luna",  cost: "350.000₫", status: "completed", type: "grooming", staff: "NV. Phạm Minh Anh", details: "Cắt tỉa lông, tắm, vệ sinh tai" },
-  { id: "H-003", date: "18/03/2026", service: "Tiêm phòng combo", pet: "Mochi", cost: "320.000₫", status: "completed", type: "vaccine", staff: "BS. Lê Thị Hoa", details: "Tiêm vaccine 5 trong 1" },
-  { id: "H-004", date: "10/02/2026", service: "Lưu trú 5 ngày", pet: "Luna", cost: "800.000₫", status: "completed", type: "boarding", staff: "NV. Nguyễn Văn An", details: "Lưu trú từ 10/02 đến 15/02" },
-];
+function formatPortalDate(value?: string | null) {
+  if (!value) return "Chưa có";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Chưa có" : date.toLocaleDateString("vi-VN");
+}
+
+function formatPortalCurrency(amount?: number | null) {
+  if (amount == null) return "0₫";
+  return `${new Intl.NumberFormat("vi-VN").format(amount)}₫`;
+}
+
+function getHistoryTypeFromInvoice(detail: PetDetail, appointmentId: number): HistoryRecord["type"] {
+  const invoice = detail.invoices.find((entry) => entry.appointment_id === appointmentId);
+  const sourceTypes = new Set((invoice?.items ?? []).map((item) => item.source_type));
+
+  if (sourceTypes.has("BOARDING") || detail.boardingRecords.some((row) => row.appointment_id === appointmentId)) return "boarding";
+  if (sourceTypes.has("GROOMING") || detail.groomingRecords.some((row) => row.appointment_id === appointmentId)) return "grooming";
+  if (sourceTypes.has("VACCINATION") || detail.vaccinations.some((row) => row.appointment_id === appointmentId)) return "vaccine";
+  return "medical";
+}
+
+function getHistoryServiceName(detail: PetDetail, appointmentId: number) {
+  const invoice = detail.invoices.find((entry) => entry.appointment_id === appointmentId);
+  const firstItem = invoice?.items?.[0]?.description;
+  if (firstItem) return firstItem;
+
+  const vaccination = detail.vaccinations.find((row) => row.appointment_id === appointmentId);
+  if (vaccination) return vaccination.vaccine_name;
+
+  const appointment = detail.appointments.find((row) => row.id === appointmentId);
+  return appointment?.appointment_type ?? "Dịch vụ";
+}
+
+function getHistoryDetails(detail: PetDetail, appointmentId: number) {
+  const medicalVisit = detail.medicalVisits.find((row) => row.appointment_id === appointmentId);
+  if (medicalVisit?.diagnosis_note) return medicalVisit.diagnosis_note;
+
+  const vaccination = detail.vaccinations.find((row) => row.appointment_id === appointmentId);
+  if (vaccination?.note) return vaccination.note;
+
+  const grooming = detail.groomingRecords.find((row) => row.appointment_id === appointmentId);
+  if (grooming?.notes) return grooming.notes;
+
+  const boarding = detail.boardingRecords.find((row) => row.appointment_id === appointmentId);
+  return boarding?.special_note ?? boarding?.habit_note ?? "";
+}
+
+function buildHistoryRecordsFromPetDetails(details: PetDetail[]) {
+  return details
+    .flatMap((detail) =>
+      detail.invoices.map((invoice) => ({
+        id: `INV-${String(invoice.id).padStart(6, "0")}`,
+        invoiceId: invoice.id,
+        sortAt: invoice.created_at,
+        date: formatPortalDate(invoice.created_at),
+        service: getHistoryServiceName(detail, invoice.appointment_id),
+        pet: detail.pet.name,
+        cost: formatPortalCurrency(invoice.total_amount),
+        status: invoice.status === "CANCELLED" ? "cancelled" : invoice.payment_status === "PAID" ? "completed" : "pending",
+        type: getHistoryTypeFromInvoice(detail, invoice.appointment_id),
+        staff: invoice.transaction_code ?? invoice.payment_status,
+        details: getHistoryDetails(detail, invoice.appointment_id),
+      } satisfies HistoryRecord)),
+    )
+    .sort((left, right) => new Date(right.sortAt ?? 0).getTime() - new Date(left.sortAt ?? 0).getTime());
+}
 
 interface Notification {
   id: number;
@@ -140,6 +205,9 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [pets, setPets] = useState<Pet[]>(INITIAL_PETS);
   const [apts, setApts] = useState<Apt[]>(MOCK_APTS);
+  const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
 
   // Appointments filters
@@ -189,9 +257,59 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const selectedPetLabel = petFilter === "all" ? "Tất cả" : petFilter;
   const selectedServiceLabel = serviceFilterOptions.find((option) => option.value === serviceTypeFilter)?.label ?? "Tất cả";
 
+  const filteredHistoryRecords = historyRecords.filter((record) => historyTypeFilter === "all" || record.type === historyTypeFilter);
+
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   const markRead = (id: number) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
   const dismissNotif = (id: number) => setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadCustomerData() {
+      try {
+        setHistoryLoading(true);
+        setHistoryError("");
+        const dashboard = await fetchCustomerPetDashboard();
+        if (ignore) return;
+
+        setPets(dashboard.pets.map((pet) => ({
+          id: pet.id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight,
+          colorId: pet.colorId,
+          initials: pet.initials,
+          lastVisit: pet.lastVisit,
+          nextVaccine: pet.nextVaccine,
+          healthy: pet.healthy,
+          image: pet.image ?? "",
+        })));
+
+        const details = await Promise.all(
+          dashboard.pets.map((pet) => fetchPetDetail(pet.id)),
+        );
+        if (!ignore) {
+          setHistoryRecords(buildHistoryRecordsFromPetDetails(details));
+        }
+      } catch (error) {
+        if (!ignore) {
+          setHistoryError(error instanceof Error ? error.message : "Không thể tải lịch sử dịch vụ.");
+          setHistoryRecords([]);
+        }
+      } finally {
+        if (!ignore) setHistoryLoading(false);
+      }
+    }
+
+    void loadCustomerData();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const NAV = [
     { id: "home" as const,    label: "Trang chủ", icon: Heart },
@@ -791,7 +909,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               ].map((t) => {
                 const active = historyTypeFilter === t.id;
                 const Icon = t.icon;
-                const count = HISTORY.filter((h) => t.id === "all" || h.type === t.id).length;
+                const count = historyRecords.filter((h) => t.id === "all" || h.type === t.id).length;
                 return (
                   <button
                     key={t.id}
@@ -809,7 +927,22 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
             {/* History list */}
             <div className="space-y-4">
-              {HISTORY.filter((h) => historyTypeFilter === "all" || h.type === historyTypeFilter).map((h) => {
+              {historyLoading && (
+                <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500">
+                  Đang tải lịch sử dịch vụ...
+                </div>
+              )}
+              {!historyLoading && historyError && (
+                <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-sm font-semibold text-red-700">
+                  {historyError}
+                </div>
+              )}
+              {!historyLoading && !historyError && filteredHistoryRecords.length === 0 && (
+                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500">
+                  Chưa có lịch sử dịch vụ.
+                </div>
+              )}
+              {!historyLoading && !historyError && filteredHistoryRecords.map((h) => {
                 const typeIcons: Record<HistoryRecord["type"], React.ElementType> = {
                   medical: Stethoscope,
                   vaccine: Syringe,
@@ -1974,6 +2107,23 @@ function HistoryDetailModal({ record, onClose }: { record: HistoryRecord; onClos
   };
   const Icon = typeIcons[record.type];
   const clr = typeColors[record.type];
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      setDownloadError("");
+      if (!record.invoiceId) {
+        throw new Error("Hóa đơn này chưa có mã từ hệ thống.");
+      }
+      await downloadCustomerInvoicePdf(record.invoiceId);
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : "Không thể tải hóa đơn PDF.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -2042,8 +2192,14 @@ function HistoryDetailModal({ record, onClose }: { record: HistoryRecord; onClos
                 </div>
               </div>
 
+              {downloadError && (
+                <p className="text-sm font-medium text-red-600">{downloadError}</p>
+              )}
               <button
-                className="w-full h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                type="button"
+                onClick={() => void handleDownload()}
+                disabled={isDownloading}
+                className="w-full h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Tải hóa đơn PDF
               </button>

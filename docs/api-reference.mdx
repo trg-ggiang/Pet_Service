@@ -29,6 +29,16 @@ Routes are mounted under `/api/auth`.
 | `POST` | `/api/auth/login` | Login and receive auth data. |
 | `GET` | `/api/auth/me` | Get current authenticated user. |
 
+## Customer Invoices
+
+Routes are mounted under `/api/customer` and require a customer auth token.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/customer/invoices/:invoiceId/pdf` | Download a PDF invoice owned by the current customer. |
+| `GET` | `/api/customer/invoices/latest/pdf` | Download the latest PDF invoice owned by the current customer. |
+| `GET` | `/api/customer/invoices/match/pdf` | Download the customer invoice that best matches pet, service type, service name, and date query parameters. |
+
 ## Customer
 
 Routes are mounted under `/api/customer`.
