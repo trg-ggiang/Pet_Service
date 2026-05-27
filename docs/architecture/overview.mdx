@@ -1,0 +1,37 @@
+---
+title: Architecture Overview
+description: High-level system architecture for Pet Service.
+---
+
+# Architecture Overview
+
+## System shape
+
+Pet Service is organized as a frontend application, backend API service, PostgreSQL database layer, and Mintlify documentation site.
+
+## Frontend
+
+The frontend lives under `frontend/` and uses React, Vite, TypeScript, Tailwind CSS, and component modules under `frontend/src`.
+
+Current frontend source structure:
+
+- `app/`: application entry composition.
+- `pages/`: route-level screens and role portals.
+- `components/`: reusable UI components and UI primitives.
+- `hooks/`: custom React hooks.
+- `types/`: shared TypeScript types.
+- `constants/`: shared constants such as navigation labels and status configuration.
+- `utils/`: framework-independent helper functions.
+- `layouts/`, `services/`, and `contexts/`: reserved structure for layout, API, and global state expansion.
+
+## Backend
+
+The backend lives under `backend/` and uses Express. The server mounts auth routes at `/api/auth`, customer routes at `/api/customer`, and a health endpoint at `/api/health`.
+
+## Data layer
+
+Prisma models and migrations live under `backend/prisma`. The schema models users, roles, customers, doctors, staff, pets, appointments, services, medical visits, grooming, boarding, invoices, notifications, and reviews.
+
+## Documentation
+
+Project documentation lives under `docs/` and is served by Mintlify.

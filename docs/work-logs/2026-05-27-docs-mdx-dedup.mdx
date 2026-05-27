@@ -1,0 +1,32 @@
+---
+title: Docs MDX Dedup Cleanup
+description: Work log for removing duplicate Markdown docs after merging content into MDX pages.
+---
+
+# Docs MDX Dedup Cleanup
+
+## Date
+
+2026-05-27
+
+## Summary
+
+Cleaned duplicate root documentation files in `/docs` so Mintlify uses `.mdx` pages as the source of truth.
+
+## Changes
+
+- Merged richer legacy BRD content into `docs/BRD.mdx`.
+- Merged richer legacy brief content into `docs/brief.mdx`.
+- Merged legacy changelog notes into `docs/CHANGELOG.mdx`.
+- Merged legacy setup notes into `docs/setup-guide.mdx`.
+- Deleted the duplicate root `.md` files after preserving their content.
+- Updated references from duplicate `.md` docs to `.mdx`.
+- Merged the legacy master plan Markdown page into `docs/plans/master-plan.mdx`.
+- Merged the legacy Phase 01 Markdown page into `docs/plans/phase-01-project-setup.mdx`.
+- Converted remaining plan docs to `docs/plans/phase-02-product-scope-confirmation.mdx` and `docs/plans/phase-03-database-design.mdx`.
+- Updated `docs/docs.json` to include Phase 02 and Phase 03 plan pages.
+
+## Validation
+
+- Confirmed Mintlify navigation uses extensionless page paths.
+- Run `npm run docs:check` after cleanup.

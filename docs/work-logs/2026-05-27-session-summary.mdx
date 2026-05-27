@@ -1,0 +1,96 @@
+---
+title: Session Summary - Docs and Frontend Refactor
+description: End-of-session work log for documentation setup, docs cleanup, and frontend structure refactor.
+---
+
+# Session Summary - Docs and Frontend Refactor
+
+## Date
+
+2026-05-27
+
+## Muc tieu phien
+
+- Set up and clean the Mintlify documentation system.
+- Remove duplicate `.md` and `.mdx` documentation sources under `/docs`.
+- Refactor the frontend source tree into responsibility-based folders.
+- Keep existing frontend logic and UI behavior unchanged.
+
+## Viec da lam
+
+- Created an Understand Anything knowledge graph and launched the dashboard for codebase exploration.
+- Set up AI-native Mintlify docs under `/docs`.
+- Merged duplicate Markdown docs into Mintlify-compatible `.mdx` pages.
+- Converted remaining plan docs to `.mdx` and updated Mintlify navigation.
+- Updated `agent.mdx` with docs and Mintlify workflow rules.
+- Refactored frontend structure into `components`, `pages`, `hooks`, `types`, `constants`, `utils`, `layouts`, `services`, and `contexts`.
+- Moved UI primitives, route-level pages, hooks, shared types, constants, and utilities to their target folders.
+- Updated frontend imports to use the existing `@` alias.
+- Updated architecture docs, changelog, docs navigation, and work logs.
+
+## File da sua
+
+- `agent.mdx`
+- `package.json`
+- `.understand-anything/*`
+- `docs/docs.json`
+- `docs/index.mdx`
+- `docs/brief.mdx`
+- `docs/BRD.mdx`
+- `docs/CHANGELOG.mdx`
+- `docs/setup-guide.mdx`
+- `docs/architecture/overview.mdx`
+- `docs/features/overview.mdx`
+- `docs/api/overview.mdx`
+- `docs/database/overview.mdx`
+- `docs/deployment/overview.mdx`
+- `docs/plans/*.mdx`
+- `docs/prompts/*.mdx`
+- `docs/work-logs/*.mdx`
+- `frontend/src/app/App.tsx`
+- `frontend/src/components/**`
+- `frontend/src/pages/**`
+- `frontend/src/hooks/**`
+- `frontend/src/types/**`
+- `frontend/src/constants/**`
+- `frontend/src/utils/**`
+- `frontend/src/layouts/.gitkeep`
+- `frontend/src/services/.gitkeep`
+- `frontend/src/contexts/.gitkeep`
+
+## Cach test
+
+```bash
+npm --prefix frontend run build
+npm --prefix frontend run lint
+npm run docs:check
+```
+
+Also started the frontend dev server and checked the local page with an HTTP request.
+
+## Ket qua test
+
+- `npm --prefix frontend run build`: passed.
+- `npm --prefix frontend run lint`: passed.
+- `npm run docs:check`: passed.
+- Frontend dev server responded with HTTP 200 at `http://127.0.0.1:5174/`.
+
+## Van de con ton tai
+
+- Frontend production build reports a Vite bundle-size warning because a generated chunk is larger than 500 kB. This is not a build failure.
+- `backend/.env` is currently shown in `git status`; confirm before staging or committing because environment files may contain secrets.
+- `.understand-anything/*` generated graph files are currently shown in `git status`; decide whether they should be committed.
+- Frontend dev server may still be running on port `5174` from validation.
+
+## Viec tiep theo
+
+- Decide whether to commit `.understand-anything` generated files.
+- Review `backend/.env` and remove it from staging/commit scope if it contains secrets.
+- Consider code splitting for the large frontend bundle.
+- Continue Phase 01 cleanup by confirming final install, dev, build, and environment setup instructions.
+
+## Commit message de xuat
+
+```text
+chore: organize docs and frontend structure
+```

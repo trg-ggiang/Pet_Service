@@ -1,0 +1,7271 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "fcb93212651d7a885b3cd271c66e3978010f8b81",
+  "generatedAt": "2026-05-27T00:25:14.755Z",
+  "files": {
+    ".gitattributes": {
+      "filePath": ".gitattributes",
+      "contentHash": "1a1dbe176bc233b499d35a57db7513f2941c99ab9759f177830c9149be99005b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 3,
+      "hasStructuralAnalysis": false
+    },
+    ".understand-anything/.understandignore": {
+      "filePath": ".understand-anything/.understandignore",
+      "contentHash": "17371b5f4ec40ed13814f5d55d0187234ea8591ad54a16f0e38607c3d073311e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": false
+    },
+    "Agents.MD": {
+      "filePath": "Agents.MD",
+      "contentHash": "132e0715b20afea5e736b9ac842d4252984dec16ea4afdecf3ad9762182e8b24",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "backend/.env": {
+      "filePath": "backend/.env",
+      "contentHash": "d1c82a48387f391c34f7c91880154d5fe69b1235f7c565036b27ef729ce95403",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": true
+    },
+    "backend/.env.example": {
+      "filePath": "backend/.env.example",
+      "contentHash": "e005ceb3a9956c0331e35599746e86a1d44d1d9ae241771ee64316f02671cef8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "backend/database.sql": {
+      "filePath": "backend/database.sql",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "backend/inspect_db.js": {
+      "filePath": "backend/inspect_db.js",
+      "contentHash": "8c7f7e13351e858878a35eedd5abd351c5fba7b487540648202c914d54e3b58c",
+      "functions": [
+        {
+          "name": "parseArgs",
+          "params": [
+            "argv"
+          ],
+          "exported": false,
+          "lineCount": 36
+        },
+        {
+          "name": "inspectTable",
+          "params": [
+            "tableName",
+            "limit"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 105,
+      "hasStructuralAnalysis": true
+    },
+    "backend/package.json": {
+      "filePath": "backend/package.json",
+      "contentHash": "ae822370dd6e101d8101c7b5257685699a01bffaf4a50a3729f1c8ae1f75c852",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 30,
+      "hasStructuralAnalysis": true
+    },
+    "backend/prisma.config.ts": {
+      "filePath": "backend/prisma.config.ts",
+      "contentHash": "a6863b170cbc5f508697680fa2dc4088e64a9ac47fbd38098b71693a26908d15",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "dotenv/config",
+          "specifiers": []
+        },
+        {
+          "source": "prisma/config",
+          "specifiers": [
+            "defineConfig",
+            "env"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "backend/prisma/migrations/20260523182523_init_pet_service/migration.sql": {
+      "filePath": "backend/prisma/migrations/20260523182523_init_pet_service/migration.sql",
+      "contentHash": "1c935c37ca5ad588025937cfd19d1461fecb89766297985a3e1eec8f84ada7f7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 777,
+      "hasStructuralAnalysis": true
+    },
+    "backend/prisma/migrations/20260524120000_optimize_timestamps/migration.sql": {
+      "filePath": "backend/prisma/migrations/20260524120000_optimize_timestamps/migration.sql",
+      "contentHash": "bc68f059f5d423939d1071186197caa6c4371a2fcf24e8d23b928b86e969b891",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "backend/prisma/migrations/20260524133000_normalize_relations/migration.sql": {
+      "filePath": "backend/prisma/migrations/20260524133000_normalize_relations/migration.sql",
+      "contentHash": "c962b32efb7579716de625ddeb4074365df4b453b6d57848f1ee7fa6952f6046",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 39,
+      "hasStructuralAnalysis": true
+    },
+    "backend/prisma/migrations/20260524143000_restore_appointment_doctor/migration.sql": {
+      "filePath": "backend/prisma/migrations/20260524143000_restore_appointment_doctor/migration.sql",
+      "contentHash": "824e0a7cbf6e5918f92b9ff31dacb911b923c0fac765b9a2e13be09a7022a519",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    "backend/prisma/migrations/migration_lock.toml": {
+      "filePath": "backend/prisma/migrations/migration_lock.toml",
+      "contentHash": "bc487c02c71ad9cae8694647129e3ea7f32b1fe7007d0a6ced064e51022cd3fb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "backend/prisma/schema.prisma": {
+      "filePath": "backend/prisma/schema.prisma",
+      "contentHash": "d1629d5ff47adc36e9e5ae53fc98c8821157ff1c78a8e78b7746a2097d289dff",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 753,
+      "hasStructuralAnalysis": false
+    },
+    "backend/prisma/seed.js": {
+      "filePath": "backend/prisma/seed.js",
+      "contentHash": "a93a4ca215f9609484224b28bd9e931d6f79bfc2664383669ccdc54932a8544a",
+      "functions": [
+        {
+          "name": "date",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "time",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "money",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "upsertUser",
+          "params": [
+            "email",
+            "role"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "upsertService",
+          "params": [
+            "data"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "upsertAppointment",
+          "params": [
+            "data"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "upsertAppointmentService",
+          "params": [
+            "data"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "upsertInvoice",
+          "params": [
+            "appointmentId",
+            "data",
+            "items"
+          ],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "resetSeededWorkflowData",
+          "params": [],
+          "exported": false,
+          "lineCount": 45
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 1338
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1489,
+      "hasStructuralAnalysis": true
+    },
+    "backend/scripts/normalizeSeedPasswords.js": {
+      "filePath": "backend/scripts/normalizeSeedPasswords.js",
+      "contentHash": "c071d75b4417a852a5468d76e8d76385c65a6c03e204fc9116bc006dd90ee356",
+      "functions": [
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 34
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 45,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/lib/jwt.js": {
+      "filePath": "backend/src/lib/jwt.js",
+      "contentHash": "5fb4fc80b5b9399cb447a8a18853520053c4ec81f7d3c4e65987f2def3f17150",
+      "functions": [
+        {
+          "name": "signAuthToken",
+          "params": [
+            "payload"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "verifyAuthToken",
+          "params": [
+            "token"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/lib/prisma.js": {
+      "filePath": "backend/src/lib/prisma.js",
+      "contentHash": "c9da7db0455bf913d32622c2456f73f4e0f28670c1b8e067cd14d30e49b8848b",
+      "functions": [
+        {
+          "name": "getPrismaClient",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/lib/supabaseClient.js": {
+      "filePath": "backend/src/lib/supabaseClient.js",
+      "contentHash": "356b02f9b37539d7dae54d56dc0192b24407966735af4e4bfe1818b310040cd5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/middleware/authMiddleware.js": {
+      "filePath": "backend/src/middleware/authMiddleware.js",
+      "contentHash": "d913d944090d469739fb58b58108cc9a834802987ef883ae76df81b12f234b35",
+      "functions": [
+        {
+          "name": "getBearerToken",
+          "params": [
+            "headerValue"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "authMiddleware",
+          "params": [
+            "req",
+            "res",
+            "next"
+          ],
+          "exported": false,
+          "lineCount": 38
+        },
+        {
+          "name": "requireRole",
+          "params": [
+            "...allowedRoles"
+          ],
+          "exported": false,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 64,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/routes/authRoutes.js": {
+      "filePath": "backend/src/routes/authRoutes.js",
+      "contentHash": "0fcec2895450a078fe2afeea16f24397582ab51fd780b858ef6647d84ad1a8c7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/routes/customerPetsRoutes.js": {
+      "filePath": "backend/src/routes/customerPetsRoutes.js",
+      "contentHash": "135ea8a35756dc196afa6eee6868e73b9e97c534c9a77dc41e9747c38be2ba83",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 44,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/server.js": {
+      "filePath": "backend/src/server.js",
+      "contentHash": "f6c9709c3119cc33c2f860b3892064f8679181558d7b871fe7aab2c93dd555c5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/services/authService.js": {
+      "filePath": "backend/src/services/authService.js",
+      "contentHash": "fbd4677036750d34a15577f538ee762f38d89936a0238bf5104fb20728e8d04e",
+      "functions": [
+        {
+          "name": "normalizeRole",
+          "params": [
+            "role"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "buildBaseUser",
+          "params": [
+            "user"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "getUserAuthContext",
+          "params": [
+            "user"
+          ],
+          "exported": false,
+          "lineCount": 59
+        },
+        {
+          "name": "loginWithCredentials",
+          "params": [
+            "email",
+            "password"
+          ],
+          "exported": false,
+          "lineCount": 48
+        },
+        {
+          "name": "registerCustomer",
+          "params": [
+            "input"
+          ],
+          "exported": false,
+          "lineCount": 82
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 219,
+      "hasStructuralAnalysis": true
+    },
+    "backend/src/services/customerPetsService.js": {
+      "filePath": "backend/src/services/customerPetsService.js",
+      "contentHash": "cd9820b43fb1e511f52cb3fa431892f5b394c92bcadf36dde19d5af67f09c75f",
+      "functions": [
+        {
+          "name": "formatDate",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "formatAge",
+          "params": [
+            "dob"
+          ],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "getGenderLabel",
+          "params": [
+            "gender"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "getInitials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "getPetColorId",
+          "params": [
+            "speciesId"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "pickLatestByDate",
+          "params": [
+            "records",
+            "fieldName"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "buildPetSummary",
+          "params": [
+            "pet",
+            "speciesMap",
+            "breedMap",
+            "vaccinations",
+            "medicalVisits",
+            "appointmentsByPetId"
+          ],
+          "exported": false,
+          "lineCount": 67
+        },
+        {
+          "name": "getCustomerPetDashboard",
+          "params": [
+            "customerId"
+          ],
+          "exported": false,
+          "lineCount": 90
+        },
+        {
+          "name": "getPetDetail",
+          "params": [
+            "petId",
+            "customerId"
+          ],
+          "exported": false,
+          "lineCount": 102
+        },
+        {
+          "name": "createCustomerPet",
+          "params": [
+            "input",
+            "customerId"
+          ],
+          "exported": false,
+          "lineCount": 118
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 460,
+      "hasStructuralAnalysis": true
+    },
+    "docs/docs.json": {
+      "filePath": "docs/docs.json",
+      "contentHash": "51a15e9a51ada31b1fa8a6c99ba5dce27abdb18c774e6c6155410f083397735c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "docs/index.mdx": {
+      "filePath": "docs/index.mdx",
+      "contentHash": "ceabb7dc0521bd2d8ecafa16bf33f5c070d0567b4e52e0275acc8eca24e4b2db",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/.env.local.example": {
+      "filePath": "frontend/.env.local.example",
+      "contentHash": "706ffcfa42fd14c33e6a34c3dc05458bc79080071b629aa894b52a41694c1fc3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/default_shadcn_theme.css": {
+      "filePath": "frontend/default_shadcn_theme.css",
+      "contentHash": "c0e4f4d86a2dbfe76912e757ae360998911dc8548646feff90cbc202e0cbb08c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 121,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/eslint.config.js": {
+      "filePath": "frontend/eslint.config.js",
+      "contentHash": "0197d9a843aaae267303c4d1ab1a43afad1afacc7646cdf6cf94a5af6b815fb8",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@eslint/js",
+          "specifiers": [
+            "js"
+          ]
+        },
+        {
+          "source": "globals",
+          "specifiers": [
+            "globals"
+          ]
+        },
+        {
+          "source": "eslint-plugin-react-hooks",
+          "specifiers": [
+            "reactHooks"
+          ]
+        },
+        {
+          "source": "eslint-plugin-react-refresh",
+          "specifiers": [
+            "reactRefresh"
+          ]
+        },
+        {
+          "source": "eslint/config",
+          "specifiers": [
+            "defineConfig",
+            "globalIgnores"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/index.html": {
+      "filePath": "frontend/index.html",
+      "contentHash": "802bff73f103056273b18d331fee9998b84207e96bc5f5d734163163339515c1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/package.json": {
+      "filePath": "frontend/package.json",
+      "contentHash": "bd63c467573749ce21ae215105b73bb87ab17b4242284fb3656513cdb475b5ca",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 86,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/pnpm-workspace.yaml": {
+      "filePath": "frontend/pnpm-workspace.yaml",
+      "contentHash": "cfe4c60c0b9e022b2bfc4b7b855896be1d85b9f13737c8cd2fce216c427ce0c2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/postcss.config.mjs": {
+      "filePath": "frontend/postcss.config.mjs",
+      "contentHash": "d6f13b4e193966e523e03b65e5081f0a05f22d804b5d01d7cc0b1ba190dd5843",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 16,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/README.md": {
+      "filePath": "frontend/README.md",
+      "contentHash": "c4ebbb163c966974387c2c31de4a7932834020444e42818ad4dfb510745576a8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/App.tsx": {
+      "filePath": "frontend/src/app/App.tsx",
+      "contentHash": "2cbcb1ce7424ceef7f6289d3b9955bee5ec0d4a99dfc973d41a94b2f00e7fd0b",
+      "functions": [
+        {
+          "name": "StatusBadge",
+          "params": [
+            "{ status }"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "Avatar",
+          "params": [
+            "{ name, size = \"sm\" }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "MiniSparkline",
+          "params": [
+            "{ data, color, idx }"
+          ],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "Sidebar",
+          "params": [
+            "{ active, onNav, onLogout }"
+          ],
+          "exported": false,
+          "lineCount": 83
+        },
+        {
+          "name": "TopNav",
+          "params": [
+            "{ page }"
+          ],
+          "exported": false,
+          "lineCount": 72
+        },
+        {
+          "name": "KPICard",
+          "params": [
+            "{ kpi, idx }"
+          ],
+          "exported": false,
+          "lineCount": 40
+        },
+        {
+          "name": "RevTooltip",
+          "params": [
+            "{ active, payload, label }"
+          ],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "RevenueAreaChart",
+          "params": [],
+          "exported": false,
+          "lineCount": 59
+        },
+        {
+          "name": "CustomPieLabel",
+          "params": [
+            "{ cx, cy, midAngle, innerRadius, outerRadius, value, name }"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "AppointmentDonut",
+          "params": [],
+          "exported": false,
+          "lineCount": 43
+        },
+        {
+          "name": "ActivityFeed",
+          "params": [],
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "UpcomingPanel",
+          "params": [],
+          "exported": false,
+          "lineCount": 36
+        },
+        {
+          "name": "NotificationsPanel",
+          "params": [],
+          "exported": false,
+          "lineCount": 50
+        },
+        {
+          "name": "DoctorStatusPanel",
+          "params": [
+            "{ onViewStaff }"
+          ],
+          "exported": false,
+          "lineCount": 48
+        },
+        {
+          "name": "BoardingCapacityPanel",
+          "params": [
+            "{ onManage }"
+          ],
+          "exported": false,
+          "lineCount": 75
+        },
+        {
+          "name": "AdminDashboard",
+          "params": [
+            "{ onNav }"
+          ],
+          "exported": false,
+          "lineCount": 65
+        },
+        {
+          "name": "PlaceholderPage",
+          "params": [
+            "{ label }"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "AdminRoot",
+          "params": [
+            "{ onLogout }"
+          ],
+          "exported": false,
+          "lineCount": 32
+        },
+        {
+          "name": "App",
+          "params": [],
+          "exported": true,
+          "lineCount": 88
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useState"
+          ]
+        },
+        {
+          "source": "./components/ExamPage",
+          "specifiers": [
+            "ExamPage"
+          ]
+        },
+        {
+          "source": "./components/UsersPage",
+          "specifiers": [
+            "UsersPage"
+          ]
+        },
+        {
+          "source": "./components/ServicesPage",
+          "specifiers": [
+            "ServicesPage"
+          ]
+        },
+        {
+          "source": "./components/StaffPage",
+          "specifiers": [
+            "StaffPage"
+          ]
+        },
+        {
+          "source": "./components/ReportsPage",
+          "specifiers": [
+            "ReportsPage"
+          ]
+        },
+        {
+          "source": "./components/SettingsPage",
+          "specifiers": [
+            "SettingsPage"
+          ]
+        },
+        {
+          "source": "./components/HelpPage",
+          "specifiers": [
+            "HelpPage"
+          ]
+        },
+        {
+          "source": "./components/AppointmentsPage",
+          "specifiers": [
+            "AppointmentsPage"
+          ]
+        },
+        {
+          "source": "./components/WelcomePage",
+          "specifiers": [
+            "WelcomePage"
+          ]
+        },
+        {
+          "source": "./components/LoginPage",
+          "specifiers": [
+            "LoginPage"
+          ]
+        },
+        {
+          "source": "./components/RegisterPage",
+          "specifiers": [
+            "RegisterPage"
+          ]
+        },
+        {
+          "source": "./components/ForgotPasswordPage",
+          "specifiers": [
+            "ForgotPasswordPage"
+          ]
+        },
+        {
+          "source": "./components/CustomerPortal",
+          "specifiers": [
+            "CustomerPortal"
+          ]
+        },
+        {
+          "source": "./components/DoctorPortal",
+          "specifiers": [
+            "DoctorPortal"
+          ]
+        },
+        {
+          "source": "./components/StaffPortal",
+          "specifiers": [
+            "StaffPortal"
+          ]
+        },
+        {
+          "source": "./components/SplashScreen",
+          "specifiers": [
+            "SplashScreen"
+          ]
+        },
+        {
+          "source": "./services/auth",
+          "specifiers": [
+            "clearSession",
+            "login",
+            "register",
+            "restoreSession",
+            "AuthSession"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "LayoutDashboard",
+            "Calendar",
+            "Users",
+            "Scissors",
+            "BedDouble",
+            "Stethoscope",
+            "BarChart3",
+            "Settings",
+            "Bell",
+            "Search",
+            "Plus",
+            "Download",
+            "ChevronRight",
+            "ChevronDown",
+            "ArrowUpRight",
+            "ArrowDownRight",
+            "Clock",
+            "LogOut",
+            "Activity",
+            "Eye",
+            "Edit",
+            "X",
+            "FileText",
+            "Package",
+            "UserCog",
+            "CheckCircle2",
+            "ClipboardList",
+            "Heart",
+            "AlertTriangle",
+            "Info",
+            "Home",
+            "TrendingUp",
+            "RefreshCw"
+          ]
+        },
+        {
+          "source": "recharts",
+          "specifiers": [
+            "AreaChart",
+            "Area",
+            "XAxis",
+            "YAxis",
+            "CartesianGrid",
+            "Tooltip",
+            "ResponsiveContainer",
+            "BarChart",
+            "Bar",
+            "Cell",
+            "PieChart",
+            "Pie"
+          ]
+        }
+      ],
+      "exports": [
+        "App"
+      ],
+      "totalLines": 1097,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/AppointmentsPage.tsx": {
+      "filePath": "frontend/src/app/components/AppointmentsPage.tsx",
+      "contentHash": "fada4990bdf16200ec64516756a119b108e803551be84df1f1419bb57a185ef3",
+      "functions": [
+        {
+          "name": "Avatar",
+          "params": [
+            "{ name }"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "StatusBadge",
+          "params": [
+            "{ status }"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "AptDrawer",
+          "params": [
+            "{\r\n  apt, onClose, onEdit, onOpenExam, onStatusChange,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 158
+        },
+        {
+          "name": "AptModal",
+          "params": [
+            "{\r\n  apt, onClose, onSave,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 139
+        },
+        {
+          "name": "AppointmentsPage",
+          "params": [
+            "{\r\n  onNewAppt,\r\n  onOpenExam,\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 188
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Plus",
+            "Search",
+            "Download",
+            "Eye",
+            "Edit",
+            "X",
+            "Clock",
+            "ChevronDown",
+            "Calendar",
+            "Stethoscope",
+            "Scissors",
+            "Syringe",
+            "BedDouble",
+            "CheckCircle2",
+            "AlertTriangle",
+            "ArrowRight",
+            "User",
+            "FileText",
+            "Phone",
+            "Mail",
+            "MoreHorizontal",
+            "Trash2"
+          ]
+        }
+      ],
+      "exports": [
+        "AppointmentsPage"
+      ],
+      "totalLines": 564,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/CustomerPetProfilesModule.tsx": {
+      "filePath": "frontend/src/app/components/CustomerPetProfilesModule.tsx",
+      "contentHash": "416dec8b61dcc654e42d78fb8731fc3d883feee777b727005cc7017c537adfc6",
+      "functions": [
+        {
+          "name": "getPetColorById",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "getPetCoverImage",
+          "params": [
+            "species"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "formatDate",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "formatCurrency",
+          "params": [
+            "amount"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "getGenderLabel",
+          "params": [
+            "gender"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "getInitials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "formatDateForInput",
+          "params": [
+            "date"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "isFutureDate",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "CustomerPetProfilesModule",
+          "params": [],
+          "exported": true,
+          "lineCount": 218
+        },
+        {
+          "name": "AddPetModal",
+          "params": [
+            "{\r\n  speciesOptions,\r\n  breedOptions,\r\n  onClose,\r\n  onAdd,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 260
+        },
+        {
+          "name": "PetDetailModal",
+          "params": [
+            "{\r\n  pet,\r\n  detail,\r\n  loading,\r\n  onClose,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 122
+        },
+        {
+          "name": "SummaryCard",
+          "params": [
+            "{ title, items }"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "TimelineList",
+          "params": [
+            "{ rows, emptyText }"
+          ],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "Field",
+          "params": [
+            "{ label, value, onChange, placeholder }"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "SelectField",
+          "params": [
+            "{ label, value, onChange, options }"
+          ],
+          "exported": false,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Camera",
+            "CheckCircle2",
+            "ChevronLeft",
+            "ClipboardList",
+            "Heart",
+            "Loader2",
+            "Plus",
+            "Scissors",
+            "Syringe",
+            "X",
+            "CalendarIcon"
+          ]
+        },
+        {
+          "source": "../services/customerPets",
+          "specifiers": [
+            "createCustomerPet",
+            "fetchCustomerPetDashboard",
+            "fetchPetDetail",
+            "BreedOption",
+            "CustomerPetDashboard",
+            "PetDetail",
+            "PetSummary",
+            "SpeciesOption"
+          ]
+        },
+        {
+          "source": "./ui/calendar",
+          "specifiers": [
+            "CalendarPicker"
+          ]
+        },
+        {
+          "source": "./ui/popover",
+          "specifiers": [
+            "Popover",
+            "PopoverContent",
+            "PopoverTrigger"
+          ]
+        }
+      ],
+      "exports": [
+        "CustomerPetProfilesModule"
+      ],
+      "totalLines": 753,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/CustomerPortal.tsx": {
+      "filePath": "frontend/src/app/components/CustomerPortal.tsx",
+      "contentHash": "b46af0251f74c2d0b0cff78da36e6d3deea0c822ac3f074456d70667debd0b7a",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "getPetColorById",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "CustomerPortal",
+          "params": [
+            "{ onLogout, userName }"
+          ],
+          "exported": true,
+          "lineCount": 847
+        },
+        {
+          "name": "AddPetModal",
+          "params": [
+            "{ onClose, onAdd }"
+          ],
+          "exported": false,
+          "lineCount": 168
+        },
+        {
+          "name": "PetProfileModal",
+          "params": [
+            "{ pet, onClose, onSave, onBookAppointment }"
+          ],
+          "exported": false,
+          "lineCount": 102
+        },
+        {
+          "name": "PetOverviewTab",
+          "params": [
+            "{ pet, onBookAppointment }"
+          ],
+          "exported": false,
+          "lineCount": 47
+        },
+        {
+          "name": "PetEditForm",
+          "params": [
+            "{ formData, setFormData }"
+          ],
+          "exported": false,
+          "lineCount": 71
+        },
+        {
+          "name": "PetMedicalHistoryTab",
+          "params": [
+            "{ pet }"
+          ],
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "PetVaccineTab",
+          "params": [
+            "{ pet }"
+          ],
+          "exported": false,
+          "lineCount": 36
+        },
+        {
+          "name": "PetGroomingTab",
+          "params": [
+            "{ pet }"
+          ],
+          "exported": false,
+          "lineCount": 29
+        },
+        {
+          "name": "PetBoardingTab",
+          "params": [
+            "{ pet }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "PetInvoicesTab",
+          "params": [
+            "{ pet }"
+          ],
+          "exported": false,
+          "lineCount": 24
+        },
+        {
+          "name": "NewAppointmentModal",
+          "params": [
+            "{ pets, defaultPet, onClose, onAdd }"
+          ],
+          "exported": false,
+          "lineCount": 201
+        },
+        {
+          "name": "AppointmentDetailModal",
+          "params": [
+            "{ apt, onClose, onReschedule, onCancel }"
+          ],
+          "exported": false,
+          "lineCount": 136
+        },
+        {
+          "name": "HistoryDetailModal",
+          "params": [
+            "{ record, onClose }"
+          ],
+          "exported": false,
+          "lineCount": 95
+        },
+        {
+          "name": "RescheduleModal",
+          "params": [
+            "{ apt, onClose, onSave }"
+          ],
+          "exported": false,
+          "lineCount": 58
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Calendar",
+            "Clock",
+            "Bell",
+            "LogOut",
+            "ChevronRight",
+            "Plus",
+            "Heart",
+            "Star",
+            "CheckCircle2",
+            "Stethoscope",
+            "Syringe",
+            "MapPin",
+            "X",
+            "Edit2",
+            "Check",
+            "Camera",
+            "AlertTriangle",
+            "Info",
+            "Megaphone"
+          ]
+        },
+        {
+          "source": "./CustomerPetProfilesModule",
+          "specifiers": [
+            "CustomerPetProfilesModule"
+          ]
+        },
+        {
+          "source": "../services/customerPets",
+          "specifiers": [
+            "createCustomerPet",
+            "fetchCustomerPetDashboard",
+            "SpeciesOption",
+            "BreedOption"
+          ]
+        }
+      ],
+      "exports": [
+        "CustomerPortal"
+      ],
+      "totalLines": 2054,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/DoctorExamScreen.tsx": {
+      "filePath": "frontend/src/app/components/DoctorExamScreen.tsx",
+      "contentHash": "9d15c266bf6f11c484b087ad130455ebc9a9e1120bc18b907ae890921af6d8ea",
+      "functions": [
+        {
+          "name": "VitalInput",
+          "params": [
+            "{\r\n  icon: Icon, label, value, unit, color, bg,\r\n  onChange,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 28
+        },
+        {
+          "name": "SysRow",
+          "params": [
+            "{\r\n  label, entry, onChange,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 66
+        },
+        {
+          "name": "DoctorExamScreen",
+          "params": [
+            "{\r\n  patient,\r\n  onBack,\r\n  onFinish,\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 419
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowLeft",
+            "Save",
+            "CheckCircle2",
+            "Thermometer",
+            "Heart",
+            "Wind",
+            "Activity",
+            "Weight",
+            "AlertTriangle",
+            "User",
+            "ChevronDown",
+            "ChevronUp",
+            "Syringe",
+            "Clock",
+            "CalendarDays",
+            "Fingerprint",
+            "MapPin"
+          ]
+        }
+      ],
+      "exports": [
+        "DoctorExamScreen"
+      ],
+      "totalLines": 563,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/DoctorPortal.tsx": {
+      "filePath": "frontend/src/app/components/DoctorPortal.tsx",
+      "contentHash": "bb8f3ee1aeb8519d1c9ebfcacd7e57ca719158496bc5a0418203ad636e9897a4",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "DoctorPortal",
+          "params": [
+            "{ onLogout }"
+          ],
+          "exported": true,
+          "lineCount": 202
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "LogOut",
+            "Bell",
+            "Calendar",
+            "Clock",
+            "CheckCircle2",
+            "ChevronRight",
+            "Activity",
+            "FileText",
+            "BarChart3",
+            "Settings",
+            "Stethoscope"
+          ]
+        },
+        {
+          "source": "./DoctorExamScreen",
+          "specifiers": [
+            "DoctorExamScreen"
+          ]
+        },
+        {
+          "source": "./DoctorRecordsPage",
+          "specifiers": [
+            "DoctorRecordsPage"
+          ]
+        },
+        {
+          "source": "./DoctorStatsPage",
+          "specifiers": [
+            "DoctorStatsPage"
+          ]
+        },
+        {
+          "source": "./DoctorSettingsPage",
+          "specifiers": [
+            "DoctorSettingsPage"
+          ]
+        }
+      ],
+      "exports": [
+        "DoctorPortal"
+      ],
+      "totalLines": 249,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/DoctorRecordsPage.tsx": {
+      "filePath": "frontend/src/app/components/DoctorRecordsPage.tsx",
+      "contentHash": "220d9f1b17bccad450b6ded979529632781542f916f190a7ad65cea153377cab",
+      "functions": [
+        {
+          "name": "VitalChip",
+          "params": [
+            "{ icon: Icon, label, value, unit, color, bg }"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "RecordDetail",
+          "params": [
+            "{ rec, onClose }"
+          ],
+          "exported": false,
+          "lineCount": 232
+        },
+        {
+          "name": "DoctorRecordsPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 173
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Search",
+            "Filter",
+            "ChevronRight",
+            "Calendar",
+            "Stethoscope",
+            "Thermometer",
+            "Heart",
+            "Wind",
+            "Activity",
+            "Weight",
+            "Pill",
+            "ClipboardList",
+            "AlertTriangle",
+            "CheckCircle2",
+            "FileText",
+            "User",
+            "Clock",
+            "ArrowLeft",
+            "Printer",
+            "Download"
+          ]
+        }
+      ],
+      "exports": [
+        "DoctorRecordsPage"
+      ],
+      "totalLines": 626,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/DoctorSettingsPage.tsx": {
+      "filePath": "frontend/src/app/components/DoctorSettingsPage.tsx",
+      "contentHash": "6e703a0b8212d2b3276c64a571fedf69a328d1181ce8744d75763079c9bc3a11",
+      "functions": [
+        {
+          "name": "SectionTitle",
+          "params": [
+            "{ children }"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "Field",
+          "params": [
+            "{ label, children }"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "TextInput",
+          "params": [
+            "{ value, onChange, placeholder, type = \"text\" }"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "Toggle",
+          "params": [
+            "{ on, onToggle }"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "NotifRow",
+          "params": [
+            "{ label, sub, on, onToggle }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "SaveBtn",
+          "params": [
+            "{ onClick }"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "ProfileTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 82
+        },
+        {
+          "name": "ScheduleTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 95
+        },
+        {
+          "name": "NotificationsTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 82
+        },
+        {
+          "name": "SecurityTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 115
+        },
+        {
+          "name": "DoctorSettingsPage",
+          "params": [
+            "{ onLogout }"
+          ],
+          "exported": true,
+          "lineCount": 94
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "User",
+            "Clock",
+            "Bell",
+            "Shield",
+            "Eye",
+            "EyeOff",
+            "CheckCircle2",
+            "Save",
+            "Camera",
+            "Mail",
+            "Phone",
+            "Monitor",
+            "Smartphone",
+            "Globe"
+          ]
+        }
+      ],
+      "exports": [
+        "DoctorSettingsPage"
+      ],
+      "totalLines": 572,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/DoctorStatsPage.tsx": {
+      "filePath": "frontend/src/app/components/DoctorStatsPage.tsx",
+      "contentHash": "ca0680ba17dae4aa9146440b24eabcd7f483a32eac6f57c3a90af9420288f7a6",
+      "functions": [
+        {
+          "name": "CustomTooltip",
+          "params": [
+            "{ active, payload, label }"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "DoctorStatsPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 207
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Calendar",
+            "CheckCircle2",
+            "Activity",
+            "TrendingUp",
+            "TrendingDown",
+            "Users",
+            "Clock",
+            "Star",
+            "Award",
+            "Stethoscope"
+          ]
+        },
+        {
+          "source": "recharts",
+          "specifiers": [
+            "AreaChart",
+            "Area",
+            "XAxis",
+            "YAxis",
+            "CartesianGrid",
+            "Tooltip",
+            "ResponsiveContainer",
+            "BarChart",
+            "Bar",
+            "Cell",
+            "PieChart",
+            "Pie"
+          ]
+        }
+      ],
+      "exports": [
+        "DoctorStatsPage"
+      ],
+      "totalLines": 337,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ExamPage.tsx": {
+      "filePath": "frontend/src/app/components/ExamPage.tsx",
+      "contentHash": "833f690221f088b961d0ae80c8ed94e7de128b53a56bc44ec81ddb0136baf5cc",
+      "functions": [
+        {
+          "name": "VitalChip",
+          "params": [
+            "{\r\n  icon: Icon, label, value, unit, state,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "StepSymptoms",
+          "params": [],
+          "exported": false,
+          "lineCount": 85
+        },
+        {
+          "name": "StepClinical",
+          "params": [],
+          "exported": false,
+          "lineCount": 56
+        },
+        {
+          "name": "StepDiagnosis",
+          "params": [],
+          "exported": false,
+          "lineCount": 74
+        },
+        {
+          "name": "StepPrescription",
+          "params": [],
+          "exported": false,
+          "lineCount": 79
+        },
+        {
+          "name": "StepFollowup",
+          "params": [],
+          "exported": false,
+          "lineCount": 76
+        },
+        {
+          "name": "ExamPage",
+          "params": [
+            "{ onBack }"
+          ],
+          "exported": true,
+          "lineCount": 193
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowLeft",
+            "ChevronRight",
+            "AlertTriangle",
+            "Thermometer",
+            "Heart",
+            "Wind",
+            "Weight",
+            "Check",
+            "ChevronDown",
+            "Plus",
+            "X",
+            "Clock",
+            "Pill",
+            "Calendar",
+            "FileText",
+            "Stethoscope",
+            "Activity",
+            "ClipboardList",
+            "FlaskConical"
+          ]
+        }
+      ],
+      "exports": [
+        "ExamPage"
+      ],
+      "totalLines": 683,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/figma/ImageWithFallback.tsx": {
+      "filePath": "frontend/src/app/components/figma/ImageWithFallback.tsx",
+      "contentHash": "cdf8845a06582b6cb33734a39a58ee89cd55171f4c6ed812788c6d1fe92742a4",
+      "functions": [
+        {
+          "name": "ImageWithFallback",
+          "params": [
+            "props"
+          ],
+          "exported": true,
+          "lineCount": 22
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState"
+          ]
+        }
+      ],
+      "exports": [
+        "ImageWithFallback"
+      ],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ForgotPasswordPage.tsx": {
+      "filePath": "frontend/src/app/components/ForgotPasswordPage.tsx",
+      "contentHash": "194ab8b6c93f0a9cce59aaf4f920c32ee23ee6df4acb17af43f4eed218af7a0d",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "ForgotPasswordPage",
+          "params": [
+            "{ onBack }"
+          ],
+          "exported": true,
+          "lineCount": 379
+        },
+        {
+          "name": "PrimaryBtn",
+          "params": [
+            "{ loading, label }"
+          ],
+          "exported": false,
+          "lineCount": 28
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useRef",
+            "useEffect"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowLeft",
+            "Mail",
+            "KeyRound",
+            "Eye",
+            "EyeOff",
+            "CheckCircle2",
+            "RefreshCw",
+            "ChevronRight"
+          ]
+        }
+      ],
+      "exports": [
+        "ForgotPasswordPage"
+      ],
+      "totalLines": 435,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/HelpPage.tsx": {
+      "filePath": "frontend/src/app/components/HelpPage.tsx",
+      "contentHash": "b57d6ed1f5e59f51775220ded544ff6a239108cfb93f3e69dd4e5944d0f8032c",
+      "functions": [
+        {
+          "name": "FAQItem",
+          "params": [
+            "{ faq }"
+          ],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "HelpPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 134
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Search",
+            "ChevronDown",
+            "ChevronRight",
+            "Mail",
+            "Phone",
+            "MessageCircle",
+            "BookOpen",
+            "Video",
+            "FileText",
+            "Calendar",
+            "Users",
+            "Stethoscope",
+            "Settings",
+            "BarChart3",
+            "Star",
+            "ExternalLink"
+          ]
+        }
+      ],
+      "exports": [
+        "HelpPage"
+      ],
+      "totalLines": 231,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/LoginPage.tsx": {
+      "filePath": "frontend/src/app/components/LoginPage.tsx",
+      "contentHash": "f647574e010b3c2d945b3ff3e044fc6f4f0ba60ff4ea6ab452e21894cecc3bee",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "LoginPage",
+          "params": [
+            "{\r\n  onLogin,\r\n  onRegister,\r\n  onForgotPassword,\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 221
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Eye",
+            "EyeOff",
+            "CheckCircle2",
+            "ChevronRight",
+            "Calendar",
+            "BarChart3",
+            "FileText"
+          ]
+        }
+      ],
+      "exports": [
+        "LoginPage"
+      ],
+      "totalLines": 253,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/RegisterPage.tsx": {
+      "filePath": "frontend/src/app/components/RegisterPage.tsx",
+      "contentHash": "e06f33f1f573bb043e5ba57f91bf3d08322e13a9d1c12902ce29769adfc98e89",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "RegisterField",
+          "params": [
+            "{\r\n  label,\r\n  id,\r\n  type = \"text\",\r\n  value,\r\n  onChange,\r\n  placeholder,\r\n  error,\r\n  right,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 52
+        },
+        {
+          "name": "RegisterPage",
+          "params": [
+            "{\r\n  onBack,\r\n  onRegister,\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 362
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Eye",
+            "EyeOff",
+            "CheckCircle2",
+            "ChevronRight",
+            "ArrowLeft",
+            "Info",
+            "Heart",
+            "Stethoscope",
+            "Calendar"
+          ]
+        }
+      ],
+      "exports": [
+        "RegisterPage"
+      ],
+      "totalLines": 447,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ReportsPage.tsx": {
+      "filePath": "frontend/src/app/components/ReportsPage.tsx",
+      "contentHash": "413bab9835a6ff7789063313b95398b229aa62c55b75dae5a4c2fbadc20678f1",
+      "functions": [
+        {
+          "name": "fmtM",
+          "params": [
+            "val"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "fmtK",
+          "params": [
+            "val"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "Stars",
+          "params": [
+            "{ rating }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "PerfBar",
+          "params": [
+            "{ pct, color }"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "RevenueTooltip",
+          "params": [
+            "{ active, payload, label }"
+          ],
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "CategoryBreakdown",
+          "params": [
+            "{ period }"
+          ],
+          "exported": false,
+          "lineCount": 52
+        },
+        {
+          "name": "ApptStats",
+          "params": [
+            "{ period }"
+          ],
+          "exported": false,
+          "lineCount": 45
+        },
+        {
+          "name": "KpiCard",
+          "params": [
+            "{\r\n  label, value, unit = \"\", change, positive, sub, icon: Icon, iconBg, iconColor,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 34
+        },
+        {
+          "name": "CatBadge",
+          "params": [
+            "{ cat }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "ReportsPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 242
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "TrendingUp",
+            "TrendingDown",
+            "Calendar",
+            "Download",
+            "BarChart3",
+            "Users",
+            "Stethoscope",
+            "Scissors",
+            "Syringe",
+            "BedDouble",
+            "Star",
+            "ArrowUpRight",
+            "ArrowDownRight",
+            "ChevronDown",
+            "FileText",
+            "Clock",
+            "CheckCircle2",
+            "XCircle",
+            "RefreshCw"
+          ]
+        },
+        {
+          "source": "recharts",
+          "specifiers": [
+            "AreaChart",
+            "Area",
+            "XAxis",
+            "YAxis",
+            "CartesianGrid",
+            "Tooltip",
+            "ResponsiveContainer",
+            "BarChart",
+            "Bar",
+            "Cell",
+            "PieChart",
+            "Pie",
+            "Legend"
+          ]
+        }
+      ],
+      "exports": [
+        "ReportsPage"
+      ],
+      "totalLines": 573,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ServicesPage.tsx": {
+      "filePath": "frontend/src/app/components/ServicesPage.tsx",
+      "contentHash": "594e334b67b95838193a92022be9539f4526a2b7401bead36c06bbfd6658f369",
+      "functions": [
+        {
+          "name": "fmtPrice",
+          "params": [
+            "n"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "priceDisplay",
+          "params": [
+            "svc"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "revenueDisplay",
+          "params": [
+            "n"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "CategoryTab",
+          "params": [
+            "{\r\n  cat, active, count, onClick,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "ServiceDrawer",
+          "params": [
+            "{\r\n  service, onClose, onEdit,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 109
+        },
+        {
+          "name": "ServiceModal",
+          "params": [
+            "{\r\n  editing,\r\n  onClose,\r\n  onSave,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 225
+        },
+        {
+          "name": "ServiceRow",
+          "params": [
+            "{\r\n  service, selected, onSelect, onEdit, onToggleStatus,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 78
+        },
+        {
+          "name": "ServicesPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 207
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Plus",
+            "Search",
+            "Edit",
+            "X",
+            "Check",
+            "ChevronDown",
+            "ToggleLeft",
+            "ToggleRight",
+            "Stethoscope",
+            "Syringe",
+            "Scissors",
+            "BedDouble",
+            "Clock",
+            "TrendingUp",
+            "Star",
+            "BarChart3",
+            "Trash2",
+            "AlertTriangle",
+            "Copy",
+            "Filter"
+          ]
+        }
+      ],
+      "exports": [
+        "ServicesPage"
+      ],
+      "totalLines": 772,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/SettingsPage.tsx": {
+      "filePath": "frontend/src/app/components/SettingsPage.tsx",
+      "contentHash": "00c99894070430c9c1abc6f0afd22c0a59a6f26bb5e237ff448859127006c816",
+      "functions": [
+        {
+          "name": "Toggle",
+          "params": [
+            "{ on, onToggle }"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "SectionTitle",
+          "params": [
+            "{ children }"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "Field",
+          "params": [
+            "{\r\n  label, description, children,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "TextInput",
+          "params": [
+            "{\r\n  value, onChange, placeholder, type = \"text\",\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "SaveButton",
+          "params": [
+            "{ onSave, saved }"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "ClinicTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 72
+        },
+        {
+          "name": "AccountTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 66
+        },
+        {
+          "name": "NotificationsTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 59
+        },
+        {
+          "name": "PaymentTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 54
+        },
+        {
+          "name": "SecurityTab",
+          "params": [],
+          "exported": false,
+          "lineCount": 56
+        },
+        {
+          "name": "SettingsPage",
+          "params": [
+            "{ onLogout }"
+          ],
+          "exported": true,
+          "lineCount": 102
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Building2",
+            "User",
+            "Bell",
+            "CreditCard",
+            "Shield",
+            "Camera",
+            "Check",
+            "Eye",
+            "EyeOff",
+            "ToggleLeft",
+            "ToggleRight",
+            "Clock",
+            "Phone",
+            "Mail",
+            "MapPin",
+            "Globe",
+            "Save"
+          ]
+        }
+      ],
+      "exports": [
+        "SettingsPage"
+      ],
+      "totalLines": 504,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/SplashScreen.tsx": {
+      "filePath": "frontend/src/app/components/SplashScreen.tsx",
+      "contentHash": "c5c1bd00e683a05e5864de18bccc3568c120df9eb219bcdd75e011a1aff039b9",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "SplashScreen",
+          "params": [
+            "{ onDone }"
+          ],
+          "exported": true,
+          "lineCount": 97
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useState"
+          ]
+        }
+      ],
+      "exports": [
+        "SplashScreen"
+      ],
+      "totalLines": 123,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/StaffPage.tsx": {
+      "filePath": "frontend/src/app/components/StaffPage.tsx",
+      "contentHash": "e3702a01e0aa50ce92a17e96de73fcd38d60ba7ac9f9d63d5e2b480d2e8216a8",
+      "functions": [
+        {
+          "name": "avatarColor",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "AvatarBubble",
+          "params": [
+            "{ initials, name, size = \"md\" }"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "StatusPill",
+          "params": [
+            "{ status }"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "DeptBadge",
+          "params": [
+            "{ dept }"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "PerfBar",
+          "params": [
+            "{ value }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "StaffDrawer",
+          "params": [
+            "{\r\n  staff, onClose, onEdit, onToggleLock,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 148
+        },
+        {
+          "name": "StaffModal",
+          "params": [
+            "{\r\n  editing, onClose, onSave,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 186
+        },
+        {
+          "name": "StaffRow",
+          "params": [
+            "{\r\n  member, selected, onSelect, onEdit, onToggleLock,\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 85
+        },
+        {
+          "name": "StaffPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 189
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Search",
+            "Plus",
+            "Edit",
+            "Lock",
+            "Unlock",
+            "Eye",
+            "X",
+            "Phone",
+            "Mail",
+            "Calendar",
+            "Star",
+            "Stethoscope",
+            "Scissors",
+            "BedDouble",
+            "Users",
+            "ShieldAlert",
+            "CheckCircle2",
+            "Clock",
+            "Activity",
+            "ToggleLeft",
+            "ToggleRight",
+            "Syringe",
+            "Briefcase",
+            "ChevronDown",
+            "Filter",
+            "BarChart3",
+            "Award",
+            "TrendingUp"
+          ]
+        }
+      ],
+      "exports": [
+        "StaffPage"
+      ],
+      "totalLines": 777,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/StaffPortal.tsx": {
+      "filePath": "frontend/src/app/components/StaffPortal.tsx",
+      "contentHash": "3215ab89d75f3d639d4decbb6a7857210549cac5871a16f3cedad83f0f826189",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "StaffPortal",
+          "params": [
+            "{ onLogout }"
+          ],
+          "exported": true,
+          "lineCount": 265
+        },
+        {
+          "name": "AppointmentsTab",
+          "params": [
+            "{ appointments, onViewDetails, onCheckIn }"
+          ],
+          "exported": false,
+          "lineCount": 100
+        },
+        {
+          "name": "GroomingTab",
+          "params": [
+            "{ tasks, onComplete }"
+          ],
+          "exported": false,
+          "lineCount": 85
+        },
+        {
+          "name": "BoardingTab",
+          "params": [
+            "{ guests, onViewDetails, onToggleStatus }"
+          ],
+          "exported": false,
+          "lineCount": 92
+        },
+        {
+          "name": "PaymentsTab",
+          "params": [
+            "{ payments, onProcess }"
+          ],
+          "exported": false,
+          "lineCount": 90
+        },
+        {
+          "name": "AppointmentDetailModal",
+          "params": [
+            "{ apt, onClose, onCheckIn }"
+          ],
+          "exported": false,
+          "lineCount": 63
+        },
+        {
+          "name": "BoardingDetailModal",
+          "params": [
+            "{ guest, onClose, onToggleStatus }"
+          ],
+          "exported": false,
+          "lineCount": 108
+        },
+        {
+          "name": "PaymentProcessModal",
+          "params": [
+            "{ payment, onClose, onComplete }"
+          ],
+          "exported": false,
+          "lineCount": 81
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "LogOut",
+            "Bell",
+            "Calendar",
+            "CheckCircle2",
+            "Clock",
+            "Scissors",
+            "BedDouble",
+            "Settings",
+            "ChevronRight",
+            "User",
+            "Package",
+            "Stethoscope",
+            "Star",
+            "Home",
+            "DollarSign",
+            "X",
+            "Check",
+            "AlertTriangle",
+            "Coffee",
+            "Activity",
+            "Eye",
+            "Edit2",
+            "Plus",
+            "MessageSquare",
+            "Camera",
+            "FileText",
+            "Search"
+          ]
+        }
+      ],
+      "exports": [
+        "StaffPortal"
+      ],
+      "totalLines": 1069,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/accordion.tsx": {
+      "filePath": "frontend/src/app/components/ui/accordion.tsx",
+      "contentHash": "8e81071a29e955991f5646be795f1f713375f70dd341929b0c07364091e3b024",
+      "functions": [
+        {
+          "name": "Accordion",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "AccordionItem",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "AccordionTrigger",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "AccordionContent",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-accordion",
+          "specifiers": [
+            "* as AccordionPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ChevronDownIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Accordion",
+        "AccordionItem",
+        "AccordionTrigger",
+        "AccordionContent"
+      ],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/alert-dialog.tsx": {
+      "filePath": "frontend/src/app/components/ui/alert-dialog.tsx",
+      "contentHash": "f932756c41f220c4864ed31f0b4f9833adc1779cd582fa2b6b177b8a116f464b",
+      "functions": [
+        {
+          "name": "AlertDialog",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "AlertDialogTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "AlertDialogPortal",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "AlertDialogOverlay",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "AlertDialogContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "AlertDialogHeader",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "AlertDialogFooter",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "AlertDialogTitle",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "AlertDialogDescription",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "AlertDialogAction",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "AlertDialogCancel",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-alert-dialog",
+          "specifiers": [
+            "* as AlertDialogPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./button",
+          "specifiers": [
+            "buttonVariants"
+          ]
+        }
+      ],
+      "exports": [
+        "AlertDialog",
+        "AlertDialogPortal",
+        "AlertDialogOverlay",
+        "AlertDialogTrigger",
+        "AlertDialogContent",
+        "AlertDialogHeader",
+        "AlertDialogFooter",
+        "AlertDialogTitle",
+        "AlertDialogDescription",
+        "AlertDialogAction",
+        "AlertDialogCancel"
+      ],
+      "totalLines": 158,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/alert.tsx": {
+      "filePath": "frontend/src/app/components/ui/alert.tsx",
+      "contentHash": "a7ee2fc864ede977ce025afeb05b95987c1440c62fc55120c37881a469eaf1ff",
+      "functions": [
+        {
+          "name": "Alert",
+          "params": [
+            "{\r\n  className,\r\n  variant,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "AlertTitle",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "AlertDescription",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "class-variance-authority",
+          "specifiers": [
+            "cva",
+            "VariantProps"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Alert",
+        "AlertTitle",
+        "AlertDescription"
+      ],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/aspect-ratio.tsx": {
+      "filePath": "frontend/src/app/components/ui/aspect-ratio.tsx",
+      "contentHash": "94c4b2f3a322ae0eccfa63ddd1ad41ce6b728c7f050384d2d4bc40e8e3d5c53b",
+      "functions": [
+        {
+          "name": "AspectRatio",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@radix-ui/react-aspect-ratio",
+          "specifiers": [
+            "* as AspectRatioPrimitive"
+          ]
+        }
+      ],
+      "exports": [
+        "AspectRatio"
+      ],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/avatar.tsx": {
+      "filePath": "frontend/src/app/components/ui/avatar.tsx",
+      "contentHash": "98043caa32447ca64eecb4bd4ffa676a7310164ef50b1d80333ff478620da461",
+      "functions": [
+        {
+          "name": "Avatar",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "AvatarImage",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "AvatarFallback",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-avatar",
+          "specifiers": [
+            "* as AvatarPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Avatar",
+        "AvatarImage",
+        "AvatarFallback"
+      ],
+      "totalLines": 54,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/badge.tsx": {
+      "filePath": "frontend/src/app/components/ui/badge.tsx",
+      "contentHash": "7bf74709270b375dcfd4b8ff1109196fd9b0260feb884ce960fa5060ec8b9846",
+      "functions": [
+        {
+          "name": "Badge",
+          "params": [
+            "{\r\n  className,\r\n  variant,\r\n  asChild = false,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-slot",
+          "specifiers": [
+            "Slot"
+          ]
+        },
+        {
+          "source": "class-variance-authority",
+          "specifiers": [
+            "cva",
+            "VariantProps"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Badge",
+        "badgeVariants"
+      ],
+      "totalLines": 47,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/breadcrumb.tsx": {
+      "filePath": "frontend/src/app/components/ui/breadcrumb.tsx",
+      "contentHash": "9087c1c3d8045fca49aa339699d9113396925d0195dceb1b9a0cdf0d4b8bb323",
+      "functions": [
+        {
+          "name": "Breadcrumb",
+          "params": [
+            "{ ...props }"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "BreadcrumbList",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "BreadcrumbItem",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "BreadcrumbLink",
+          "params": [
+            "{\r\n  asChild,\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "BreadcrumbPage",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "BreadcrumbSeparator",
+          "params": [
+            "{\r\n  children,\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "BreadcrumbEllipsis",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-slot",
+          "specifiers": [
+            "Slot"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ChevronRight",
+            "MoreHorizontal"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Breadcrumb",
+        "BreadcrumbList",
+        "BreadcrumbItem",
+        "BreadcrumbLink",
+        "BreadcrumbPage",
+        "BreadcrumbSeparator",
+        "BreadcrumbEllipsis"
+      ],
+      "totalLines": 110,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/button.tsx": {
+      "filePath": "frontend/src/app/components/ui/button.tsx",
+      "contentHash": "577936340e816ace37b76009b27583d26a9374562543a4b485f8bbd8fa36387d",
+      "functions": [
+        {
+          "name": "Button",
+          "params": [
+            "{\r\n  className,\r\n  variant,\r\n  size,\r\n  asChild = false,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 20
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-slot",
+          "specifiers": [
+            "Slot"
+          ]
+        },
+        {
+          "source": "class-variance-authority",
+          "specifiers": [
+            "cva",
+            "VariantProps"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Button",
+        "buttonVariants"
+      ],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/calendar.tsx": {
+      "filePath": "frontend/src/app/components/ui/calendar.tsx",
+      "contentHash": "4ac6ddf60c86548ecb6bab2f64c017ddae6394f89203014aeabb43a56d059c80",
+      "functions": [
+        {
+          "name": "Calendar",
+          "params": [
+            "{\r\n  className,\r\n  classNames,\r\n  showOutsideDays = true,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 64
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ChevronLeft",
+            "ChevronRight"
+          ]
+        },
+        {
+          "source": "react-day-picker",
+          "specifiers": [
+            "DayPicker"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./button",
+          "specifiers": [
+            "buttonVariants"
+          ]
+        }
+      ],
+      "exports": [
+        "Calendar"
+      ],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/card.tsx": {
+      "filePath": "frontend/src/app/components/ui/card.tsx",
+      "contentHash": "ad9cf10701d7e02796eaad6ea943a808351f7710d7557fa3b5b54a6db870cb3a",
+      "functions": [
+        {
+          "name": "Card",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "CardHeader",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "CardTitle",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "CardDescription",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "CardAction",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "CardContent",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "CardFooter",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Card",
+        "CardHeader",
+        "CardFooter",
+        "CardTitle",
+        "CardAction",
+        "CardDescription",
+        "CardContent"
+      ],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/carousel.tsx": {
+      "filePath": "frontend/src/app/components/ui/carousel.tsx",
+      "contentHash": "4a283e58e9b7afa81f2c07d4f867c605e2f5f1595821b23689ab6d27f7a46f7a",
+      "functions": [
+        {
+          "name": "useCarousel",
+          "params": [],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "Carousel",
+          "params": [
+            "{\r\n  orientation = \"horizontal\",\r\n  opts,\r\n  setApi,\r\n  plugins,\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 89
+        },
+        {
+          "name": "CarouselContent",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "CarouselItem",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "CarouselPrevious",
+          "params": [
+            "{\r\n  className,\r\n  variant = \"outline\",\r\n  size = \"icon\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "CarouselNext",
+          "params": [
+            "{\r\n  className,\r\n  variant = \"outline\",\r\n  size = \"icon\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 29
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "embla-carousel-react",
+          "specifiers": [
+            "useEmblaCarousel",
+            "UseEmblaCarouselType"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowLeft",
+            "ArrowRight"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./button",
+          "specifiers": [
+            "Button"
+          ]
+        }
+      ],
+      "exports": [
+        "CarouselApi",
+        "Carousel",
+        "CarouselContent",
+        "CarouselItem",
+        "CarouselPrevious",
+        "CarouselNext"
+      ],
+      "totalLines": 242,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/chart.tsx": {
+      "filePath": "frontend/src/app/components/ui/chart.tsx",
+      "contentHash": "d7c34d871c34bd16765c3981a1f4337b15827c5d0b060de133ff9154f26367cf",
+      "functions": [
+        {
+          "name": "useChart",
+          "params": [],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "ChartContainer",
+          "params": [
+            "{\r\n  id,\r\n  className,\r\n  children,\r\n  config,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "ChartStyle",
+          "params": [
+            "{ id, config }"
+          ],
+          "exported": true,
+          "lineCount": 32
+        },
+        {
+          "name": "ChartTooltipContent",
+          "params": [
+            "{\r\n  active,\r\n  payload,\r\n  className,\r\n  indicator = \"dot\",\r\n  hideLabel = false,\r\n  hideIndicator = false,\r\n  label,\r\n  labelFormatter,\r\n  labelClassName,\r\n  formatter,\r\n  color,\r\n  nameKey,\r\n  labelKey,\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 143
+        },
+        {
+          "name": "ChartLegendContent",
+          "params": [
+            "{\r\n  className,\r\n  hideIcon = false,\r\n  payload,\r\n  verticalAlign = \"bottom\",\r\n  nameKey,\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 53
+        },
+        {
+          "name": "getPayloadConfigFromPayload",
+          "params": [
+            "config",
+            "payload",
+            "key"
+          ],
+          "exported": false,
+          "lineCount": 37
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "recharts",
+          "specifiers": [
+            "* as RechartsPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "ChartContainer",
+        "ChartTooltip",
+        "ChartTooltipContent",
+        "ChartLegend",
+        "ChartLegendContent",
+        "ChartStyle"
+      ],
+      "totalLines": 354,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/checkbox.tsx": {
+      "filePath": "frontend/src/app/components/ui/checkbox.tsx",
+      "contentHash": "3ceecfc1db863bb7c80945941f86c8e75d03c200c77000f473188cc843644b7a",
+      "functions": [
+        {
+          "name": "Checkbox",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-checkbox",
+          "specifiers": [
+            "* as CheckboxPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "CheckIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Checkbox"
+      ],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/collapsible.tsx": {
+      "filePath": "frontend/src/app/components/ui/collapsible.tsx",
+      "contentHash": "aa1549be7ae83bdefb009ffad1a9c7ff09844250a8b17243ee4678c6a879791e",
+      "functions": [
+        {
+          "name": "Collapsible",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "CollapsibleTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "CollapsibleContent",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@radix-ui/react-collapsible",
+          "specifiers": [
+            "* as CollapsiblePrimitive"
+          ]
+        }
+      ],
+      "exports": [
+        "Collapsible",
+        "CollapsibleTrigger",
+        "CollapsibleContent"
+      ],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/command.tsx": {
+      "filePath": "frontend/src/app/components/ui/command.tsx",
+      "contentHash": "839e1e2d90eddc02bc5f64a294d08310396dea2db03ac355992797d88ea0122e",
+      "functions": [
+        {
+          "name": "Command",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "CommandDialog",
+          "params": [
+            "{\r\n  title = \"Command Palette\",\r\n  description = \"Search for a command to run...\",\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "CommandInput",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "CommandList",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "CommandEmpty",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "CommandGroup",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "CommandSeparator",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "CommandItem",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "CommandShortcut",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "cmdk",
+          "specifiers": [
+            "CommandPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "SearchIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./dialog",
+          "specifiers": [
+            "Dialog",
+            "DialogContent",
+            "DialogDescription",
+            "DialogHeader",
+            "DialogTitle"
+          ]
+        }
+      ],
+      "exports": [
+        "Command",
+        "CommandDialog",
+        "CommandInput",
+        "CommandList",
+        "CommandEmpty",
+        "CommandGroup",
+        "CommandItem",
+        "CommandShortcut",
+        "CommandSeparator"
+      ],
+      "totalLines": 178,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/context-menu.tsx": {
+      "filePath": "frontend/src/app/components/ui/context-menu.tsx",
+      "contentHash": "e6bf478d29d7ff0bfffdb7d76429f9ffea4f7023ae2a6b62015a2134aa9e9257",
+      "functions": [
+        {
+          "name": "ContextMenu",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "ContextMenuTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "ContextMenuGroup",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "ContextMenuPortal",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "ContextMenuSub",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "ContextMenuRadioGroup",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "ContextMenuSubTrigger",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "ContextMenuSubContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "ContextMenuContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "ContextMenuItem",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  variant = \"default\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "ContextMenuCheckboxItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  checked,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "ContextMenuRadioItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "ContextMenuLabel",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "ContextMenuSeparator",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "ContextMenuShortcut",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-context-menu",
+          "specifiers": [
+            "* as ContextMenuPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "CheckIcon",
+            "ChevronRightIcon",
+            "CircleIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "ContextMenu",
+        "ContextMenuTrigger",
+        "ContextMenuContent",
+        "ContextMenuItem",
+        "ContextMenuCheckboxItem",
+        "ContextMenuRadioItem",
+        "ContextMenuLabel",
+        "ContextMenuSeparator",
+        "ContextMenuShortcut",
+        "ContextMenuGroup",
+        "ContextMenuPortal",
+        "ContextMenuSub",
+        "ContextMenuSubContent",
+        "ContextMenuSubTrigger",
+        "ContextMenuRadioGroup"
+      ],
+      "totalLines": 253,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/dialog.tsx": {
+      "filePath": "frontend/src/app/components/ui/dialog.tsx",
+      "contentHash": "4df8ef421d5b6c8d090c4d15f7c50d42087ad2627dba154eb7cc7d0b1983dc7a",
+      "functions": [
+        {
+          "name": "Dialog",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DialogTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DialogPortal",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DialogClose",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DialogOverlay",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "DialogContent",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "DialogHeader",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "DialogFooter",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "DialogTitle",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "DialogDescription",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-dialog",
+          "specifiers": [
+            "* as DialogPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "XIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Dialog",
+        "DialogClose",
+        "DialogContent",
+        "DialogDescription",
+        "DialogFooter",
+        "DialogHeader",
+        "DialogOverlay",
+        "DialogPortal",
+        "DialogTitle",
+        "DialogTrigger"
+      ],
+      "totalLines": 136,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/drawer.tsx": {
+      "filePath": "frontend/src/app/components/ui/drawer.tsx",
+      "contentHash": "efae284ce47bf26d6843c01834b562148d7cfc06c17e532fec013e0a613a8113",
+      "functions": [
+        {
+          "name": "Drawer",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DrawerTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DrawerPortal",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DrawerClose",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DrawerOverlay",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "DrawerContent",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 26
+        },
+        {
+          "name": "DrawerHeader",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "DrawerFooter",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "DrawerTitle",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "DrawerDescription",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "vaul",
+          "specifiers": [
+            "DrawerPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Drawer",
+        "DrawerPortal",
+        "DrawerOverlay",
+        "DrawerTrigger",
+        "DrawerClose",
+        "DrawerContent",
+        "DrawerHeader",
+        "DrawerFooter",
+        "DrawerTitle",
+        "DrawerDescription"
+      ],
+      "totalLines": 133,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/dropdown-menu.tsx": {
+      "filePath": "frontend/src/app/components/ui/dropdown-menu.tsx",
+      "contentHash": "c4d81d686e1c9a974856aa508dd11bb895bc6ecff2402bda83a2109e8450c7e9",
+      "functions": [
+        {
+          "name": "DropdownMenu",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DropdownMenuPortal",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "DropdownMenuTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "DropdownMenuContent",
+          "params": [
+            "{\r\n  className,\r\n  sideOffset = 4,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "DropdownMenuGroup",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "DropdownMenuItem",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  variant = \"default\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "DropdownMenuCheckboxItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  checked,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "DropdownMenuRadioGroup",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "DropdownMenuRadioItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "DropdownMenuLabel",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "DropdownMenuSeparator",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "DropdownMenuShortcut",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "DropdownMenuSub",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "DropdownMenuSubTrigger",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "DropdownMenuSubContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-dropdown-menu",
+          "specifiers": [
+            "* as DropdownMenuPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "CheckIcon",
+            "ChevronRightIcon",
+            "CircleIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "DropdownMenu",
+        "DropdownMenuPortal",
+        "DropdownMenuTrigger",
+        "DropdownMenuContent",
+        "DropdownMenuGroup",
+        "DropdownMenuLabel",
+        "DropdownMenuItem",
+        "DropdownMenuCheckboxItem",
+        "DropdownMenuRadioGroup",
+        "DropdownMenuRadioItem",
+        "DropdownMenuSeparator",
+        "DropdownMenuShortcut",
+        "DropdownMenuSub",
+        "DropdownMenuSubTrigger",
+        "DropdownMenuSubContent"
+      ],
+      "totalLines": 258,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/form.tsx": {
+      "filePath": "frontend/src/app/components/ui/form.tsx",
+      "contentHash": "c2c65c4adb9d8c25836f3884363d7bf9ec92f2207109cf9645a61d8fdaf13ee5",
+      "functions": [
+        {
+          "name": "FormField",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "useFormField",
+          "params": [],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "FormItem",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "FormLabel",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "FormControl",
+          "params": [
+            "{ ...props }"
+          ],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "FormDescription",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "FormMessage",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-label",
+          "specifiers": [
+            "* as LabelPrimitive"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-slot",
+          "specifiers": [
+            "Slot"
+          ]
+        },
+        {
+          "source": "react-hook-form",
+          "specifiers": [
+            "Controller",
+            "FormProvider",
+            "useFormContext",
+            "useFormState",
+            "ControllerProps",
+            "FieldPath",
+            "FieldValues"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./label",
+          "specifiers": [
+            "Label"
+          ]
+        }
+      ],
+      "exports": [
+        "useFormField",
+        "Form",
+        "FormItem",
+        "FormLabel",
+        "FormControl",
+        "FormDescription",
+        "FormMessage",
+        "FormField"
+      ],
+      "totalLines": 169,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/hover-card.tsx": {
+      "filePath": "frontend/src/app/components/ui/hover-card.tsx",
+      "contentHash": "d546c082bac3f42413b81cb75c149147e2f1ab148232a7033392c522e70e0727",
+      "functions": [
+        {
+          "name": "HoverCard",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "HoverCardTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "HoverCardContent",
+          "params": [
+            "{\r\n  className,\r\n  align = \"center\",\r\n  sideOffset = 4,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 21
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-hover-card",
+          "specifiers": [
+            "* as HoverCardPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "HoverCard",
+        "HoverCardTrigger",
+        "HoverCardContent"
+      ],
+      "totalLines": 45,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/input-otp.tsx": {
+      "filePath": "frontend/src/app/components/ui/input-otp.tsx",
+      "contentHash": "c750352be244b4f5182f05d710ec483ccb3936f1a29034721092f6c37cdb6e43",
+      "functions": [
+        {
+          "name": "InputOTP",
+          "params": [
+            "{\r\n  className,\r\n  containerClassName,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "InputOTPGroup",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "InputOTPSlot",
+          "params": [
+            "{\r\n  index,\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "InputOTPSeparator",
+          "params": [
+            "{ ...props }"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "input-otp",
+          "specifiers": [
+            "OTPInput",
+            "OTPInputContext"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "MinusIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "InputOTP",
+        "InputOTPGroup",
+        "InputOTPSlot",
+        "InputOTPSeparator"
+      ],
+      "totalLines": 78,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/input.tsx": {
+      "filePath": "frontend/src/app/components/ui/input.tsx",
+      "contentHash": "a36b91cd41f456a403bf634978a64c3f67b6f053dc5814fff81c295571828c18",
+      "functions": [
+        {
+          "name": "Input",
+          "params": [
+            "{ className, type, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Input"
+      ],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/label.tsx": {
+      "filePath": "frontend/src/app/components/ui/label.tsx",
+      "contentHash": "8503b639cc9352f011e6db1c949ab092cf57dd712d59455406620e071a575ff1",
+      "functions": [
+        {
+          "name": "Label",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-label",
+          "specifiers": [
+            "* as LabelPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Label"
+      ],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/menubar.tsx": {
+      "filePath": "frontend/src/app/components/ui/menubar.tsx",
+      "contentHash": "03f536d41ddf65617415860401147ba6220e04e3d26df126e11a19e4b1abc787",
+      "functions": [
+        {
+          "name": "Menubar",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "MenubarMenu",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "MenubarGroup",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "MenubarPortal",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "MenubarRadioGroup",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "MenubarTrigger",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "MenubarContent",
+          "params": [
+            "{\r\n  className,\r\n  align = \"start\",\r\n  alignOffset = -4,\r\n  sideOffset = 8,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "MenubarItem",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  variant = \"default\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "MenubarCheckboxItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  checked,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "MenubarRadioItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "MenubarLabel",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "MenubarSeparator",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "MenubarShortcut",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "MenubarSub",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "MenubarSubTrigger",
+          "params": [
+            "{\r\n  className,\r\n  inset,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "MenubarSubContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-menubar",
+          "specifiers": [
+            "* as MenubarPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "CheckIcon",
+            "ChevronRightIcon",
+            "CircleIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Menubar",
+        "MenubarPortal",
+        "MenubarMenu",
+        "MenubarTrigger",
+        "MenubarContent",
+        "MenubarGroup",
+        "MenubarSeparator",
+        "MenubarLabel",
+        "MenubarItem",
+        "MenubarShortcut",
+        "MenubarCheckboxItem",
+        "MenubarRadioGroup",
+        "MenubarRadioItem",
+        "MenubarSub",
+        "MenubarSubTrigger",
+        "MenubarSubContent"
+      ],
+      "totalLines": 277,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/navigation-menu.tsx": {
+      "filePath": "frontend/src/app/components/ui/navigation-menu.tsx",
+      "contentHash": "211c318ac8afe209571a9727b7ac79896f85ee938a2bdacb4d830369f9c123b4",
+      "functions": [
+        {
+          "name": "NavigationMenu",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  viewport = true,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "NavigationMenuList",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "NavigationMenuItem",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "NavigationMenuTrigger",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "NavigationMenuContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "NavigationMenuViewport",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "NavigationMenuLink",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "NavigationMenuIndicator",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-navigation-menu",
+          "specifiers": [
+            "* as NavigationMenuPrimitive"
+          ]
+        },
+        {
+          "source": "class-variance-authority",
+          "specifiers": [
+            "cva"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ChevronDownIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "NavigationMenu",
+        "NavigationMenuList",
+        "NavigationMenuItem",
+        "NavigationMenuContent",
+        "NavigationMenuTrigger",
+        "NavigationMenuLink",
+        "NavigationMenuIndicator",
+        "NavigationMenuViewport",
+        "navigationMenuTriggerStyle"
+      ],
+      "totalLines": 169,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/pagination.tsx": {
+      "filePath": "frontend/src/app/components/ui/pagination.tsx",
+      "contentHash": "7bf83582f54c1da2cf197be52c802185c848bac05db21a8c46da4cf59df1c0a3",
+      "functions": [
+        {
+          "name": "Pagination",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "PaginationContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "PaginationItem",
+          "params": [
+            "{ ...props }"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "PaginationLink",
+          "params": [
+            "{\r\n  className,\r\n  isActive,\r\n  size = \"icon\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "PaginationPrevious",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "PaginationNext",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "PaginationEllipsis",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ChevronLeftIcon",
+            "ChevronRightIcon",
+            "MoreHorizontalIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./button",
+          "specifiers": [
+            "Button",
+            "buttonVariants"
+          ]
+        }
+      ],
+      "exports": [
+        "Pagination",
+        "PaginationContent",
+        "PaginationLink",
+        "PaginationItem",
+        "PaginationPrevious",
+        "PaginationNext",
+        "PaginationEllipsis"
+      ],
+      "totalLines": 128,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/popover.tsx": {
+      "filePath": "frontend/src/app/components/ui/popover.tsx",
+      "contentHash": "cb136dd80dbaa2fffb59ba6a7fa08e5388fd85746d811aacc4c1ca62968ea616",
+      "functions": [
+        {
+          "name": "Popover",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "PopoverTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "PopoverContent",
+          "params": [
+            "{\r\n  className,\r\n  align = \"center\",\r\n  sideOffset = 4,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "PopoverAnchor",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-popover",
+          "specifiers": [
+            "* as PopoverPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Popover",
+        "PopoverTrigger",
+        "PopoverContent",
+        "PopoverAnchor"
+      ],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/progress.tsx": {
+      "filePath": "frontend/src/app/components/ui/progress.tsx",
+      "contentHash": "28ef75d7d31896eddb579f712c0d40ba06a048d0b5cc5074cc0104298d7dc30c",
+      "functions": [
+        {
+          "name": "Progress",
+          "params": [
+            "{\r\n  className,\r\n  value,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-progress",
+          "specifiers": [
+            "* as ProgressPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Progress"
+      ],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/radio-group.tsx": {
+      "filePath": "frontend/src/app/components/ui/radio-group.tsx",
+      "contentHash": "d77b361c63dcae300598b4107d4003bf58e69a6a7ff811d6976e1bd5fe005d70",
+      "functions": [
+        {
+          "name": "RadioGroup",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "RadioGroupItem",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-radio-group",
+          "specifiers": [
+            "* as RadioGroupPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "CircleIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "RadioGroup",
+        "RadioGroupItem"
+      ],
+      "totalLines": 46,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/resizable.tsx": {
+      "filePath": "frontend/src/app/components/ui/resizable.tsx",
+      "contentHash": "3263f8066a298704b951f649cebcb1e7cba5d6cb602e63ecac05e8124aac7bc1",
+      "functions": [
+        {
+          "name": "ResizablePanelGroup",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "ResizablePanel",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "ResizableHandle",
+          "params": [
+            "{\r\n  withHandle,\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 24
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "GripVerticalIcon"
+          ]
+        },
+        {
+          "source": "react-resizable-panels",
+          "specifiers": [
+            "* as ResizablePrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "ResizablePanelGroup",
+        "ResizablePanel",
+        "ResizableHandle"
+      ],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/scroll-area.tsx": {
+      "filePath": "frontend/src/app/components/ui/scroll-area.tsx",
+      "contentHash": "a882348383b1c465253f5a02c5eda58e7cd7f331984da263c818d46a652aad9b",
+      "functions": [
+        {
+          "name": "ScrollArea",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "ScrollBar",
+          "params": [
+            "{\r\n  className,\r\n  orientation = \"vertical\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 26
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-scroll-area",
+          "specifiers": [
+            "* as ScrollAreaPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "ScrollArea",
+        "ScrollBar"
+      ],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/select.tsx": {
+      "filePath": "frontend/src/app/components/ui/select.tsx",
+      "contentHash": "aafe9bb0ce1ab56eff006fe27a62499a77df281c7856ba8f51f9ea490eada453",
+      "functions": [
+        {
+          "name": "Select",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SelectGroup",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SelectValue",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SelectTrigger",
+          "params": [
+            "{\r\n  className,\r\n  size = \"default\",\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "SelectContent",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  position = \"popper\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "SelectLabel",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "SelectItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "SelectSeparator",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "SelectScrollUpButton",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "SelectScrollDownButton",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-select",
+          "specifiers": [
+            "* as SelectPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "CheckIcon",
+            "ChevronDownIcon",
+            "ChevronUpIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Select",
+        "SelectContent",
+        "SelectGroup",
+        "SelectItem",
+        "SelectLabel",
+        "SelectScrollDownButton",
+        "SelectScrollUpButton",
+        "SelectSeparator",
+        "SelectTrigger",
+        "SelectValue"
+      ],
+      "totalLines": 190,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/separator.tsx": {
+      "filePath": "frontend/src/app/components/ui/separator.tsx",
+      "contentHash": "4c960bd3ca2e2c6627e215243e57bfbe6daa651520ab30c7f4c355345b2733a1",
+      "functions": [
+        {
+          "name": "Separator",
+          "params": [
+            "{\r\n  className,\r\n  orientation = \"horizontal\",\r\n  decorative = true,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-separator",
+          "specifiers": [
+            "* as SeparatorPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Separator"
+      ],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/sheet.tsx": {
+      "filePath": "frontend/src/app/components/ui/sheet.tsx",
+      "contentHash": "bc241cc0420cbf851477c7ce7d776cc6712e281253bda3ee5f153622b76e5cdd",
+      "functions": [
+        {
+          "name": "Sheet",
+          "params": [
+            "{ ...props }"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "SheetTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SheetClose",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SheetPortal",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "SheetOverlay",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "SheetContent",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  side = \"right\",\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 36
+        },
+        {
+          "name": "SheetHeader",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "SheetFooter",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "SheetTitle",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "SheetDescription",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-dialog",
+          "specifiers": [
+            "* as SheetPrimitive"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "XIcon"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Sheet",
+        "SheetTrigger",
+        "SheetClose",
+        "SheetContent",
+        "SheetHeader",
+        "SheetFooter",
+        "SheetTitle",
+        "SheetDescription"
+      ],
+      "totalLines": 140,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/sidebar.tsx": {
+      "filePath": "frontend/src/app/components/ui/sidebar.tsx",
+      "contentHash": "307897c33b89a2f104cd709f44000eabee0fea4cfad3f65ce5c3f4d25454353e",
+      "functions": [
+        {
+          "name": "useSidebar",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "SidebarProvider",
+          "params": [
+            "{\r\n  defaultOpen = true,\r\n  open: openProp,\r\n  onOpenChange: setOpenProp,\r\n  className,\r\n  style,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 97
+        },
+        {
+          "name": "Sidebar",
+          "params": [
+            "{\r\n  side = \"left\",\r\n  variant = \"sidebar\",\r\n  collapsible = \"offcanvas\",\r\n  className,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 101
+        },
+        {
+          "name": "SidebarTrigger",
+          "params": [
+            "{\r\n  className,\r\n  onClick,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "SidebarRail",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "SidebarInset",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "SidebarInput",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "SidebarHeader",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "SidebarFooter",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "SidebarSeparator",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "SidebarContent",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "SidebarGroup",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "SidebarGroupLabel",
+          "params": [
+            "{\r\n  className,\r\n  asChild = false,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "SidebarGroupAction",
+          "params": [
+            "{\r\n  className,\r\n  asChild = false,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "SidebarGroupContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "SidebarMenu",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "SidebarMenuItem",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "SidebarMenuButton",
+          "params": [
+            "{\r\n  asChild = false,\r\n  isActive = false,\r\n  variant = \"default\",\r\n  size = \"default\",\r\n  tooltip,\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 49
+        },
+        {
+          "name": "SidebarMenuAction",
+          "params": [
+            "{\r\n  className,\r\n  asChild = false,\r\n  showOnHover = false,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "SidebarMenuBadge",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "SidebarMenuSkeleton",
+          "params": [
+            "{\r\n  className,\r\n  showIcon = false,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 37
+        },
+        {
+          "name": "SidebarMenuSub",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "SidebarMenuSubItem",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "SidebarMenuSubButton",
+          "params": [
+            "{\r\n  asChild = false,\r\n  size = \"md\",\r\n  isActive = false,\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 31
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-slot",
+          "specifiers": [
+            "Slot"
+          ]
+        },
+        {
+          "source": "class-variance-authority",
+          "specifiers": [
+            "VariantProps",
+            "cva"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "PanelLeftIcon"
+          ]
+        },
+        {
+          "source": "./use-mobile",
+          "specifiers": [
+            "useIsMobile"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./button",
+          "specifiers": [
+            "Button"
+          ]
+        },
+        {
+          "source": "./input",
+          "specifiers": [
+            "Input"
+          ]
+        },
+        {
+          "source": "./separator",
+          "specifiers": [
+            "Separator"
+          ]
+        },
+        {
+          "source": "./sheet",
+          "specifiers": [
+            "Sheet",
+            "SheetContent",
+            "SheetDescription",
+            "SheetHeader",
+            "SheetTitle"
+          ]
+        },
+        {
+          "source": "./skeleton",
+          "specifiers": [
+            "Skeleton"
+          ]
+        },
+        {
+          "source": "./tooltip",
+          "specifiers": [
+            "Tooltip",
+            "TooltipContent",
+            "TooltipProvider",
+            "TooltipTrigger"
+          ]
+        }
+      ],
+      "exports": [
+        "Sidebar",
+        "SidebarContent",
+        "SidebarFooter",
+        "SidebarGroup",
+        "SidebarGroupAction",
+        "SidebarGroupContent",
+        "SidebarGroupLabel",
+        "SidebarHeader",
+        "SidebarInput",
+        "SidebarInset",
+        "SidebarMenu",
+        "SidebarMenuAction",
+        "SidebarMenuBadge",
+        "SidebarMenuButton",
+        "SidebarMenuItem",
+        "SidebarMenuSkeleton",
+        "SidebarMenuSub",
+        "SidebarMenuSubButton",
+        "SidebarMenuSubItem",
+        "SidebarProvider",
+        "SidebarRail",
+        "SidebarSeparator",
+        "SidebarTrigger",
+        "useSidebar"
+      ],
+      "totalLines": 727,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/skeleton.tsx": {
+      "filePath": "frontend/src/app/components/ui/skeleton.tsx",
+      "contentHash": "1d4cbb3f23d8f1960dd31b2280c92eaeaf3427397bc9c0b8c026f921fa219110",
+      "functions": [
+        {
+          "name": "Skeleton",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Skeleton"
+      ],
+      "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/slider.tsx": {
+      "filePath": "frontend/src/app/components/ui/slider.tsx",
+      "contentHash": "e2ea3b47b2e63801a664b81b6d8840d9e1db3fe064b8cabff1a6d95d26cb2407",
+      "functions": [
+        {
+          "name": "Slider",
+          "params": [
+            "{\r\n  className,\r\n  defaultValue,\r\n  value,\r\n  min = 0,\r\n  max = 100,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 54
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-slider",
+          "specifiers": [
+            "* as SliderPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Slider"
+      ],
+      "totalLines": 64,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/sonner.tsx": {
+      "filePath": "frontend/src/app/components/ui/sonner.tsx",
+      "contentHash": "9dbb0ca919af53e53294dc0326628187ff45afa756c7caf6b162a7895db0e52a",
+      "functions": [
+        {
+          "name": "Toaster",
+          "params": [
+            "{ ...props }"
+          ],
+          "exported": true,
+          "lineCount": 18
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "next-themes",
+          "specifiers": [
+            "useTheme"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "Sonner",
+            "ToasterProps"
+          ]
+        }
+      ],
+      "exports": [
+        "Toaster"
+      ],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/switch.tsx": {
+      "filePath": "frontend/src/app/components/ui/switch.tsx",
+      "contentHash": "dba1f3139d5f9d6ddeba36d4201efbac68a74ed68479b89e62665a9822b0b3f8",
+      "functions": [
+        {
+          "name": "Switch",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 22
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-switch",
+          "specifiers": [
+            "* as SwitchPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Switch"
+      ],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/table.tsx": {
+      "filePath": "frontend/src/app/components/ui/table.tsx",
+      "contentHash": "2dde218e3257a05ce3e5c6d90f06020b2452c805380f7fb9e1770af45350d4a5",
+      "functions": [
+        {
+          "name": "Table",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "TableHeader",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "TableBody",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "TableFooter",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TableRow",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TableHead",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TableCell",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TableCaption",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Table",
+        "TableHeader",
+        "TableBody",
+        "TableFooter",
+        "TableHead",
+        "TableRow",
+        "TableCell",
+        "TableCaption"
+      ],
+      "totalLines": 117,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/tabs.tsx": {
+      "filePath": "frontend/src/app/components/ui/tabs.tsx",
+      "contentHash": "606bc2facf72fa27e40d6e4c21d14d3bba26bb93390a74ebbb14cdf828c2c277",
+      "functions": [
+        {
+          "name": "Tabs",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TabsList",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "TabsTrigger",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "TabsContent",
+          "params": [
+            "{\r\n  className,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-tabs",
+          "specifiers": [
+            "* as TabsPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Tabs",
+        "TabsList",
+        "TabsTrigger",
+        "TabsContent"
+      ],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/textarea.tsx": {
+      "filePath": "frontend/src/app/components/ui/textarea.tsx",
+      "contentHash": "f99c2b5ea05044530548241398b633ec8b34c5aaa3b8269455630f32d251de33",
+      "functions": [
+        {
+          "name": "Textarea",
+          "params": [
+            "{ className, ...props }"
+          ],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Textarea"
+      ],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/toggle-group.tsx": {
+      "filePath": "frontend/src/app/components/ui/toggle-group.tsx",
+      "contentHash": "c5d52534ae0fe29cc3df82e30b61523193f05fe7775a6cdb60074ae10cc6da11",
+      "functions": [
+        {
+          "name": "ToggleGroup",
+          "params": [
+            "{\r\n  className,\r\n  variant,\r\n  size,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "ToggleGroupItem",
+          "params": [
+            "{\r\n  className,\r\n  children,\r\n  variant,\r\n  size,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 29
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-toggle-group",
+          "specifiers": [
+            "* as ToggleGroupPrimitive"
+          ]
+        },
+        {
+          "source": "class-variance-authority",
+          "specifiers": [
+            "VariantProps"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./toggle",
+          "specifiers": [
+            "toggleVariants"
+          ]
+        }
+      ],
+      "exports": [
+        "ToggleGroup",
+        "ToggleGroupItem"
+      ],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/toggle.tsx": {
+      "filePath": "frontend/src/app/components/ui/toggle.tsx",
+      "contentHash": "5bc05695fa3a9d31c9a0831391fc0fc9147c9d43c1c9faa2d6d0b0f82e25cf0a",
+      "functions": [
+        {
+          "name": "Toggle",
+          "params": [
+            "{\r\n  className,\r\n  variant,\r\n  size,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-toggle",
+          "specifiers": [
+            "* as TogglePrimitive"
+          ]
+        },
+        {
+          "source": "class-variance-authority",
+          "specifiers": [
+            "cva",
+            "VariantProps"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Toggle",
+        "toggleVariants"
+      ],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/tooltip.tsx": {
+      "filePath": "frontend/src/app/components/ui/tooltip.tsx",
+      "contentHash": "2a6e6f5c4853222af2274cf5c186eac7998c824d94caa1b750db3f329a4e4b42",
+      "functions": [
+        {
+          "name": "TooltipProvider",
+          "params": [
+            "{\r\n  delayDuration = 0,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "Tooltip",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "TooltipTrigger",
+          "params": [
+            "{\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "TooltipContent",
+          "params": [
+            "{\r\n  className,\r\n  sideOffset = 0,\r\n  children,\r\n  ...props\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 23
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        },
+        {
+          "source": "@radix-ui/react-tooltip",
+          "specifiers": [
+            "* as TooltipPrimitive"
+          ]
+        },
+        {
+          "source": "./utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "Tooltip",
+        "TooltipTrigger",
+        "TooltipContent",
+        "TooltipProvider"
+      ],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/use-mobile.ts": {
+      "filePath": "frontend/src/app/components/ui/use-mobile.ts",
+      "contentHash": "f664fb30e3e4fe093448ac8e9572a1d718a133c9ed1ab5287fa864f146465496",
+      "functions": [
+        {
+          "name": "useIsMobile",
+          "params": [],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "* as React"
+          ]
+        }
+      ],
+      "exports": [
+        "useIsMobile"
+      ],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/ui/utils.ts": {
+      "filePath": "frontend/src/app/components/ui/utils.ts",
+      "contentHash": "c0adf27efbfa148d5abcf99e860f8e3e6c8fc77a1f99e023c08ef4f12e6ece29",
+      "functions": [
+        {
+          "name": "cn",
+          "params": [
+            "...inputs"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "clsx",
+          "specifiers": [
+            "clsx",
+            "ClassValue"
+          ]
+        },
+        {
+          "source": "tailwind-merge",
+          "specifiers": [
+            "twMerge"
+          ]
+        }
+      ],
+      "exports": [
+        "cn"
+      ],
+      "totalLines": 7,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/UsersPage.tsx": {
+      "filePath": "frontend/src/app/components/UsersPage.tsx",
+      "contentHash": "dfa17b76dc191c0a8355e94a66885476262264f128e842153946b3793f97a81a",
+      "functions": [
+        {
+          "name": "getColor",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "AvatarBubble",
+          "params": [
+            "{ initials, name, size = \"md\" }"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "StatusBadge",
+          "params": [
+            "{ active, label }"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "CustomerDetail",
+          "params": [
+            "{ user, onToggleLock }"
+          ],
+          "exported": false,
+          "lineCount": 62
+        },
+        {
+          "name": "DoctorDetail",
+          "params": [
+            "{ user, onToggleLock }"
+          ],
+          "exported": false,
+          "lineCount": 62
+        },
+        {
+          "name": "StaffDetail",
+          "params": [
+            "{ user, onToggleLock }"
+          ],
+          "exported": false,
+          "lineCount": 59
+        },
+        {
+          "name": "UserDrawer",
+          "params": [
+            "{ user, onClose, onToggleLock }"
+          ],
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "CustomerTable",
+          "params": [
+            "{ search, onSelect }"
+          ],
+          "exported": false,
+          "lineCount": 75
+        },
+        {
+          "name": "DoctorTable",
+          "params": [
+            "{ search, onSelect }"
+          ],
+          "exported": false,
+          "lineCount": 63
+        },
+        {
+          "name": "StaffTable",
+          "params": [
+            "{ search, onSelect }"
+          ],
+          "exported": false,
+          "lineCount": 75
+        },
+        {
+          "name": "UsersPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 98
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Search",
+            "Filter",
+            "MoreHorizontal",
+            "Edit",
+            "Lock",
+            "Unlock",
+            "Eye",
+            "X",
+            "Phone",
+            "Mail",
+            "MapPin",
+            "Calendar",
+            "Star",
+            "ChevronDown",
+            "Stethoscope",
+            "Scissors",
+            "Users",
+            "ShieldAlert",
+            "CheckCircle2",
+            "Clock",
+            "Activity"
+          ]
+        }
+      ],
+      "exports": [
+        "UsersPage"
+      ],
+      "totalLines": 662,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/components/WelcomePage.tsx": {
+      "filePath": "frontend/src/app/components/WelcomePage.tsx",
+      "contentHash": "bfdf5dff4282bf04ae7cdab4da1428dc2fc2ef5a1b22e9b9e4868328572d8382",
+      "functions": [
+        {
+          "name": "PawSVG",
+          "params": [
+            "{ className }"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "WelcomePage",
+          "params": [
+            "{\r\n  onLogin,\r\n  onRegister,\r\n}"
+          ],
+          "exported": true,
+          "lineCount": 152
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ChevronRight",
+            "ArrowRight"
+          ]
+        }
+      ],
+      "exports": [
+        "WelcomePage"
+      ],
+      "totalLines": 193,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/services/auth.ts": {
+      "filePath": "frontend/src/app/services/auth.ts",
+      "contentHash": "724b32a771b89ce10f7ea71ec018ddf91fff8fe531044c9de7c4799d3a786b53",
+      "functions": [
+        {
+          "name": "readStorage",
+          "params": [
+            "storage"
+          ],
+          "returnType": "AuthSession | null",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "writeStorage",
+          "params": [
+            "storage",
+            "session"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "saveSession",
+          "params": [
+            "payload"
+          ],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "clearSession",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "getStoredSession",
+          "params": [],
+          "returnType": "AuthSession | null",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "getAuthHeaders",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "requestJson",
+          "params": [
+            "url",
+            "init"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "login",
+          "params": [
+            "input"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "register",
+          "params": [
+            "input"
+          ],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "restoreSession",
+          "params": [],
+          "exported": true,
+          "lineCount": 34
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "saveSession",
+        "clearSession",
+        "getStoredSession",
+        "getAuthHeaders",
+        "login",
+        "register",
+        "restoreSession"
+      ],
+      "totalLines": 174,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/services/customerPets.ts": {
+      "filePath": "frontend/src/app/services/customerPets.ts",
+      "contentHash": "24f9c260954266008e18f391ea7a93e3260f3e8eb4163cc72cc819ddafbd4f4e",
+      "functions": [
+        {
+          "name": "requestJson",
+          "params": [
+            "url",
+            "init"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "fetchCustomerPetDashboard",
+          "params": [],
+          "returnType": "Promise<CustomerPetDashboard>",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "fetchPetDetail",
+          "params": [
+            "petId"
+          ],
+          "returnType": "Promise<PetDetail>",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "createCustomerPet",
+          "params": [
+            "input"
+          ],
+          "returnType": "Promise<{ id: number }>",
+          "exported": true,
+          "lineCount": 49
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./auth",
+          "specifiers": [
+            "getAuthHeaders"
+          ]
+        }
+      ],
+      "exports": [
+        "fetchCustomerPetDashboard",
+        "fetchPetDetail",
+        "createCustomerPet"
+      ],
+      "totalLines": 260,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/imports/pasted_text/customer-ui-ux-design.md": {
+      "filePath": "frontend/src/imports/pasted_text/customer-ui-ux-design.md",
+      "contentHash": "3230b5d10f76ecad650ccd68391a71281851c2af52fc0c53bca5606e5ad43d8e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 461,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/imports/pasted_text/pet-care-management.md": {
+      "filePath": "frontend/src/imports/pasted_text/pet-care-management.md",
+      "contentHash": "bb6eb6014fbdbddcb897d23234f463d817ff950ecd9be3cfca6b4ef379962654",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 182,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/lib/supabase.ts": {
+      "filePath": "frontend/src/lib/supabase.ts",
+      "contentHash": "e0434751d51795b46bb172490c259bc9327c16e84c9f0dff4056ef56c946d571",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@supabase/supabase-js",
+          "specifiers": [
+            "createClient"
+          ]
+        }
+      ],
+      "exports": [
+        "supabase",
+        "supabaseConfig"
+      ],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/main.tsx": {
+      "filePath": "frontend/src/main.tsx",
+      "contentHash": "94199e69248c2b6d7746d6d3847bb138497036d04393cae32c916182734a2fa9",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react-dom/client",
+          "specifiers": [
+            "createRoot"
+          ]
+        },
+        {
+          "source": "./app/App.tsx",
+          "specifiers": [
+            "App"
+          ]
+        },
+        {
+          "source": "./styles/index.css",
+          "specifiers": []
+        }
+      ],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/styles/fonts.css": {
+      "filePath": "frontend/src/styles/fonts.css",
+      "contentHash": "77be73756738cf0e399d928cf10175b53752d7e0a43d658f21034eec2a282188",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/src/styles/globals.css": {
+      "filePath": "frontend/src/styles/globals.css",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/src/styles/index.css": {
+      "filePath": "frontend/src/styles/index.css",
+      "contentHash": "95cb096d6ff1156ec6126412a0f8ad7758cfed44c96d41f7f41cc5d9323d0baa",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/src/styles/tailwind.css": {
+      "filePath": "frontend/src/styles/tailwind.css",
+      "contentHash": "bfd40759a431ec97c6bcf5ad3def9c9fa31e01531ef4c876b10afc6f80cab4de",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/src/styles/theme.css": {
+      "filePath": "frontend/src/styles/theme.css",
+      "contentHash": "be7d061d4694b47dba2fc3ad32f0c45d86341a964524384e6021c30c660fe340",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 196,
+      "hasStructuralAnalysis": false
+    },
+    "frontend/src/vite-env.d.ts": {
+      "filePath": "frontend/src/vite-env.d.ts",
+      "contentHash": "63a3a262fc603e1843542e0740264d35628d569cd18e04f4daaf9588b0acea6d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/vite.config.ts": {
+      "filePath": "frontend/vite.config.ts",
+      "contentHash": "423bed8114913ce05b79880705db939c007318f5bb0db18d8b33235859e85b7e",
+      "functions": [
+        {
+          "name": "figmaAssetResolver",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vite",
+          "specifiers": [
+            "defineConfig"
+          ]
+        },
+        {
+          "source": "path",
+          "specifiers": [
+            "path"
+          ]
+        },
+        {
+          "source": "url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
+        },
+        {
+          "source": "@tailwindcss/vite",
+          "specifiers": [
+            "tailwindcss"
+          ]
+        },
+        {
+          "source": "@vitejs/plugin-react",
+          "specifiers": [
+            "react"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 47,
+      "hasStructuralAnalysis": true
+    },
+    "index.html": {
+      "filePath": "index.html",
+      "contentHash": "1c187f1fd3a94c270c72eafe07c1423f818bef48ec47988dead6d9bace31cb01",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 16,
+      "hasStructuralAnalysis": false
+    },
+    "package.json": {
+      "filePath": "package.json",
+      "contentHash": "34062b6e70b7acb26efcdbcfbdf268db103dc04c1b9e182d67e18d73f89c87bc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "table.sql": {
+      "filePath": "table.sql",
+      "contentHash": "a7fa856b4deccd7a70a385a87f19f0a0e14b98bb4306ff282df98e69d9861daf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 326,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

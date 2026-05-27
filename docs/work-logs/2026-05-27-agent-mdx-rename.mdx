@@ -1,0 +1,25 @@
+---
+title: Agent Instructions MDX Rename
+description: Work log for renaming root AI workflow instructions to agent.mdx.
+---
+
+# Agent Instructions MDX Rename
+
+## Date
+
+2026-05-27
+
+## Summary
+
+Renamed the root AI workflow instruction file from `AGENTS.md` to `agent.mdx` so the instruction document also follows the project's MDX-first documentation convention.
+
+## Changes
+
+- Created `agent.mdx` with the existing AI workflow and Mintlify validation rules.
+- Removed `AGENTS.md`.
+- Updated references in docs and prompts from `AGENTS.md` to `agent.mdx`.
+
+## Validation
+
+- Checked for stale `AGENTS.md` references.
+- Ran `npm run docs:check`.

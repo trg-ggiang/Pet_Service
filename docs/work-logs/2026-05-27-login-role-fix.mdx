@@ -1,0 +1,25 @@
+---
+title: Login Role Routing Fix
+description: Work log for fixing test-mode login role routing.
+---
+
+# Login Role Routing Fix
+
+## Date
+
+2026-05-27
+
+## Summary
+
+Fixed the test-mode login flow so it no longer falls back to the admin dashboard by default when the intended role is customer.
+
+## Changes
+
+- Changed the default test role in `LoginPage` from `admin` to `customer`.
+- Captured the selected role at submit time before the async loading delay.
+- Disabled role selection while the login submit is loading to prevent state changes after submit.
+
+## Validation
+
+- Ran `npm --prefix frontend run build`.
+- Ran `npm --prefix frontend run lint`.

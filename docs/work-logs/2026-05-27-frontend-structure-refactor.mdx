@@ -1,0 +1,31 @@
+---
+title: Frontend Structure Refactor
+description: Work log for refactoring frontend source folders by responsibility.
+---
+
+# Frontend Structure Refactor
+
+## Date
+
+2026-05-27
+
+## Summary
+
+Refactored the frontend source tree so files are grouped by responsibility instead of keeping route screens, UI primitives, hooks, and helpers together under `app/components`.
+
+## Changes
+
+- Moved route-level screens and role portals to `frontend/src/pages`.
+- Moved reusable UI primitives to `frontend/src/components/ui`.
+- Moved Figma-specific image fallback component to `frontend/src/components/figma`.
+- Moved `use-mobile` to `frontend/src/hooks`.
+- Moved `cn` helper to `frontend/src/utils`.
+- Added shared auth/navigation types in `frontend/src/types`.
+- Added admin navigation/status constants in `frontend/src/constants`.
+- Added reserved `layouts`, `services`, and `contexts` folders for future expansion.
+- Updated import paths to use the existing `@` alias.
+
+## Validation
+
+- Ran `npm --prefix frontend run build`.
+- Ran `npm run docs:check`.

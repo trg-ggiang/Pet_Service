@@ -1,0 +1,339 @@
+---
+title: Business Requirements
+description: Business requirements for the Pet Service system.
+---
+
+# Business Requirements Document
+
+## 1. Tong quan du an
+
+Pet Service la mot he thong ho tro nguoi nuoi thu cung va doi ngu dich vu quan ly cac nghiep vu lien quan den thu cung. Du an huong den viec tao mot noi tap trung de nguoi dung co the xem dich vu, quan ly thong tin thu cung, tao lich hen va theo doi trang thai xu ly.
+
+O phien ban hien tai, codebase dang co frontend React/Vite, backend Express, Prisma schema cho PostgreSQL va Mintlify docs. BRD nay ghi lai business scope de team co co so thong nhat khi phat trien tiep.
+
+## 2. Muc tieu san pham
+
+- Giup nguoi nuoi thu cung de dang tim va dang ky cac dich vu phu hop.
+- Giam viec trao doi roi rac qua nhieu kenh nhu dien thoai, tin nhan hoac ghi chu thu cong.
+- Cho phep nguoi dung quan ly thong tin co ban cua thu cung tai mot noi.
+- Cho phep doi ngu dich vu tiep nhan, xu ly va theo doi lich hen.
+- Ho tro doctor, staff va admin bang cac man hinh van hanh rieng.
+- Tao nen tang ban dau de mo rong sang thanh toan, chat, danh gia, goi y dich vu va dashboard sau MVP.
+
+## 3. Doi tuong nguoi dung
+
+### Customer
+
+Nguoi nuoi thu cung can tim dich vu cham soc, spa, kham suc khoe, trong giu, tu van hoac cac dich vu khac cho thu cung.
+
+### Doctor
+
+Nguoi phu trach kham benh, xem lich, ghi nhan ket qua kham, quan ly ho so y te, don thuoc va thong tin tiem phong.
+
+### Staff
+
+Nhan su van hanh phu trach lich hen, grooming, boarding, bao cao, dich vu va ho tro customer.
+
+### Admin
+
+Nguoi quan ly du lieu nen tang, kiem soat nguoi dung, cau hinh, danh sach dich vu va cac thong tin can thiet de he thong van hanh on dinh.
+
+## 4. Danh sach role trong he thong
+
+- Guest: nguoi chua dang nhap.
+- Customer: nguoi nuoi thu cung.
+- Doctor: bac si/nguoi phu trach kham.
+- Staff: nhan su van hanh.
+- Admin: quan tri vien he thong.
+
+## 5. Chuc nang theo tung role
+
+### Guest
+
+- Xem trang chinh/gioi thieu san pham.
+- Xem danh sach dich vu cong khai neu he thong cho phep.
+- Dang ky tai khoan.
+- Dang nhap vao he thong.
+
+### Customer
+
+- Quan ly thong tin ca nhan co ban.
+- Them, sua, xoa hoac xem thong tin thu cung cua minh.
+- Xem danh sach dich vu.
+- Tim kiem hoac loc dich vu theo nhu cau co ban.
+- Tao lich hen/dang ky dich vu.
+- Xem trang thai lich hen/dich vu.
+- Huy yeu cau neu yeu cau chua duoc xu ly hoac theo business rule cho phep.
+
+### Doctor
+
+- Xem lich kham va thong tin appointment lien quan.
+- Xem thong tin customer va pet can thiet cho viec kham.
+- Ghi nhan trieu chung, ket qua kham, chan doan va ngay tai kham.
+- Quan ly benh, don thuoc va tiem phong lien quan den medical visit.
+- Xem thong ke hoac record phuc vu cong viec kham.
+
+### Staff
+
+- Xem va cap nhat lich hen/dich vu.
+- Ho tro grooming, boarding va cac nghiep vu van hanh.
+- Cap nhat trang thai xu ly: moi, da xac nhan, dang xu ly, hoan thanh, da huy.
+- Xem thong tin can thiet cua customer va pet de phuc vu yeu cau.
+- Quan ly bao cao va dich vu theo quyen.
+
+### Admin
+
+- Quan ly nguoi dung.
+- Quan ly danh muc/danh sach dich vu.
+- Quan ly cau hinh, staff, doctor va cac du lieu nen tang.
+- Kiem tra va dieu chinh du lieu bat thuong neu can.
+- Theo doi cac yeu cau dich vu trong he thong o muc tong quan.
+
+## 6. User flow chinh
+
+### Customer dat dich vu
+
+1. Customer vao he thong.
+2. Customer dang ky/dang nhap.
+3. Customer them thong tin thu cung neu chua co.
+4. Customer xem hoac tim kiem dich vu.
+5. Customer chon dich vu phu hop.
+6. Customer tao lich hen/dang ky dich vu.
+7. He thong ghi nhan yeu cau voi trang thai ban dau.
+8. Customer theo doi trang thai yeu cau.
+
+### Doctor xu ly kham benh
+
+1. Doctor dang nhap.
+2. Doctor xem lich kham va appointment.
+3. Doctor mo man hinh exam.
+4. Doctor ghi nhan ket qua kham, chan doan, don thuoc hoac tiem phong.
+5. He thong cap nhat record lien quan.
+
+### Staff xu ly yeu cau
+
+1. Staff dang nhap.
+2. Staff xem danh sach yeu cau moi.
+3. Staff xem chi tiet yeu cau.
+4. Staff xac nhan, tu choi hoac cap nhat trang thai.
+5. He thong cap nhat trang thai de Customer co the theo doi.
+
+### Admin quan ly du lieu co ban
+
+1. Admin dang nhap.
+2. Admin xem danh sach nguoi dung, dich vu, staff, doctor hoac yeu cau.
+3. Admin tao, sua, khoa, an/hien hoac dieu chinh du lieu theo quyen.
+4. He thong luu lai thay doi quan trong neu co co che audit/log.
+
+## 7. Business rules quan trong
+
+- Mot Customer co the co nhieu thu cung.
+- Mot lich hen nen gan voi mot Customer, mot Pet va mot hoac nhieu Service.
+- Appointment co the gan voi Doctor, Staff va DoctorSchedule theo tung workflow.
+- Trang thai yeu cau can co vong doi ro rang, vi du: pending -> confirmed -> in progress -> completed/cancelled.
+- Yeu cau da hoan thanh khong nen duoc sua cac thong tin quan trong, tru khi Admin co quyen dac biet.
+- Customer chi duoc xem va quan ly du lieu cua chinh minh.
+- Doctor chi duoc xem va xu ly du lieu lien quan den lich kham/ho so duoc phan cong.
+- Staff chi duoc quan ly cac workflow van hanh theo quyen.
+- Admin co quyen quan ly toan he thong, nhung cac thao tac quan trong nen co log.
+- Khong luu secret key, token, password hoac database URL that trong source code.
+- Neu co gia dich vu, can xac dinh don vi tien te va cach hien thi thong nhat.
+- Neu co lich hen, can xac dinh timezone va quy tac trung lich.
+
+## 8. Yeu cau du lieu chinh
+
+### User
+
+- ID
+- Email
+- Password hash
+- Role
+- Status
+- Created/updated/deleted timestamps
+
+### Customer
+
+- ID
+- User ID
+- Full name
+- Phone
+- Address
+
+### Doctor
+
+- ID
+- User ID
+- Full name
+- Specialization
+- Degree
+- Experience years
+- Room name
+
+### Staff
+
+- ID
+- User ID
+- Full name
+- Phone
+- Address
+
+### Pet
+
+- ID
+- Customer ID
+- Species ID
+- Breed ID
+- Name
+- Gender
+- Date of birth
+- Weight
+- Color
+- Image URL
+- Allergies
+- Chronic diseases
+- Special note
+
+### Service
+
+- ID
+- Name
+- Type
+- Price
+- Description
+- Active status
+
+### Appointment
+
+- ID
+- Pet ID
+- Doctor ID
+- Staff ID
+- Doctor schedule ID
+- Appointment type
+- Status
+- Note
+- Cancel reason
+- Created/updated timestamps
+
+### Medical records
+
+- Medical visit
+- Disease
+- Medical visit disease
+- Prescription
+- Prescription item
+- Vaccination
+
+### Grooming and boarding
+
+- Grooming record
+- Cage
+- Boarding
+- Boarding daily update
+
+### Finance and communication
+
+- Invoice
+- Invoice item
+- Notification
+- Review
+
+## 9. Yeu cau giao dien tong quan
+
+- Giao dien can don gian, ro rang, de dung voi nguoi khong co nhieu kinh nghiem ky thuat.
+- Man hinh chinh nen cho nguoi dung nhanh chong hieu san pham cung cap dich vu gi.
+- Danh sach dich vu can de doc, co ten, mo ta ngan, gia neu co va nut thao tac ro rang.
+- Form tao lich hen/dich vu can ngan gon, co validation de tranh thieu thong tin quan trong.
+- Trang quan ly thu cung can hien thi cac thong tin co ban va thao tac them/sua/xoa ro rang.
+- Trang theo doi yeu cau can hien thi trang thai noi bat, de nguoi dung biet viec dang o dau.
+- Khu vuc Admin/Doctor/Staff nen uu tien tinh thuc dung, bang danh sach de scan va thao tac nhanh.
+- Thiet ke can ho tro responsive co ban cho desktop va mobile.
+
+## 10. Yeu cau bao mat co ban
+
+- Mat khau phai duoc hash, khong luu plain text.
+- Phan quyen theo role phai duoc kiem tra o backend, khong chi dua vao frontend.
+- Customer khong duoc truy cap du lieu cua Customer khac.
+- Doctor va Staff khong duoc truy cap yeu cau khong thuoc pham vi quyen.
+- Admin endpoint can duoc bao ve boi authentication va authorization.
+- Validate input o ca frontend va backend.
+- Khong hard-code secret key, token, credential hoac database URL vao source code.
+- Su dung bien moi truong cho cau hinh nhay cam.
+- Neu co upload anh trong tuong lai, can gioi han loai file, kich thuoc file va quet noi dung phu hop.
+
+## 11. Tech stack
+
+- Frontend: React, Vite, TypeScript, Tailwind CSS, Radix UI components.
+- Backend: Node.js, Express, Prisma, Supabase client, JWT.
+- Database: PostgreSQL cho du lieu quan he nhu user, pet, service, booking va invoice.
+- Authentication: JWT-based auth.
+- Styling: Tailwind CSS va component library.
+- API style: REST API cho MVP de don gian va de test.
+- Documentation: Mintlify trong `/docs`, dung `.mdx`.
+
+## 12. Pham vi MVP
+
+- Trang chinh/gioi thieu san pham.
+- Dang ky va dang nhap neu he thong can phan quyen.
+- Quan ly thong tin nguoi dung co ban.
+- Quan ly thong tin thu cung co ban.
+- Danh sach dich vu co ban.
+- Tim kiem/loc dich vu o muc don gian.
+- Tao lich hen/dang ky dich vu.
+- Xem trang thai lich hen/dich vu.
+- Doctor xem va xu ly lich kham.
+- Staff xem va cap nhat trang thai yeu cau.
+- Admin quan ly du lieu co ban neu can.
+- Tai lieu setup va huong dan manual test toi thieu.
+
+## 13. Nhung chuc nang de sau MVP
+
+- Thanh toan online day du.
+- Chat realtime giua Customer va doi ngu dich vu.
+- Danh gia, binh luan va xep hang dich vu nang cao.
+- Goi y dich vu bang AI.
+- Ung dung mobile rieng.
+- Tich hop ban do, dinh vi hoac giao hang.
+- Dashboard thong ke nang cao.
+- Voucher, loyalty program hoac tu dong hoa marketing.
+- Upload va quan ly ho so suc khoe nang cao cho thu cung.
+- Nhac lich tu dong qua email/SMS/push notification.
+
+## 14. Do / Don't khi phat trien du an
+
+### Do
+
+- Doc `docs/brief.mdx`, `docs/BRD.mdx`, `docs/plans/master-plan.mdx` va `agent.mdx` truoc khi lam task lon.
+- Lap plan ngan truoc khi code cac thay doi co nhieu buoc.
+- Giu thay doi dung scope duoc giao.
+- Viet code ro rang, de bao tri va phu hop voi cau truc san co.
+- Bao cao file da sua sau moi task.
+- Huong dan manual test sau moi task.
+- Cap nhat `docs/CHANGELOG.mdx` khi co thay doi quan trong.
+- Su dung bien moi truong cho cau hinh nhay cam.
+
+### Don't
+
+- Khong tu y them tinh nang ngoai yeu cau.
+- Khong refactor lon neu task khong yeu cau.
+- Khong hard-code secret, token, password hoac database URL.
+- Khong sua/xoa du lieu hoac file khong lien quan.
+- Khong bo qua phan quyen backend cho cac thao tac nhay cam.
+- Khong commit file build tam, log ca nhan hoac file chua secret.
+
+## 15. Can xac nhan them
+
+- Mo hinh san pham chinh la marketplace ket noi nhieu nha cung cap hay la he thong cho mot don vi dich vu duy nhat.
+- Danh sach dich vu cu the trong giai doan MVP.
+- Co can Service Provider dang nhap va tu quan ly dich vu trong MVP hay Admin/Staff quan ly thay.
+- Co can thanh toan, dat coc hoac bao gia trong MVP khong.
+- Co can lich hen theo khung gio thuc te va chong trung lich ngay trong MVP khong.
+- Yeu cau ve ngon ngu giao dien, tien te, timezone va dia ban phuc vu.
+- Co can upload anh thu cung, anh dich vu hoac tai lieu suc khoe trong MVP khong.
+
+## 16. Success criteria
+
+- Users can complete core workflows without manual database intervention.
+- Backend APIs enforce authentication and role boundaries.
+- Database migrations remain reproducible.
+- Documentation stays current with implementation.

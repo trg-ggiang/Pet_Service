@@ -1,0 +1,78 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Pet Service Docs",
+  "theme": "mint",
+  "colors": {
+    "primary": "#16A34A"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "groups": [
+          {
+            "group": "Start Here",
+            "pages": [
+              "index",
+              "brief",
+              "BRD",
+              "setup-guide",
+              "CHANGELOG"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Planning",
+        "groups": [
+          {
+            "group": "Plans",
+            "pages": [
+              "plans/master-plan",
+              "plans/phase-01-project-setup",
+              "plans/phase-02-product-scope-confirmation",
+              "plans/phase-03-database-design"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Product",
+        "groups": [
+          {
+            "group": "System Areas",
+            "pages": [
+              "features/overview",
+              "architecture/overview",
+              "api/overview",
+              "database/overview",
+              "deployment/overview"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "AI Workflow",
+        "groups": [
+          {
+            "group": "Prompts",
+            "pages": [
+              "prompts/start-session",
+              "prompts/end-session"
+            ]
+          },
+          {
+            "group": "Work Logs",
+            "pages": [
+              "work-logs/2026-05-27-docs-mdx-dedup",
+              "work-logs/2026-05-27-frontend-structure-refactor",
+              "work-logs/2026-05-27-session-summary",
+              "work-logs/2026-05-27-agent-mdx-rename",
+              "work-logs/2026-05-27-login-role-fix"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

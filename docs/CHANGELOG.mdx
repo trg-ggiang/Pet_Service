@@ -1,0 +1,37 @@
+---
+title: Changelog
+description: Project documentation and implementation change history.
+---
+
+# Changelog
+
+Tat ca thay doi quan trong cua project se duoc ghi lai tai file nay.
+
+Format tham khao theo nhom:
+
+- Added: tinh nang moi.
+- Changed: thay doi hanh vi hien co.
+- Fixed: sua loi.
+- Removed: loai bo tinh nang hoac thanh phan.
+
+## Unreleased
+
+- Fixed test-mode login defaulting to the admin dashboard when no role was selected; customer is now the default test role and role selection is locked during submit.
+- Renamed root AI workflow instructions from `AGENTS.md` to `agent.mdx` and updated references.
+- Added end-of-session work log for the documentation cleanup and frontend structure refactor session.
+- Refactored frontend source folders into `components`, `pages`, `hooks`, `types`, `constants`, `utils`, `layouts`, `services`, and `contexts`.
+- Moved UI primitives, page screens, hooks, types, and constants into responsibility-based folders.
+- Updated frontend import paths and verified the frontend production build.
+- Converted duplicate and remaining plan docs under `docs/plans` from `.md` to `.mdx`.
+- Added Phase 02 and Phase 03 plan pages to Mintlify navigation.
+- Cleaned duplicate root docs by merging `.md` content into `.mdx` files.
+- Updated internal references from duplicate `.md` docs to `.mdx`.
+- Removed duplicate root `.md` docs after preserving their content in Mintlify-compatible `.mdx` pages.
+
+## 2026-05-27
+
+- Set up AI-native Mintlify documentation structure.
+- Added project overview, brief, BRD, setup guide, plans, architecture, feature, API, database, deployment, and prompt docs.
+- Added Mintlify navigation in `docs.json`.
+- Added npm docs scripts at the project root.
+- Khoi tao cau truc tai lieu trong `docs/`.

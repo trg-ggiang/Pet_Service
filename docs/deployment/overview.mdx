@@ -1,0 +1,24 @@
+---
+title: Deployment Overview
+description: Deployment notes and environment requirements.
+---
+
+# Deployment Overview
+
+## Components
+
+- Frontend: Vite build output.
+- Backend: Node.js Express service.
+- Database: PostgreSQL connection used by Prisma.
+- Docs: Mintlify documentation site.
+
+## Required environment
+
+- Backend database URL and auth-related secrets.
+- Supabase configuration when Supabase features are enabled.
+- Frontend API URL configuration.
+- CORS client URL for the backend.
+
+## Deployment rule
+
+Any deployment change must document target platform, environment variables, build command, start command, and rollback notes.

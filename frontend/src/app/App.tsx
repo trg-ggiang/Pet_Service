@@ -1,19 +1,22 @@
 import { useState } from "react";
-import { ExamPage } from "./components/ExamPage";
-import { UsersPage } from "./components/UsersPage";
-import { ServicesPage } from "./components/ServicesPage";
-import { StaffPage } from "./components/StaffPage";
-import { ReportsPage } from "./components/ReportsPage";
-import { SettingsPage } from "./components/SettingsPage";
-import { HelpPage } from "./components/HelpPage";
-import { AppointmentsPage } from "./components/AppointmentsPage";
-import { WelcomePage } from "./components/WelcomePage";
-import { LoginPage, type UserRole } from "./components/LoginPage";
-import { RegisterPage } from "./components/RegisterPage";
-import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
-import { CustomerPortal } from "./components/CustomerPortal";
-import { DoctorPortal } from "./components/DoctorPortal";
-import { StaffPortal } from "./components/StaffPortal";
+import { ExamPage } from "@/pages/ExamPage";
+import { UsersPage } from "@/pages/UsersPage";
+import { ServicesPage } from "@/pages/ServicesPage";
+import { StaffPage } from "@/pages/StaffPage";
+import { ReportsPage } from "@/pages/ReportsPage";
+import { SettingsPage } from "@/pages/SettingsPage";
+import { HelpPage } from "@/pages/HelpPage";
+import { AppointmentsPage } from "@/pages/AppointmentsPage";
+import { WelcomePage } from "@/pages/WelcomePage";
+import { LoginPage } from "@/pages/LoginPage";
+import { RegisterPage } from "@/pages/RegisterPage";
+import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
+import { CustomerPortal } from "@/pages/CustomerPortal";
+import { DoctorPortal } from "@/pages/DoctorPortal";
+import { StaffPortal } from "@/pages/StaffPortal";
+import { adminPageLabels, appointmentStatusConfig } from "@/constants/adminNavigation";
+import type { UserRole } from "@/types/auth";
+import type { AdminPageId, AdminStatus } from "@/types/navigation";
 import {
   LayoutDashboard, Calendar, Users, Scissors,
   BedDouble, Stethoscope, BarChart3, Settings, Bell,
@@ -32,18 +35,12 @@ import {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Status = "scheduled" | "in_progress" | "completed" | "cancelled";
-type PageId =
-  | "dashboard" | "appointments" | "patients" | "staff" | "reports"
-  | "clinic" | "grooming" | "boarding" | "vaccination"
-  | "exam" | "users" | "services" | "settings" | "help";
-
 // ─── Appointments data ────────────────────────────────────────────────────────
 
 interface Appointment {
   id: string; time: string; customer: string; pet: string;
   species: "Chó" | "Mèo"; service: string; staff: string;
-  status: Status; amount: string;
+  status: AdminStatus; amount: string;
 }
 
 const appointments: Appointment[] = [
@@ -196,15 +193,8 @@ const kpis: KPIData[] = [
 
 // ─── Shared utilities ─────────────────────────────────────────────────────────
 
-const statusConfig: Record<Status, { label: string; cls: string; dot: string }> = {
-  scheduled:   { label: "Chờ khám",   cls: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",         dot: "bg-blue-500" },
-  in_progress: { label: "Đang khám",  cls: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",      dot: "bg-amber-500" },
-  completed:   { label: "Hoàn thành", cls: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200", dot: "bg-emerald-500" },
-  cancelled:   { label: "Đã huỷ",     cls: "bg-red-50 text-red-600 ring-1 ring-inset ring-red-200",            dot: "bg-red-400" },
-};
-
-function StatusBadge({ status }: { status: Status }) {
-  const { label, cls, dot } = statusConfig[status];
+function StatusBadge({ status }: { status: AdminStatus }) {
+  const { label, cls, dot } = appointmentStatusConfig[status];
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cls}`}>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
@@ -254,8 +244,8 @@ function MiniSparkline({ data, color, idx }: { data: number[]; color: string; id
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-function Sidebar({ active, onNav, onLogout }: { active: PageId; onNav: (id: PageId) => void; onLogout: () => void }) {
-  function NavBtn({ id, label, icon: Icon, badge }: { id: PageId; label: string; icon: React.ElementType; badge?: string }) {
+function Sidebar({ active, onNav, onLogout }: { active: AdminPageId; onNav: (id: AdminPageId) => void; onLogout: () => void }) {
+  function NavBtn({ id, label, icon: Icon, badge }: { id: AdminPageId; label: string; icon: React.ElementType; badge?: string }) {
     const isActive = active === id;
     return (
       <button
@@ -340,15 +330,7 @@ function Sidebar({ active, onNav, onLogout }: { active: PageId; onNav: (id: Page
 
 // ─── Top Navigation ───────────────────────────────────────────────────────────
 
-const pageLabels: Record<PageId, string> = {
-  dashboard: "Bảng điều khiển", appointments: "Lịch hẹn", patients: "Bệnh nhân",
-  staff: "Nhân viên", reports: "Báo cáo", clinic: "Phòng khám",
-  grooming: "Grooming", boarding: "Lưu trú", vaccination: "Tiêm chủng",
-  exam: "Phòng khám · APT-004", users: "Quản lý người dùng",
-  services: "Quản lý dịch vụ", settings: "Cài đặt", help: "Hướng dẫn & Hỗ trợ",
-};
-
-function TopNav({ page }: { page: PageId }) {
+function TopNav({ page }: { page: AdminPageId }) {
   const [showNotif, setShowNotif] = useState(false);
   const unread = notifications.length;
 
@@ -357,7 +339,7 @@ function TopNav({ page }: { page: PageId }) {
       <div className="flex items-center gap-1.5 text-sm">
         <span className="text-muted-foreground font-medium">PetCare Center</span>
         <ChevronRight size={14} className="text-muted-foreground/60" />
-        <span className="font-semibold text-foreground">{pageLabels[page]}</span>
+        <span className="font-semibold text-foreground">{adminPageLabels[page]}</span>
       </div>
       <div className="flex items-center gap-2.5">
         <div className="relative">
@@ -884,7 +866,7 @@ function BoardingCapacityPanel({ onManage }: { onManage?: () => void }) {
 
 // ─── Admin Dashboard Page ─────────────────────────────────────────────────────
 
-function AdminDashboard({ onNav }: { onNav?: (page: PageId) => void }) {
+function AdminDashboard({ onNav }: { onNav?: (page: AdminPageId) => void }) {
   const [refreshed, setRefreshed] = useState(false);
 
   const handleRefresh = () => {
@@ -968,7 +950,7 @@ function PlaceholderPage({ label }: { label: string }) {
 // ─── Admin Root ───────────────────────────────────────────────────────────────
 
 function AdminRoot({ onLogout }: { onLogout: () => void }) {
-  const [page, setPage] = useState<PageId>("dashboard");
+  const [page, setPage] = useState<AdminPageId>("dashboard");
 
   const isExam = page === "exam";
   const goToApts = () => setPage("appointments");
@@ -991,7 +973,7 @@ function AdminRoot({ onLogout }: { onLogout: () => void }) {
               {page === "reports"      && <ReportsPage />}
               {page === "settings"     && <SettingsPage onLogout={onLogout} />}
               {page === "help"         && <HelpPage />}
-              {!["dashboard","appointments","users","services","staff","reports","settings","help"].includes(page) && <PlaceholderPage label={pageLabels[page]} />}
+              {!["dashboard","appointments","users","services","staff","reports","settings","help"].includes(page) && <PlaceholderPage label={adminPageLabels[page]} />}
             </div>
           )}
         </main>

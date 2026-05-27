@@ -1,0 +1,22 @@
+---
+title: API Overview
+description: Backend API overview for Pet Service.
+---
+
+# API Overview
+
+## Backend base
+
+The backend Express server runs on `PORT` or defaults to `5050`.
+
+## Existing route groups
+
+| Route | Purpose |
+| --- | --- |
+| `/api/health` | Backend health and integration status. |
+| `/api/auth` | Authentication routes. |
+| `/api/customer` | Customer-facing routes, including pet profile workflows. |
+
+## API documentation rule
+
+When adding or changing an endpoint, document the method, path, auth requirement, request body, response body, and error cases.
