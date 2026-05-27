@@ -86,6 +86,76 @@ export async function createCustomerPet(input: CreateCustomerPetInput): Promise<
   return payload.pet;
 }
 
+function getFilenameFromContentDisposition(headerValue: string | null, fallback: string) {
+  if (!headerValue) return fallback;
+
+  const utf8Match = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1].trim());
+  }
+
+  const filenameMatch = headerValue.match(/filename="?([^";]+)"?/i);
+  return filenameMatch?.[1]?.trim() || fallback;
+}
+
+async function downloadInvoicePdfFromUrl(url: string, fallbackFilename: string): Promise<void> {
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.message || `Request failed (${response.status})`);
+  }
+
+  const blob = await response.blob();
+  const filename = getFilenameFromContentDisposition(
+    response.headers.get("Content-Disposition"),
+    fallbackFilename,
+  );
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+export async function downloadCustomerInvoicePdf(invoiceId: number): Promise<void> {
+  await downloadInvoicePdfFromUrl(
+    `/api/customer/invoices/${invoiceId}/pdf`,
+    `invoice-${String(invoiceId).padStart(6, "0")}.pdf`,
+  );
+}
+
+export async function downloadLatestCustomerInvoicePdf(): Promise<void> {
+  await downloadInvoicePdfFromUrl(
+    "/api/customer/invoices/latest/pdf",
+    "invoice-latest.pdf",
+  );
+}
+
+export async function downloadMatchingCustomerInvoicePdf(input: {
+  petName: string;
+  serviceName: string;
+  serviceType: string;
+  date: string;
+}): Promise<void> {
+  const params = new URLSearchParams({
+    petName: input.petName,
+    serviceName: input.serviceName,
+    serviceType: input.serviceType,
+    date: input.date,
+  });
+
+  await downloadInvoicePdfFromUrl(
+    `/api/customer/invoices/match/pdf?${params.toString()}`,
+    "invoice.pdf",
+  );
+}
+
 export async function updateCustomerPet(petId: number, input: UpdateCustomerPetInput): Promise<{ id: number }> {
   const speciesId = Number(input.speciesId);
 

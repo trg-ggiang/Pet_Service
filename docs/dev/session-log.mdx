@@ -151,6 +151,85 @@ Build passed. Vite still reports the existing large chunk warning.
 fix: adjust customer dashboard layout
 ```
 
+## 2026-05-27 - Understand Graph Refresh
+
+### Goal
+
+Generate an Understand Anything knowledge graph for the current repository state.
+
+### Work Completed
+
+- Ran deterministic Understand scan, import-map extraction, batch computation, and structure extraction.
+- Generated `.understand-anything/knowledge-graph.json`.
+- Generated `.understand-anything/fingerprints.json` and `.understand-anything/meta.json`.
+- Validated that graph edges, layers, and tour references do not point to missing nodes.
+
+### Files Changed
+
+- `.understand-anything/knowledge-graph.json`
+- `.understand-anything/fingerprints.json`
+- `.understand-anything/meta.json`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Deterministic graph validation: 609 nodes, 558 edges, 4 layers, 4 tour steps, 0 dangling references.
+
+### Result
+
+Graph generated in deterministic structure mode without LLM subagent descriptions.
+
+## 2026-05-27 - Customer Invoice PDF Export
+
+### Goal
+
+Make customer invoice downloads return a real PDF from the backend.
+
+### Work Completed
+
+- Added backend PDF generation with `pdfkit`.
+- Added authenticated customer route `GET /api/customer/invoices/:invoiceId/pdf`.
+- Added latest-invoice fallback route `GET /api/customer/invoices/latest/pdf` for the current mock customer history modal.
+- Added match route `GET /api/customer/invoices/match/pdf` so history rows download the invoice matching their pet, service type, service name, and date.
+- Updated customer service history to build rows from backend pet detail invoices instead of static mock history data.
+- Added invoice items to the pet detail response so the frontend can show the real billed service and use the real invoice id for downloads.
+- Validated invoice ownership through the invoice appointment pet customer before exporting.
+- Added PDF download actions to the customer pet invoice list and customer history modal.
+- Documented the new API endpoint.
+
+### Files Changed
+
+- `backend/package.json`
+- `backend/package-lock.json`
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/invoicePdfService.js`
+- `frontend/src/services/customerPets.ts`
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+
+### Test
+
+- `node --check backend/src/services/invoicePdfService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+
+### Result
+
+Backend route and frontend build checks passed. Frontend build still reports the existing large chunk warning.
+
+### Open Issues
+
+- Full authenticated PDF download was not exercised against a live Supabase database in this session.
+
+### Suggested Commit Message
+
+```text
+feat: export customer invoices as pdf
+```
+
 ## 2026-05-27 - Add Pet Modal Input Enhancements
 
 ### Goal
@@ -222,4 +301,41 @@ Build passed. Vite still reports the existing large chunk warning.
 
 ```text
 feat: add pet profile edit flow
+```
+
+## 2026-05-27 - Customer Notifications By User
+
+### Goal
+
+Load customer notifications from the backend and scope them to the authenticated user.
+
+### Work Completed
+
+- Added customer notification service functions that query `notifications` by `user_id`.
+- Added customer notification routes for listing, marking one read, and marking all read.
+- Replaced customer portal mock notifications with data loaded from `/api/customer/notifications`.
+- Wired read-state actions to backend updates so customers only update their own notifications.
+
+### Files Changed
+
+- `backend/src/services/customerNotificationsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `frontend/src/services/customerNotifications.ts`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customerNotificationsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: scope customer notifications by user
 ```

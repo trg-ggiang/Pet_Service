@@ -53,6 +53,9 @@ SUPABASE_SERVICE_ROLE_KEY=
 - `/api/health`
 - `/api/auth`
 - `/api/customer`
+  - `GET /api/customer/invoices/:invoiceId/pdf` exports a customer-owned invoice as a PDF.
+  - `GET /api/customer/invoices/latest/pdf` exports the current customer's latest invoice as a PDF.
+  - `GET /api/customer/invoices/match/pdf` exports the current customer's invoice matching pet, service, and date query parameters.
 
 ## Rules
 
