@@ -203,12 +203,13 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [tab, setTab] = useState<"home" | "apts" | "pets" | "history" | "notifications">("home");
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const [pets, setPets] = useState<Pet[]>(INITIAL_PETS);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [apts, setApts] = useState<Apt[]>(MOCK_APTS);
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [petsLoading, setPetsLoading] = useState(true);
 
   // Appointments filters
   const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "in_progress" | "completed" | "cancelled">("all");
@@ -228,6 +229,47 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [bookingPetName, setBookingPetName] = useState<string | null>(null);
   const [reschedulingApt, setReschedulingApt] = useState<Apt | null>(null);
   const [cancellingAptId, setCancellingAptId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void (async () => {
+      try {
+        const dash = await fetchCustomerPetDashboard();
+        if (!mounted) return;
+
+        setPets(
+          (dash.pets ?? []).map((pet) => ({
+            id: pet.id,
+            name: pet.name,
+            species: pet.species,
+            breed: pet.breed,
+            age: pet.age,
+            weight: pet.weight,
+            colorId: pet.colorId,
+            initials: pet.initials,
+            lastVisit: pet.lastVisit,
+            nextVaccine: pet.nextVaccine,
+            healthy: pet.healthy,
+            image: pet.image,
+          })),
+        );
+      } catch (error) {
+        console.error("Failed to load customer pets dashboard", error);
+        if (mounted) {
+          setPets(INITIAL_PETS);
+        }
+      } finally {
+        if (mounted) {
+          setPetsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Filter logic for appointments
   const filteredApts = apts.filter((apt) => {

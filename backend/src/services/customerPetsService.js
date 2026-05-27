@@ -475,8 +475,137 @@ async function createCustomerPet(input, customerId) {
   return data;
 }
 
+async function updateCustomerPet(petId, input, customerId) {
+  const petIdNumber = Number(petId);
+  const effectiveCustomerId = Number(customerId);
+  const rawSpecies = input?.speciesId ?? input?.species_id;
+  let speciesId = Number(rawSpecies);
+
+  const rawBreed = input?.breedId ?? input?.breed_id;
+  let breedId =
+    rawBreed === "" || rawBreed === undefined || rawBreed === null
+      ? null
+      : Number(rawBreed);
+  if (breedId !== null && !Number.isFinite(breedId)) {
+    breedId = null;
+  }
+
+  if (!Number.isFinite(petIdNumber)) {
+    throw new Error("Invalid petId");
+  }
+
+  if (!Number.isFinite(effectiveCustomerId)) {
+    throw new Error("Thiếu thông tin khách hàng");
+  }
+
+  console.debug("[service] updateCustomerPet parsed:", {
+    petIdNumber,
+    effectiveCustomerId,
+    speciesId,
+    breedId,
+    rawSpecies,
+    rawBreed,
+    name: input?.name,
+  });
+
+  if (!Number.isFinite(speciesId)) {
+    const candidateName =
+      typeof input?.species === "string"
+        ? input.species
+        : typeof input?.speciesName === "string"
+          ? input.speciesName
+          : typeof rawSpecies === "string"
+            ? rawSpecies
+            : "";
+
+    const speciesName = String(candidateName || "").trim();
+
+    if (speciesName) {
+      const { data: speciesRow, error: speciesError } = await supabase
+        .from("animal_species")
+        .select("id")
+        .ilike("name", speciesName)
+        .maybeSingle();
+
+      if (speciesError) throw new Error(speciesError.message);
+      if (speciesRow?.id) {
+        speciesId = Number(speciesRow.id);
+      }
+    }
+  }
+
+  if (!Number.isFinite(speciesId)) {
+    throw new Error("Vui lòng chọn giống loài hợp lệ.");
+  }
+
+  if (breedId === null) {
+    const candidateBreedName =
+      typeof input?.breed === "string"
+        ? input.breed
+        : typeof input?.breedName === "string"
+          ? input.breedName
+          : typeof rawBreed === "string"
+            ? rawBreed
+            : "";
+    const breedName = String(candidateBreedName || "").trim();
+
+    if (breedName) {
+      const { data: breedRow, error: breedError } = await supabase
+        .from("breeds")
+        .select("id")
+        .ilike("name", breedName)
+        .eq("species_id", speciesId)
+        .maybeSingle();
+
+      if (breedError) throw new Error(breedError.message);
+      if (breedRow?.id) {
+        breedId = Number(breedRow.id);
+      }
+    }
+  }
+
+  const imgUrl = input?.imgUrl ?? input?.img_url;
+  const chronicDiseases = input?.chronicDiseases ?? input?.chronic_diseases;
+  const specialNote = input?.specialNote ?? input?.special_note;
+
+  const payload = {
+    species_id: speciesId,
+    breed_id: breedId,
+    name: input?.name?.trim(),
+    gender: input?.gender ?? "UNKNOWN",
+    dob: input?.dob || null,
+    weight: input?.weight ? Number(input.weight) : null,
+    color: input?.color?.trim() || null,
+    img_url: imgUrl?.trim() || null,
+    allergies: input?.allergies?.trim() || null,
+    chronic_diseases: chronicDiseases?.trim() || null,
+    special_note: specialNote?.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (!payload.name) {
+    throw new Error("name is required");
+  }
+
+  const { data, error } = await supabase
+    .from("pets")
+    .update(payload)
+    .eq("id", petIdNumber)
+    .eq("customer_id", effectiveCustomerId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    throw new Error("Không tìm thấy hồ sơ thú cưng cần cập nhật");
+  }
+
+  return data;
+}
+
 module.exports = {
   getCustomerPetDashboard,
   getPetDetail,
   createCustomerPet,
+  updateCustomerPet,
 };

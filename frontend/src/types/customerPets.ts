@@ -177,3 +177,5 @@ export type CreateCustomerPetInput = {
   chronicDiseases?: string | null;
   specialNote?: string | null;
 };
+
+export type UpdateCustomerPetInput = CreateCustomerPetInput;

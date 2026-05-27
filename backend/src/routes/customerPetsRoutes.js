@@ -4,6 +4,7 @@ const {
   getCustomerPetDashboard,
   getPetDetail,
   createCustomerPet,
+  updateCustomerPet,
 } = require("../services/customerPetsService");
 const {
   buildCustomerInvoicePdf,
@@ -107,6 +108,16 @@ router.get("/invoices/:invoiceId/pdf", async (req, res) => {
       ok: false,
       message: error.message || "Failed to export invoice PDF",
     });
+  }
+});
+
+router.put("/pets/:petId", async (req, res) => {
+  try {
+    console.debug("[routes] PUT /api/customer/pets/:petId body:", req.body, "customerId:", req.auth?.user?.customerId);
+    const data = await updateCustomerPet(req.params.petId, req.body ?? {}, req.auth.user.customerId);
+    res.json({ ok: true, pet: data });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message || "Failed to update pet" });
   }
 });
 
