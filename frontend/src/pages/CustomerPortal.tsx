@@ -10,6 +10,12 @@ import {
   type BreedOption,
   type PetDetail,
 } from "../services/customerPets";
+import {
+  fetchCustomerNotifications,
+  markAllCustomerNotificationsRead,
+  markCustomerNotificationRead,
+  type CustomerNotification,
+} from "../services/customerNotifications";
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -101,6 +107,14 @@ interface HistoryRecord {
   sortAt?: string;
   date: string;
   service: string;
+  services: string[];
+  items: Array<{
+    id: number;
+    description: string;
+    quantity: number;
+    unitPrice: string;
+    totalPrice: string;
+  }>;
   pet: string;
   cost: string;
   status: "completed" | "pending" | "cancelled";
@@ -132,14 +146,49 @@ function getHistoryTypeFromInvoice(detail: PetDetail, appointmentId: number): Hi
 
 function getHistoryServiceName(detail: PetDetail, appointmentId: number) {
   const invoice = detail.invoices.find((entry) => entry.appointment_id === appointmentId);
-  const firstItem = invoice?.items?.[0]?.description;
-  if (firstItem) return firstItem;
+  const itemDescriptions = (invoice?.items ?? [])
+    .map((item) => item.description)
+    .filter(Boolean);
+  if (itemDescriptions.length > 1) return `${itemDescriptions[0]} +${itemDescriptions.length - 1} dịch vụ`;
+  if (itemDescriptions[0]) return itemDescriptions[0];
 
   const vaccination = detail.vaccinations.find((row) => row.appointment_id === appointmentId);
   if (vaccination) return vaccination.vaccine_name;
 
   const appointment = detail.appointments.find((row) => row.id === appointmentId);
   return appointment?.appointment_type ?? "Dịch vụ";
+}
+
+function getHistoryServiceNames(detail: PetDetail, appointmentId: number) {
+  const invoice = detail.invoices.find((entry) => entry.appointment_id === appointmentId);
+  const itemDescriptions = (invoice?.items ?? [])
+    .map((item) => item.description)
+    .filter(Boolean);
+  if (itemDescriptions.length > 0) return itemDescriptions;
+  return [getHistoryServiceName(detail, appointmentId)];
+}
+
+function getHistoryInvoiceItems(detail: PetDetail, appointmentId: number) {
+  const invoice = detail.invoices.find((entry) => entry.appointment_id === appointmentId);
+  const items = invoice?.items ?? [];
+
+  if (items.length === 0) {
+    return [{
+      id: 0,
+      description: getHistoryServiceName(detail, appointmentId),
+      quantity: 1,
+      unitPrice: formatPortalCurrency(invoice?.total_amount ?? 0),
+      totalPrice: formatPortalCurrency(invoice?.total_amount ?? 0),
+    }];
+  }
+
+  return items.map((item) => ({
+    id: item.id,
+    description: item.description,
+    quantity: item.quantity,
+    unitPrice: formatPortalCurrency(item.unit_price),
+    totalPrice: formatPortalCurrency(item.total_price),
+  }));
 }
 
 function getHistoryDetails(detail: PetDetail, appointmentId: number) {
@@ -165,6 +214,8 @@ function buildHistoryRecordsFromPetDetails(details: PetDetail[]) {
         sortAt: invoice.created_at,
         date: formatPortalDate(invoice.created_at),
         service: getHistoryServiceName(detail, invoice.appointment_id),
+        services: getHistoryServiceNames(detail, invoice.appointment_id),
+        items: getHistoryInvoiceItems(detail, invoice.appointment_id),
         pet: detail.pet.name,
         cost: formatPortalCurrency(invoice.total_amount),
         status: invoice.status === "CANCELLED" ? "cancelled" : invoice.payment_status === "PAID" ? "completed" : "pending",
@@ -192,6 +243,40 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
   { id: 4, type: "promo",  title: "Ưu đãi tháng 6 — Giảm 20%",   desc: "Dịch vụ grooming cao cấp giảm 20% cho tất cả khách hàng thân thiết trong tháng 6.", time: "2 ngày trước", read: true },
 ];
 
+function getNotificationUiType(type: CustomerNotification["type"]): Notification["type"] {
+  if (type === "VACCINE" || type === "PAYMENT") return "high";
+  if (type === "APPOINTMENT" || type === "BOARDING") return "medium";
+  if (type === "GROOMING") return "promo";
+  return "info";
+}
+
+function formatNotificationTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diffMs = Date.now() - date.getTime();
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+
+  if (diffMs < minuteMs) return "Vừa xong";
+  if (diffMs < hourMs) return `${Math.max(1, Math.floor(diffMs / minuteMs))} phút trước`;
+  if (diffMs < dayMs) return `${Math.floor(diffMs / hourMs)} giờ trước`;
+  if (diffMs < 7 * dayMs) return `${Math.floor(diffMs / dayMs)} ngày trước`;
+  return date.toLocaleDateString("vi-VN");
+}
+
+function mapCustomerNotification(notification: CustomerNotification): Notification {
+  return {
+    id: notification.id,
+    type: getNotificationUiType(notification.type),
+    title: notification.title,
+    desc: notification.content,
+    time: formatNotificationTime(notification.created_at),
+    read: notification.is_read,
+  };
+}
+
 const NOTIF_CONFIG = {
   high:   { icon: AlertTriangle, bg: "#FEF2F2",  color: "#DC2626", borderColor: "#FECACA", label: "Quan trọng" },
   medium: { icon: Bell,          bg: "#FFFBEB",  color: "#D97706", borderColor: "#FDE68A", label: "Nhắc nhở" },
@@ -208,7 +293,9 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
   const [petsLoading, setPetsLoading] = useState(true);
 
   // Appointments filters
@@ -301,9 +388,55 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
   const filteredHistoryRecords = historyRecords.filter((record) => historyTypeFilter === "all" || record.type === historyTypeFilter);
 
-  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  const markRead = (id: number) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  const loadNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError("");
+      const nextNotifications = await fetchCustomerNotifications();
+      setNotifications(nextNotifications.map(mapCustomerNotification));
+    } catch (error) {
+      setNotificationsError(error instanceof Error ? error.message : "Không thể tải thông báo.");
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const markAllRead = async () => {
+    const previousNotifications = notifications;
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await markAllCustomerNotificationsRead();
+    } catch (error) {
+      setNotifications(previousNotifications);
+      setNotificationsError(error instanceof Error ? error.message : "Không thể cập nhật thông báo.");
+    }
+  };
+
+  const markRead = async (id: number) => {
+    const targetNotification = notifications.find((notification) => notification.id === id);
+    if (!targetNotification || targetNotification.read) return;
+
+    const previousNotifications = notifications;
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    try {
+      await markCustomerNotificationRead(id);
+    } catch (error) {
+      setNotifications(previousNotifications);
+      setNotificationsError(error instanceof Error ? error.message : "Không thể cập nhật thông báo.");
+    }
+  };
   const dismissNotif = (id: number) => setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      void markRead(notification.id);
+    }
+  };
+
+  useEffect(() => {
+    void loadNotifications();
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -363,7 +496,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-white px-5 py-4 flex items-center justify-between sticky top-0 z-20 border-b border-slate-200/80">
+      <header className="bg-white px-5 py-4 flex items-center justify-between sticky top-0 z-50 border-b border-slate-200/80">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
             <PawSVG className="w-5 h-5 text-white" />
@@ -395,7 +528,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={markAllRead} className="text-[12px] text-cyan-600 font-semibold hover:underline">Đánh dấu đã đọc</button>
+                      <button onClick={() => void markAllRead()} className="text-[12px] text-cyan-600 font-semibold hover:underline">Đánh dấu đã đọc</button>
                       <button onClick={() => { setShowNotifDropdown(false); setTab("notifications"); }} className="text-[12px] text-slate-500 font-semibold hover:text-slate-700">Xem tất cả</button>
                     </div>
                   </div>
@@ -406,7 +539,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                       return (
                         <div
                           key={n.id}
-                          onClick={() => markRead(n.id)}
+                          onClick={() => handleNotificationClick(n)}
                           className={`flex gap-3 px-4 py-3.5 cursor-pointer transition-colors ${n.read ? "hover:bg-slate-50" : "bg-cyan-50/40 hover:bg-cyan-50/70"}`}
                         >
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: cfg.bg }}>
@@ -449,7 +582,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       </header>
 
       {/* Tab nav — same background as content area */}
-      <div className="bg-slate-50 border-b border-slate-200/80 sticky top-[73px] z-10">
+      <div className="bg-slate-50 border-b border-slate-200/80 sticky top-[73px] z-40">
         <div className="flex justify-center max-w-4xl mx-auto w-full px-5">
           <div className="flex gap-1">
             {NAV.map((n) => {
@@ -501,14 +634,14 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       )}
 
       {/* Main */}
-      <main className="flex-1 px-5 py-8 max-w-4xl mx-auto w-full">
+      <main className="relative z-0 flex-1 px-5 py-8 max-w-4xl mx-auto w-full">
 
         {/* ── HOME ── */}
         {tab === "home" && (
           <div className="grid grid-cols-6 gap-4 auto-rows-[88px]">
             {/* Welcome Card - Large, spans 4 columns and 3 rows */}
-            <div className="col-span-6 md:col-span-4 md:col-start-1 md:row-start-1 row-span-3 rounded-3xl p-6 text-white shadow-md relative overflow-hidden" style={{ background: "linear-gradient(135deg,#0891B2 0%,#06B6D4 100%)" }}>
-              <div className="relative z-10 h-full flex flex-col">
+            <div className="relative z-0 col-span-6 md:col-span-4 md:col-start-1 md:row-start-1 row-span-3 rounded-3xl p-6 text-white shadow-md overflow-hidden" style={{ background: "linear-gradient(135deg,#0891B2 0%,#06B6D4 100%)" }}>
+              <div className="relative z-0 h-full flex flex-col">
                 <p className="text-sm font-medium opacity-90 mb-1">Xin chào trở lại 👋</p>
                 <h2 className="text-2xl font-bold">{userName}</h2>
                 <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg text-sm font-medium w-fit">
@@ -619,7 +752,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             </button>
 
             {/* Upcoming Appointments - Wide card */}
-            <div className={`bg-white border border-slate-200 rounded-3xl p-6 ${unreadCount > 0 ? 'col-span-6 md:col-span-4' : 'col-span-6'} row-span-6`}>
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 col-span-6 md:col-span-4 row-span-6">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-bold text-slate-900">Lịch hẹn sắp tới</h3>
                 <button onClick={() => setTab("apts")} className="text-sm font-semibold text-cyan-600 hover:text-cyan-700">Xem tất cả</button>
@@ -648,21 +781,37 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               </div>
             </div>
 
-            {/* Notification preview - appears only when there are unread notifications */}
-            {unreadCount > 0 && (
-              <div className="col-span-6 md:col-span-2 row-span-3 bg-white border border-slate-200 rounded-3xl p-5 flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-slate-900">Thông báo mới</h3>
+            {/* Notification preview */}
+            <div className="col-span-6 md:col-span-2 row-span-3 bg-white border border-slate-200 rounded-3xl p-5 flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900">Thông báo mới</h3>
+                  {unreadCount > 0 && (
                     <span className="text-[11px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full leading-none">{unreadCount}</span>
-                  </div>
+                  )}
                 </div>
-                <div className="space-y-3 flex-1 overflow-y-auto">
-                  {notifications.filter((n) => !n.read).slice(0, 3).map((n) => {
+              </div>
+              <div className="space-y-3 flex-1 overflow-y-auto">
+                {notificationsLoading && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center text-xs font-semibold text-slate-500">
+                    Đang tải thông báo...
+                  </div>
+                )}
+                {!notificationsLoading && notificationsError && (
+                  <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-center text-xs font-semibold text-red-600">
+                    {notificationsError}
+                  </div>
+                )}
+                {!notificationsLoading && !notificationsError && unreadCount === 0 && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center text-xs font-semibold text-slate-500">
+                    Không có thông báo mới
+                  </div>
+                )}
+                {!notificationsLoading && !notificationsError && notifications.filter((n) => !n.read).slice(0, 3).map((n) => {
                     const cfg = NOTIF_CONFIG[n.type];
                     const Icon = cfg.icon;
                     return (
-                      <div key={n.id} className="flex gap-3 p-3 rounded-xl border cursor-pointer hover:shadow-sm transition-shadow" style={{ borderColor: cfg.borderColor, background: cfg.bg }}>
+                      <div key={n.id} onClick={() => handleNotificationClick(n)} className="flex gap-3 p-3 rounded-xl border cursor-pointer hover:shadow-sm transition-shadow" style={{ borderColor: cfg.borderColor, background: cfg.bg }}>
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "white" }}>
                           <Icon size={14} style={{ color: cfg.color }} />
                         </div>
@@ -673,38 +822,9 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                       </div>
                     );
                   })}
-                </div>
-                <button onClick={() => setTab("notifications")} className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 mt-3 text-center">Xem tất cả →</button>
               </div>
-            )}
-
-            {/* Pet Summary Cards - only show if no notifications */}
-            {unreadCount === 0 && pets.slice(0, 2).map((pet) => {
-              const clr = getPetColorById(pet.colorId);
-              return (
-                <div key={pet.id} className="col-span-3 md:col-span-2 row-span-1 bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setViewingPet(pet)}>
-                  <div className="flex items-center gap-3">
-                    {pet.image ? (
-                      <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-sm" style={{ border: `2px solid ${clr.ring}` }}>
-                        <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
-                        style={{ background: `linear-gradient(135deg, ${clr.from}, ${clr.to})` }}
-                      >
-                        <span className="text-lg font-bold text-white">{pet.initials}</span>
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-slate-900 text-sm truncate">{pet.name}</div>
-                      <div className="text-xs font-medium text-slate-500 truncate">{pet.species} • {pet.breed}</div>
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md">Khoẻ mạnh</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+              <button onClick={() => setTab("notifications")} className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 mt-3 text-center">Xem tất cả →</button>
+            </div>
           </div>
         )}
 
@@ -1011,6 +1131,15 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[15px] font-bold text-slate-900">{h.service}</div>
+                        {h.services.length > 1 && (
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {h.services.map((service) => (
+                              <span key={service} className="rounded-lg bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200">
+                                {service}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <div className="text-sm font-medium text-slate-500 mt-1">
                           <span className="text-slate-700">{h.pet}</span> • {h.staff} • {h.date}
                         </div>
@@ -1039,7 +1168,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               </div>
               {unreadCount > 0 && (
                 <button
-                  onClick={markAllRead}
+                  onClick={() => void markAllRead()}
                   className="flex items-center gap-2 h-9 px-4 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
                 >
                   <Check size={14} /> Đánh dấu tất cả đã đọc
@@ -1076,7 +1205,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                               <span className={`text-[14px] font-bold ${n.read ? "text-slate-700" : "text-slate-900"}`}>{n.title}</span>
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
                             </div>
-                            <button onClick={() => dismissNotif(n.id)} className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors flex-shrink-0">
+                            <button onClick={(event) => { event.stopPropagation(); dismissNotif(n.id); }} className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors flex-shrink-0">
                               <X size={14} />
                             </button>
                           </div>
@@ -1088,7 +1217,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                             <div className="flex items-center gap-2">
                               {!n.read && (
                                 <button
-                                  onClick={() => markRead(n.id)}
+                                  onClick={(event) => { event.stopPropagation(); void markRead(n.id); }}
                                   className="text-[12px] font-semibold text-slate-500 hover:text-slate-700 transition-colors"
                                 >
                                   Đánh dấu đã đọc
@@ -1096,7 +1225,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                               )}
                               {(n.type === "high" || n.type === "medium") && (
                                 <button
-                                  onClick={() => setTab("apts")}
+                                  onClick={(event) => { event.stopPropagation(); handleNotificationClick(n); setTab("apts"); }}
                                   className="text-[12px] font-bold px-3 py-1.5 rounded-lg transition-colors"
                                   style={{ background: cfg.bg, color: cfg.color }}
                                 >
@@ -2177,6 +2306,9 @@ function HistoryDetailModal({ record, onClose }: { record: HistoryRecord; onClos
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">{record.service}</h3>
+              {record.services.length > 1 && (
+                <p className="text-xs font-semibold text-slate-400 mt-0.5">{record.services.join(" • ")}</p>
+              )}
               <p className="text-sm text-slate-500 mt-0.5">Mã: {record.id}</p>
             </div>
           </div>
@@ -2208,7 +2340,24 @@ function HistoryDetailModal({ record, onClose }: { record: HistoryRecord; onClos
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Chi tiết</h4>
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                  <p className="text-sm text-slate-700 leading-relaxed">{record.details || "Không có ghi chú"}</p>
+                  <div className="space-y-3">
+                    {record.items.map((item) => (
+                      <div key={`${item.id}-${item.description}`} className="rounded-xl border border-slate-200 bg-white p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-bold text-slate-900">{item.description}</div>
+                            <div className="text-xs font-semibold text-slate-400 mt-1">
+                              SL {item.quantity} • Đơn giá {item.unitPrice}
+                            </div>
+                          </div>
+                          <div className="text-sm font-bold text-cyan-600 whitespace-nowrap">{item.totalPrice}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {record.details && (
+                      <p className="text-sm text-slate-700 leading-relaxed">{record.details}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2217,9 +2366,16 @@ function HistoryDetailModal({ record, onClose }: { record: HistoryRecord; onClos
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Hóa đơn</h4>
                 <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm text-slate-600">Phí dịch vụ</span>
-                    <span className="text-sm font-bold text-slate-900">{record.cost}</span>
+                  <div className="space-y-3 mb-3">
+                    {record.items.map((item) => (
+                      <div key={`${item.id}-${item.description}-invoice`} className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-700">{item.description}</div>
+                          <div className="text-xs font-semibold text-slate-400 mt-0.5">SL {item.quantity} • {item.unitPrice}</div>
+                        </div>
+                        <span className="text-sm font-bold text-slate-900 whitespace-nowrap">{item.totalPrice}</span>
+                      </div>
+                    ))}
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t border-slate-200">
                     <span className="text-sm font-bold text-slate-700">Tổng tiền</span>

@@ -302,3 +302,40 @@ Build passed. Vite still reports the existing large chunk warning.
 ```text
 feat: add pet profile edit flow
 ```
+
+## 2026-05-27 - Customer Notifications By User
+
+### Goal
+
+Load customer notifications from the backend and scope them to the authenticated user.
+
+### Work Completed
+
+- Added customer notification service functions that query `notifications` by `user_id`.
+- Added customer notification routes for listing, marking one read, and marking all read.
+- Replaced customer portal mock notifications with data loaded from `/api/customer/notifications`.
+- Wired read-state actions to backend updates so customers only update their own notifications.
+
+### Files Changed
+
+- `backend/src/services/customerNotificationsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `frontend/src/services/customerNotifications.ts`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customerNotificationsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: scope customer notifications by user
+```

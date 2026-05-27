@@ -61,6 +61,28 @@ function getPetColorId(speciesId) {
   return PET_COLOR_BY_SPECIES[speciesId] ?? "violet";
 }
 
+function normalizeOptionalText(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+
+  const normalized = text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+
+  if (["khong co", "khong", "none", "no", "n/a", "na"].includes(normalized)) {
+    return null;
+  }
+
+  return text;
+}
+
+function hasHealthConcern(value) {
+  return normalizeOptionalText(value) !== null;
+}
+
 function pickLatestByDate(records, fieldName) {
   return (
     [...records].sort((left, right) => {
@@ -112,7 +134,7 @@ function buildPetSummary(
     allergies: pet.allergies,
     chronicDiseases: pet.chronic_diseases,
     specialNote: pet.special_note,
-    healthy: !pet.chronic_diseases,
+    healthy: !hasHealthConcern(pet.chronic_diseases),
     lastVisit: latestVisit ? formatDate(latestVisit.created_at) : "Chưa có",
     nextVaccine: latestVaccination
       ? formatDate(latestVaccination.next_due_date)
@@ -452,11 +474,11 @@ async function createCustomerPet(input, customerId) {
     gender: input?.gender ?? "UNKNOWN",
     dob: input?.dob || null,
     weight: input?.weight ? Number(input.weight) : null,
-    color: input?.color?.trim() || null,
+    color: normalizeOptionalText(input?.color),
     img_url: imgUrl?.trim() || null,
-    allergies: input?.allergies?.trim() || null,
-    chronic_diseases: chronicDiseases?.trim() || null,
-    special_note: specialNote?.trim() || null,
+    allergies: normalizeOptionalText(input?.allergies),
+    chronic_diseases: normalizeOptionalText(chronicDiseases),
+    special_note: normalizeOptionalText(specialNote),
     updated_at: new Date().toISOString(),
   };
 
@@ -575,11 +597,11 @@ async function updateCustomerPet(petId, input, customerId) {
     gender: input?.gender ?? "UNKNOWN",
     dob: input?.dob || null,
     weight: input?.weight ? Number(input.weight) : null,
-    color: input?.color?.trim() || null,
+    color: normalizeOptionalText(input?.color),
     img_url: imgUrl?.trim() || null,
-    allergies: input?.allergies?.trim() || null,
-    chronic_diseases: chronicDiseases?.trim() || null,
-    special_note: specialNote?.trim() || null,
+    allergies: normalizeOptionalText(input?.allergies),
+    chronic_diseases: normalizeOptionalText(chronicDiseases),
+    special_note: normalizeOptionalText(specialNote),
     updated_at: new Date().toISOString(),
   };
 

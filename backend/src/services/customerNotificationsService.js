@@ -1,0 +1,71 @@
+const { supabase } = require("../lib/supabaseClient");
+
+function assertUserId(userId) {
+  const effectiveUserId = Number(userId);
+  if (!Number.isFinite(effectiveUserId)) {
+    const error = new Error("Thieu thong tin nguoi dung");
+    error.statusCode = 401;
+    throw error;
+  }
+  return effectiveUserId;
+}
+
+async function listCustomerNotifications(userId) {
+  const effectiveUserId = assertUserId(userId);
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id, user_id, title, content, type, is_read, created_at")
+    .eq("user_id", effectiveUserId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return data ?? [];
+}
+
+async function markCustomerNotificationRead(userId, notificationId) {
+  const effectiveUserId = assertUserId(userId);
+  const effectiveNotificationId = Number(notificationId);
+
+  if (!Number.isFinite(effectiveNotificationId)) {
+    const error = new Error("Ma thong bao khong hop le");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", effectiveNotificationId)
+    .eq("user_id", effectiveUserId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    const errorNotFound = new Error("Khong tim thay thong bao");
+    errorNotFound.statusCode = 404;
+    throw errorNotFound;
+  }
+
+  return data;
+}
+
+async function markAllCustomerNotificationsRead(userId) {
+  const effectiveUserId = assertUserId(userId);
+
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", effectiveUserId)
+    .eq("is_read", false);
+
+  if (error) throw new Error(error.message);
+}
+
+module.exports = {
+  listCustomerNotifications,
+  markCustomerNotificationRead,
+  markAllCustomerNotificationsRead,
+};

@@ -250,7 +250,7 @@ export function CustomerPetProfilesModule() {
               const clr = getPetColorById(pet.colorId);
               const coverImage = pet.image || getPetCoverImage(pet.species);
               return (
-                <div key={pet.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
+                <div key={pet.id} className="relative z-0 bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                   <div className="h-36 relative overflow-hidden">
                     <img
                       src={coverImage}

@@ -505,11 +505,13 @@ function generateInvoicePdfBuffer(data) {
     doc.moveTo(320, y).lineTo(555, y).strokeColor("#e2e8f0").stroke();
     y += 16;
 
-    const totals = [
-      ["Tam tinh", invoice.subtotal_amount],
-      ["Giam gia", invoice.discount_amount],
-      ["Thue", invoice.tax_amount],
-    ];
+    const totals = [["Tam tinh", invoice.subtotal_amount]];
+    if (toNumber(invoice.discount_amount) > 0) {
+      totals.push(["Giam gia", invoice.discount_amount]);
+    }
+    if (toNumber(invoice.tax_amount) > 0) {
+      totals.push(["Thue", invoice.tax_amount]);
+    }
 
     totals.forEach(([label, value]) => {
       doc.fillColor("#475569").font(doc.invoiceFonts.regular).fontSize(10).text(label, 350, y, { width: 90 });
