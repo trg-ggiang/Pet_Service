@@ -339,3 +339,43 @@ Checks passed. Frontend build still reports the existing large chunk warning.
 ```text
 feat: scope customer notifications by user
 ```
+
+## 2026-05-27 - Customer Portal Polish And Data Corrections
+
+### Goal
+
+Keep the customer portal UI stable while using backend-backed data for notifications, invoices, and pet health state.
+
+### Work Completed
+
+- Updated customer service history cards and detail modals to show every invoice item from backend `invoice_items`.
+- Kept the customer homepage layout stable when backend notifications are empty or loading.
+- Fixed stacking order so homepage cards and pet avatars do not overlap the sticky header while scrolling.
+- Normalized "Không có" style pet health-note values in the backend so they do not force pets into "Cần theo dõi".
+- Adjusted notification read behavior so only the clicked unread notification is marked read; read notifications no longer trigger API updates.
+- Updated API/backend docs for notification and pet update endpoints.
+
+### Files Changed
+
+- `backend/src/services/customerPetsService.js`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customerPetsService.js`
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: polish customer portal data states
+```
