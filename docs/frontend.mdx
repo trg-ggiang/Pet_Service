@@ -24,10 +24,15 @@ frontend/
       ui/
       figma/
     pages/
+      customer/
     services/
+      customer/
     hooks/
+      customer/
     types/
+      customer/
     utils/
+      customer/
     constants/
     contexts/
     layouts/
@@ -56,6 +61,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 ## API Access
 
 During local development, Vite proxies `/api` to `http://localhost:5050`.
+
+Customer-role API clients live under `frontend/src/services/customer/`. Customer page entry wrappers live under `frontend/src/pages/customer/`; legacy page files may remain as compatibility modules while large customer screens are split incrementally.
 
 ## Refactor Boundaries
 

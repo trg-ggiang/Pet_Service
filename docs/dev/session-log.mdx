@@ -379,3 +379,436 @@ Checks passed. Frontend build still reports the existing large chunk warning.
 ```text
 fix: polish customer portal data states
 ```
+
+## 2026-05-30 - Customer Portal Backend API Refactor
+
+### Goal
+
+Move customer appointment and service-history data flow behind backend APIs and introduce customer-scoped frontend folders.
+
+### Work Completed
+
+- Added customer appointment backend service endpoints for list, create, reschedule, and cancel.
+- Added a customer appointment-options endpoint so booking services and doctors come from database-backed APIs.
+- Added customer service-history backend endpoint that builds invoice-backed history from database rows.
+- Added `frontend/src/pages/customer`, `frontend/src/services/customer`, `frontend/src/types/customer`, `frontend/src/utils/customer`, and `frontend/src/components/customer` namespaces.
+- Routed customer portal imports through the customer namespace and connected customer appointments/history to backend API clients.
+- Moved the active `CustomerPortal` and `CustomerPetProfilesModule` implementations under `frontend/src/pages/customer`; the old files now only re-export the customer pages for compatibility.
+- Split customer portal home, appointment/history modals, and customer pet profile modals into customer component folders.
+- Updated customer API, backend, and frontend documentation.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/customer/customerServiceHistoryService.js`
+- `frontend/src/app/App.tsx`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/pages/customer/CustomerPortalPage.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/pages/customer/CustomerPetProfilesModule.tsx`
+- `frontend/src/pages/customer/CustomerPetsPage.tsx`
+- `frontend/src/components/customer/home/CustomerHomeTab.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/customer/history/HistoryDetailModal.tsx`
+- `frontend/src/components/customer/pets/PetDetailModal.tsx`
+- `frontend/src/components/customer/pets/PetFormModal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/services/customer/customerServiceHistoryApi.ts`
+- `frontend/src/services/customer/customerNotificationsApi.ts`
+- `frontend/src/services/customer/customerPetsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/types/customer/notifications.ts`
+- `frontend/src/types/customer/pets.ts`
+- `frontend/src/types/customer/portal.ts`
+- `frontend/src/types/customer/serviceHistory.ts`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/customer/customerServiceHistoryService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Appointment Slot Fallback and Pagination
+
+### Goal
+
+Fix customer booking showing `Appointments requested slot columns are required for doctor availability` when the database has not applied the requested slot migration, and make appointment pagination visible.
+
+### Work Completed
+
+- Doctor provider listing no longer throws when `appointments.requested_date` and `requested_time` are missing; it still lists doctors from matching `doctor_schedules` working windows.
+- Doctor booking validation only checks exact-slot conflicts when requested slot columns exist.
+- Customer appointment pagination footer now appears whenever the filtered appointment list has data, even when there is only one page.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Exact doctor-slot conflict blocking still requires the requested slot migration to be applied in the database.
+
+## 2026-05-31 - Customer Appointment Detail Data Fix
+
+### Goal
+
+Fix customer appointment detail showing fake cost, fake notes, fake timeline, and created-at fallback values as appointment date/time.
+
+### Work Completed
+
+- Backend appointment mapping now returns requested appointment date/time first, service fee totals from `appointment_services`, note, and created/updated labels.
+- Appointment creation and reschedule now require `requested_date` and `requested_time` columns so new records cannot be saved without the selected slot.
+- Customer appointment detail modal now displays real note, estimated cost, and status timeline data from API instead of hardcoded placeholders.
+- Customer appointment type/config files were normalized to UTF-8 Vietnamese labels.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/types/customer/portal.ts`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Existing appointments that were previously saved without `requested_date` and `requested_time` cannot recover the originally selected slot unless the database is backfilled.
+
+## 2026-05-31 - Apply Requested Slot Columns
+
+### Goal
+
+Add `appointments.requested_date` and `appointments.requested_time` to the active database so customer appointments can persist selected slots.
+
+### Work Completed
+
+- Applied `requested_date` and `requested_time` to the active database.
+- Verified both columns exist through `information_schema.columns`.
+- Made the requested slot migration idempotent with `IF NOT EXISTS`.
+
+### Files Changed
+
+- `backend/prisma/migrations/20260531101500_add_appointment_requested_slot/migration.sql`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Direct database column verification returned `requested_date:date` and `requested_time:time without time zone`.
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+
+### Result
+
+Requested appointment slots can now be saved for new customer bookings.
+
+## 2026-05-31 - Customer Doctor Slot Availability
+
+### Goal
+
+Use `doctor_schedules.start_time` and `end_time` as doctor working windows for customer booking, and hide a doctor only for the exact slot that is already booked.
+
+### Work Completed
+
+- Doctor provider options now require a schedule whose working window covers the selected slot.
+- Doctor provider options exclude doctors with an existing appointment for the same `requested_date` and `requested_time`.
+- Customer appointment creation validates the selected doctor against the working window and exact booked slot.
+- Staff-backed services now return the staff list directly.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/database.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Text Encoding Cleanup
+
+### Goal
+
+Fix mojibake text in the customer appointment backend strings after the customer flow changes.
+
+### Work Completed
+
+- Replaced corrupted Vietnamese service labels and fallback messages in `backend/src/services/customer/customerAppointmentsService.js`.
+- Re-ran customer/frontend encoding scans for common mojibake patterns.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Provider Manual Choice
+
+### Goal
+
+Adjust customer booking so the system lists available doctors or staff after a time slot is chosen, and the customer manually selects one provider.
+
+### Work Completed
+
+- Replaced provider preview with `POST /api/customer/appointment-provider-options`.
+- Backend now returns a provider list with role, name, title, specialty/address, phone, experience, room, and schedule metadata where available.
+- Appointment creation now requires `providerRole` and `providerId` and validates the provider role against the selected service type.
+- Booking modal now shows selectable provider cards instead of a single automatic assignment.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Booking Provider Fixes and Pagination
+
+### Goal
+
+Fix appointment creation failing on missing `updated_at`, ensure medical services list doctors instead of staff, add appointment pagination, and expand the customer appointment layout.
+
+### Work Completed
+
+- Added `updated_at` to customer appointment insert payloads.
+- Passed `serviceId` through the customer booking flow so backend classifies provider type from `services.type` instead of fragile UI text.
+- Kept provider role validation so medical/vaccine services require doctors and grooming/boarding require staff.
+- Added client-side pagination to the customer appointment list.
+- Expanded the customer appointment page to a wider full-screen layout with an appointment guide/sidebar and summary cards.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Requested Slot Migration Guard
+
+### Goal
+
+Fix customer role API errors when the database has not yet applied the `requested_date` and `requested_time` appointment migration.
+
+### Work Completed
+
+- Added runtime detection for `appointments.requested_date` and `appointments.requested_time`.
+- Customer appointment listing now omits those columns when the migration has not been applied.
+- Customer appointment create/reschedule writes requested slot columns only when they exist.
+- Staff assignment falls back to first available staff member before the migration is applied.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The app no longer depends on the new columns being present before booting customer pages, but the migration should still be applied to persist staff-backed requested slots correctly.
+
+## 2026-05-31 - Customer Provider Selection Flow
+
+### Goal
+
+Change customer booking from automatic provider assignment to showing available doctors or staff members after the user chooses a service slot, then requiring the customer to pick one provider.
+
+### Work Completed
+
+- Replaced the customer provider preview endpoint with provider options listing.
+- Customer booking now returns multiple available doctors or staff members with profile details.
+- Appointment creation now requires `providerRole` and `providerId`.
+- Customer booking modal now renders selectable provider cards and sends the selected provider to backend.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: move customer portal data behind backend APIs
+```
+
+## 2026-05-31 - Auth Blank Screen Guard
+
+### Goal
+
+Fix the frontend rendering a blank white screen after boot when a restored auth session has an invalid or missing role.
+
+### Work Completed
+
+- Added role validation before restoring a persisted session in `frontend/src/app/App.tsx`.
+- Cleared invalid persisted sessions and returned users to the welcome/login flow instead of rendering `null`.
+- Added a final auth fallback so unknown roles cannot leave the app blank.
+
+### Files Changed
+
+- `frontend/src/app/App.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Portal Runtime Blank Screen Fix
+
+### Goal
+
+Fix the customer portal rendering a blank screen after login or when restoring a customer session in a new tab.
+
+### Work Completed
+
+- Restored missing `viewingApt` and `viewingHistory` modal state in `frontend/src/pages/customer/CustomerPortal.tsx`.
+- Added safe customer UI config getters for unknown appointment status, service type, and notification type values from database-backed APIs.
+- Updated customer portal, appointment modal, and home tab rendering to use fallback-safe config helpers.
+
+### Files Changed
+
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/customer/home/CustomerHomeTab.tsx`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Appointment Booking Flow
+
+### Goal
+
+Update customer appointment booking to follow the flow: choose service, choose pet, choose date/time slot, auto-detect an available doctor or staff member, add note, then submit as pending confirmation.
+
+### Work Completed
+
+- Added `requested_date` and `requested_time` to appointments so staff-backed bookings can persist requested slots without a doctor schedule.
+- Added a customer provider-preview API that detects an available doctor for medical/vaccine services or an available staff member for grooming/boarding.
+- Updated customer appointment creation to auto-assign the detected provider and create appointments with `PENDING` status.
+- Removed manual doctor selection from the customer booking modal and added an automatic assignment preview.
+
+### Files Changed
+
+- `backend/prisma/schema.prisma`
+- `backend/prisma/migrations/20260531101500_add_appointment_requested_slot/migration.sql`
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/database.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+- `npm --prefix backend run prisma:generate`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.

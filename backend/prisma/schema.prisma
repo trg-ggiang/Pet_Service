@@ -325,6 +325,8 @@ model Appointment {
 
   appointmentType AppointmentType   @default(MEDICAL) @map("appointment_type")
   status          AppointmentStatus @default(PENDING)
+  requestedDate   DateTime?         @map("requested_date") @db.Date
+  requestedTime   DateTime?         @map("requested_time") @db.Time(6)
 
   note         String? @db.Text
   cancelReason String? @map("cancel_reason") @db.Text

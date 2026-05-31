@@ -1,0 +1,1 @@
+export { CustomerPetProfilesModule } from "./CustomerPetProfilesModule";

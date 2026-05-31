@@ -56,6 +56,13 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `GET /api/customer/pets` lists the current customer's pets.
   - `POST /api/customer/pets` creates a current-customer pet.
   - `PUT /api/customer/pets/:petId` updates a current-customer pet.
+  - `GET /api/customer/appointment-options` lists service options for customer booking.
+  - `POST /api/customer/appointment-provider-options` lists doctors whose `doctor_schedules` cover the requested slot and are not already booked at that exact date/time, or lists staff for staff-backed services.
+  - `GET /api/customer/appointments` lists the current customer's appointments.
+  - `POST /api/customer/appointments` creates a pending appointment for a current-customer pet and selected doctor or staff member.
+  - `PATCH /api/customer/appointments/:appointmentId/reschedule` updates a customer-owned appointment's schedule.
+  - `PATCH /api/customer/appointments/:appointmentId/cancel` cancels a customer-owned appointment.
+  - `GET /api/customer/service-history` lists invoice-backed service history for the current customer.
   - `GET /api/customer/invoices/:invoiceId/pdf` exports a customer-owned invoice as a PDF.
   - `GET /api/customer/invoices/latest/pdf` exports the current customer's latest invoice as a PDF.
   - `GET /api/customer/invoices/match/pdf` exports the current customer's invoice matching pet, service, and date query parameters.

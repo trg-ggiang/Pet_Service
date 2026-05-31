@@ -11,7 +11,7 @@ import { WelcomePage } from "../pages/WelcomePage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
-import { CustomerPortal } from "../pages/CustomerPortal";
+import { CustomerPortal } from "../pages/customer/CustomerPortalPage";
 import { DoctorPortal } from "../pages/DoctorPortal";
 import { StaffPortal } from "../pages/StaffPortal";
 import { SplashScreen } from "../pages/SplashScreen";
@@ -1005,6 +1005,7 @@ function AdminRoot({ onLogout }: { onLogout: () => void }) {
 // ─── Auth-aware Root ──────────────────────────────────────────────────────────
 
 type AuthScreen = "welcome" | "login" | "register" | "forgot" | "app";
+const validRoles = new Set(["admin", "doctor", "staff", "customer"]);
 
 export default function App() {
   const [screen, setScreen] = useState<AuthScreen>("welcome");
@@ -1018,9 +1019,13 @@ export default function App() {
       const restoredSession = await restoreSession();
       if (!mounted) return;
 
-      if (restoredSession) {
+      if (restoredSession && validRoles.has(restoredSession.user.role)) {
         setSession(restoredSession);
         setScreen("app");
+      } else if (restoredSession) {
+        clearSession();
+        setSession(null);
+        setScreen("welcome");
       }
 
       setBooting(false);
@@ -1092,5 +1097,11 @@ export default function App() {
   if (role === "doctor")   return <DoctorPortal onLogout={logout} />;
   if (role === "staff")    return <StaffPortal onLogout={logout} />;
   if (role === "customer") return <CustomerPortal onLogout={logout} userName={session?.user.fullName ?? session?.user.email ?? "Khách hàng"} />;
-  return null;
+  clearSession();
+  return (
+    <WelcomePage
+      onLogin={() => setScreen("login")}
+      onRegister={() => setScreen("register")}
+    />
+  );
 }
