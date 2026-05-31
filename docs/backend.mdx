@@ -52,6 +52,20 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 - `/api/health`
 - `/api/auth`
+- `/api/admin`
+  - `GET /api/admin/dashboard` returns admin totals.
+  - `GET /api/admin/users` lists customers, doctors, and staff users for the admin user-management page.
+  - `GET /api/admin/services` lists service catalog rows for the admin service-management page.
+  - `GET /api/admin/appointments` lists appointment rows for the admin appointment page.
+  - `GET /api/admin/staff` lists doctor and staff rows for the staff-management page.
+  - Existing doctor profile helper routes remain under `/api/admin/doctors`.
+- `/api/doctor`
+  - `GET /api/doctor/profile` returns the authenticated doctor's profile.
+  - `GET /api/doctor/records` lists appointment-backed medical records for the authenticated doctor.
+  - `GET /api/doctor/stats` returns doctor statistics for week, month, and quarter dashboard views.
+  - `GET /api/doctor/appointments` lists active appointments for the authenticated doctor.
+  - `PUT /api/doctor/appointments/:appointmentId/start` starts an appointment exam.
+  - `PUT /api/doctor/appointments/:appointmentId/complete` completes an appointment exam.
 - `/api/customer`
   - `GET /api/customer/pets` lists the current customer's pets.
   - `POST /api/customer/pets` creates a current-customer pet.

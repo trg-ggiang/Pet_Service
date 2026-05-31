@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Calendar, Clock, Bell, LogOut, ChevronDown, Plus, Heart, Star, CheckCircle2, Stethoscope, Syringe, MapPin, X, Check, AlertTriangle } from "lucide-react";
 import { CustomerPetProfilesModule } from "./CustomerPetsPage";
-import { fetchCustomerPetDashboard } from "../../services/customer/customerPetsApi";
+import { fetchCustomerPetDashboard } from "../../../services/customer/customerPetsApi";
 import {
   fetchCustomerNotifications,
   markAllCustomerNotificationsRead,
   markCustomerNotificationRead,
-} from "../../services/customer/customerNotificationsApi";
+} from "../../../services/customer/customerNotificationsApi";
 import {
   cancelCustomerAppointment,
   createCustomerAppointment,
@@ -14,14 +14,14 @@ import {
   fetchCustomerAppointmentOptions,
   fetchCustomerAppointments,
   rescheduleCustomerAppointment,
-} from "../../services/customer/customerAppointmentsApi";
-import { fetchCustomerServiceHistory } from "../../services/customer/customerServiceHistoryApi";
-import type { CustomerAppointmentOptions } from "../../types/customer/appointments";
-import type { Apt, HistoryRecord, Pet, ServiceType } from "../../types/customer/portal";
-import { NewAppointmentModal, AppointmentDetailModal, RescheduleModal } from "../../components/customer/appointments/CustomerAppointmentModals";
-import { HistoryDetailModal } from "../../components/customer/history/HistoryDetailModal";
-import { CustomerHomeTab } from "../../components/customer/home/CustomerHomeTab";
-import { getPetColorById, getNotifConfig, getServiceTypeConfig, getStatusConfig, mapCustomerAppointment, mapCustomerNotification } from "../../utils/customer/portalConfig";
+} from "../../../services/customer/customerAppointmentsApi";
+import { fetchCustomerServiceHistory } from "../../../services/customer/customerServiceHistoryApi";
+import type { CustomerAppointmentOptions } from "../../../types/customer/appointments";
+import type { Apt, HistoryRecord, Pet, ServiceType } from "../../../types/customer/portal";
+import { NewAppointmentModal, AppointmentDetailModal, RescheduleModal } from "../../../components/customer/appointments/CustomerAppointmentModals";
+import { HistoryDetailModal } from "../../../components/customer/history/HistoryDetailModal";
+import { CustomerHomeTab } from "../../../components/customer/home/CustomerHomeTab";
+import { getPetColorById, getNotifConfig, getServiceTypeConfig, getStatusConfig, mapCustomerAppointment, mapCustomerNotification } from "../../../utils/customer/portalConfig";
 
 function PawSVG({ className }: { className?: string }) {
   return (

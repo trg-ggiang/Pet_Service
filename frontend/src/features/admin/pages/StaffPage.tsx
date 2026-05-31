@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search, Plus, Edit, Lock, Unlock, Eye, X, Phone, Mail,
   Calendar, Star, Stethoscope, Scissors, BedDouble, Users,
@@ -6,6 +6,7 @@ import {
   ToggleRight, Syringe, Briefcase, ChevronDown, Filter,
   BarChart3, Award, TrendingUp,
 } from "lucide-react";
+import { adminService } from "../services/admin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -586,13 +587,38 @@ function StaffRow({
 // ─── StaffPage ────────────────────────────────────────────────────────────────
 
 export function StaffPage() {
-  const [staff, setStaff]           = useState<StaffMember[]>(INITIAL_STAFF);
+  const [staff, setStaff]           = useState<StaffMember[]>([]);
   const [activeDept, setActiveDept] = useState<Department>("all");
   const [search, setSearch]         = useState("");
   const [statusFilter, setStatusFilter] = useState<WorkStatus | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [showModal, setShowModal]   = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    adminService
+      .listStaff()
+      .then((data) => {
+        if (!mounted) return;
+        setStaff(data.staff as StaffMember[]);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Không thể tải dữ liệu nhân viên.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const filtered = staff.filter((m) => {
     const matchDept   = activeDept === "all" || m.department === activeDept;
@@ -644,6 +670,12 @@ export function StaffPage() {
       </div>
 
       {/* KPI strip */}
+      {loadError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+          {loadError}
+        </div>
+      )}
+
       <div className="grid grid-cols-5 gap-4">
         {[
           { label: "Tổng nhân viên",   value: staff.length.toString(),   sub: `${DEPT_ORDER.length} bộ phận`,            icon: Users,       iconBg: "bg-cyan-50",    iconColor: "text-cyan-600" },
@@ -713,6 +745,11 @@ export function StaffPage() {
       </div>
 
       {/* Table */}
+      {loading && (
+        <div className="rounded-xl border border-border bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          Đang tải dữ liệu nhân viên...
+        </div>
+      )}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">

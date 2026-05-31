@@ -1,197 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search, Filter, ChevronRight, Calendar, Stethoscope,
   Thermometer, Heart, Wind, Activity, Weight,
   Pill, ClipboardList, AlertTriangle, CheckCircle2,
-  FileText, User, Clock, ArrowLeft, Printer, Download,
+  FileText, User, Clock, ArrowLeft, Printer, Download, Loader2,
 } from "lucide-react";
+import { doctorDataService, type DoctorMedicalRecord as MedRecord } from "../services/doctorData";
 
 // ── Pet photos ─────────────────────────────────────────────────────────────────
-const PET_PHOTOS: Record<string, string> = {
-  Luna:     "https://images.unsplash.com/photo-1570723649488-f5cc599360ac?w=400&q=80",
-  Mochi:    "https://images.unsplash.com/photo-1611250282006-4484dd3fba6b?w=400&q=80",
-  Kiwi:     "https://images.unsplash.com/photo-1611843275167-a9bba9aa65dd?w=400&q=80",
-  Snowball: "https://images.unsplash.com/photo-1606214174585-fe31582dc6ee?w=400&q=80",
-  Nala:     "https://images.unsplash.com/photo-1559624989-7b9303bd9792?w=400&q=80",
-  Buddy:    "https://images.unsplash.com/photo-1602241628512-459cdd3234fe?w=400&q=80",
-};
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-interface Vital { temp: string; heart: string; resp: string; spo2: string; weight: string }
-
-interface SysResult { system: string; status: "normal" | "abnormal"; note?: string }
-
-interface Prescription {
-  drug: string; dose: string; route: string; frequency: string; duration: string;
-}
-
-interface MedRecord {
-  id: string;
-  date: string;
-  dateShort: string;
-  pet: string;
-  species: string;
-  breed: string;
-  owner: string;
-  phone: string;
-  sex: string;
-  age: string;
-  weight: string;
-  doctor: string;
-  service: string;
-  serviceColor: string;
-  chiefComplaint: string;
-  symptoms: string[];
-  duration: string;
-  onset: string;
-  severity: number;
-  vitals: Vital;
-  sysResults: SysResult[];
-  diagnosis: string;
-  diagnosisCode: string;
-  clinicalNote: string;
-  prescriptions: Prescription[];
-  followUp: string;
-  followUpDate: string;
-  allergy: string;
-}
-
-// ── Mock data ──────────────────────────────────────────────────────────────────
-const RECORDS: MedRecord[] = [
-  {
-    id: "MR-2026-0412",
-    date: "Thứ Tư, 22 tháng 5 năm 2026",
-    dateShort: "22/05/2026",
-    pet: "Luna",         species: "Mèo", breed: "British Shorthair",
-    owner: "Trần Minh Khoa", phone: "0901 234 567",
-    sex: "Cái", age: "2 tuổi 4 tháng", weight: "4.2 kg",
-    doctor: "BS. Trần Hoài Nam", service: "Khám da liễu", serviceColor: "bg-violet-100 text-violet-700",
-    chiefComplaint: "Mèo bị ngứa, cào liên tục vùng cổ và lưng, lông rụng từng mảng nhỏ trong 2 tuần qua.",
-    symptoms: ["Ngứa da", "Rụng lông", "Bỏ ăn"],
-    duration: "1–2 tuần", onset: "Từ từ", severity: 3,
-    vitals: { temp: "38.9", heart: "168", resp: "28", spo2: "98", weight: "4.2" },
-    sysResults: [
-      { system: "Tổng thể",         status: "normal" },
-      { system: "Da & Lông",        status: "abnormal", note: "Rụng lông vùng cổ và lưng, da đỏ ửng, có vết trầy xước do cào. Gàu nhỏ quan sát được." },
-      { system: "Mắt & Tai",        status: "normal" },
-      { system: "Hạch bạch huyết",  status: "normal" },
-      { system: "Tim mạch",         status: "normal" },
-      { system: "Hô hấp",           status: "normal" },
-      { system: "Tiêu hoá",         status: "normal" },
-      { system: "Cơ xương khớp",    status: "normal" },
-    ],
-    diagnosis: "Viêm da dị ứng (Allergic Dermatitis)",
-    diagnosisCode: "ICD-10: L23",
-    clinicalNote: "Nghi ngờ dị ứng thức ăn hoặc môi trường. Khuyến nghị đổi sang thức ăn thuỷ phân protein trong 8 tuần. Theo dõi phản ứng và tái khám sau 3 tuần.",
-    prescriptions: [
-      { drug: "Prednisolone",       dose: "5mg",    route: "Uống", frequency: "1 lần/ngày", duration: "7 ngày" },
-      { drug: "Chlorphenamine",     dose: "2mg",    route: "Uống", frequency: "2 lần/ngày", duration: "14 ngày" },
-      { drug: "Shampoo Malaseb",    dose: "Dùng ngoài", route: "Tắm", frequency: "2 lần/tuần", duration: "4 tuần" },
-    ],
-    followUp: "Tái khám kiểm tra da, đánh giá phản ứng với thuốc và thức ăn mới.",
-    followUpDate: "12/06/2026",
-    allergy: "Penicillin · Thức ăn hải sản",
-  },
-  {
-    id: "MR-2026-0389",
-    date: "Thứ Tư, 12 tháng 3 năm 2026",
-    dateShort: "12/03/2026",
-    pet: "Mochi",        species: "Chó", breed: "Golden Retriever",
-    owner: "Nguyễn Thị Mai", phone: "0912 345 678",
-    sex: "Đực", age: "3 tuổi 1 tháng", weight: "28.5 kg",
-    doctor: "BS. Trần Hoài Nam", service: "Khám tổng quát", serviceColor: "bg-cyan-100 text-cyan-700",
-    chiefComplaint: "Khám định kỳ hàng quý, chủ nhân phản ánh chó hay bị đầy bụng sau ăn.",
-    symptoms: ["Bỏ ăn", "Đau bụng"],
-    duration: "3–7 ngày", onset: "Từ từ", severity: 2,
-    vitals: { temp: "38.4", heart: "92", resp: "22", spo2: "99", weight: "28.5" },
-    sysResults: [
-      { system: "Tổng thể",         status: "normal" },
-      { system: "Da & Lông",        status: "normal" },
-      { system: "Mắt & Tai",        status: "normal" },
-      { system: "Hạch bạch huyết",  status: "normal" },
-      { system: "Tim mạch",         status: "normal" },
-      { system: "Hô hấp",           status: "normal" },
-      { system: "Tiêu hoá",         status: "abnormal", note: "Bụng có âm thanh nhu động tăng, sờ vùng thượng vị có phản ứng nhẹ. Không có đau cấp tính." },
-      { system: "Cơ xương khớp",    status: "normal" },
-    ],
-    diagnosis: "Rối loạn tiêu hoá nhẹ (Mild GI Disturbance)",
-    diagnosisCode: "ICD-10: K30",
-    clinicalNote: "Khuyến nghị chia nhỏ bữa ăn thành 3 lần/ngày, tránh thức ăn giàu chất béo. Bổ sung men tiêu hoá. Xét nghiệm phân nếu không cải thiện sau 2 tuần.",
-    prescriptions: [
-      { drug: "Probiotic FortiFlora", dose: "1 gói", route: "Trộn thức ăn", frequency: "1 lần/ngày", duration: "30 ngày" },
-      { drug: "Simethicone",          dose: "40mg",   route: "Uống",         frequency: "2 lần/ngày", duration: "7 ngày" },
-    ],
-    followUp: "Xét nghiệm phân nếu triệu chứng không giảm. Tái khám định kỳ sau 3 tháng.",
-    followUpDate: "12/06/2026",
-    allergy: "Không ghi nhận",
-  },
-  {
-    id: "MR-2026-0341",
-    date: "Thứ Hai, 05 tháng 1 năm 2026",
-    dateShort: "05/01/2026",
-    pet: "Kiwi",         species: "Mèo", breed: "Scottish Fold",
-    owner: "Phạm Văn Đức", phone: "0908 765 432",
-    sex: "Đực", age: "4 tuổi", weight: "5.1 kg",
-    doctor: "BS. Lê Thị Hoa", service: "Tiêm phòng dại", serviceColor: "bg-emerald-100 text-emerald-700",
-    chiefComplaint: "Tiêm phòng dại định kỳ hàng năm. Mèo khoẻ mạnh, không có triệu chứng bất thường.",
-    symptoms: [],
-    duration: "Không có", onset: "Không có", severity: 0,
-    vitals: { temp: "38.6", heart: "155", resp: "24", spo2: "99", weight: "5.1" },
-    sysResults: [
-      { system: "Tổng thể",         status: "normal" },
-      { system: "Da & Lông",        status: "normal" },
-      { system: "Mắt & Tai",        status: "normal" },
-      { system: "Hạch bạch huyết",  status: "normal" },
-      { system: "Tim mạch",         status: "normal" },
-      { system: "Hô hấp",           status: "normal" },
-      { system: "Tiêu hoá",         status: "normal" },
-      { system: "Cơ xương khớp",    status: "normal" },
-    ],
-    diagnosis: "Khoẻ mạnh — Tiêm phòng định kỳ",
-    diagnosisCode: "ICD-10: Z23",
-    clinicalNote: "Tiêm vaccine Rabies 1 mũi. Mèo phản ứng tốt, không có dấu hiệu phản ứng dị ứng sau 15 phút theo dõi tại chỗ. Cấp giấy chứng nhận tiêm phòng.",
-    prescriptions: [
-      { drug: "Vaccine Rabies (Nobivac)", dose: "1 mL", route: "Tiêm dưới da", frequency: "1 lần", duration: "Hiệu lực 1 năm" },
-    ],
-    followUp: "Nhắc tiêm phòng lại vào tháng 01/2027. Tiêm combo FVRCP định kỳ tháng 03/2026.",
-    followUpDate: "05/01/2027",
-    allergy: "Không ghi nhận",
-  },
-  {
-    id: "MR-2025-1198",
-    date: "Thứ Sáu, 14 tháng 11 năm 2025",
-    dateShort: "14/11/2025",
-    pet: "Snowball",     species: "Mèo", breed: "Persian",
-    owner: "Đặng Quốc Hùng", phone: "0977 111 222",
-    sex: "Cái", age: "5 tuổi 8 tháng", weight: "4.8 kg",
-    doctor: "BS. Nguyễn Đức Trung", service: "Khám tổng quát", serviceColor: "bg-cyan-100 text-cyan-700",
-    chiefComplaint: "Mèo ho kéo dài 5 ngày, có đờm, ăn ít hơn bình thường.",
-    symptoms: ["Ho", "Bỏ ăn", "Mệt mỏi"],
-    duration: "3–7 ngày", onset: "Đột ngột", severity: 3,
-    vitals: { temp: "39.2", heart: "172", resp: "36", spo2: "96", weight: "4.8" },
-    sysResults: [
-      { system: "Tổng thể",         status: "abnormal", note: "Mèo kém linh hoạt, mệt mỏi rõ." },
-      { system: "Da & Lông",        status: "normal" },
-      { system: "Mắt & Tai",        status: "normal" },
-      { system: "Hạch bạch huyết",  status: "normal" },
-      { system: "Tim mạch",         status: "normal" },
-      { system: "Hô hấp",           status: "abnormal", note: "Âm phổi thô, nghe thấy ran ẩm nhẹ vùng thuỳ phổi trái. Nhịp thở tăng 36 lần/phút." },
-      { system: "Tiêu hoá",         status: "normal" },
-      { system: "Cơ xương khớp",    status: "normal" },
-    ],
-    diagnosis: "Viêm phế quản cấp (Acute Bronchitis)",
-    diagnosisCode: "ICD-10: J20",
-    clinicalNote: "Nhiệt độ tăng 39.2°C, nhịp thở tăng. Nghe phổi có ran ẩm. Kê kháng sinh và thuốc long đờm. Theo dõi thân nhiệt tại nhà, tái khám nếu sốt > 39.5°C hoặc khó thở tăng.",
-    prescriptions: [
-      { drug: "Doxycycline",    dose: "50mg",  route: "Uống", frequency: "1 lần/ngày", duration: "10 ngày" },
-      { drug: "Bromhexine",     dose: "4mg",   route: "Uống", frequency: "2 lần/ngày", duration: "7 ngày" },
-      { drug: "Paracetamol",    dose: "10mg/kg", route: "Uống", frequency: "Khi sốt > 39°C", duration: "Theo dõi" },
-    ],
-    followUp: "Tái khám sau 5 ngày hoặc sớm hơn nếu triệu chứng nặng thêm.",
-    followUpDate: "19/11/2025",
-    allergy: "Không ghi nhận",
-  },
-];
+const DEFAULT_PET_PHOTO = "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&q=80";
 
 const SEVERITY_LABEL = ["", "Rất nhẹ", "Nhẹ", "Trung bình", "Nặng", "Rất nặng"];
 const SEVERITY_COLOR = ["", "text-emerald-600", "text-lime-600", "text-amber-600", "text-orange-600", "text-red-600"];
@@ -217,7 +34,7 @@ function VitalChip({ icon: Icon, label, value, unit, color, bg }: {
 }
 
 function RecordDetail({ rec, onClose }: { rec: MedRecord; onClose: () => void }) {
-  const photo = PET_PHOTOS[rec.pet];
+  const photo = rec.petImage || DEFAULT_PET_PHOTO;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
@@ -453,9 +270,35 @@ function RecordDetail({ rec, onClose }: { rec: MedRecord; onClose: () => void })
 export function DoctorRecordsPage() {
   const [search, setSearch] = useState("");
   const [speciesFilter, setSpeciesFilter] = useState<"all" | "Chó" | "Mèo">("all");
-  const [selected, setSelected] = useState<MedRecord | null>(RECORDS[0]);
+  const [records, setRecords] = useState<MedRecord[]>([]);
+  const [selected, setSelected] = useState<MedRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = RECORDS.filter((r) => {
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    doctorDataService.listRecords()
+      .then((data) => {
+        if (!active) return;
+        setRecords(data);
+        setSelected(data[0] ?? null);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Khong the tai ho so benh an");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filtered = records.filter((r) => {
     const q = search.toLowerCase();
     const matchQ = !q || r.pet.toLowerCase().includes(q) || r.owner.toLowerCase().includes(q) || r.diagnosis.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
     const matchS = speciesFilter === "all" || r.species === speciesFilter;
@@ -481,7 +324,7 @@ export function DoctorRecordsPage() {
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-border">
             {filtered.map((r) => {
-              const photo = PET_PHOTOS[r.pet];
+              const photo = r.petImage || DEFAULT_PET_PHOTO;
               const isActive = selected?.id === r.id;
               return (
                 <button
@@ -515,7 +358,7 @@ export function DoctorRecordsPage() {
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 bg-white border-b border-border">
         <div>
           <h2 className="text-sm font-bold text-foreground">Hồ sơ bệnh án</h2>
-          <p className="text-[11px] text-muted-foreground">{RECORDS.length} hồ sơ</p>
+          <p className="text-[11px] text-muted-foreground">{records.length} ho so</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Species filter */}
@@ -549,8 +392,19 @@ export function DoctorRecordsPage() {
         </div>
       </div>
 
+      {loading && (
+        <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
+          <Loader2 size={22} className="animate-spin text-cyan-500 mr-2" />
+          Dang tai ho so benh an...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="flex-1 flex items-center justify-center text-sm text-red-600">{error}</div>
+      )}
+
       {/* Table */}
-      <div className="flex-1 overflow-y-auto p-6">
+      {!loading && !error && <div className="flex-1 overflow-y-auto p-6">
         <div className="bg-white rounded-2xl border border-border overflow-hidden">
           <table className="w-full">
             <thead>
@@ -565,7 +419,7 @@ export function DoctorRecordsPage() {
             </thead>
             <tbody className="divide-y divide-border/60">
               {filtered.map((r) => {
-                const photo = PET_PHOTOS[r.pet];
+                const photo = r.petImage || DEFAULT_PET_PHOTO;
                 return (
                   <tr
                     key={r.id}
@@ -619,7 +473,7 @@ export function DoctorRecordsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

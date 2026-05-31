@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus, Search, Download, Eye, Edit, X, Clock, ChevronDown,
   Calendar, Stethoscope, Scissors, Syringe, BedDouble,
   CheckCircle2, AlertTriangle, ArrowRight, User, FileText,
   Phone, Mail, MoreHorizontal, Trash2,
 } from "lucide-react";
+import { adminService } from "../services/admin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -380,11 +381,36 @@ export function AppointmentsPage({
   onNewAppt: () => void;
   onOpenExam?: () => void;
 }) {
-  const [apts, setApts] = useState<Appointment[]>(INITIAL);
+  const [apts, setApts] = useState<Appointment[]>([]);
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [search, setSearch] = useState("");
   const [drawerApt, setDrawerApt] = useState<Appointment | null>(null);
   const [editApt, setEditApt] = useState<Appointment | null | "new">(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    adminService
+      .listAppointments()
+      .then((data) => {
+        if (!mounted) return;
+        setApts(data.appointments as Appointment[]);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Không thể tải dữ liệu lịch hẹn.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const filtered = apts.filter((a) => {
     const matchStatus = statusFilter === "all" || a.status === statusFilter;
@@ -435,6 +461,12 @@ export function AppointmentsPage({
       </div>
 
       {/* Filters */}
+      {loadError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+          {loadError}
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-1 bg-card border border-border p-1 rounded-lg">
           {tabs.map(([val, label]) => {
@@ -462,6 +494,11 @@ export function AppointmentsPage({
       </div>
 
       {/* Table */}
+      {loading && (
+        <div className="rounded-xl border border-border bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          Đang tải dữ liệu lịch hẹn...
+        </div>
+      )}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px]">

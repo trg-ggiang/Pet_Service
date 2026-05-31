@@ -26,8 +26,8 @@ router.get("/", async function(req, res) {
         appointment_type,
         status,
         note,
-        appointment_date,
-        appointment_time,
+        requested_date,
+        requested_time,
         created_at,
         pets:pet_id (
           id,
@@ -40,8 +40,8 @@ router.get("/", async function(req, res) {
       `)
       .eq("doctor_id", doctorId)
       .in("status", ["PENDING", "CONFIRMED", "IN_PROGRESS"])
-      .order("appointment_date", { ascending: true })
-      .order("appointment_time", { ascending: true });
+      .order("requested_date", { ascending: true })
+      .order("requested_time", { ascending: true });
 
     if (error) {
       console.error("[ROUTES] GET /doctor/appointments ERROR:", error);
@@ -70,8 +70,8 @@ router.get("/", async function(req, res) {
     const formattedAppointments = (appointments || []).map((apt) => ({
       id: "APT-" + String(apt.id).padStart(5, "0"),
       appointmentId: apt.id,
-      date: apt.appointment_date || "",
-      time: apt.appointment_time || "",
+      date: apt.requested_date || "",
+      time: apt.requested_time || "",
       petName: apt.pets?.name || "N/A",
       petImage: apt.pets?.img_url || null,
       species: apt.pets?.species?.name || "N/A",

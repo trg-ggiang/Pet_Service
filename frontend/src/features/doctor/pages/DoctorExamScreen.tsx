@@ -1,18 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft, Save, CheckCircle2, Thermometer, Heart, Wind,
   Activity, Weight, AlertTriangle, User, ChevronDown, ChevronUp,
-  Syringe, Clock, CalendarDays, Fingerprint, MapPin,
+  Syringe, Clock, CalendarDays, Fingerprint, MapPin, Loader2,
 } from "lucide-react";
+import { doctorDataService, type DoctorExamContext } from "../services/doctorData";
 
 // ── Pet image map (keyed by patient name in schedule) ──────────────────────
-const PET_PHOTOS: Record<string, string> = {
-  Luna:     "https://images.unsplash.com/photo-1570723649488-f5cc599360ac?w=600&q=80",
-  Mochi:    "https://images.unsplash.com/photo-1611250282006-4484dd3fba6b?w=600&q=80",
-  Snowball: "https://images.unsplash.com/photo-1628259679263-d1d5e245b778?w=600&q=80",
-  Kiwi:     "https://images.unsplash.com/photo-1663637875268-7bba6bc372fd?w=600&q=80",
-  default:  "https://images.unsplash.com/photo-1515002246390-7bf7e8f87b54?w=600&q=80",
-};
+const DEFAULT_PET_PHOTO = "https://images.unsplash.com/photo-1515002246390-7bf7e8f87b54?w=600&q=80";
 
 const SYMPTOM_TAGS = [
   "Bỏ ăn", "Nôn mửa", "Tiêu chảy", "Sốt", "Ho", "Hắt hơi",
@@ -38,11 +33,17 @@ interface SysEntry { status: SysStatus; notes: string }
 
 interface ExamPatient {
   id: string;
-  patient: string;
+  appointmentId?: number;
+  patient?: string;
+  petName?: string;
+  petImage?: string | null;
   species: string;
+  breed?: string;
   owner: string;
+  ownerPhone?: string;
   service: string;
   time: string;
+  note?: string;
 }
 
 function VitalInput({
@@ -150,7 +151,11 @@ export function DoctorExamScreen({
   onBack: () => void;
   onFinish: () => void;
 }) {
-  const photo = PET_PHOTOS[patient.patient] ?? PET_PHOTOS.default;
+  const patientName = patient.patient || patient.petName || "Thu cung";
+  const [examContext, setExamContext] = useState<DoctorExamContext | null>(null);
+  const [contextLoading, setContextLoading] = useState(true);
+  const [contextError, setContextError] = useState<string | null>(null);
+  const photo = examContext?.pet.image || patient.petImage || DEFAULT_PET_PHOTO;
 
   // ── state ──────────────────────────────────────────────────────────────────
   const [symptoms, setSymptoms] = useState<string[]>([]);
@@ -169,6 +174,39 @@ export function DoctorExamScreen({
     Object.fromEntries(BODY_SYSTEMS.map((s) => [s.id, initSys()]))
   );
 
+  useEffect(() => {
+    let active = true;
+    const appointmentId = patient.appointmentId ?? Number(String(patient.id).replace(/\D/g, ""));
+
+    if (!Number.isFinite(appointmentId)) {
+      setContextLoading(false);
+      setContextError("Khong tim thay ma lich hen");
+      return;
+    }
+
+    setContextLoading(true);
+    doctorDataService.getExamContext(appointmentId)
+      .then((context) => {
+        if (!active) return;
+        setExamContext(context);
+        setChiefComplaint(context.initialForm.chiefComplaint || "");
+        setOwnerNotes(context.initialForm.ownerNotes || "");
+        setVitals(context.initialForm.vitals);
+        setContextError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setContextError(err instanceof Error ? err.message : "Khong the tai du lieu ca kham");
+      })
+      .finally(() => {
+        if (active) setContextLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [patient.appointmentId, patient.id]);
+
   function toggleSymptom(tag: string) {
     setSymptoms((prev) =>
       prev.includes(tag) ? prev.filter((s) => s !== tag) : [...prev, tag]
@@ -180,17 +218,21 @@ export function DoctorExamScreen({
   }
 
   const petInfo = [
-    { icon: CalendarDays, label: "Tuổi",     value: "2 tuổi 4 tháng" },
-    { icon: Weight,       label: "Cân nặng", value: "4.2 kg" },
-    { icon: MapPin,       label: "Giống",    value: patient.species === "Mèo" ? "British Shorthair" : "Golden Retriever" },
-    { icon: Fingerprint,  label: "Chip",     value: "985141004100247" },
+    { icon: CalendarDays, label: "Tuoi",     value: examContext?.pet.age || "Chua cap nhat" },
+    { icon: Weight,       label: "Can nang", value: examContext?.pet.weight || "Chua cap nhat" },
+    { icon: MapPin,       label: "Giong",    value: examContext?.pet.breed || patient.breed || "Chua cap nhat" },
+    { icon: Fingerprint,  label: "Ma lich",  value: examContext?.appointment.code || patient.id },
   ];
 
-  const vaccines = [
-    { name: "Rabies",        date: "12/2025", due: "12/2026", ok: true },
-    { name: "FVRCP",         date: "03/2025", due: "03/2026", ok: false },
-    { name: "FeLV",          date: "03/2025", due: "03/2026", ok: true },
-  ];
+  const vaccines = examContext?.vaccinations || [];
+  const visitHistory = examContext?.visitHistory || [];
+  const displayedPetName = examContext?.pet.name || patientName;
+  const displayedSpecies = examContext?.pet.species || patient.species;
+  const displayedSex = examContext?.pet.sex || "";
+  const displayedService = examContext?.appointment.service || patient.service;
+  const displayedOwner = examContext?.pet.owner || patient.owner;
+  const displayedOwnerPhone = examContext?.pet.ownerPhone || patient.ownerPhone || "Chua cap nhat";
+  const displayedAllergies = examContext?.pet.allergies || "Khong ghi nhan";
 
   const severityLabels = ["", "Rất nhẹ", "Nhẹ", "Trung bình", "Nặng", "Rất nặng"];
   const severityColors = ["", "text-emerald-600", "text-lime-600", "text-amber-600", "text-orange-600", "text-red-600"];
@@ -243,24 +285,39 @@ export function DoctorExamScreen({
           <div className="relative flex-shrink-0">
             <img
               src={photo}
-              alt={patient.patient}
+              alt={displayedPetName}
               className="w-full h-52 object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 px-4 pb-3.5">
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">{patient.patient}</h2>
-                  <span className="text-[11px] font-semibold text-white/70">{patient.species} · Đực · Lông xám</span>
+                  <h2 className="text-xl font-bold text-white tracking-tight">{displayedPetName}</h2>
+                  <span className="text-[11px] font-semibold text-white/70">
+                    {displayedSpecies}{displayedSex ? ` · ${displayedSex}` : ""}
+                  </span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-amber-400/90 text-amber-900 text-[10px] font-bold">
-                  {patient.service}
+                  {displayedService}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="p-4 flex flex-col gap-4 flex-1">
+            {contextLoading && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-cyan-50 border border-cyan-100 rounded-xl text-[12px] text-cyan-700">
+                <Loader2 size={14} className="animate-spin" />
+                Dang tai du lieu tu database...
+              </div>
+            )}
+
+            {!contextLoading && contextError && (
+              <div className="flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-xl text-[12px] text-red-600">
+                <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+                {contextError}
+              </div>
+            )}
 
             {/* Info grid */}
             <div className="grid grid-cols-2 gap-2">
@@ -283,25 +340,29 @@ export function DoctorExamScreen({
                   <User size={13} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[13px] font-semibold text-foreground truncate">{patient.owner}</div>
-                  <div className="text-[11px] text-muted-foreground">0912 345 678</div>
+                  <div className="text-[13px] font-semibold text-foreground truncate">{displayedOwner}</div>
+                  <div className="text-[11px] text-muted-foreground">{displayedOwnerPhone}</div>
                 </div>
               </div>
             </div>
 
-            {/* Allergy alert */}
-            <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-xl">
-              <AlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[11px] font-bold text-red-700">Dị ứng</p>
-                <p className="text-[12px] text-red-600 mt-0.5">Penicillin · Thức ăn hải sản</p>
+            {displayedAllergies !== "Không ghi nhận" && displayedAllergies !== "Khong ghi nhan" && (
+              <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <AlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[11px] font-bold text-red-700">Di ung</p>
+                  <p className="text-[12px] text-red-600 mt-0.5">{displayedAllergies}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Vaccination */}
             <div className="flex flex-col gap-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">Tiêm phòng</p>
               <div className="flex flex-col gap-1.5">
+                {!contextLoading && vaccines.length === 0 && (
+                  <div className="px-3 py-2 bg-slate-50 rounded-xl text-[12px] text-muted-foreground">Chua co du lieu tiem phong</div>
+                )}
                 {vaccines.map((v) => (
                   <div key={v.name} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl">
                     <div className="flex items-center gap-2">
@@ -322,18 +383,7 @@ export function DoctorExamScreen({
             {/* Visit history */}
             <div className="flex flex-col gap-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">Lịch sử khám</p>
-              {[
-                { date: "12/03/2026", reason: "Khám tổng quát",   dr: "BS. Trần H. Nam" },
-                { date: "05/01/2026", reason: "Tiêm phòng FeLV",  dr: "BS. Lê T. Hoa" },
-              ].map((h) => (
-                <div key={h.date} className="flex items-start gap-2 px-3 py-2 bg-slate-50 rounded-xl">
-                  <Clock size={11} className="text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-[12px] font-semibold text-foreground">{h.reason}</div>
-                    <div className="text-[10px] text-muted-foreground">{h.date} · {h.dr}</div>
-                  </div>
-                </div>
-              ))}
+              <div className="px-3 py-2 bg-slate-50 rounded-xl text-[12px] text-muted-foreground">Chua co lich su kham tu backend</div>
             </div>
 
           </div>

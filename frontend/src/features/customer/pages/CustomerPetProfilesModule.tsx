@@ -8,9 +8,9 @@ import {
   type CustomerPetDashboard,
   type PetDetail,
   type PetSummary,
-} from "../../services/customer/customerPetsApi";
-import { PetFormModal } from "../../components/customer/pets/PetFormModal";
-import { PetDetailModal } from "../../components/customer/pets/PetDetailModal";
+} from "../../../services/customer/customerPetsApi";
+import { PetFormModal } from "../../../components/customer/pets/PetFormModal";
+import { PetDetailModal } from "../../../components/customer/pets/PetDetailModal";
 
 const PET_COLOR_PRESETS = [
   { id: "amber", from: "#FB923C", to: "#EA580C", ring: "#FBBF24" },

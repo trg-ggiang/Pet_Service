@@ -334,6 +334,175 @@ Load customer notifications from the backend and scope them to the authenticated
 
 Checks passed. Frontend build still reports the existing large chunk warning.
 
+## 2026-06-01 - Admin Pages Backend Data Refactor
+
+### Goal
+
+Stop admin pages from rendering Figma/sample arrays directly and load their primary data from backend APIs.
+
+### Work Completed
+
+- Added `backend/src/services/adminService.js` to map Supabase data for admin pages.
+- Added authenticated admin endpoints for dashboard totals, users, services, appointments, and staff.
+- Added `frontend/src/services/admin.ts` as the admin page API client.
+- Updated `UsersPage`, `ServicesPage`, `AppointmentsPage`, and `StaffPage` to initialize from backend data with loading and error states.
+- Kept page UI behavior intact while moving API access into service modules.
+- Updated frontend, backend, and API docs for the new admin data flow.
+
+### Files Changed
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/services/admin.ts`
+- `frontend/src/pages/UsersPage.tsx`
+- `frontend/src/pages/ServicesPage.tsx`
+- `frontend/src/pages/AppointmentsPage.tsx`
+- `frontend/src/pages/StaffPage.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Admin API responses still need runtime verification against the active Supabase data.
+
+### Suggested Commit Message
+
+```text
+feat: load admin pages from backend data
+```
+
+## 2026-06-01 - Frontend Role Folder Split
+
+### Goal
+
+Group frontend page implementations and role-scoped services by role while preserving existing router imports.
+
+### Work Completed
+
+- Moved admin, auth, customer, doctor, and staff page implementations under `frontend/src/features/<role>/pages`.
+- Moved admin, doctor, and staff role-scoped API clients under `frontend/src/features/<role>/services`.
+- Kept compatibility wrappers in `frontend/src/pages` and top-level role service files so existing app imports continue to work.
+- Updated moved customer page imports to account for the deeper feature folder path.
+- Updated frontend and architecture docs for the new role-based structure.
+
+### Files Changed
+
+- `frontend/src/features/admin/**`
+- `frontend/src/features/auth/**`
+- `frontend/src/features/customer/**`
+- `frontend/src/features/doctor/**`
+- `frontend/src/features/staff/**`
+- `frontend/src/pages/**`
+- `frontend/src/services/admin.ts`
+- `frontend/src/services/doctorAppointments.ts`
+- `frontend/src/services/doctorProfile.ts`
+- `frontend/src/services/staffAppointments.ts`
+- `docs/frontend.mdx`
+- `docs/architecture.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: group frontend pages by role
+```
+
+## 2026-06-01 - Doctor Pages Backend Data Refactor
+
+### Goal
+
+Stop doctor pages from rendering sample records/statistics directly and load doctor data from backend APIs.
+
+### Work Completed
+
+- Added doctor backend service functions for medical records and dashboard statistics.
+- Added `GET /api/doctor/records` and `GET /api/doctor/stats`.
+- Updated doctor appointment listing to use `requested_date` and `requested_time`.
+- Added `frontend/src/features/doctor/services/doctorData.ts`.
+- Updated doctor records and statistics pages to fetch backend data with loading/error states.
+- Removed hardcoded sample patient records, report arrays, pet-name image maps, vaccination rows, and visit-history rows from doctor role pages.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorStatsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctorService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Runtime API responses should be verified against the active Supabase data because nested medical visit, prescription, review, and appointment service rows depend on production data shape.
+
+### Suggested Commit Message
+
+```text
+feat: load doctor pages from backend data
+```
+
+## 2026-06-01 - Remove Frontend Pages Wrappers
+
+### Goal
+
+Delete the large legacy `frontend/src/pages` wrapper folder and import page implementations directly from role feature folders.
+
+### Work Completed
+
+- Updated `frontend/src/app/App.tsx` imports to use `frontend/src/features/<role>/pages` directly.
+- Removed `frontend/src/pages`.
+- Updated frontend and architecture docs so new page work stays inside role feature folders.
+
+### Files Changed
+
+- `frontend/src/app/App.tsx`
+- `frontend/src/pages/**`
+- `docs/frontend.mdx`
+- `docs/architecture.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build and docs validation passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: remove frontend pages wrappers
+```
+
 ### Suggested Commit Message
 
 ```text

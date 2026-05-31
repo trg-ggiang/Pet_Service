@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search, Filter, MoreHorizontal, Edit, Lock, Unlock,
   Eye, X, Phone, Mail, MapPin, Calendar, Star,
   ChevronDown, Stethoscope, Scissors, Users,
   ShieldAlert, CheckCircle2, Clock, Activity,
 } from "lucide-react";
+import { adminService } from "../services/admin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -339,7 +340,7 @@ function UserDrawer({ user, onClose, onToggleLock }: { user: AnyUser; onClose: (
 
 // ─── Customer Table ───────────────────────────────────────────────────────────
 
-function CustomerTable({ search, onSelect }: { search: string; onSelect: (u: Customer) => void }) {
+function CustomerTable({ customers, search, onSelect }: { customers: Customer[]; search: string; onSelect: (u: Customer) => void }) {
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set(customers.filter(c => c.locked).map(c => c.id)));
 
   const filtered = customers.filter((c) => {
@@ -417,7 +418,7 @@ function CustomerTable({ search, onSelect }: { search: string; onSelect: (u: Cus
 
 // ─── Doctor Table ─────────────────────────────────────────────────────────────
 
-function DoctorTable({ search, onSelect }: { search: string; onSelect: (u: Doctor) => void }) {
+function DoctorTable({ doctors, search, onSelect }: { doctors: Doctor[]; search: string; onSelect: (u: Doctor) => void }) {
   const filtered = doctors.filter((d) => {
     const q = search.toLowerCase();
     return !q || d.name.toLowerCase().includes(q) || d.specialty.toLowerCase().includes(q);
@@ -483,7 +484,7 @@ function DoctorTable({ search, onSelect }: { search: string; onSelect: (u: Docto
 
 // ─── Staff Table ──────────────────────────────────────────────────────────────
 
-function StaffTable({ search, onSelect }: { search: string; onSelect: (u: StaffMember) => void }) {
+function StaffTable({ staff, search, onSelect }: { staff: StaffMember[]; search: string; onSelect: (u: StaffMember) => void }) {
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set(staff.filter(s => s.locked).map(s => s.id)));
 
   const filtered = staff.filter((s) => {
@@ -566,6 +567,36 @@ export function UsersPage() {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<AnyUser | null>(null);
   const [lockedDrawerUser, setLockedDrawerUser] = useState(false);
+  const [customersData, setCustomersData] = useState<Customer[]>([]);
+  const [doctorsData, setDoctorsData] = useState<Doctor[]>([]);
+  const [staffData, setStaffData] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    adminService
+      .listUsers()
+      .then((data) => {
+        if (!mounted) return;
+        setCustomersData(data.customers as Customer[]);
+        setDoctorsData(data.doctors as Doctor[]);
+        setStaffData(data.staff as StaffMember[]);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Không thể tải dữ liệu người dùng.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const openDrawer = (u: AnyUser) => {
     setSelectedUser(u);
@@ -575,16 +606,20 @@ export function UsersPage() {
   const toggleDrawerLock = () => setLockedDrawerUser((v) => !v);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; count: number }[] = [
-    { id: "customers", label: "Khách hàng", icon: Users,      count: customers.length },
-    { id: "doctors",   label: "Bác sĩ",     icon: Stethoscope, count: doctors.length },
-    { id: "staff",     label: "Nhân viên",  icon: Scissors,    count: staff.length },
+    { id: "customers", label: "Khách hàng", icon: Users,      count: customersData.length },
+    { id: "doctors",   label: "Bác sĩ",     icon: Stethoscope, count: doctorsData.length },
+    { id: "staff",     label: "Nhân viên",  icon: Scissors,    count: staffData.length },
   ];
 
+  const lockedCount = [...customersData, ...doctorsData, ...staffData].filter((user) => user.locked).length;
+  const activeDoctors = doctorsData.filter((doctor) => !doctor.locked && doctor.status === "active").length;
+  const vipCount = customersData.filter((customer) => customer.tier === "vip").length;
+
   const statCards = [
-    { label: "Tổng khách hàng", value: customers.length.toString(), sub: "3 VIP",           color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Bác sĩ trực",     value: "3/4",                       sub: "1 đang nghỉ phép", color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Nhân viên",       value: staff.filter(s => !s.locked && s.status === "active").length.toString(), sub: "1 nghỉ phép, 1 khoá", color: "text-cyan-600", bg: "bg-cyan-50" },
-    { label: "Tài khoản khoá",  value: "2",                         sub: "Cần xem xét",      color: "text-red-600",    bg: "bg-red-50" },
+    { label: "Tổng khách hàng", value: customersData.length.toString(), sub: `${vipCount} VIP`, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { label: "Bác sĩ trực",     value: `${activeDoctors}/${doctorsData.length}`, sub: "Theo dữ liệu backend", color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Nhân viên",       value: staffData.filter(s => !s.locked && s.status === "active").length.toString(), sub: `${staffData.length} tài khoản nhân viên`, color: "text-cyan-600", bg: "bg-cyan-50" },
+    { label: "Tài khoản khoá",  value: lockedCount.toString(), sub: "Cần xem xét", color: "text-red-600", bg: "bg-red-50" },
   ];
 
   return (
@@ -606,6 +641,12 @@ export function UsersPage() {
       </div>
 
       {/* Stat strip */}
+      {loadError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+          {loadError}
+        </div>
+      )}
+
       <div className="grid grid-cols-4 gap-4">
         {statCards.map((s) => (
           <div key={s.label} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
@@ -644,9 +685,14 @@ export function UsersPage() {
       </div>
 
       {/* Table */}
-      {tab === "customers" && <CustomerTable search={search} onSelect={openDrawer} />}
-      {tab === "doctors"   && <DoctorTable   search={search} onSelect={openDrawer} />}
-      {tab === "staff"     && <StaffTable    search={search} onSelect={openDrawer} />}
+      {loading && (
+        <div className="rounded-xl border border-border bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          Đang tải dữ liệu người dùng...
+        </div>
+      )}
+      {!loading && tab === "customers" && <CustomerTable customers={customersData} search={search} onSelect={openDrawer} />}
+      {!loading && tab === "doctors"   && <DoctorTable doctors={doctorsData} search={search} onSelect={openDrawer} />}
+      {!loading && tab === "staff"     && <StaffTable staff={staffData} search={search} onSelect={openDrawer} />}
 
       {/* Drawer */}
       {selectedUser && (

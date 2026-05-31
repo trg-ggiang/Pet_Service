@@ -1,117 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Calendar, CheckCircle2, Activity, TrendingUp, TrendingDown,
-  Users, Clock, Star, Award, Stethoscope,
+  Users, Clock, Star, Award, Stethoscope, Loader2,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Cell,
   PieChart, Pie,
 } from "recharts";
+import { doctorDataService, type DoctorStatsResponse } from "../services/doctorData";
+import type { DoctorProfile } from "../services/doctorProfile";
 
 // ── Data per period ────────────────────────────────────────────────────────────
-const DATA = {
-  week: {
-    kpis: [
-      { label: "Ca khám",       value: 28,   sub: "tuần này",       change: +4,  icon: Calendar,     bg: "bg-cyan-50",    color: "text-cyan-600" },
-      { label: "Hoàn thành",    value: 25,   sub: "tỷ lệ 89%",      change: +2,  icon: CheckCircle2, bg: "bg-emerald-50", color: "text-emerald-600" },
-      { label: "Bệnh nhân mới", value: 9,    sub: "lần đầu khám",   change: +3,  icon: Users,        bg: "bg-violet-50",  color: "text-violet-600" },
-      { label: "Thời gian TB",  value: "22", sub: "phút/ca",        change: -2,  icon: Clock,        bg: "bg-amber-50",   color: "text-amber-600", unit: "ph" },
-    ],
-    trend: [
-      { label: "T2", total: 5, completed: 5 },
-      { label: "T3", total: 6, completed: 5 },
-      { label: "T4", total: 7, completed: 6 },
-      { label: "T5", total: 4, completed: 4 },
-      { label: "T6", total: 6, completed: 5 },
-      { label: "T7", total: 0, completed: 0 },
-      { label: "CN", total: 0, completed: 0 },
-    ],
-    byDay: [
-      { label: "T2", value: 5 },
-      { label: "T3", value: 6 },
-      { label: "T4", value: 7 },
-      { label: "T5", value: 4 },
-      { label: "T6", value: 6 },
-    ],
-  },
-  month: {
-    kpis: [
-      { label: "Ca khám",       value: 112,  sub: "tháng này",      change: +18, icon: Calendar,     bg: "bg-cyan-50",    color: "text-cyan-600" },
-      { label: "Hoàn thành",    value: 104,  sub: "tỷ lệ 93%",      change: +5,  icon: CheckCircle2, bg: "bg-emerald-50", color: "text-emerald-600" },
-      { label: "Bệnh nhân mới", value: 34,   sub: "lần đầu khám",   change: +8,  icon: Users,        bg: "bg-violet-50",  color: "text-violet-600" },
-      { label: "Thời gian TB",  value: "21", sub: "phút/ca",        change: -3,  icon: Clock,        bg: "bg-amber-50",   color: "text-amber-600", unit: "ph" },
-    ],
-    trend: [
-      { label: "T1", total: 18, completed: 17 },
-      { label: "T2", total: 22, completed: 20 },
-      { label: "T3", total: 19, completed: 18 },
-      { label: "T4", total: 25, completed: 23 },
-      { label: "T1/2", total: 28, completed: 26 },
-    ],
-    byDay: [
-      { label: "T2", value: 24 },
-      { label: "T3", value: 21 },
-      { label: "T4", value: 28 },
-      { label: "T5", value: 19 },
-      { label: "T6", value: 20 },
-    ],
-  },
-  quarter: {
-    kpis: [
-      { label: "Ca khám",       value: 318,  sub: "quý này",        change: +42, icon: Calendar,     bg: "bg-cyan-50",    color: "text-cyan-600" },
-      { label: "Hoàn thành",    value: 301,  sub: "tỷ lệ 95%",      change: +12, icon: CheckCircle2, bg: "bg-emerald-50", color: "text-emerald-600" },
-      { label: "Bệnh nhân mới", value: 87,   sub: "lần đầu khám",   change: +21, icon: Users,        bg: "bg-violet-50",  color: "text-violet-600" },
-      { label: "Thời gian TB",  value: "20", sub: "phút/ca",        change: -4,  icon: Clock,        bg: "bg-amber-50",   color: "text-amber-600", unit: "ph" },
-    ],
-    trend: [
-      { label: "T3", total: 98, completed: 91 },
-      { label: "T4", total: 108, completed: 103 },
-      { label: "T5", total: 112, completed: 107 },
-    ],
-    byDay: [
-      { label: "T2", value: 68 },
-      { label: "T3", value: 62 },
-      { label: "T4", value: 74 },
-      { label: "T5", value: 58 },
-      { label: "T6", value: 56 },
-    ],
-  },
-};
-
-const SERVICE_PIE = [
-  { name: "Khám tổng quát", value: 42, color: "#0891B2" },
-  { name: "Da liễu",        value: 24, color: "#8B5CF6" },
-  { name: "Nội khoa",       value: 18, color: "#10B981" },
-  { name: "Tiêm phòng",     value: 10, color: "#F59E0B" },
-  { name: "Khác",           value: 6,  color: "#94A3B8" },
-];
-
-const SPECIES_PIE = [
-  { name: "Mèo",  value: 58, color: "#06B6D4" },
-  { name: "Chó",  value: 38, color: "#6366F1" },
-  { name: "Khác", value: 4,  color: "#94A3B8" },
-];
-
-const TOP_SERVICES = [
-  { name: "Khám tổng quát",  count: 47, pct: 100 },
-  { name: "Khám da liễu",    count: 27, pct: 57 },
-  { name: "Khám nội khoa",   count: 21, pct: 45 },
-  { name: "Tiêm phòng",      count: 11, pct: 23 },
-  { name: "Kiểm tra định kỳ",count: 6,  pct: 13 },
-];
-
-const RECENT_PATIENTS = [
-  { name: "Luna",     species: "Mèo", diagnosis: "Viêm da dị ứng",    date: "22/05", rating: 5 },
-  { name: "Mochi",    species: "Chó", diagnosis: "Rối loạn tiêu hoá", date: "20/05", rating: 5 },
-  { name: "Snowball", species: "Mèo", diagnosis: "Viêm phế quản",     date: "18/05", rating: 4 },
-  { name: "Biscuit",  species: "Chó", diagnosis: "Khám tổng quát",    date: "16/05", rating: 5 },
-  { name: "Nala",     species: "Mèo", diagnosis: "Tiêm phòng",        date: "14/05", rating: 4 },
-];
-
 type Period = "week" | "month" | "quarter";
 
-const PERIOD_LABELS: Record<Period, string> = { week: "Tuần này", month: "Tháng này", quarter: "Quý này" };
+const PERIOD_LABELS: Record<Period, string> = { week: "Tuan nay", month: "Thang nay", quarter: "Quy nay" };
+
+const KPI_VIEW = [
+  { key: "total", label: "Ca kham", sub: "theo ky", icon: Calendar, bg: "bg-cyan-50", color: "text-cyan-600" },
+  { key: "completed", label: "Hoan thanh", sub: "ca da xong", icon: CheckCircle2, bg: "bg-emerald-50", color: "text-emerald-600" },
+  { key: "newPatients", label: "Benh nhan", sub: "thu cung duy nhat", icon: Users, bg: "bg-violet-50", color: "text-violet-600" },
+  { key: "completionRate", label: "Ty le hoan thanh", sub: "trong ky", icon: Clock, bg: "bg-amber-50", color: "text-amber-600", unit: "%" },
+] as const;
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -127,9 +37,42 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export function DoctorStatsPage() {
+export function DoctorStatsPage({ profile }: { profile?: DoctorProfile | null }) {
   const [period, setPeriod] = useState<Period>("month");
-  const d = DATA[period];
+  const [stats, setStats] = useState<DoctorStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const d = stats?.[period];
+  const kpis = d
+    ? KPI_VIEW.map((item) => ({
+        ...item,
+        value: d.kpis[item.key],
+        change: 0,
+      }))
+    : [];
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+
+    doctorDataService.getStats()
+      .then((data) => {
+        if (!active) return;
+        setStats(data);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Khong the tai thong ke bac si");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -137,7 +80,7 @@ export function DoctorStatsPage() {
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 bg-white border-b border-border">
         <div>
           <h2 className="text-sm font-bold text-foreground">Thống kê cá nhân</h2>
-          <p className="text-[11px] text-muted-foreground">BS. Trần Hoài Nam · Nội khoa · Phòng 1</p>
+          <p className="text-[11px] text-muted-foreground">{profile ? `${profile.fullName} - ${profile.specialization} - ${profile.roomName}` : "Bac si"}</p>
         </div>
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
@@ -154,11 +97,22 @@ export function DoctorStatsPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+      {loading && (
+        <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
+          <Loader2 size={22} className="animate-spin text-cyan-500 mr-2" />
+          Dang tai thong ke...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="flex-1 flex items-center justify-center text-sm text-red-600">{error}</div>
+      )}
+
+      {!loading && !error && d && <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
 
         {/* ── KPI row ── */}
         <div className="grid grid-cols-4 gap-4">
-          {d.kpis.map((k) => {
+          {kpis.map((k) => {
             const Icon = k.icon;
             const isPos = k.change > 0;
             return (
@@ -226,15 +180,15 @@ export function DoctorStatsPage() {
             <p className="text-[11px] text-muted-foreground mb-3">Phân bố theo loài</p>
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
-                <Pie data={SPECIES_PIE} cx="50%" cy="50%" innerRadius={45} outerRadius={68}
+                <Pie data={d.speciesPie} cx="50%" cy="50%" innerRadius={45} outerRadius={68}
                   dataKey="value" paddingAngle={3}>
-                  {SPECIES_PIE.map((e, i) => <Cell key={`species-${i}`} fill={e.color} />)}
+                  {d.speciesPie.map((e, i) => <Cell key={`species-${i}`} fill={e.color} />)}
                 </Pie>
                 <Tooltip formatter={(v: any) => [`${v}%`, ""]} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex flex-col gap-1.5 mt-1">
-              {SPECIES_PIE.map((e) => (
+              {d.speciesPie.map((e) => (
                 <div key={e.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: e.color }} />
@@ -274,7 +228,7 @@ export function DoctorStatsPage() {
             <h3 className="text-[13px] font-bold text-foreground mb-1">Dịch vụ hay khám nhất</h3>
             <p className="text-[11px] text-muted-foreground mb-3">Tháng này</p>
             <div className="flex flex-col gap-3">
-              {TOP_SERVICES.map((s, i) => (
+              {d.topServices.map((s, i) => (
                 <div key={s.name}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
@@ -300,11 +254,11 @@ export function DoctorStatsPage() {
               <h3 className="text-[13px] font-bold text-foreground">Bệnh nhân gần đây</h3>
               <div className="flex items-center gap-1">
                 <Award size={13} className="text-amber-500" />
-                <span className="text-[12px] font-bold text-amber-600">4.8 / 5</span>
+                <span className="text-[12px] font-bold text-amber-600">{d.averageRating || 0} / 5</span>
               </div>
             </div>
             <div className="flex flex-col gap-2.5">
-              {RECENT_PATIENTS.map((p) => (
+              {d.recentPatients.map((p) => (
                 <div key={p.name + p.date} className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center flex-shrink-0">
                     <Stethoscope size={13} className="text-cyan-600" />
@@ -330,7 +284,7 @@ export function DoctorStatsPage() {
           </div>
 
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

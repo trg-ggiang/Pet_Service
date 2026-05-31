@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus, Search, Edit, X, Check, ChevronDown, ToggleLeft, ToggleRight,
   Stethoscope, Syringe, Scissors, BedDouble, Clock, TrendingUp,
   Star, BarChart3, Trash2, AlertTriangle, Copy, Filter,
 } from "lucide-react";
+import { adminService } from "../services/admin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -563,13 +564,38 @@ function ServiceRow({
 // ─── Services Page ────────────────────────────────────────────────────────────
 
 export function ServicesPage() {
-  const [services, setServices] = useState<Service[]>(INITIAL_SERVICES);
+  const [services, setServices] = useState<Service[]>([]);
   const [activeCat, setActiveCat] = useState<Category>("clinic");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    adminService
+      .listServices()
+      .then((data) => {
+        if (!mounted) return;
+        setServices(data.services as Service[]);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Không thể tải dữ liệu dịch vụ.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const catServices = services.filter((s) => s.category === activeCat);
   const filtered = catServices.filter((s) => {
@@ -637,6 +663,12 @@ export function ServicesPage() {
       </div>
 
       {/* KPI strip */}
+      {loadError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+          {loadError}
+        </div>
+      )}
+
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: "Tổng dịch vụ",       value: services.length.toString(),   sub: `${totalActive} đang hoạt động`,       icon: BarChart3,  iconBg: "bg-cyan-50",    iconColor: "text-cyan-600" },
@@ -710,6 +742,11 @@ export function ServicesPage() {
       </div>
 
       {/* Service table */}
+      {loading && (
+        <div className="rounded-xl border border-border bg-card px-5 py-8 text-center text-sm text-muted-foreground">
+          Đang tải dữ liệu dịch vụ...
+        </div>
+      )}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[780px]">

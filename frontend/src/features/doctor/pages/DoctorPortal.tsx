@@ -178,7 +178,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
         {/* Stats page */}
         {!examPatient && activeNav === "reports" && (
           <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-            <DoctorStatsPage />
+            <DoctorStatsPage profile={doctorProfile} />
           </div>
         )}
 
