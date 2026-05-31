@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LogOut, Bell, Calendar, CheckCircle2, Clock, Scissors,
   BedDouble, Settings, ChevronRight, User, Package,
   Stethoscope, Star, Home, DollarSign, X, Check,
   AlertTriangle, Coffee, Activity, Eye, Edit2, Plus,
-  MessageSquare, Camera, FileText, Search,
+  MessageSquare, Camera, FileText, Search, Loader2,
 } from "lucide-react";
+import { staffAppointmentsService, type StaffAppointment } from "../services/staffAppointments";
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -172,15 +173,33 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
 
   // Data states
-  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
+  const [appointments, setAppointments] = useState<StaffAppointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [groomingTasks, setGroomingTasks] = useState(INITIAL_GROOMING_TASKS);
   const [boardingGuests, setBoardingGuests] = useState(INITIAL_BOARDING);
   const [payments, setPayments] = useState(INITIAL_PAYMENTS);
 
   // Modal states
-  const [viewingApt, setViewingApt] = useState<Appointment | null>(null);
+  const [viewingApt, setViewingApt] = useState<StaffAppointment | null>(null);
   const [viewingBoarding, setViewingBoarding] = useState<BoardingGuest | null>(null);
   const [processingPayment, setProcessingPayment] = useState<PaymentItem | null>(null);
+
+  // Fetch appointments từ API
+  useEffect(() => {
+    if (activeNav === "appointments") {
+      setAppointmentsLoading(true);
+      staffAppointmentsService.fetchPendingAppointments()
+        .then((data) => {
+          setAppointments(data);
+        })
+        .catch((error) => {
+          console.error("[FRONTEND] Failed to load appointments:", error);
+        })
+        .finally(() => {
+          setAppointmentsLoading(false);
+        });
+    }
+  }, [activeNav]);
 
   // Stats
   const doneGrooming = groomingTasks.filter(t => t.status === "completed").length;
@@ -189,8 +208,25 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const needsFed = boardingGuests.filter(b => !b.todayStatus.breakfast || !b.todayStatus.lunch || !b.todayStatus.dinner).length;
   const pendingPayments = payments.filter(p => p.status === "pending").length;
 
+  const handleCheckIn = async (apt: StaffAppointment) => {
+    try {
+      await staffAppointmentsService.checkInAppointment(apt.appointmentId);
+      // Cập nhật state sau khi check-in thành công
+      setAppointments(prev => prev.map(a =>
+        a.appointmentId === apt.appointmentId ? { ...a, status: "checked_in" as const } : a
+      ));
+      setViewingApt(null);
+    } catch (error) {
+      console.error("[FRONTEND] Check-in failed:", error);
+      alert("Không thể check-in: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+    }
+  };
+
   const checkInAppointment = (id: string) => {
-    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: "checked_in" } : a));
+    const apt = appointments.find(a => a.id === id);
+    if (apt) {
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: "checked_in" } : a));
+    }
     setViewingApt(null);
   };
 
@@ -336,10 +372,9 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           {activeNav === "appointments" && (
             <AppointmentsTab
               appointments={appointments}
+              loading={appointmentsLoading}
               onViewDetails={setViewingApt}
-              onCheckIn={(id) => {
-                setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: "checked_in" } : a));
-              }}
+              onCheckIn={(apt) => handleCheckIn(apt)}
             />
           )}
 
@@ -405,7 +440,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
         <AppointmentDetailModal
           apt={viewingApt}
           onClose={() => setViewingApt(null)}
-          onCheckIn={() => checkInAppointment(viewingApt.id)}
+          onCheckIn={() => handleCheckIn(viewingApt)}
         />
       )}
 
@@ -437,10 +472,11 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 // Tab Components
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AppointmentsTab({ appointments, onViewDetails, onCheckIn }: {
-  appointments: Appointment[];
-  onViewDetails: (apt: Appointment) => void;
-  onCheckIn: (id: string) => void;
+function AppointmentsTab({ appointments, onViewDetails, onCheckIn, loading }: {
+  appointments: StaffAppointment[];
+  onViewDetails: (apt: StaffAppointment) => void;
+  onCheckIn: (apt: StaffAppointment) => void;
+  loading?: boolean;
 }) {
   const scheduled = appointments.filter(a => a.status === "scheduled").length;
   const checkedIn = appointments.filter(a => a.status === "checked_in").length;
@@ -486,16 +522,28 @@ function AppointmentsTab({ appointments, onViewDetails, onCheckIn }: {
             </div>
           </div>
         </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={32} className="animate-spin text-cyan-500" />
+            <span className="ml-3 text-sm text-slate-500">Đang tải danh sách lịch hẹn...</span>
+          </div>
+        ) : appointments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Calendar size={48} className="text-slate-300 mb-3" />
+            <p className="text-sm text-slate-500">Không có lịch hẹn nào chờ xử lý</p>
+          </div>
+        ) : (
         <div className="divide-y divide-slate-100">
           {appointments.map(apt => {
             const statusCfg = APT_STATUS_CONFIG[apt.status];
-            const svcIcon = SERVICE_ICONS[apt.serviceType];
+            const svcIcon = SERVICE_ICONS[apt.serviceType as keyof typeof SERVICE_ICONS] || SERVICE_ICONS.exam;
             const Icon = svcIcon.icon;
             return (
               <div key={apt.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
-                <div className="w-16 text-center flex-shrink-0">
-                  <div className="text-sm font-bold font-mono text-slate-900">{apt.time}</div>
-                  {apt.queue && <div className="text-[10px] font-semibold text-slate-400 mt-0.5">{apt.queue}</div>}
+                <div className="w-20 text-center flex-shrink-0">
+                  <div className="text-sm font-bold font-mono text-slate-900">{apt.time || "--:--"}</div>
+                  <div className="text-[10px] font-semibold text-slate-400 mt-0.5">{apt.date || "Chưa có ngày"}</div>
+                  {apt.queue && <div className="text-[10px] font-semibold text-cyan-500 mt-0.5">{apt.queue}</div>}
                 </div>
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: svcIcon.bg }}>
@@ -521,7 +569,7 @@ function AppointmentsTab({ appointments, onViewDetails, onCheckIn }: {
                   </button>
                   {apt.status === "scheduled" && (
                     <button
-                      onClick={() => onCheckIn(apt.id)}
+                      onClick={() => onCheckIn(apt)}
                       className="h-9 px-4 rounded-lg text-sm font-bold text-white transition-colors flex items-center gap-1.5"
                       style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
                     >
@@ -533,6 +581,7 @@ function AppointmentsTab({ appointments, onViewDetails, onCheckIn }: {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );
@@ -813,12 +862,12 @@ function PaymentsTab({ payments, onProcess }: {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AppointmentDetailModal({ apt, onClose, onCheckIn }: {
-  apt: Appointment;
+  apt: StaffAppointment;
   onClose: () => void;
   onCheckIn: () => void;
 }) {
   const statusCfg = APT_STATUS_CONFIG[apt.status];
-  const svcIcon = SERVICE_ICONS[apt.serviceType];
+  const svcIcon = SERVICE_ICONS[apt.serviceType as keyof typeof SERVICE_ICONS] || SERVICE_ICONS.exam;
   const Icon = svcIcon.icon;
 
   return (
@@ -847,17 +896,26 @@ function AppointmentDetailModal({ apt, onClose, onCheckIn }: {
           </div>
 
           {[
-            { label: "Thú cưng", value: `${apt.petName} (${apt.species} • ${apt.breed})` },
+            { label: "Thú cưng", value: `${apt.petName} (${apt.species}${apt.breed ? ' • ' + apt.breed : ''})` },
             { label: "Chủ nuôi", value: apt.owner },
             { label: "Số điện thoại", value: apt.phone },
-            { label: "Thời gian", value: `${apt.time}` },
-            { label: "Phòng/Số thứ tự", value: apt.room || apt.queue || "—" },
+            { label: "Ngày khám", value: apt.date || "—" },
+            { label: "Giờ khám", value: apt.time || "—" },
+            { label: "Phòng/Số thứ tự", value: apt.queue || "—" },
+            { label: "Loại dịch vụ", value: apt.service },
           ].map(item => (
             <div key={item.label} className="flex justify-between items-center py-2 border-b border-slate-100">
               <span className="text-sm text-slate-500 font-medium">{item.label}</span>
               <span className="text-sm font-bold text-slate-900">{item.value}</span>
             </div>
           ))}
+
+          {apt.note && (
+            <div className="py-2 border-b border-slate-100">
+              <span className="text-sm text-slate-500 font-medium">Ghi chú</span>
+              <p className="text-sm font-medium text-slate-700 mt-1">{apt.note}</p>
+            </div>
+          )}
         </div>
 
         {apt.status === "scheduled" && (
