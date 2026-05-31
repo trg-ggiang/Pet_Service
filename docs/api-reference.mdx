@@ -49,6 +49,27 @@ Routes are mounted under `/api/customer` and require a customer auth token. Noti
 | `PATCH` | `/api/customer/notifications/:notificationId/read` | Mark one current-user notification as read. |
 | `PATCH` | `/api/customer/notifications/read-all` | Mark all current-user notifications as read. |
 
+## Customer Appointments
+
+Routes are mounted under `/api/customer` and require a customer auth token. Appointment reads and writes are scoped to pets owned by the current customer.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/customer/appointment-options` | List database-backed service options for customer booking. |
+| `POST` | `/api/customer/appointment-provider-options` | List providers for the requested service slot. Doctor services return doctors whose `doctor_schedules` cover the selected time and who are not already booked at that exact date/time; staff services return the staff list. |
+| `GET` | `/api/customer/appointments` | List current customer's appointments. |
+| `POST` | `/api/customer/appointments` | Create a pending appointment for one current-customer pet and the selected provider. |
+| `PATCH` | `/api/customer/appointments/:appointmentId/reschedule` | Update appointment schedule date/time when a linked doctor schedule is available. |
+| `PATCH` | `/api/customer/appointments/:appointmentId/cancel` | Cancel one current-customer appointment. |
+
+## Customer Service History
+
+Routes are mounted under `/api/customer` and require a customer auth token.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/customer/service-history` | List invoice-backed service history for current customer's pets. |
+
 ## Customer
 
 Routes are mounted under `/api/customer`.

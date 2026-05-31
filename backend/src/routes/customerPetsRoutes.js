@@ -16,6 +16,17 @@ const {
   markCustomerNotificationRead,
   markAllCustomerNotificationsRead,
 } = require("../services/customerNotificationsService");
+const {
+  listCustomerAppointmentOptions,
+  listCustomerAppointmentProviders,
+  listCustomerAppointments,
+  createCustomerAppointment,
+  rescheduleCustomerAppointment,
+  cancelCustomerAppointment,
+} = require("../services/customer/customerAppointmentsService");
+const {
+  listCustomerServiceHistory,
+} = require("../services/customer/customerServiceHistoryService");
 
 const router = express.Router();
 
@@ -38,6 +49,103 @@ router.get("/pets/:petId", async (req, res) => {
     res.json({ ok: true, ...data });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message || "Failed to load pet detail" });
+  }
+});
+
+router.get("/appointment-options", async (req, res) => {
+  try {
+    const options = await listCustomerAppointmentOptions(req.auth.user.customerId);
+    res.json({ ok: true, options });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Failed to load customer appointment options",
+    });
+  }
+});
+
+router.post("/appointment-provider-options", async (req, res) => {
+  try {
+    const providers = await listCustomerAppointmentProviders(
+      req.body ?? {},
+      req.auth.user.customerId,
+    );
+    res.json({ ok: true, providers });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Failed to list customer appointment providers",
+    });
+  }
+});
+
+router.get("/appointments", async (req, res) => {
+  try {
+    const appointments = await listCustomerAppointments(req.auth.user.customerId);
+    res.json({ ok: true, appointments });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Failed to load customer appointments",
+    });
+  }
+});
+
+router.post("/appointments", async (req, res) => {
+  try {
+    const appointment = await createCustomerAppointment(
+      req.body ?? {},
+      req.auth.user.customerId,
+    );
+    res.status(201).json({ ok: true, appointment });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Failed to create customer appointment",
+    });
+  }
+});
+
+router.patch("/appointments/:appointmentId/reschedule", async (req, res) => {
+  try {
+    const appointment = await rescheduleCustomerAppointment(
+      req.params.appointmentId,
+      req.body ?? {},
+      req.auth.user.customerId,
+    );
+    res.json({ ok: true, appointment });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Failed to reschedule customer appointment",
+    });
+  }
+});
+
+router.patch("/appointments/:appointmentId/cancel", async (req, res) => {
+  try {
+    const appointment = await cancelCustomerAppointment(
+      req.params.appointmentId,
+      req.auth.user.customerId,
+    );
+    res.json({ ok: true, appointment });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Failed to cancel customer appointment",
+    });
+  }
+});
+
+router.get("/service-history", async (req, res) => {
+  try {
+    const history = await listCustomerServiceHistory(req.auth.user.customerId);
+    res.json({ ok: true, history });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Failed to load customer service history",
+    });
   }
 });
 

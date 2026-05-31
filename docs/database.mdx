@@ -23,6 +23,10 @@ Key domains currently modeled include:
 - Services, grooming, boarding, invoices, payments
 - Notifications and reviews
 
+Customer-created appointments store `requested_date` and `requested_time` on `appointments`.
+These fields preserve the requested slot for both doctor-backed services and staff-backed services such as grooming or boarding.
+Customer doctor availability uses `doctor_schedules.work_date`, `start_time`, and `end_time` as working windows. Booked doctor slots are blocked by matching `appointments.doctor_id`, `requested_date`, and `requested_time`, so one booked slot does not close the doctor's entire working window.
+
 ## Environment
 
 Required database-related variables:
