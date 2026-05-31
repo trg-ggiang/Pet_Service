@@ -5,6 +5,12 @@ const cors = require("cors");
 const { isSupabaseConfigured } = require("./lib/supabaseClient");
 const authRoutes = require("./routes/authRoutes");
 const customerPetsRoutes = require("./routes/customerPetsRoutes");
+const customerAppointmentRoutes = require("./routes/customerAppointmentRoutes");
+const customerServicesRoutes = require("./routes/customerServicesRoutes");
+const staffAppointmentRoutes = require("./routes/staffAppointmentRoutes");
+const doctorAppointmentRoutes = require("./routes/doctorAppointmentRoutes");
+const doctorProfileRoutes = require("./routes/doctorProfileRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const { isPrismaConfigured } = require("./lib/prisma");
 
 const app = express();
@@ -21,6 +27,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/customer", customerPetsRoutes);
+app.use("/api/customer/appointments", customerAppointmentRoutes);
+app.use("/api/customer/services", customerServicesRoutes);
+app.use("/api/staff/appointments", staffAppointmentRoutes);
+app.use("/api/doctor/appointments", doctorAppointmentRoutes);
+app.use("/api/doctor", doctorProfileRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({

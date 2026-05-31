@@ -63,24 +63,28 @@ const INITIAL_PETS: Pet[] = [
   { id: 2, name: "Luna",  species: "Mèo", breed: "British Shorthair", age: "3 tuổi", weight: "5.1 kg", colorId: "slate", initials: "Lu", lastVisit: "03/04/2026", nextVaccine: "03/07/2026", healthy: true, image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop" },
 ];
 
-type AptStatus = "PENDING" | "CONFIRMED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+type AptStatus = "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 type ServiceType = "Khám bệnh" | "Tiêm phòng" | "Grooming" | "Lưu trú";
 
 const STATUS_CONFIG: Record<AptStatus, { label: string; bg: string; color: string; ring: string }> = {
   PENDING:     { label: "Chờ xác nhận",   bg: "#FFFBEB", color: "#D97706", ring: "#FDE68A" },
-  CONFIRMED:   { label: "Đã xác nhận",    bg: "#EFF6FF", color: "#2563EB", ring: "#BFDBFE" },
-  CHECKED_IN:  { label: "Đã check-in",    bg: "#F0F9FF", color: "#0891B2", ring: "#BAE6FD" },
-  IN_PROGRESS: { label: "Đang thực hiện", bg: "#F5F3FF", color: "#7C3AED", ring: "#DDD6FE" },
-  COMPLETED:   { label: "Hoàn thành",     bg: "#ECFDF5", color: "#059669", ring: "#BBF7D0" },
-  CANCELLED:   { label: "Đã hủy",         bg: "#FEF2F2", color: "#DC2626", ring: "#FECACA" },
-  NO_SHOW:     { label: "Không đến",      bg: "#F8FAFC", color: "#64748B", ring: "#CBD5E1" },
+  CONFIRMED:   { label: "Đang xử lý",      bg: "#EFF6FF", color: "#2563EB", ring: "#BFDBFE" },
+  IN_PROGRESS: { label: "Đang thực hiện",  bg: "#F5F3FF", color: "#7C3AED", ring: "#DDD6FE" },
+  COMPLETED:   { label: "Hoàn thành",       bg: "#ECFDF5", color: "#059669", ring: "#BBF7D0" },
+  CANCELLED:   { label: "Đã hủy",           bg: "#FEF2F2", color: "#DC2626", ring: "#FECACA" },
+  NO_SHOW:     { label: "Không đến",        bg: "#F8FAFC", color: "#64748B", ring: "#CBD5E1" },
 };
 
-const SERVICE_TYPE_CONFIG: Record<ServiceType, { bg: string; color: string }> = {
+const SERVICE_TYPE_CONFIG: Record<string, { bg: string; color: string }> = {
+  "MEDICAL":  { bg: "#ECFEFF", color: "#0891B2" },
   "Khám bệnh":  { bg: "#ECFEFF", color: "#0891B2" },
   "Tiêm phòng": { bg: "#ECFDF5", color: "#059669" },
+  "GROOMING":   { bg: "#FFFBEB", color: "#D97706" },
   "Grooming":   { bg: "#FFFBEB", color: "#D97706" },
+  "BOARDING":    { bg: "#F5F3FF", color: "#7C3AED" },
   "Lưu trú":    { bg: "#F5F3FF", color: "#7C3AED" },
+  "MIXED":       { bg: "#F5F3FF", color: "#7C3AED" },
+  "Khám & Dịch vụ": { bg: "#F5F3FF", color: "#7C3AED" },
 };
 
 interface Apt {
@@ -350,6 +354,75 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         if (mounted) {
           setPetsLoading(false);
         }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Load appointments from API with polling
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchAppointments = async () => {
+      try {
+        console.log("[FRONTEND] Loading appointments...");
+        const { appointments, pets: apiPets, doctors: apiDoctors } = await appointmentsService.fetchAppointments();
+        if (!mounted) return;
+
+        // Set doctors from API
+        if (apiDoctors && apiDoctors.length > 0) {
+          setDoctors(apiDoctors);
+          console.log("[FRONTEND] Doctors loaded:", apiDoctors);
+        }
+
+        const mappedApts: Apt[] = appointments.map((apt) => ({
+          id: apt.appointmentId,
+          date: apt.date,
+          time: apt.time,
+          service: apt.service,
+          pet: apt.pet,
+          doctor: apt.doctor,
+          icon: Stethoscope,
+          iconColor: apt.iconColor,
+          iconBg: apt.iconBg,
+          status: apt.status as AptStatus,
+          serviceType: apt.service as ServiceType,
+        }));
+
+        setApts(mappedApts);
+      } catch (error) {
+        console.error("[FRONTEND] Failed to load appointments:", error);
+      }
+    };
+
+    // Fetch immediately
+    fetchAppointments();
+
+    // Poll every 10 seconds to check for status updates
+    const intervalId = setInterval(fetchAppointments, 10000);
+
+    return () => {
+      mounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  // Load services from API
+  useEffect(() => {
+    let mounted = true;
+
+    void (async () => {
+      try {
+        console.log("[FRONTEND] Loading services...");
+        const apiServices = await servicesService.fetchServices();
+        if (!mounted) return;
+        setServices(apiServices);
+        console.log("[FRONTEND] Services loaded:", apiServices.length);
+      } catch (error) {
+        console.error("[FRONTEND] Failed to load services:", error);
       }
     })();
 
@@ -850,7 +923,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                   const count = apts.filter((a) => {
                     if (s.id === "all") return true;
                     if (s.id === "upcoming") return ["PENDING", "CONFIRMED"].includes(a.status);
-                    if (s.id === "in_progress") return ["CHECKED_IN", "IN_PROGRESS"].includes(a.status);
+                    if (s.id === "in_progress") return ["CONFIRMED", "IN_PROGRESS"].includes(a.status);
                     if (s.id === "completed") return a.status === "COMPLETED";
                     if (s.id === "cancelled") return ["CANCELLED", "NO_SHOW"].includes(a.status);
                     return false;
@@ -980,7 +1053,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                 {filteredApts.map((apt) => {
                   const Icon = apt.icon;
                   const statusCfg = STATUS_CONFIG[apt.status];
-                  const serviceTypeCfg = SERVICE_TYPE_CONFIG[apt.serviceType];
+                  const serviceTypeCfg = SERVICE_TYPE_CONFIG[apt.serviceType] || { bg: "#ECFEFF", color: "#0891B2" };
                   return (
                     <div
                       key={apt.id}
@@ -1286,6 +1359,8 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       {isNewAptOpen && (
         <NewAppointmentModal
           pets={pets}
+          doctors={doctors}
+          services={services}
           defaultPet={bookingPetName ?? undefined}
           onClose={() => { setIsNewAptOpen(false); setBookingPetName(null); }}
           onAdd={(apt) => {
@@ -1335,11 +1410,29 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               <X size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 text-center">Huỷ lịch hẹn?</h3>
-            <p className="text-sm text-slate-500 text-center mt-2">Lịch hẹn sẽ bị xoá và không thể khôi phục.</p>
+            <p className="text-sm text-slate-500 text-center mt-2">Lịch hẹn sẽ được chuyển sang trạng thái đã hủy.</p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setCancellingAptId(null)} className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Giữ lại</button>
               <button
-                onClick={() => { setApts((prev) => prev.filter((a) => a.id !== cancellingAptId)); setCancellingAptId(null); }}
+                onClick={async () => {
+                  // Tìm appointment để lấy appointmentId thực (số)
+                  const aptToCancel = apts.find(a => a.id === cancellingAptId);
+                  if (aptToCancel) {
+                    try {
+                      // Gọi API hủy lịch hẹn (cắt "APT-" prefix để lấy số)
+                      const appointmentIdNum = parseInt(cancellingAptId.replace("APT-", ""));
+                      await appointmentsService.cancelAppointment(appointmentIdNum, "Khách hàng tự hủy");
+                      // Cập nhật trạng thái thành CANCELLED
+                      setApts((prev) => prev.map(a =>
+                        a.id === cancellingAptId ? { ...a, status: "CANCELLED" as AptStatus } : a
+                      ));
+                    } catch (error) {
+                      console.error("[FRONTEND] Cancel failed:", error);
+                      alert("Không thể hủy lịch hẹn: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+                    }
+                  }
+                  setCancellingAptId(null);
+                }}
                 className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors"
               >
                 Xác nhận huỷ
@@ -1916,39 +2009,66 @@ const DOCTORS = [
 const INPUT_CLS = "w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all";
 const LABEL_CLS = "block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide";
 
-function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]; defaultPet?: string; onClose: () => void; onAdd: (apt: any) => void }) {
+function NewAppointmentModal({ pets, defaultPet, onClose, onAdd, doctors, services }: { pets: Pet[]; defaultPet?: string; onClose: () => void; onAdd: (apt: any) => void; doctors: Array<{ id: number; full_name: string; specialization: string | null }>; services: ServiceItem[] }) {
+  const defaultPetId = pets.find((p) => p.name === defaultPet)?.id ?? pets[0]?.id ?? 0;
   const [form, setForm] = useState({
-    pet: defaultPet ?? pets[0]?.name ?? "",
-    serviceIdx: 0,
-    doctor: DOCTORS[0],
+    petId: defaultPetId,
+    serviceId: services[0]?.id ?? 0,
+    doctorId: doctors[0]?.id ?? null,
     date: "",
     time: "",
     note: "",
   });
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [newAptId, setNewAptId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const svc = SERVICES[form.serviceIdx];
-  const canNext = !!(form.pet && form.date && form.time);
+  const selectedService = services.find(s => s.id === form.serviceId) || services[0];
+  const svc = selectedService ? { label: selectedService.name, icon: selectedService.icon, iconColor: selectedService.iconColor, iconBg: selectedService.iconBg } : null;
+  const canNext = !!(form.petId && form.date && form.time);
 
-  const handleConfirm = () => {
-    const id = `APT-${Date.now()}`;
-    setNewAptId(id);
-    const serviceType: ServiceType = svc.label === "Tiêm phòng" ? "Tiêm phòng" : svc.label === "Grooming" ? "Grooming" : svc.label === "Lưu trú" ? "Lưu trú" : "Khám bệnh";
-    onAdd({
-      id,
-      date: form.date,
-      time: form.time,
-      service: svc.label,
-      pet: form.pet,
-      doctor: form.doctor,
-      icon: svc.icon,
-      iconColor: svc.iconColor,
-      iconBg: svc.iconBg,
-      status: "PENDING" as AptStatus,
-      serviceType,
-    });
-    setStep(3);
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      console.log("[FRONTEND] Creating appointment with petId:", form.petId, "doctorId:", form.doctorId);
+
+      const newAppointment = await appointmentsService.createAppointment({
+        petId: form.petId,
+        doctorId: form.doctorId,
+        appointmentType: (selectedService?.appointmentType as any) || "MEDICAL",
+        appointmentDate: form.date,
+        appointmentTime: form.time,
+        note: form.note || undefined,
+      });
+
+      console.log("[FRONTEND] Appointment created:", newAppointment);
+
+      const apt: Apt = {
+        id: newAppointment.appointmentId,
+        date: newAppointment.date,
+        time: newAppointment.time,
+        service: newAppointment.service,
+        pet: newAppointment.pet,
+        doctor: newAppointment.doctor,
+        icon: selectedService?.icon || Stethoscope,
+        iconColor: selectedService?.iconColor || "#0891B2",
+        iconBg: selectedService?.iconBg || "#ECFEFF",
+        status: newAppointment.status as AptStatus,
+        serviceType: newAppointment.serviceType as ServiceType,
+      };
+
+      setNewAptId(newAppointment.appointmentId);
+      onAdd(apt);
+      setStep(3);
+    } catch (err) {
+      console.error("[FRONTEND] Failed to create appointment:", err);
+      setError(err instanceof Error ? err.message : "Không thể tạo lịch hẹn");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -1972,13 +2092,13 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
               <div>
                 <label className={LABEL_CLS}>Dịch vụ</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {SERVICES.map((s, i) => {
+                  {services.map((s) => {
                     const Icon = s.icon;
-                    const active = form.serviceIdx === i;
+                    const active = form.serviceId === s.id;
                     return (
                       <button
-                        key={s.label}
-                        onClick={() => setForm({ ...form, serviceIdx: i })}
+                        key={s.id}
+                        onClick={() => setForm({ ...form, serviceId: s.id })}
                         className={`flex flex-col items-center gap-2 p-3 rounded-2xl border text-center transition-all ${
                           active ? "border-cyan-400 bg-cyan-50" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                         }`}
@@ -1986,7 +2106,8 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: s.iconBg }}>
                           <Icon size={16} style={{ color: s.iconColor }} />
                         </div>
-                        <span className={`text-[11px] font-bold leading-tight ${active ? "text-cyan-700" : "text-slate-600"}`}>{s.label}</span>
+                        <span className={`text-[11px] font-bold leading-tight ${active ? "text-cyan-700" : "text-slate-600"}`}>{s.name}</span>
+                        <span className={`text-[9px] font-medium ${active ? "text-cyan-600" : "text-slate-400"}`}>{s.type}</span>
                       </button>
                     );
                   })}
@@ -1995,15 +2116,16 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
 
               <div>
                 <label className={LABEL_CLS}>Thú cưng</label>
-                <select value={form.pet} onChange={(e) => setForm({ ...form, pet: e.target.value })} className={INPUT_CLS + " appearance-none"}>
-                  {pets.map((p) => <option key={p.id} value={p.name}>{p.name} ({p.species})</option>)}
+                <select value={form.petId} onChange={(e) => setForm({ ...form, petId: Number(e.target.value) })} className={INPUT_CLS + " appearance-none"}>
+                  {pets.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.species})</option>)}
                 </select>
               </div>
 
               <div>
                 <label className={LABEL_CLS}>Bác sĩ</label>
-                <select value={form.doctor} onChange={(e) => setForm({ ...form, doctor: e.target.value })} className={INPUT_CLS + " appearance-none"}>
-                  {DOCTORS.map((d) => <option key={d} value={d}>{d}</option>)}
+                <select value={form.doctorId ?? ""} onChange={(e) => setForm({ ...form, doctorId: e.target.value ? Number(e.target.value) : null })} className={INPUT_CLS + " appearance-none"}>
+                  <option value="">-- Chọn bác sĩ --</option>
+                  {doctors.map((d) => <option key={d.id} value={d.id}>{d.full_name} {d.specialization ? `(${d.specialization})` : ""}</option>)}
                 </select>
               </div>
 
@@ -2039,6 +2161,12 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all resize-none"
                 />
               </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+                  {error}
+                </div>
+              )}
             </div>
           )}
 
@@ -2046,9 +2174,9 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
             <div className="space-y-1">
               <p className="text-sm text-slate-500 mb-4">Vui lòng kiểm tra thông tin trước khi xác nhận.</p>
               {[
-                { label: "Dịch vụ",   value: svc.label },
-                { label: "Thú cưng",  value: form.pet },
-                { label: "Bác sĩ",    value: form.doctor },
+                { label: "Dịch vụ",   value: selectedService?.name ?? "" },
+                { label: "Thú cưng",  value: pets.find(p => p.id === form.petId)?.name ?? "" },
+                { label: "Bác sĩ",    value: doctors.find(d => d.id === form.doctorId)?.full_name ?? "Chưa chọn" },
                 { label: "Ngày khám", value: form.date },
                 { label: "Giờ khám",  value: form.time },
               ].map((r) => (
@@ -2086,7 +2214,7 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
                   Xem lịch hẹn của tôi
                 </button>
                 <button
-                  onClick={() => { setStep(1); setForm({ ...form, serviceIdx: 0, date: "", time: "", note: "" }); }}
+                  onClick={() => { setStep(1); setForm({ ...form, serviceId: services[0]?.id ?? 0, date: "", time: "", note: "" }); }}
                   className="w-full h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Đặt thêm lịch khác
@@ -2105,11 +2233,11 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
             )}
             <button
               onClick={step === 1 ? () => setStep(2) : handleConfirm}
-              disabled={!canNext}
+              disabled={!canNext || isSubmitting}
               className="flex-1 h-12 rounded-xl text-sm font-bold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
             >
-              {step === 1 ? "Tiếp theo →" : "Xác nhận đặt lịch"}
+              {isSubmitting ? "Đang xử lý..." : step === 1 ? "Tiếp theo →" : "Xác nhận đặt lịch"}
             </button>
           </div>
         )}
@@ -2125,7 +2253,7 @@ function NewAppointmentModal({ pets, defaultPet, onClose, onAdd }: { pets: Pet[]
 function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel }: { apt: Apt; onClose: () => void; onReschedule: (apt: Apt) => void; onCancel: (id: string) => void }) {
   const Icon = apt.icon;
   const statusCfg = STATUS_CONFIG[apt.status];
-  const serviceTypeCfg = SERVICE_TYPE_CONFIG[apt.serviceType];
+  const serviceTypeCfg = SERVICE_TYPE_CONFIG[apt.serviceType] || { bg: "#ECFEFF", color: "#0891B2" };
 
   const timeline: { label: string; time: string; completed: boolean }[] = [
     { label: "Đặt lịch", time: "20/05 08:30", completed: true },
