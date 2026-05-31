@@ -53,6 +53,15 @@ SUPABASE_SERVICE_ROLE_KEY=
 - `/api/health`
 - `/api/auth`
 - `/api/customer`
+  - `GET /api/customer/pets` lists the current customer's pets.
+  - `POST /api/customer/pets` creates a current-customer pet.
+  - `PUT /api/customer/pets/:petId` updates a current-customer pet.
+  - `GET /api/customer/invoices/:invoiceId/pdf` exports a customer-owned invoice as a PDF.
+  - `GET /api/customer/invoices/latest/pdf` exports the current customer's latest invoice as a PDF.
+  - `GET /api/customer/invoices/match/pdf` exports the current customer's invoice matching pet, service, and date query parameters.
+  - `GET /api/customer/notifications` lists notifications for the authenticated user.
+  - `PATCH /api/customer/notifications/:notificationId/read` marks one authenticated-user notification as read.
+  - `PATCH /api/customer/notifications/read-all` marks all authenticated-user notifications as read.
 
 ## Rules
 

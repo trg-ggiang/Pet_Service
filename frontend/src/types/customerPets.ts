@@ -152,6 +152,15 @@ export type PetDetail = {
     status: string;
     created_at: string;
     updated_at: string;
+    items?: Array<{
+      id: number;
+      invoice_id: number;
+      source_type: string;
+      description: string;
+      quantity: number;
+      unit_price: number;
+      total_price: number;
+    }>;
   }>;
 };
 

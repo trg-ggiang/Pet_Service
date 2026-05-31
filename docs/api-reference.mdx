@@ -29,6 +29,26 @@ Routes are mounted under `/api/auth`.
 | `POST` | `/api/auth/login` | Login and receive auth data. |
 | `GET` | `/api/auth/me` | Get current authenticated user. |
 
+## Customer Invoices
+
+Routes are mounted under `/api/customer` and require a customer auth token.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/customer/invoices/:invoiceId/pdf` | Download a PDF invoice owned by the current customer. |
+| `GET` | `/api/customer/invoices/latest/pdf` | Download the latest PDF invoice owned by the current customer. |
+| `GET` | `/api/customer/invoices/match/pdf` | Download the customer invoice that best matches pet, service type, service name, and date query parameters. |
+
+## Customer Notifications
+
+Routes are mounted under `/api/customer` and require a customer auth token. Notification reads are scoped to the authenticated user.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/customer/notifications` | List notifications for the current user. |
+| `PATCH` | `/api/customer/notifications/:notificationId/read` | Mark one current-user notification as read. |
+| `PATCH` | `/api/customer/notifications/read-all` | Mark all current-user notifications as read. |
+
 ## Customer
 
 Routes are mounted under `/api/customer`.
@@ -38,6 +58,7 @@ Routes are mounted under `/api/customer`.
 | `GET` | `/api/customer/pets` | List current customer's pets. |
 | `POST` | `/api/customer/pets` | Create a customer pet. |
 | `GET` | `/api/customer/pets/:petId` | Get one customer pet. |
+| `PUT` | `/api/customer/pets/:petId` | Update one current-customer pet. |
 
 ## TODO
 

@@ -6,6 +6,16 @@ const {
   createCustomerPet,
   updateCustomerPet,
 } = require("../services/customerPetsService");
+const {
+  buildCustomerInvoicePdf,
+  buildLatestCustomerInvoicePdf,
+  buildMatchingCustomerInvoicePdf,
+} = require("../services/invoicePdfService");
+const {
+  listCustomerNotifications,
+  markCustomerNotificationRead,
+  markAllCustomerNotificationsRead,
+} = require("../services/customerNotificationsService");
 
 const router = express.Router();
 
@@ -39,6 +49,109 @@ router.post("/pets", async (req, res) => {
     res.status(201).json({ ok: true, pet: data });
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message || "Failed to create pet" });
+  }
+});
+
+router.get("/notifications", async (req, res) => {
+  try {
+    const notifications = await listCustomerNotifications(req.auth.rawUser.id);
+    res.json({ ok: true, notifications });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Failed to load notifications",
+    });
+  }
+});
+
+router.patch("/notifications/read-all", async (req, res) => {
+  try {
+    await markAllCustomerNotificationsRead(req.auth.rawUser.id);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Failed to update notifications",
+    });
+  }
+});
+
+router.patch("/notifications/:notificationId/read", async (req, res) => {
+  try {
+    await markCustomerNotificationRead(
+      req.auth.rawUser.id,
+      req.params.notificationId,
+    );
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Failed to update notification",
+    });
+  }
+});
+
+router.get("/invoices/latest/pdf", async (req, res) => {
+  try {
+    const { buffer, filename } = await buildLatestCustomerInvoicePdf(
+      req.auth.user.customerId,
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      ok: false,
+      message: error.message || "Failed to export invoice PDF",
+    });
+  }
+});
+
+router.get("/invoices/match/pdf", async (req, res) => {
+  try {
+    const { buffer, filename } = await buildMatchingCustomerInvoicePdf(
+      req.auth.user.customerId,
+      {
+        petName: req.query.petName,
+        serviceName: req.query.serviceName,
+        serviceType: req.query.serviceType,
+        date: req.query.date,
+      },
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      ok: false,
+      message: error.message || "Failed to export invoice PDF",
+    });
+  }
+});
+
+router.get("/invoices/:invoiceId/pdf", async (req, res) => {
+  try {
+    const { buffer, filename } = await buildCustomerInvoicePdf(
+      req.params.invoiceId,
+      req.auth.user.customerId,
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      ok: false,
+      message: error.message || "Failed to export invoice PDF",
+    });
   }
 });
 
