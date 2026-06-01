@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ExamPage } from "../features/admin/pages/ExamPage";
+import { AdminDashboardPage } from "../features/admin/pages/AdminDashboardPage";
 import { UsersPage } from "../features/admin/pages/UsersPage";
 import { ServicesPage } from "../features/admin/pages/ServicesPage";
 import { StaffPage } from "../features/admin/pages/StaffPage";
@@ -985,7 +986,7 @@ function AdminRoot({ onLogout }: { onLogout: () => void }) {
             <ExamPage onBack={() => setPage("appointments")} />
           ) : (
             <div className="max-w-[1280px] mx-auto px-6 py-6">
-              {page === "dashboard"    && <AdminDashboard onNav={setPage} />}
+              {page === "dashboard"    && <AdminDashboardPage onNav={setPage} />}
               {page === "appointments" && <AppointmentsPage onNewAppt={goToApts} onOpenExam={() => setPage("exam")} />}
               {page === "users"        && <UsersPage />}
               {page === "services"     && <ServicesPage />}

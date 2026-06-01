@@ -17,23 +17,6 @@ interface Appointment {
   status: Status; amount: string; phone?: string; email?: string; notes?: string;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const INITIAL: Appointment[] = [
-  { id: "APT-001", time: "08:30", customer: "Nguyễn Thị Mai",    pet: "Mochi",    species: "Chó", service: "Khám tổng quát",       staff: "BS. Trần Hoài Nam",    status: "completed",   amount: "250.000",   phone: "090 1234 5678", email: "mai@email.com", notes: "Kiểm tra sức khoẻ định kỳ hàng năm" },
-  { id: "APT-002", time: "09:00", customer: "Phạm Văn Đức",      pet: "Kiwi",     species: "Mèo", service: "Tiêm phòng dại",       staff: "BS. Lê Thị Hoa",       status: "completed",   amount: "180.000",   phone: "090 2345 6789", email: "duc@email.com" },
-  { id: "APT-003", time: "09:30", customer: "Lê Thị Hương",      pet: "Buddy",    species: "Chó", service: "Grooming cao cấp",      staff: "NV. Vũ Minh Tuấn",     status: "in_progress", amount: "350.000",   phone: "090 3456 7890", notes: "Yêu cầu cắt theo kiểu teddy bear" },
-  { id: "APT-004", time: "10:00", customer: "Trần Minh Khoa",    pet: "Luna",     species: "Mèo", service: "Khám da liễu",         staff: "BS. Trần Hoài Nam",    status: "in_progress", amount: "320.000",   phone: "090 4567 8901", email: "khoa@email.com", notes: "Dị ứng Penicillin — cần đặc biệt chú ý" },
-  { id: "APT-005", time: "10:30", customer: "Hoàng Thanh Thảo",  pet: "Max",      species: "Chó", service: "Lưu trú 3 ngày",       staff: "NV. Đinh Thị Lan",     status: "scheduled",   amount: "900.000",   phone: "090 5678 9012" },
-  { id: "APT-006", time: "11:00", customer: "Võ Thị Bích",       pet: "Coco",     species: "Chó", service: "Khám tổng quát",       staff: "BS. Lê Thị Hoa",       status: "scheduled",   amount: "250.000",   phone: "090 6789 0123" },
-  { id: "APT-007", time: "11:30", customer: "Đặng Quốc Hùng",   pet: "Snowball", species: "Mèo", service: "Tiêm phòng combo",     staff: "BS. Trần Hoài Nam",    status: "scheduled",   amount: "380.000",   phone: "090 7890 1234" },
-  { id: "APT-008", time: "14:00", customer: "Bùi Thị Lan",       pet: "Charlie",  species: "Chó", service: "Phẫu thuật triệt sản", staff: "BS. Nguyễn Đức Trung", status: "scheduled",   amount: "1.500.000", phone: "090 8901 2345", notes: "Cần nhịn ăn trước 8 tiếng" },
-  { id: "APT-009", time: "14:30", customer: "Ngô Văn Tâm",       pet: "Whiskers", species: "Mèo", service: "Grooming tiêu chuẩn", staff: "NV. Vũ Minh Tuấn",     status: "cancelled",   amount: "280.000",   phone: "090 9012 3456" },
-  { id: "APT-010", time: "15:00", customer: "Dương Thị Thu",     pet: "Rocky",    species: "Chó", service: "Khám ngoại khoa",      staff: "BS. Nguyễn Đức Trung", status: "scheduled",   amount: "380.000",   phone: "090 0123 4567" },
-  { id: "APT-011", time: "15:30", customer: "Phan Anh Tuấn",     pet: "Milo",     species: "Chó", service: "Tắm và vệ sinh tai",   staff: "NV. Vũ Minh Tuấn",     status: "scheduled",   amount: "150.000",   phone: "091 1234 5678" },
-  { id: "APT-012", time: "16:00", customer: "Trịnh Thị Nga",     pet: "Nala",     species: "Mèo", service: "Kiểm tra định kỳ",     staff: "BS. Lê Thị Hoa",       status: "scheduled",   amount: "200.000",   phone: "091 2345 6789" },
-];
-
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CFG: Record<Status, { label: string; cls: string; dot: string }> = {
@@ -42,9 +25,6 @@ const STATUS_CFG: Record<Status, { label: string; cls: string; dot: string }> = 
   completed:   { label: "Hoàn thành", cls: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200", dot: "bg-emerald-500" },
   cancelled:   { label: "Đã huỷ",     cls: "bg-red-50 text-red-600 ring-1 ring-inset ring-red-200",            dot: "bg-red-400" },
 };
-
-const SERVICES = ["Khám tổng quát", "Khám da liễu", "Khám ngoại khoa", "Khám nội khoa chuyên sâu", "Tiêm phòng dại", "Combo 5 bệnh (chó)", "Combo 4 bệnh (mèo)", "Grooming đầy đủ", "Tắm & sấy tiêu chuẩn", "Lưu trú tiêu chuẩn", "Phẫu thuật triệt sản", "Siêu âm bụng"];
-const DOCTORS  = ["BS. Trần Hoài Nam", "BS. Lê Thị Hoa", "BS. Nguyễn Đức Trung", "NV. Vũ Minh Tuấn", "NV. Đinh Thị Lan"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -233,19 +213,21 @@ function AptDrawer({
 // ─── Appointment Edit Modal ───────────────────────────────────────────────────
 
 function AptModal({
-  apt, onClose, onSave,
+  apt, onClose, onSave, serviceOptions, staffOptions,
 }: {
   apt: Appointment | null;
   onClose: () => void;
   onSave: (data: Partial<Appointment>) => void;
+  serviceOptions: string[];
+  staffOptions: string[];
 }) {
   const [form, setForm] = useState({
     customer: apt?.customer ?? "",
     pet:      apt?.pet      ?? "",
     species:  apt?.species  ?? "Chó" as "Chó" | "Mèo",
     time:     apt?.time     ?? "09:00",
-    service:  apt?.service  ?? SERVICES[0],
-    staff:    apt?.staff    ?? DOCTORS[0],
+    service:  apt?.service  ?? serviceOptions[0] ?? "",
+    staff:    apt?.staff    ?? staffOptions[0] ?? "",
     amount:   apt?.amount   ?? "",
     status:   apt?.status   ?? "scheduled" as Status,
     notes:    apt?.notes    ?? "",
@@ -310,7 +292,7 @@ function AptModal({
             <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">Dịch vụ</label>
             <div className="relative mt-1.5">
               <select value={form.service} onChange={set("service")} className="w-full h-10 px-3 pr-8 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 appearance-none transition-all">
-                {SERVICES.map((s) => <option key={s}>{s}</option>)}
+                {serviceOptions.map((s) => <option key={s}>{s}</option>)}
               </select>
               <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>
@@ -321,7 +303,7 @@ function AptModal({
             <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">Nhân viên phụ trách</label>
             <div className="relative mt-1.5">
               <select value={form.staff} onChange={set("staff")} className="w-full h-10 px-3 pr-8 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 appearance-none transition-all">
-                {DOCTORS.map((d) => <option key={d}>{d}</option>)}
+                {staffOptions.map((d) => <option key={d}>{d}</option>)}
               </select>
               <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>
@@ -418,6 +400,9 @@ export function AppointmentsPage({
     const matchSearch = !q || a.customer.toLowerCase().includes(q) || a.pet.toLowerCase().includes(q) || a.service.toLowerCase().includes(q);
     return matchStatus && matchSearch;
   });
+
+  const serviceOptions = Array.from(new Set(apts.map((apt) => apt.service).filter(Boolean))).sort();
+  const staffOptions = Array.from(new Set(apts.map((apt) => apt.staff).filter(Boolean))).sort();
 
   const tabs: [Status | "all", string][] = [
     ["all", "Tất cả"], ["scheduled", "Chờ khám"], ["in_progress", "Đang khám"],
@@ -593,6 +578,8 @@ export function AppointmentsPage({
           apt={editApt === "new" ? null : editApt}
           onClose={() => setEditApt(null)}
           onSave={handleSave}
+          serviceOptions={serviceOptions}
+          staffOptions={staffOptions}
         />
       )}
     </div>

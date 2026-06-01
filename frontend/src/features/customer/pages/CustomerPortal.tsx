@@ -422,7 +422,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         )}
 
 {tab === "apts" && (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="mx-auto w-full max-w-4xl">
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Lịch hẹn của tôi</h2>
@@ -682,53 +682,6 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               </div>
             )}
           </div>
-          <aside className="space-y-4">
-            <div className="overflow-hidden rounded-3xl border border-cyan-100 bg-white shadow-sm">
-              <div className="relative h-44">
-                <img
-                  src="https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=900&h=520&fit=crop"
-                  alt="Veterinary appointment"
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <div className="text-lg font-extrabold">Chọn đúng người phụ trách</div>
-                  <p className="mt-1 text-xs font-semibold text-white/85">Bác sĩ cho khám/tiêm, nhân viên cho grooming/lưu trú.</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 p-4 text-center">
-                <div className="rounded-2xl bg-cyan-50 p-3">
-                  <div className="text-lg font-extrabold text-cyan-700">{apts.length}</div>
-                  <div className="text-[11px] font-bold text-slate-500">Tổng lịch</div>
-                </div>
-                <div className="rounded-2xl bg-amber-50 p-3">
-                  <div className="text-lg font-extrabold text-amber-700">{apts.filter((apt) => apt.status === "PENDING").length}</div>
-                  <div className="text-[11px] font-bold text-slate-500">Chờ xác nhận</div>
-                </div>
-                <div className="rounded-2xl bg-emerald-50 p-3">
-                  <div className="text-lg font-extrabold text-emerald-700">{pets.length}</div>
-                  <div className="text-[11px] font-bold text-slate-500">Thú cưng</div>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="text-base font-extrabold text-slate-900">Mẹo đặt lịch</h3>
-              <div className="mt-4 space-y-3 text-sm font-semibold text-slate-600">
-                <div className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-xs font-black text-cyan-700">1</span>
-                  Khám tổng quát, vaccine sẽ chỉ hiện danh sách bác sĩ.
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-xs font-black text-rose-700">2</span>
-                  Grooming và lưu trú sẽ hiện nhân viên đang trống.
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-xs font-black text-amber-700">3</span>
-                  Lịch mới luôn ở trạng thái chờ xác nhận.
-                </div>
-              </div>
-            </div>
-          </aside>
           </div>
         )}
 

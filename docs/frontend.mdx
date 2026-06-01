@@ -26,6 +26,7 @@ frontend/
       auth/
       customer/
       doctor/
+      admin/
     features/
       admin/
         pages/
@@ -83,7 +84,11 @@ The app imports role pages directly from `frontend/src/features/<role>/pages/`. 
 
 Customer shared API clients live under `frontend/src/services/customer/` because they are also used by shared customer components and types. Admin pages load backend data through `frontend/src/features/admin/services/admin.ts` instead of rendering Figma/sample arrays directly in page state.
 
+Admin dashboard, reports, and settings UI sections live under `frontend/src/components/admin/`; role page files stay as stateful containers that call the admin feature service.
+
 Doctor pages load profile, schedule, medical records, statistics, and exam-screen context through `frontend/src/features/doctor/services/`. Doctor role pages should not render sample patient, record, vaccine, visit history, schedule summary, or report arrays directly from page files.
+
+Staff portal pages load profile, appointments, grooming, boarding, and payment data through `frontend/src/features/staff/services/`. Staff UI sections live under `frontend/src/components/staff/`; role pages should stay as stateful containers and should not render sample appointment, grooming, boarding, or payment arrays.
 
 Auth pages keep page-level state and submit handlers under `frontend/src/features/auth/pages/`, render shared UI from `frontend/src/components/auth/`, and call shared auth API helpers from `frontend/src/services/auth.ts`.
 

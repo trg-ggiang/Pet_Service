@@ -3,6 +3,9 @@ const { supabase } = require("../lib/supabaseClient");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const {
   getAdminDashboard,
+  getAdminExamContext,
+  getAdminReports,
+  getAdminSettings,
   listAdminAppointments,
   listAdminServices,
   listAdminStaff,
@@ -59,6 +62,32 @@ router.get("/staff", async function(req, res) {
   }
 });
 
+router.get("/reports", async function(req, res) {
+  try {
+    const reports = await getAdminReports();
+    res.json({ ok: true, reports });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load reports" });
+  }
+});
+
+router.get("/settings", async function(req, res) {
+  try {
+    const settings = await getAdminSettings(req.auth?.user);
+    res.json({ ok: true, settings });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load settings" });
+  }
+});
+
+router.get("/exam-context", async function(req, res) {
+  try {
+    const exam = await getAdminExamContext();
+    res.json({ ok: true, exam });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load exam context" });
+  }
+});
 // GET /api/admin/doctors - Lấy danh sách doctors chưa có hồ sơ
 router.get("/doctors", async function(req, res) {
   try {

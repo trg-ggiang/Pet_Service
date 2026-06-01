@@ -8,8 +8,6 @@ import {
 } from "lucide-react";
 import { adminService } from "../services/admin";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Department = "all" | "clinic" | "grooming" | "boarding" | "reception" | "admin";
 type WorkStatus = "active" | "on_leave" | "probation";
 type Shift = "Sáng (7–13h)" | "Chiều (13–19h)" | "Cả ngày (7–19h)";
@@ -28,47 +26,16 @@ interface StaffMember {
   locked: boolean;
   todayTasks: number;
   completedTasks: number;
-  monthlyPerf: number;   // 0–100
-  rating: number;        // 1–5
+  monthlyPerf: number;
+  rating: number;
   notes: string;
-  // doctor-specific
   specialty?: string;
   room?: string;
   licenseNo?: string;
   todayPatients?: number;
 }
 
-// ─── Sample data ──────────────────────────────────────────────────────────────
-
-const INITIAL_STAFF: StaffMember[] = [
-  // Phòng khám
-  { id: "NV-C01", name: "BS. Trần Hoài Nam",    avatar: "TN", department: "clinic",    position: "Bác sĩ trưởng",        phone: "0901 111 222", email: "nam.tran@petcare.vn",    joinDate: "15/03/2020", shift: "Cả ngày (7–19h)", workStatus: "active",    locked: false, todayTasks: 6,  completedTasks: 4, monthlyPerf: 96, rating: 4.9, specialty: "Nội khoa",       room: "Phòng 1", licenseNo: "VN-VET-2018-0412", todayPatients: 4, notes: "Bác sĩ trưởng khoa nội. Chuyên gia về bệnh da liễu mèo." },
-  { id: "NV-C02", name: "BS. Lê Thị Hoa",       avatar: "LH", department: "clinic",    position: "Bác sĩ thú y",          phone: "0902 222 333", email: "hoa.le@petcare.vn",      joinDate: "02/07/2021", shift: "Cả ngày (7–19h)", workStatus: "active",    locked: false, todayTasks: 5,  completedTasks: 3, monthlyPerf: 91, rating: 4.8, specialty: "Thú y đa khoa",  room: "Phòng 2", licenseNo: "VN-VET-2019-0891", todayPatients: 3, notes: "Giỏi tiếp xúc thú cưng nhỏ và thú cưng lo lắng." },
-  { id: "NV-C03", name: "BS. Nguyễn Đức Trung", avatar: "NT", department: "clinic",    position: "Bác sĩ phẫu thuật",    phone: "0903 333 444", email: "trung.nguyen@petcare.vn", joinDate: "18/11/2021", shift: "Cả ngày (7–19h)", workStatus: "active",    locked: false, todayTasks: 4,  completedTasks: 2, monthlyPerf: 88, rating: 4.7, specialty: "Ngoại khoa",     room: "Phòng 3", licenseNo: "VN-VET-2017-0256", todayPatients: 2, notes: "Chuyên phẫu thuật triệt sản và chỉnh hình." },
-  { id: "NV-C04", name: "BS. Phạm Minh Đức",    avatar: "PĐ", department: "clinic",    position: "Bác sĩ da liễu",       phone: "0904 444 555", email: "duc.pham@petcare.vn",    joinDate: "01/04/2022", shift: "Sáng (7–13h)",    workStatus: "on_leave",  locked: false, todayTasks: 0,  completedTasks: 0, monthlyPerf: 84, rating: 4.8, specialty: "Da liễu thú y", room: "Phòng 4", licenseNo: "VN-VET-2020-0134", todayPatients: 0, notes: "Nghỉ phép năm từ 19/05 đến 28/05/2026." },
-  { id: "NV-C05", name: "Trần Thị Bảo",         avatar: "TB", department: "clinic",    position: "Trợ lý thú y",         phone: "0944 400 500", email: "bao.tran@petcare.vn",    joinDate: "05/06/2022", shift: "Sáng (7–13h)",    workStatus: "active",    locked: false, todayTasks: 8,  completedTasks: 5, monthlyPerf: 82, rating: 4.5, notes: "Hỗ trợ phòng khám, chuẩn bị dụng cụ và thuốc." },
-  { id: "NV-C06", name: "Nguyễn Thị Cúc",       avatar: "NC", department: "clinic",    position: "Trợ lý thú y",         phone: "0915 515 515", email: "cuc.nguyen@petcare.vn",  joinDate: "10/02/2026", shift: "Chiều (13–19h)",  workStatus: "probation", locked: false, todayTasks: 5,  completedTasks: 3, monthlyPerf: 74, rating: 4.2, notes: "Nhân viên thử việc. Đang học quy trình phòng khám." },
-
-  // Grooming
-  { id: "NV-G01", name: "Vũ Minh Tuấn",         avatar: "VT", department: "grooming",  position: "Groomer cao cấp",      phone: "0911 100 200", email: "tuan.vu@petcare.vn",     joinDate: "12/05/2020", shift: "Cả ngày (7–19h)", workStatus: "active",    locked: false, todayTasks: 4,  completedTasks: 3, monthlyPerf: 93, rating: 4.9, notes: "Chuyên cắt tỉa lông chó lớn và các giống đặc biệt. Đã đạt chứng chỉ iPET." },
-  { id: "NV-G02", name: "Hoàng Thị Mỹ",         avatar: "HM", department: "grooming",  position: "Groomer",              phone: "0922 600 700", email: "my.hoang@petcare.vn",    joinDate: "15/08/2023", shift: "Sáng (7–13h)",    workStatus: "active",    locked: false, todayTasks: 5,  completedTasks: 3, monthlyPerf: 86, rating: 4.6, notes: "Giỏi grooming mèo và các giống nhỏ. Khách hàng rất hài lòng." },
-  { id: "NV-G03", name: "Lê Văn Nam",            avatar: "LN", department: "grooming",  position: "Groomer",              phone: "0955 500 600", email: "nam.le@petcare.vn",      joinDate: "14/10/2022", shift: "Chiều (13–19h)",  workStatus: "on_leave",  locked: false, todayTasks: 0,  completedTasks: 0, monthlyPerf: 79, rating: 4.4, notes: "Đang nghỉ phép. Dự kiến quay lại làm từ 01/06/2026." },
-
-  // Lưu trú
-  { id: "NV-B01", name: "Đinh Thị Lan",          avatar: "ĐL", department: "boarding",  position: "Quản lý lưu trú",     phone: "0922 200 300", email: "lan.dinh@petcare.vn",    joinDate: "08/09/2021", shift: "Cả ngày (7–19h)", workStatus: "active",    locked: false, todayTasks: 6,  completedTasks: 4, monthlyPerf: 90, rating: 4.7, notes: "Quản lý toàn bộ khu vực lưu trú. Theo dõi sức khỏe thú cưng hàng ngày." },
-  { id: "NV-B02", name: "Phạm Văn Sơn",          avatar: "PS", department: "boarding",  position: "Nhân viên chăm sóc",  phone: "0933 700 800", email: "son.pham@petcare.vn",    joinDate: "20/03/2023", shift: "Sáng (7–13h)",    workStatus: "active",    locked: false, todayTasks: 7,  completedTasks: 5, monthlyPerf: 83, rating: 4.5, notes: "Chăm sóc thú cưng lưu trú, dắt đi dạo và cho ăn đúng giờ." },
-  { id: "NV-B03", name: "Ngô Thị Hằng",          avatar: "NH", department: "boarding",  position: "Nhân viên chăm sóc",  phone: "0944 800 900", email: "hang.ngo@petcare.vn",    joinDate: "05/11/2023", shift: "Chiều (13–19h)",  workStatus: "active",    locked: false, todayTasks: 6,  completedTasks: 4, monthlyPerf: 81, rating: 4.4, notes: "Ca chiều, dọn vệ sinh phòng và chăm sóc buổi tối." },
-
-  // Lễ tân
-  { id: "NV-R01", name: "Nguyễn Văn Hùng",       avatar: "NH", department: "reception", position: "Trưởng lễ tân",       phone: "0933 300 400", email: "hung.nguyen@petcare.vn", joinDate: "21/01/2022", shift: "Sáng (7–13h)",    workStatus: "active",    locked: false, todayTasks: 12, completedTasks: 8, monthlyPerf: 89, rating: 4.6, notes: "Quản lý đặt lịch, tiếp đón và điều phối lịch hẹn toàn trung tâm." },
-  { id: "NV-R02", name: "Bùi Thị Hoa",           avatar: "BH", department: "reception", position: "Lễ tân",              phone: "0966 900 100", email: "hoa.bui@petcare.vn",     joinDate: "17/09/2024", shift: "Chiều (13–19h)",  workStatus: "active",    locked: false, todayTasks: 9,  completedTasks: 6, monthlyPerf: 77, rating: 4.3, notes: "Ca chiều. Hỗ trợ xử lý thanh toán và tư vấn dịch vụ." },
-
-  // Kế toán / Hành chính
-  { id: "NV-A01", name: "Phạm Thị Huyền",        avatar: "PH", department: "admin",     position: "Kế toán",             phone: "0966 600 700", email: "huyen.pham@petcare.vn",  joinDate: "28/03/2023", shift: "Sáng (7–13h)",    workStatus: "active",    locked: true,  todayTasks: 4,  completedTasks: 1, monthlyPerf: 70, rating: 3.8, notes: "Tài khoản tạm khoá — đang xác minh sự cố báo cáo tài chính tháng 4." },
-  { id: "NV-A02", name: "Lý Văn Minh",            avatar: "LM", department: "admin",     position: "Quản lý hành chính",  phone: "0977 700 800", email: "minh.ly@petcare.vn",     joinDate: "04/08/2021", shift: "Cả ngày (7–19h)", workStatus: "active",    locked: false, todayTasks: 5,  completedTasks: 3, monthlyPerf: 88, rating: 4.5, notes: "Quản lý hợp đồng, nhân sự và hành chính chung của trung tâm." },
-];
-
-// ─── Config ───────────────────────────────────────────────────────────────────
+// --- Config ───────────────────────────────────────────────────────────────────
 
 const DEPT_CONFIG: Record<Exclude<Department, "all">, {
   label: string; icon: React.ElementType; color: string; bg: string; border: string;

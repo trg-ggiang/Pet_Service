@@ -40,6 +40,9 @@ Routes are mounted under `/api/admin` and require an admin auth token.
 | `GET` | `/api/admin/services` | List service catalog rows for `ServicesPage`. |
 | `GET` | `/api/admin/appointments` | List appointment rows for `AppointmentsPage`. |
 | `GET` | `/api/admin/staff` | List doctor and staff rows for `StaffPage`. |
+| `GET` | `/api/admin/reports` | Get backend-shaped revenue, appointment, service, and staff-performance report data. |
+| `GET` | `/api/admin/settings` | Get backend-shaped clinic, account, notification, payment, and security settings data. |
+| `GET` | `/api/admin/exam-context` | Get appointment, pet, history, symptom, body-system, and prescription option data for `ExamPage`. |
 | `GET` | `/api/admin/doctors` | List doctor users without doctor profiles. |
 | `POST` | `/api/admin/doctors/create-profile` | Create one doctor profile for a doctor user. |
 | `POST` | `/api/admin/doctors/init-all` | Create missing doctor profiles for all doctor users. |
@@ -58,6 +61,22 @@ Routes are mounted under `/api/doctor` and require a doctor auth token.
 | `GET` | `/api/doctor/appointments` | List current doctor's active appointments with backend-shaped portal rows, status view metadata, schedule summary counts, and header metadata. |
 | `PUT` | `/api/doctor/appointments/:appointmentId/start` | Mark one current-doctor appointment as in progress. |
 | `PUT` | `/api/doctor/appointments/:appointmentId/complete` | Mark one current-doctor appointment as completed. |
+
+## Staff
+
+Routes are mounted under `/api/staff` and require a staff auth token.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/staff/profile` | Get the current staff profile for the staff portal. |
+| `GET` | `/api/staff/appointments` | List active appointment rows for staff check-in and intake. |
+| `PUT` | `/api/staff/appointments/:appointmentId/checkin` | Mark one pending appointment as checked in. |
+| `GET` | `/api/staff/grooming` | List grooming work items assigned to the current staff member or unassigned work. |
+| `PATCH` | `/api/staff/grooming/:groomingId/status` | Start or complete one grooming work item. |
+| `GET` | `/api/staff/boarding` | List current boarding guests with today's care checklist state. |
+| `PATCH` | `/api/staff/boarding/:boardingId/daily-status` | Update today's boarding care checklist for one guest. |
+| `GET` | `/api/staff/payments` | List invoice rows for staff payment collection. |
+| `PATCH` | `/api/staff/payments/:invoiceId/pay` | Mark one invoice as paid. |
 
 ## Customer Invoices
 
