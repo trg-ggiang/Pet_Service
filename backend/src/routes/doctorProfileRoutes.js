@@ -1,10 +1,12 @@
 const express = require("express");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
+const { getDoctorExamContext, getDoctorSettings, getDoctorStats, listDoctorRecords } = require("../services/doctor/doctorService");
 
 const router = express.Router();
 
 router.use(authMiddleware);
+router.use(requireRole("doctor"));
 
 // GET /api/doctor/profile - Lấy thông tin profile của bác sĩ đang đăng nhập
 router.get("/profile", async function(req, res) {
@@ -48,6 +50,69 @@ router.get("/profile", async function(req, res) {
     });
   } catch (error) {
     console.error("[ROUTES] GET /doctor/profile ERROR:", error.message);
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.get("/records", async function(req, res) {
+  try {
+    const doctorId = req.auth?.user?.doctorId;
+    if (!doctorId) {
+      return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
+    }
+
+    const records = await listDoctorRecords(doctorId, {
+      search: req.query.search,
+      species: req.query.species,
+    });
+    res.json({ ok: true, records });
+  } catch (error) {
+    console.error("[ROUTES] GET /doctor/records ERROR:", error.message);
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.get("/exam/:appointmentId", async function(req, res) {
+  try {
+    const doctorId = req.auth?.user?.doctorId;
+    if (!doctorId) {
+      return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
+    }
+
+    const context = await getDoctorExamContext(doctorId, req.params.appointmentId);
+    res.json({ ok: true, context });
+  } catch (error) {
+    console.error("[ROUTES] GET /doctor/exam/:appointmentId ERROR:", error.message);
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.get("/stats", async function(req, res) {
+  try {
+    const doctorId = req.auth?.user?.doctorId;
+    if (!doctorId) {
+      return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
+    }
+
+    const stats = await getDoctorStats(doctorId);
+    res.json({ ok: true, stats });
+  } catch (error) {
+    console.error("[ROUTES] GET /doctor/stats ERROR:", error.message);
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.get("/settings", async function(req, res) {
+  try {
+    const doctorId = req.auth?.user?.doctorId;
+    if (!doctorId) {
+      return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
+    }
+
+    const settings = await getDoctorSettings(doctorId);
+    res.json({ ok: true, settings });
+  } catch (error) {
+    console.error("[ROUTES] GET /doctor/settings ERROR:", error.message);
     res.status(500).json({ ok: false, message: error.message });
   }
 });

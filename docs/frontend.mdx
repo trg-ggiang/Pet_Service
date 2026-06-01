@@ -23,8 +23,23 @@ frontend/
     components/
       ui/
       figma/
-    pages/
+      auth/
       customer/
+      doctor/
+    features/
+      admin/
+        pages/
+        services/
+      auth/
+        pages/
+      customer/
+        pages/
+      doctor/
+        pages/
+        services/
+      staff/
+        pages/
+        services/
     services/
       customer/
     hooks/
@@ -62,19 +77,40 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 
 During local development, Vite proxies `/api` to `http://localhost:5050`.
 
-Customer-role API clients live under `frontend/src/services/customer/`. Customer page entry wrappers live under `frontend/src/pages/customer/`; legacy page files may remain as compatibility modules while large customer screens are split incrementally.
+Role-specific page implementations live under `frontend/src/features/<role>/pages/`. Role-specific API clients that are only used by that role live under `frontend/src/features/<role>/services/`.
+
+The app imports role pages directly from `frontend/src/features/<role>/pages/`. Do not add new page wrappers under `frontend/src/pages/`.
+
+Customer shared API clients live under `frontend/src/services/customer/` because they are also used by shared customer components and types. Admin pages load backend data through `frontend/src/features/admin/services/admin.ts` instead of rendering Figma/sample arrays directly in page state.
+
+Doctor pages load profile, schedule, medical records, statistics, and exam-screen context through `frontend/src/features/doctor/services/`. Doctor role pages should not render sample patient, record, vaccine, visit history, schedule summary, or report arrays directly from page files.
+
+Auth pages keep page-level state and submit handlers under `frontend/src/features/auth/pages/`, render shared UI from `frontend/src/components/auth/`, and call shared auth API helpers from `frontend/src/services/auth.ts`.
 
 ## Refactor Boundaries
 
 - `components/`: reusable UI components only.
-- `pages/`: page and portal screens.
-- `services/`: API clients and external service clients.
+- `features/<role>/pages`: page and portal screens grouped by role.
+- `features/<role>/services`: role-scoped API clients.
+- `services/`: shared API clients and compatibility wrappers.
 - `hooks/`: custom React hooks prefixed with `use`.
 - `types/`: shared TypeScript types.
 - `utils/`: framework-agnostic helpers.
 - `constants/`: shared constants and route/config values.
 - `contexts/`: global React context/state providers.
 - `layouts/`: reusable layout shells.
+
+## Doctor Portal Notes
+
+- `DoctorPortal.tsx` should stay as a thin container for navigation state and service calls.
+- Doctor portal, records, stats, and settings UI sections live under `frontend/src/components/doctor/`.
+- Schedule rows, status display config, portal header metadata, summary counts, medical-record filtering, stat KPI cards, and settings payloads are returned by the backend; frontend components render those values instead of remapping appointment status labels or rebuilding business-facing rows.
+
+## Auth Notes
+
+- Login, register, splash, welcome, and forgot-password UI sections live under `frontend/src/components/auth/`.
+- Auth page files should remain thin containers for local form state, validation, and service callbacks.
+- Login and register submit through the backend-backed helpers in `frontend/src/services/auth.ts`; forgot-password currently remains a local mock flow until a reset-password API is added.
 
 ## Customer Portal UX Notes
 

@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
-import { ExamPage } from "../pages/ExamPage";
-import { UsersPage } from "../pages/UsersPage";
-import { ServicesPage } from "../pages/ServicesPage";
-import { StaffPage } from "../pages/StaffPage";
-import { ReportsPage } from "../pages/ReportsPage";
-import { SettingsPage } from "../pages/SettingsPage";
-import { HelpPage } from "../pages/HelpPage";
-import { AppointmentsPage } from "../pages/AppointmentsPage";
-import { WelcomePage } from "../pages/WelcomePage";
-import { LoginPage } from "../pages/LoginPage";
-import { RegisterPage } from "../pages/RegisterPage";
-import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
-import { CustomerPortal } from "../pages/customer/CustomerPortalPage";
-import { DoctorPortal } from "../pages/DoctorPortal";
-import { StaffPortal } from "../pages/StaffPortal";
-import { SplashScreen } from "../pages/SplashScreen";
+import { ExamPage } from "../features/admin/pages/ExamPage";
+import { UsersPage } from "../features/admin/pages/UsersPage";
+import { ServicesPage } from "../features/admin/pages/ServicesPage";
+import { StaffPage } from "../features/admin/pages/StaffPage";
+import { ReportsPage } from "../features/admin/pages/ReportsPage";
+import { SettingsPage } from "../features/admin/pages/SettingsPage";
+import { HelpPage } from "../features/admin/pages/HelpPage";
+import { AppointmentsPage } from "../features/admin/pages/AppointmentsPage";
+import { WelcomePage } from "../features/auth/pages/WelcomePage";
+import { LoginPage } from "../features/auth/pages/LoginPage";
+import { RegisterPage } from "../features/auth/pages/RegisterPage";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
+import { CustomerPortal } from "../features/customer/pages/CustomerPortal";
+import { DoctorPortal } from "../features/doctor/pages/DoctorPortal";
+import { StaffPortal } from "../features/staff/pages/StaffPortal";
+import { SplashScreen } from "../features/auth/pages/SplashScreen";
 import { clearSession, login, register, restoreSession, type AuthSession } from "../services/auth";
 import {
   LayoutDashboard, Calendar, Users, Scissors,

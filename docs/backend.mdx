@@ -52,6 +52,23 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 - `/api/health`
 - `/api/auth`
+- `/api/admin`
+  - `GET /api/admin/dashboard` returns admin totals.
+  - `GET /api/admin/users` lists customers, doctors, and staff users for the admin user-management page.
+  - `GET /api/admin/services` lists service catalog rows for the admin service-management page.
+  - `GET /api/admin/appointments` lists appointment rows for the admin appointment page.
+  - `GET /api/admin/staff` lists doctor and staff rows for the staff-management page.
+  - Existing doctor profile helper routes remain under `/api/admin/doctors`.
+- `/api/doctor`
+  - `GET /api/doctor/profile` returns the authenticated doctor's profile.
+  - `GET /api/doctor/records` lists appointment-backed medical records for the authenticated doctor and accepts `search` and `species` filters.
+  - `GET /api/doctor/stats` returns doctor statistics for week, month, and quarter dashboard views with KPI card view data.
+  - `GET /api/doctor/settings` returns doctor profile, schedule, notification, and security/session settings payloads.
+  - `GET /api/doctor/exam/:appointmentId` returns exam-screen context for one current-doctor appointment from database rows.
+  - `GET /api/doctor/appointments` lists active appointments for the authenticated doctor.
+    - The response includes render-ready portal data: appointment rows, status keys, status view classes, schedule summary counts, and header metadata.
+  - `PUT /api/doctor/appointments/:appointmentId/start` starts an appointment exam.
+  - `PUT /api/doctor/appointments/:appointmentId/complete` completes an appointment exam.
 - `/api/customer`
   - `GET /api/customer/pets` lists the current customer's pets.
   - `POST /api/customer/pets` creates a current-customer pet.
@@ -76,3 +93,6 @@ SUPABASE_SERVICE_ROLE_KEY=
 - Put business logic in `backend/src/services/`.
 - Keep database access behind Prisma or existing backend libraries.
 - Update API and database docs when contracts change.
+
+Doctor appointment portal schedule shaping lives in `backend/src/services/doctor/doctorAppointmentService.js`; routes should call the service and return its payload.
+Doctor records, stats, exam context, and settings shaping lives in `backend/src/services/doctor/doctorService.js`; frontend role pages should render those payloads without rebuilding business-facing rows locally.

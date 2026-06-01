@@ -334,6 +334,216 @@ Load customer notifications from the backend and scope them to the authenticated
 
 Checks passed. Frontend build still reports the existing large chunk warning.
 
+## 2026-06-01 - Admin Pages Backend Data Refactor
+
+### Goal
+
+Stop admin pages from rendering Figma/sample arrays directly and load their primary data from backend APIs.
+
+### Work Completed
+
+- Added `backend/src/services/adminService.js` to map Supabase data for admin pages.
+- Added authenticated admin endpoints for dashboard totals, users, services, appointments, and staff.
+- Added `frontend/src/services/admin.ts` as the admin page API client.
+- Updated `UsersPage`, `ServicesPage`, `AppointmentsPage`, and `StaffPage` to initialize from backend data with loading and error states.
+- Kept page UI behavior intact while moving API access into service modules.
+- Updated frontend, backend, and API docs for the new admin data flow.
+
+### Files Changed
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/services/admin.ts`
+- `frontend/src/pages/UsersPage.tsx`
+- `frontend/src/pages/ServicesPage.tsx`
+- `frontend/src/pages/AppointmentsPage.tsx`
+- `frontend/src/pages/StaffPage.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Admin API responses still need runtime verification against the active Supabase data.
+
+### Suggested Commit Message
+
+```text
+feat: load admin pages from backend data
+```
+
+## 2026-06-01 - Frontend Role Folder Split
+
+### Goal
+
+Group frontend page implementations and role-scoped services by role while preserving existing router imports.
+
+### Work Completed
+
+- Moved admin, auth, customer, doctor, and staff page implementations under `frontend/src/features/<role>/pages`.
+- Moved admin, doctor, and staff role-scoped API clients under `frontend/src/features/<role>/services`.
+- Kept compatibility wrappers in `frontend/src/pages` and top-level role service files so existing app imports continue to work.
+- Updated moved customer page imports to account for the deeper feature folder path.
+- Updated frontend and architecture docs for the new role-based structure.
+
+### Files Changed
+
+- `frontend/src/features/admin/**`
+- `frontend/src/features/auth/**`
+- `frontend/src/features/customer/**`
+- `frontend/src/features/doctor/**`
+- `frontend/src/features/staff/**`
+- `frontend/src/pages/**`
+- `frontend/src/services/admin.ts`
+- `frontend/src/services/doctorAppointments.ts`
+- `frontend/src/services/doctorProfile.ts`
+- `frontend/src/services/staffAppointments.ts`
+- `docs/frontend.mdx`
+- `docs/architecture.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: group frontend pages by role
+```
+
+## 2026-06-01 - Doctor Pages Backend Data Refactor
+
+### Goal
+
+Stop doctor pages from rendering sample records/statistics directly and load doctor data from backend APIs.
+
+### Work Completed
+
+- Added doctor backend service functions for medical records and dashboard statistics.
+- Added `GET /api/doctor/records` and `GET /api/doctor/stats`.
+- Updated doctor appointment listing to use `requested_date` and `requested_time`.
+- Added `frontend/src/features/doctor/services/doctorData.ts`.
+- Updated doctor records and statistics pages to fetch backend data with loading/error states.
+- Removed hardcoded sample patient records, report arrays, pet-name image maps, vaccination rows, and visit-history rows from doctor role pages.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorStatsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctorService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Runtime API responses should be verified against the active Supabase data because nested medical visit, prescription, review, and appointment service rows depend on production data shape.
+
+### Suggested Commit Message
+
+```text
+feat: load doctor pages from backend data
+```
+
+## 2026-06-01 - Doctor Exam Screen Backend Context
+
+### Goal
+
+Move `DoctorExamScreen` pet detail, vaccination, and visit-history data out of the page file and load it from backend database APIs.
+
+### Work Completed
+
+- Added `GET /api/doctor/exam/:appointmentId` for current-doctor appointment exam context.
+- Added `doctorDataService.getExamContext()` and typed the response in the doctor feature service.
+- Updated `DoctorExamScreen` to fetch pet, owner, appointment, vaccination, visit-history, allergy, and initial form data from the backend with loading/error states.
+- Removed the remaining hardcoded visit-history placeholder from the exam screen.
+
+### Files Changed
+
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctorService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: load doctor exam screen from backend data
+```
+
+## 2026-06-01 - Remove Frontend Pages Wrappers
+
+### Goal
+
+Delete the large legacy `frontend/src/pages` wrapper folder and import page implementations directly from role feature folders.
+
+### Work Completed
+
+- Updated `frontend/src/app/App.tsx` imports to use `frontend/src/features/<role>/pages` directly.
+- Removed `frontend/src/pages`.
+- Updated frontend and architecture docs so new page work stays inside role feature folders.
+
+### Files Changed
+
+- `frontend/src/app/App.tsx`
+- `frontend/src/pages/**`
+- `docs/frontend.mdx`
+- `docs/architecture.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build and docs validation passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: remove frontend pages wrappers
+```
+
 ### Suggested Commit Message
 
 ```text
@@ -812,3 +1022,243 @@ Update customer appointment booking to follow the flow: choose service, choose p
 ### Result
 
 Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Doctor Component Service Refactor Fix
+
+### Goal
+
+Fix the doctor portal/exam screen so the frontend builds and the doctor exam files follow the customer-style split between pages, components, and services.
+
+### Work Completed
+
+- Fixed `DoctorExamScreen` imports to use `features/doctor/services` for API calls and `components/doctor` for extracted UI.
+- Added shared doctor component UI helpers for icons, vital tones, and system status classes.
+- Fixed doctor exam launch in `DoctorPortal` to pass `appointmentId` into the refactored exam screen.
+- Start scheduled appointments before opening the exam screen, then update local appointment status after start/complete.
+- Removed the duplicate feature-level `VitalInput` copy so the reusable component lives only under `components/doctor`.
+
+### Files Changed
+
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/components/doctor/*`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: wire doctor exam components and services
+```
+
+## 2026-06-01 - Doctor Portal Component And Backend Data Refactor
+
+### Goal
+
+Split `DoctorPortal.tsx` into doctor components and move schedule display shaping from frontend into backend database-backed services.
+
+### Work Completed
+
+- Split doctor portal sidebar, schedule header, schedule stat cards, and schedule table into `frontend/src/components/doctor/`.
+- Reduced `DoctorPortal.tsx` to navigation state, data loading, and exam flow coordination.
+- Changed doctor appointment API payload to include backend-shaped `scheduleRow`, `statusKey`, `statusView`, `summary`, and `meta`.
+- Added `backend/src/services/doctor/doctorAppointmentService.js` to query doctor appointments from Supabase and prepare portal render data.
+- Updated frontend doctor appointment service types to match the backend payload.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/components/doctor/DoctorSidebar.tsx`
+- `frontend/src/components/doctor/DoctorScheduleHeader.tsx`
+- `frontend/src/components/doctor/DoctorScheduleStats.tsx`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: move doctor portal schedule shaping to backend
+```
+
+## 2026-06-01 - Doctor Records Stats Settings Refactor
+
+### Goal
+
+Apply the doctor portal component/service pattern to doctor records, stats, and settings pages, and move more data shaping from frontend pages into backend services.
+
+### Work Completed
+
+- Split doctor records list, toolbar, side list, detail view, loading, and error UI into `frontend/src/components/doctor/`.
+- Changed doctor records filtering to call `/api/doctor/records` with `search` and `species` query params instead of filtering locally in the page.
+- Split doctor stats toolbar/content/loading/error UI into `frontend/src/components/doctor/`.
+- Added backend-shaped `kpiCards` to doctor stats payload so the stats page renders KPI card data from the API.
+- Split doctor settings nav/header/profile/schedule/notification/security/logout UI into `frontend/src/components/doctor/`.
+- Added `GET /api/doctor/settings` backed by `doctorService.getDoctorSettings()` to load profile and schedule rows from the database.
+- Reduced `DoctorRecordsPage.tsx`, `DoctorStatsPage.tsx`, and `DoctorSettingsPage.tsx` to thin containers around service calls and selected UI state.
+
+### Files Changed
+
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorStatsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `frontend/src/components/doctor/DoctorRecordDetail.tsx`
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/components/doctor/DoctorStatsView.tsx`
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: split doctor pages and move shaping to backend
+```
+
+## 2026-06-01 - Auth Page Component Refactor
+
+### Goal
+
+Apply the same page/component split to the auth folder so auth pages stay smaller and UI is reusable.
+
+### Work Completed
+
+- Added shared auth UI primitives and page views under `frontend/src/components/auth/`.
+- Reduced login, register, forgot-password, splash, and welcome pages under `frontend/src/features/auth/pages/` to thin containers around local state, validation, and callbacks.
+- Kept login and register wired to the existing shared auth service flow through `frontend/src/services/auth.ts`.
+- Preserved the existing forgot-password mock flow in the page controller because the backend does not currently expose a reset-password endpoint.
+- Fixed mojibake Vietnamese text in the refactored auth and doctor UI files so labels render as normal UTF-8 text.
+
+### Files Changed
+
+- `frontend/src/features/auth/pages/LoginPage.tsx`
+- `frontend/src/features/auth/pages/RegisterPage.tsx`
+- `frontend/src/features/auth/pages/ForgotPasswordPage.tsx`
+- `frontend/src/features/auth/pages/SplashScreen.tsx`
+- `frontend/src/features/auth/pages/WelcomePage.tsx`
+- `frontend/src/components/auth/*`
+- `frontend/src/components/doctor/*`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: split auth pages into components
+```
+
+## 2026-06-01 - Doctor Backend Data Wiring Audit
+
+### Goal
+
+Verify why doctor pages looked empty after the refactor and make backend data failures visible in the UI.
+
+### Work Completed
+
+- Updated `backend/src/services/doctor/doctorAppointmentService.js` so doctor schedule data is shaped from `appointments.requested_date` and `requested_time`, with schedule/created-at fallback.
+- Included completed doctor appointments in the portal payload while still excluding cancelled/no-show records.
+- Added backend-shaped room/status/service metadata with clean UTF-8 Vietnamese labels.
+- Updated doctor exam detail route to use requested date/time when appointment rows are not linked to `doctor_schedule_id`.
+- Added a visible schedule error state in `DoctorScheduleTable` instead of silently swallowing backend/API failures as an empty list.
+- Re-checked doctor route and service syntax plus frontend build.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Live database contents were not queried in this session; the UI now shows backend errors directly if auth, doctor profile linking, or database columns are missing.
+
+## 2026-06-01 - Frontend API URL Normalization
+
+### Goal
+
+Fix frontend fetch URLs so `VITE_API_URL=http://localhost:5050/api` does not produce `/api/api/...`.
+
+### Work Completed
+
+- Added `frontend/src/utils/apiUrl.ts` to normalize `VITE_API_URL` by removing a trailing `/api` before appending route paths.
+- Updated doctor, staff, and legacy customer service fetch helpers to use `apiUrl()`.
+- Verified no frontend service still declares its own `API_BASE`.
+
+### Files Changed
+
+- `frontend/src/utils/apiUrl.ts`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/features/doctor/services/doctorProfile.ts`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `frontend/src/services/appointments.ts`
+- `frontend/src/services/services.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.

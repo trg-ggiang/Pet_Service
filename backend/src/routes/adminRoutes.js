@@ -1,7 +1,63 @@
 const express = require("express");
 const { supabase } = require("../lib/supabaseClient");
+const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
+const {
+  getAdminDashboard,
+  listAdminAppointments,
+  listAdminServices,
+  listAdminStaff,
+  listAdminUsers,
+} = require("../services/adminService");
 
 const router = express.Router();
+
+router.use(authMiddleware);
+router.use(requireRole("admin"));
+
+router.get("/dashboard", async function(req, res) {
+  try {
+    const dashboard = await getAdminDashboard();
+    res.json({ ok: true, dashboard });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load dashboard" });
+  }
+});
+
+router.get("/users", async function(req, res) {
+  try {
+    const users = await listAdminUsers();
+    res.json({ ok: true, ...users });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load users" });
+  }
+});
+
+router.get("/services", async function(req, res) {
+  try {
+    const services = await listAdminServices();
+    res.json({ ok: true, services });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load services" });
+  }
+});
+
+router.get("/appointments", async function(req, res) {
+  try {
+    const appointments = await listAdminAppointments();
+    res.json({ ok: true, appointments });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load appointments" });
+  }
+});
+
+router.get("/staff", async function(req, res) {
+  try {
+    const staff = await listAdminStaff();
+    res.json({ ok: true, staff });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load staff" });
+  }
+});
 
 // GET /api/admin/doctors - Lấy danh sách doctors chưa có hồ sơ
 router.get("/doctors", async function(req, res) {

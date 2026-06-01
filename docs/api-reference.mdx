@@ -29,6 +29,36 @@ Routes are mounted under `/api/auth`.
 | `POST` | `/api/auth/login` | Login and receive auth data. |
 | `GET` | `/api/auth/me` | Get current authenticated user. |
 
+## Admin
+
+Routes are mounted under `/api/admin` and require an admin auth token.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/admin/dashboard` | Get admin totals for dashboard widgets. |
+| `GET` | `/api/admin/users` | List customers, doctors, and staff users for `UsersPage`. |
+| `GET` | `/api/admin/services` | List service catalog rows for `ServicesPage`. |
+| `GET` | `/api/admin/appointments` | List appointment rows for `AppointmentsPage`. |
+| `GET` | `/api/admin/staff` | List doctor and staff rows for `StaffPage`. |
+| `GET` | `/api/admin/doctors` | List doctor users without doctor profiles. |
+| `POST` | `/api/admin/doctors/create-profile` | Create one doctor profile for a doctor user. |
+| `POST` | `/api/admin/doctors/init-all` | Create missing doctor profiles for all doctor users. |
+
+## Doctor
+
+Routes are mounted under `/api/doctor` and require a doctor auth token.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/doctor/profile` | Get the current doctor's profile. |
+| `GET` | `/api/doctor/records` | List medical records and appointment-backed patient history for the current doctor. Supports `search` and `species` query filters. |
+| `GET` | `/api/doctor/stats` | Get current doctor's dashboard statistics for week, month, and quarter views, including render-ready KPI cards. |
+| `GET` | `/api/doctor/settings` | Get current doctor's settings payload, including profile, schedule rows, notification preferences, and security/session metadata. |
+| `GET` | `/api/doctor/exam/:appointmentId` | Get database-backed context for `DoctorExamScreen`, including pet, owner, vaccination, visit history, and initial form data. |
+| `GET` | `/api/doctor/appointments` | List current doctor's active appointments with backend-shaped portal rows, status view metadata, schedule summary counts, and header metadata. |
+| `PUT` | `/api/doctor/appointments/:appointmentId/start` | Mark one current-doctor appointment as in progress. |
+| `PUT` | `/api/doctor/appointments/:appointmentId/complete` | Mark one current-doctor appointment as completed. |
+
 ## Customer Invoices
 
 Routes are mounted under `/api/customer` and require a customer auth token.
