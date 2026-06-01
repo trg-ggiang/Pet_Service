@@ -26,9 +26,9 @@ import {
 import type { DoctorStatsPayload, DoctorStatsPeriod } from "../../features/doctor/services/doctorData";
 
 const PERIOD_LABELS: Record<DoctorStatsPeriod, string> = {
-  week: "Tuan nay",
-  month: "Thang nay",
-  quarter: "Quy nay",
+  month: "Tháng",
+  week: "Tuần",
+  day: "Ngày",
 };
 
 const ICONS: Record<string, typeof Calendar> = {

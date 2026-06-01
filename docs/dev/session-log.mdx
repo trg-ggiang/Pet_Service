@@ -1302,6 +1302,124 @@ Refactor staff role structure to match the doctor/customer feature layout and re
 
 Checks passed. The frontend build still reports the existing large chunk warning.
 
+## 2026-06-02 - Doctor Dropdown Polish
+
+### Goal
+
+Restyle doctor dropdown controls to match the customer portal dropdown treatment.
+
+### Work Completed
+
+- Rebuilt the doctor records species filter as a rounded custom dropdown with overlay close behavior, shadowed menu, rotating chevron, and selected check mark.
+- Removed the extra filter button from the doctor records toolbar.
+- Replaced the native duration select in the doctor exam symptom form with a matching custom dropdown.
+- Rebuilt `DoctorRecordsView.tsx` around the current grouped-pet records flow after cleaning up the older table/list exports.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/components/doctor/SymptomForm.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Records Grouped By Pet
+
+### Goal
+
+Show each pet only once in the doctor medical records screen, then display that pet's visit history after selection.
+
+### Work Completed
+
+- Added `petId` to doctor record rows returned by the backend.
+- Normalized known species filter values so pet grouping still filters correctly when older UI strings contain encoding noise.
+- Changed `DoctorRecordsPage` to group appointment-backed records by pet.
+- Replaced the records table flow with a pet list and per-pet history view.
+- Updated doctor records API docs to mention pet identity for grouping.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Stats Period Order
+
+### Goal
+
+Change the doctor statistics period controls to show month, week, and day in that order.
+
+### Work Completed
+
+- Added a day period to the doctor stats payload.
+- Reordered the doctor stats toolbar controls to `Tháng`, `Tuần`, `Ngày`.
+- Updated doctor stats API docs to mention the day view.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/components/doctor/DoctorStatsView.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Sidebar Logout Placement
+
+### Goal
+
+Move the doctor logout action to the bottom of the main sidebar.
+
+### Work Completed
+
+- Added a footer logout button to `DoctorSidebar`.
+- Moved logout confirmation handling to `DoctorPortal` so the sidebar button uses the existing confirm modal.
+- Removed the logout action from the doctor settings sub-navigation.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorSidebar.tsx`
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
 ## 2026-06-01 - Admin Role API Refactor
 
 ### Goal
@@ -1440,6 +1558,32 @@ Split `StaffPortalView.tsx` into smaller staff component files and fix the backe
 - `node --check backend/src/services/doctor/doctorService.js`
 - `node --check backend/src/services/staff/staffPortalService.js`
 - `node --check backend/src/routes/staffRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Stats Data Fallback
+
+### Goal
+
+Fix the doctor statistics page showing no data when appointment rows are dated through doctor schedules or when the current calendar period has no rows.
+
+### Work Completed
+
+- Updated doctor stats shaping to use `doctor_schedules.work_date` when an appointment has no `requested_date`.
+- Added a latest-available-period fallback so week/month/quarter stats still render existing doctor data instead of empty charts when the current period has no appointments.
+- Kept the frontend stats page contract unchanged.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
 - `npm --prefix frontend run build`
 
 ### Result

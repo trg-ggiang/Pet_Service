@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  DoctorLogoutConfirm,
   DoctorNotificationSettings,
   DoctorProfileSettings,
   DoctorScheduleSettings,
@@ -16,9 +15,8 @@ import {
   type DoctorSettingsPayload,
 } from "../services/doctorData";
 
-export function DoctorSettingsPage({ onLogout }: { onLogout?: () => void }) {
+export function DoctorSettingsPage() {
   const [tab, setTab] = useState<DoctorSettingsTabId>("profile");
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [settings, setSettings] = useState<DoctorSettingsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,23 +60,12 @@ export function DoctorSettingsPage({ onLogout }: { onLogout?: () => void }) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {confirmOpen && (
-        <DoctorLogoutConfirm
-          onCancel={() => setConfirmOpen(false)}
-          onConfirm={() => {
-            setConfirmOpen(false);
-            onLogout?.();
-          }}
-        />
-      )}
-
       <DoctorSettingsHeader />
 
       <div className="flex-1 overflow-hidden flex min-h-0">
         <DoctorSettingsNav
           tab={tab}
           onTabChange={setTab}
-          onLogoutClick={() => setConfirmOpen(true)}
         />
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-2xl">

@@ -1,4 +1,4 @@
-import { BarChart3, Calendar, FileText, Settings, User } from "lucide-react";
+import { BarChart3, Calendar, FileText, LogOut, Settings, User } from "lucide-react";
 
 export type DoctorPortalNavId = "schedule" | "records" | "reports" | "settings";
 
@@ -31,10 +31,12 @@ export function DoctorSidebar({
   activeNav,
   profile,
   onNavigate,
+  onLogoutClick,
 }: {
   activeNav: DoctorPortalNavId;
   profile: DoctorSidebarProfile | null;
   onNavigate: (id: DoctorPortalNavId) => void;
+  onLogoutClick: () => void;
 }) {
   return (
     <aside className="w-60 flex flex-col border-r border-border bg-white flex-shrink-0">
@@ -95,6 +97,16 @@ export function DoctorSidebar({
           );
         })}
       </nav>
+
+      <div className="p-3 border-t border-border">
+        <button
+          onClick={onLogoutClick}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-50 hover:text-red-600 transition-all"
+        >
+          <LogOut size={15} />
+          Đăng xuất
+        </button>
+      </div>
     </aside>
   );
 }

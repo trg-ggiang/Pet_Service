@@ -47,7 +47,7 @@ function getInitials(name) {
 }
 
 function getAppointmentDate(appointment) {
-  return appointment.requested_date || appointment.created_at;
+  return appointment.requested_date || appointment.doctor_schedules?.work_date || appointment.created_at;
 }
 
 function splitSymptoms(symptoms) {
@@ -120,7 +120,12 @@ function durationText(days) {
 
 function filterDoctorRecords(records, filters = {}) {
   const search = String(filters.search || "").trim().toLowerCase();
-  const species = String(filters.species || "all");
+  const speciesAliases = {
+    "ChÃ³": "Chó",
+    "MÃ¨o": "Mèo",
+  };
+  const rawSpecies = String(filters.species || "all");
+  const species = speciesAliases[rawSpecies] || rawSpecies;
 
   return records.filter((record) => {
     const matchesSearch = !search
@@ -257,6 +262,7 @@ async function listDoctorRecords(doctorId, filters = {}) {
     return {
       id: visit ? `MR-${String(visit.id).padStart(6, "0")}` : `APT-${String(appointment.id).padStart(6, "0")}`,
       appointmentId: appointment.id,
+      petId: appointment.pet_id,
       date: formatDate(date),
       dateShort: formatDateShort(date),
       pet: pet.name || "Thú cưng",
@@ -305,10 +311,13 @@ async function listDoctorRecords(doctorId, filters = {}) {
   return filterDoctorRecords(records, filters);
 }
 
-function periodStart(period) {
-  const now = new Date();
-  const start = new Date(now);
+function periodStart(period, anchorDate = new Date()) {
+  const start = new Date(anchorDate);
   start.setHours(0, 0, 0, 0);
+
+  if (period === "day") {
+    return start;
+  }
 
   if (period === "week") {
     const day = start.getDay() || 7;
@@ -325,18 +334,49 @@ function periodStart(period) {
   return start;
 }
 
+function getValidAppointmentDate(appointment) {
+  const date = new Date(getAppointmentDate(appointment));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function latestAppointmentDate(appointments) {
+  return appointments.reduce((latest, appointment) => {
+    const date = getValidAppointmentDate(appointment);
+    if (!date) return latest;
+    return !latest || date > latest ? date : latest;
+  }, null);
+}
+
 function bucketLabel(date, period) {
   if (period === "quarter") return `T${date.getMonth() + 1}`;
   if (period === "month") return `${date.getDate()}/${date.getMonth() + 1}`;
+  if (period === "day") return formatDateShort(date).slice(0, 5);
   const labels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
   return labels[date.getDay()];
 }
 
 function buildStatsForPeriod(period, appointments, reviews) {
-  const start = periodStart(period);
-  const rows = appointments.filter((appointment) => {
-    const date = new Date(getAppointmentDate(appointment));
-    return !Number.isNaN(date.getTime()) && date >= start;
+  let start = periodStart(period);
+  let rows = appointments.filter((appointment) => {
+    const date = getValidAppointmentDate(appointment);
+    return date && date >= start;
+  });
+
+  if (rows.length === 0 && appointments.length > 0) {
+    const latest = latestAppointmentDate(appointments);
+    if (latest) {
+      start = periodStart(period, latest);
+      rows = appointments.filter((appointment) => {
+        const date = getValidAppointmentDate(appointment);
+        return date && date >= start && date <= latest;
+      });
+    }
+  }
+
+  rows.sort((a, b) => {
+    const dateA = getValidAppointmentDate(a)?.getTime() || 0;
+    const dateB = getValidAppointmentDate(b)?.getTime() || 0;
+    return dateB - dateA;
   });
 
   const total = rows.length;
@@ -433,6 +473,7 @@ async function getDoctorStats(doctorId) {
       note,
       requested_date,
       created_at,
+      doctor_schedules:doctor_schedule_id (work_date),
       pets:pet_id (name, species:species_id (name)),
       appointment_services:appointment_services (service:services(name, type)),
       medical_visits:medical_visits (diagnosis_note)
@@ -454,8 +495,9 @@ async function getDoctorStats(doctorId) {
   if (reviewsResult.error) throw new Error(reviewsResult.error.message);
 
   return {
-    week: buildStatsForPeriod("week", appointmentRows, reviewsResult.data || []),
     month: buildStatsForPeriod("month", appointmentRows, reviewsResult.data || []),
+    week: buildStatsForPeriod("week", appointmentRows, reviewsResult.data || []),
+    day: buildStatsForPeriod("day", appointmentRows, reviewsResult.data || []),
     quarter: buildStatsForPeriod("quarter", appointmentRows, reviewsResult.data || []),
   };
 }
