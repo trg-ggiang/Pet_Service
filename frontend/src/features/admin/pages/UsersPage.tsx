@@ -7,8 +7,6 @@ import {
 } from "lucide-react";
 import { adminService } from "../services/admin";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Tab = "customers" | "doctors" | "staff";
 type UserRole = "customer" | "doctor" | "staff";
 
@@ -55,36 +53,7 @@ interface StaffMember extends BaseUser {
 
 type AnyUser = Customer | Doctor | StaffMember;
 
-// ─── Sample data ──────────────────────────────────────────────────────────────
-
-const customers: Customer[] = [
-  { id: "C001", role: "customer", name: "Nguyễn Thị Mai",   phone: "0901 234 567", email: "mai.nguyen@gmail.com",    avatar: "NM", joinDate: "12/03/2022", locked: false, tier: "vip",     address: "45 Nguyễn Huệ, Q.1, TP.HCM",      petCount: 2, pets: ["Mochi (Chó)", "Pudding (Chó)"],         totalVisits: 47, totalSpend: "12.400.000", lastVisit: "15/05/2026" },
-  { id: "C002", role: "customer", name: "Phạm Văn Đức",     phone: "0912 345 678", email: "duc.pham@gmail.com",      avatar: "PĐ", joinDate: "08/06/2022", locked: false, tier: "regular", address: "12 Lê Lợi, Q.3, TP.HCM",          petCount: 1, pets: ["Kiwi (Mèo)"],                           totalVisits: 18, totalSpend: "3.200.000",  lastVisit: "21/05/2026" },
-  { id: "C003", role: "customer", name: "Lê Thị Hương",     phone: "0923 456 789", email: "huong.le@gmail.com",      avatar: "LH", joinDate: "23/09/2022", locked: false, tier: "regular", address: "78 Trần Hưng Đạo, Q.5, TP.HCM",   petCount: 1, pets: ["Buddy (Chó)"],                          totalVisits: 22, totalSpend: "5.600.000",  lastVisit: "21/05/2026" },
-  { id: "C004", role: "customer", name: "Trần Minh Khoa",   phone: "0934 567 890", email: "khoa.tran@gmail.com",     avatar: "TK", joinDate: "15/01/2021", locked: false, tier: "vip",     address: "33 Pasteur, Q. Bình Thạnh, TP.HCM", petCount: 1, pets: ["Luna (Mèo)"],                          totalVisits: 63, totalSpend: "18.750.000", lastVisit: "21/05/2026" },
-  { id: "C005", role: "customer", name: "Hoàng Thanh Thảo", phone: "0945 678 901", email: "thao.hoang@gmail.com",    avatar: "HT", joinDate: "04/04/2023", locked: false, tier: "regular", address: "91 Võ Thị Sáu, Q.3, TP.HCM",      petCount: 1, pets: ["Max (Chó)"],                            totalVisits: 9,  totalSpend: "1.800.000",  lastVisit: "18/05/2026" },
-  { id: "C006", role: "customer", name: "Võ Thị Bích",      phone: "0956 789 012", email: "bich.vo@gmail.com",       avatar: "VB", joinDate: "19/07/2023", locked: true,  tier: "regular", address: "56 Điện Biên Phủ, Q.10, TP.HCM",  petCount: 1, pets: ["Coco (Chó)"],                           totalVisits: 5,  totalSpend: "820.000",    lastVisit: "02/04/2026" },
-  { id: "C007", role: "customer", name: "Đặng Quốc Hùng",   phone: "0967 890 123", email: "hung.dang@gmail.com",     avatar: "ĐH", joinDate: "30/11/2021", locked: false, tier: "vip",     address: "27 Cách Mạng Tháng 8, Q. Tân Bình", petCount: 2, pets: ["Snowball (Mèo)", "Oreo (Mèo)"],        totalVisits: 41, totalSpend: "9.300.000",  lastVisit: "19/05/2026" },
-  { id: "C008", role: "customer", name: "Bùi Thị Lan",      phone: "0978 901 234", email: "lan.bui@gmail.com",       avatar: "BL", joinDate: "11/02/2024", locked: false, tier: "regular", address: "64 Bạch Đằng, Q. Bình Thạnh, TP.HCM", petCount: 1, pets: ["Charlie (Chó)"],                     totalVisits: 7,  totalSpend: "2.100.000",  lastVisit: "21/05/2026" },
-];
-
-const doctors: Doctor[] = [
-  { id: "D001", role: "doctor", name: "BS. Trần Hoài Nam",    phone: "0901 111 222", email: "nam.tran@petcare.vn",    avatar: "TN", joinDate: "15/03/2020", locked: false, specialty: "Nội khoa",       room: "Phòng 1", status: "active",   todayPatients: 4, totalPatients: 1284, rating: 4.9, licenseNo: "VN-VET-2018-0412" },
-  { id: "D002", role: "doctor", name: "BS. Lê Thị Hoa",       phone: "0902 222 333", email: "hoa.le@petcare.vn",      avatar: "LH", joinDate: "02/07/2021", locked: false, specialty: "Thú y đa khoa", room: "Phòng 2", status: "active",   todayPatients: 3, totalPatients: 847,  rating: 4.8, licenseNo: "VN-VET-2019-0891" },
-  { id: "D003", role: "doctor", name: "BS. Nguyễn Đức Trung", phone: "0903 333 444", email: "trung.nguyen@petcare.vn", avatar: "NT", joinDate: "18/11/2021", locked: false, specialty: "Ngoại khoa",    room: "Phòng 3", status: "active",   todayPatients: 2, totalPatients: 632,  rating: 4.7, licenseNo: "VN-VET-2017-0256" },
-  { id: "D004", role: "doctor", name: "BS. Phạm Minh Đức",    phone: "0904 444 555", email: "duc.pham@petcare.vn",    avatar: "PĐ", joinDate: "01/04/2022", locked: false, specialty: "Da liễu thú y", room: "Phòng 4", status: "on_leave", todayPatients: 0, totalPatients: 418,  rating: 4.8, licenseNo: "VN-VET-2020-0134" },
-];
-
-const staff: StaffMember[] = [
-  { id: "S001", role: "staff", name: "Vũ Minh Tuấn",    phone: "0911 100 200", email: "tuan.vu@petcare.vn",    avatar: "VT", joinDate: "12/05/2020", locked: false, department: "Grooming",    position: "Groomer cao cấp",   status: "active",   tasksToday: 3 },
-  { id: "S002", role: "staff", name: "Đinh Thị Lan",    phone: "0922 200 300", email: "lan.dinh@petcare.vn",   avatar: "ĐL", joinDate: "08/09/2021", locked: false, department: "Lưu trú",     position: "Quản lý phòng",     status: "active",   tasksToday: 4 },
-  { id: "S003", role: "staff", name: "Nguyễn Văn Hùng", phone: "0933 300 400", email: "hung.nguyen@petcare.vn", avatar: "NH", joinDate: "21/01/2022", locked: false, department: "Lễ tân",      position: "Nhân viên lễ tân",  status: "active",   tasksToday: 8 },
-  { id: "S004", role: "staff", name: "Trần Thị Bảo",    phone: "0944 400 500", email: "bao.tran@petcare.vn",   avatar: "TB", joinDate: "05/06/2022", locked: false, department: "Tiêm chủng",  position: "Trợ lý thú y",      status: "active",   tasksToday: 5 },
-  { id: "S005", role: "staff", name: "Lê Văn Nam",      phone: "0955 500 600", email: "nam.le@petcare.vn",     avatar: "LN", joinDate: "14/10/2022", locked: false, department: "Grooming",    position: "Groomer tiêu chuẩn", status: "on_leave", tasksToday: 0 },
-  { id: "S006", role: "staff", name: "Phạm Thị Huyền",  phone: "0966 600 700", email: "huyen.pham@petcare.vn", avatar: "PH", joinDate: "28/03/2023", locked: true,  department: "Kế toán",     position: "Nhân viên kế toán", status: "active",   tasksToday: 0 },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ──────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
   "from-cyan-400 to-cyan-600", "from-violet-400 to-violet-600",

@@ -1,73 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft, ChevronRight, AlertTriangle, Thermometer, Heart,
   Wind, Weight, Check, ChevronDown, Plus, X, Clock,
   Pill, Calendar, FileText, Stethoscope, Activity,
   ClipboardList, FlaskConical,
 } from "lucide-react";
+import { adminService, type AdminExamContext } from "../services/admin";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type ExamStep = 0 | 1 | 2 | 3 | 4;
-
-interface Drug {
-  id: number;
-  name: string;
-  dose: string;
-  frequency: string;
-  duration: string;
-  note: string;
-}
-
-interface BodySystem {
-  id: string;
-  label: string;
-  status: "normal" | "abnormal" | "not_checked";
-  note: string;
-}
-
-// ─── Step config ──────────────────────────────────────────────────────────────
-
-const STEPS = [
-  { label: "Triệu chứng",   icon: ClipboardList },
-  { label: "Lâm sàng",      icon: Stethoscope },
-  { label: "Chẩn đoán",     icon: FlaskConical },
-  { label: "Kê đơn",        icon: Pill },
-  { label: "Tái khám",      icon: Calendar },
-];
-
-// ─── Initial data ─────────────────────────────────────────────────────────────
-
-const INITIAL_CHIPS = [
-  { id: "itch",  label: "Gãi ngứa",   active: true },
-  { id: "shed",  label: "Rụng lông",   active: true },
-  { id: "red",   label: "Đỏ da",       active: true },
-  { id: "leth",  label: "Lờ đờ",       active: true },
-  { id: "vomit", label: "Nôn mửa",    active: false },
-  { id: "cough", label: "Ho",          active: false },
-  { id: "nasal", label: "Chảy mũi",   active: false },
-  { id: "loss",  label: "Biếng ăn",   active: false },
-  { id: "diag",  label: "Tiêu chảy",  active: false },
-  { id: "eye",   label: "Chảy nước mắt", active: false },
-];
-
-const INITIAL_SYSTEMS: BodySystem[] = [
-  { id: "skin",   label: "Da & lông",        status: "abnormal", note: "Da đỏ, rụng lông vùng bụng và đùi, gãi nhiều" },
-  { id: "eye",    label: "Mắt & tai",         status: "normal",   note: "" },
-  { id: "resp",   label: "Hô hấp",            status: "normal",   note: "" },
-  { id: "cardio", label: "Tim mạch",          status: "normal",   note: "" },
-  { id: "gastro", label: "Tiêu hoá",          status: "normal",   note: "" },
-  { id: "neuro",  label: "Thần kinh",         status: "normal",   note: "" },
-  { id: "musculo",label: "Cơ xương khớp",    status: "not_checked", note: "" },
-  { id: "lymph",  label: "Hạch bạch huyết",  status: "not_checked", note: "" },
-];
-
-const INITIAL_DRUGS: Drug[] = [
-  { id: 1, name: "Prednisolone 5mg", dose: "1 viên / ngày", frequency: "Sáng sau ăn", duration: "7 ngày", note: "Giảm liều từ từ, không dừng đột ngột" },
-  { id: 2, name: "Chlorhexidine Shampoo 2%", dose: "Tắm 2 lần / tuần", frequency: "Ngâm 5 phút", duration: "4 tuần", note: "Tránh vùng mắt" },
-];
-
-// ─── Vital sign component ─────────────────────────────────────────────────────
+// --- Vital sign component ─────────────────────────────────────────────────────
 
 function VitalChip({
   icon: Icon, label, value, unit, state,
@@ -102,12 +42,12 @@ function VitalChip({
 
 // ─── Step 0: Symptoms ─────────────────────────────────────────────────────────
 
-function StepSymptoms() {
-  const [chips, setChips] = useState(INITIAL_CHIPS);
+function StepSymptoms({ symptoms, initialNote }: { symptoms: AdminExamContext["options"]["symptoms"]; initialNote: string }) {
+  const [chips, setChips] = useState(symptoms);
   const [newTag, setNewTag] = useState("");
-  const [notes, setNotes] = useState("Chủ thú cưng báo cáo bé Luna bắt đầu gãi ngứa liên tục khoảng 2 tuần nay. Rụng lông thành mảng ở bụng và hai đùi. Da có vùng đỏ. Ăn uống bình thường nhưng hay lờ đờ hơn bình thường.");
-  const [onset, setOnset] = useState("14");
-  const [severity, setSeverity] = useState<"mild" | "moderate" | "severe">("moderate");
+  const [notes, setNotes] = useState(initialNote);
+  const [onset, setOnset] = useState("");
+  const [severity, setSeverity] = useState<"mild" | "moderate" | "severe">("mild");
 
   const toggle = (id: string) => setChips((cs) => cs.map((c) => c.id === id ? { ...c, active: !c.active } : c));
   const add = () => {
@@ -190,9 +130,9 @@ function StepSymptoms() {
 
 // ─── Step 1: Clinical Exam ────────────────────────────────────────────────────
 
-function StepClinical() {
-  const [systems, setSystems] = useState(INITIAL_SYSTEMS);
-  const [expandedId, setExpandedId] = useState<string | null>("skin");
+function StepClinical({ bodySystems }: { bodySystems: AdminExamContext["options"]["bodySystems"] }) {
+  const [systems, setSystems] = useState<BodySystem[]>(bodySystems);
+  const [expandedId, setExpandedId] = useState<string | null>(bodySystems[0]?.id ?? null);
 
   const setStatus = (id: string, status: BodySystem["status"]) =>
     setSystems((ss) => ss.map((s) => s.id === id ? { ...s, status } : s));
@@ -250,14 +190,10 @@ function StepClinical() {
 // ─── Step 2: Diagnosis ────────────────────────────────────────────────────────
 
 function StepDiagnosis() {
-  const [primary, setPrimary] = useState("Viêm da dị ứng (Allergic Dermatitis)");
-  const [secondary, setSecondary] = useState("Nghi ngờ dị ứng thức ăn hoặc môi trường");
+  const [primary, setPrimary] = useState("");
+  const [secondary, setSecondary] = useState("");
   const [confidence, setConfidence] = useState<"confirmed" | "probable" | "differential">("confirmed");
-  const [labs, setLabs] = useState([
-    { id: 1, test: "Cạo da (Skin scraping)", result: "Âm tính — không phát hiện ký sinh trùng", done: true },
-    { id: 2, test: "Cytology da", result: "Tế bào viêm, bạch cầu ái toan tăng", done: true },
-    { id: 3, test: "Xét nghiệm dị ứng (Allergy panel)", result: "", done: false },
-  ]);
+  const [labs] = useState<Array<{ id: number; test: string; result: string; done: boolean }>>([]);
 
   return (
     <div className="space-y-6">
@@ -326,9 +262,9 @@ function StepDiagnosis() {
 
 // ─── Step 3: Prescription ─────────────────────────────────────────────────────
 
-function StepPrescription() {
-  const [drugs, setDrugs] = useState<Drug[]>(INITIAL_DRUGS);
-  const [instructions, setInstructions] = useState("Tái khám ngay nếu triệu chứng nặng hơn hoặc xuất hiện tác dụng phụ (nôn mửa, suy nhược). Không cho ăn thức ăn có thịt bò và hải sản trong thời gian điều trị.");
+function StepPrescription({ drugs: initialDrugs }: { drugs: Drug[] }) {
+  const [drugs, setDrugs] = useState<Drug[]>(initialDrugs);
+  const [instructions, setInstructions] = useState("");
 
   const removeDrug = (id: number) => setDrugs((ds) => ds.filter((d) => d.id !== id));
   const addDrug = () => setDrugs((ds) => [
@@ -411,9 +347,9 @@ function StepPrescription() {
 function StepFollowup() {
   const [days, setDays] = useState(14);
   const [preferred, setPreferred] = useState("09:00");
-  const [note, setNote] = useState("Kiểm tra phản ứng với thuốc và tiến triển của viêm da. Cân nhắc thực hiện xét nghiệm dị ứng nếu chưa có cải thiện.");
+  const [note, setNote] = useState("");
 
-  const followupDate = new Date("2026-05-21");
+  const followupDate = new Date();
   followupDate.setDate(followupDate.getDate() + days);
   const dateStr = followupDate.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -489,12 +425,58 @@ function StepFollowup() {
 
 export function ExamPage({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState<ExamStep>(0);
+  const [exam, setExam] = useState<AdminExamContext | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    adminService
+      .getExamContext()
+      .then((data) => {
+        if (!mounted) return;
+        setExam(data.exam);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Không thể tải dữ liệu khám.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background text-sm text-muted-foreground">
+        Đang tải dữ liệu khám...
+      </div>
+    );
+  }
+
+  if (!exam) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-background text-center">
+        <div className="text-sm font-semibold text-foreground">Không có dữ liệu khám</div>
+        {loadError && <div className="text-sm text-amber-600">{loadError}</div>}
+        <button onClick={onBack} className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
+          Quay lại lịch hẹn
+        </button>
+      </div>
+    );
+  }
 
   const stepComponents = [
-    <StepSymptoms key="s0" />,
-    <StepClinical key="s1" />,
+    <StepSymptoms key="s0" symptoms={exam.options.symptoms} initialNote={exam.pet.note} />,
+    <StepClinical key="s1" bodySystems={exam.options.bodySystems} />,
     <StepDiagnosis key="s2" />,
-    <StepPrescription key="s3" />,
+    <StepPrescription key="s3" drugs={exam.options.drugs} />,
     <StepFollowup key="s4" />,
   ];
 
@@ -509,12 +491,12 @@ export function ExamPage({ onBack }: { onBack: () => void }) {
             <span>Lịch hẹn</span>
           </button>
           <ChevronRight size={13} className="text-muted-foreground/40" />
-          <span className="text-[13px] font-semibold text-foreground">APT-004 · Luna</span>
-          <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">Đang khám</span>
+          <span className="text-[13px] font-semibold text-foreground">{exam.header.appointmentCode} · {exam.pet.name}</span>
+          <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">{exam.header.status}</span>
         </div>
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-mono">
-            <Clock size={12} /> 10:00 · Phòng 1 · BS. Trần Hoài Nam
+            <Clock size={12} /> {[exam.header.time, exam.header.room, exam.header.provider].filter(Boolean).join(" · ")}
           </div>
           <div className="w-px h-5 bg-border" />
           <button className="flex items-center gap-1.5 h-8 px-4 border border-border bg-white text-[13px] font-medium text-foreground rounded-lg hover:bg-muted transition-colors">
@@ -534,7 +516,7 @@ export function ExamPage({ onBack }: { onBack: () => void }) {
             <AlertTriangle size={14} className="text-red-500 flex-shrink-0" />
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wide text-red-600">Dị ứng</div>
-              <div className="text-[12.5px] font-bold text-red-700">Penicillin</div>
+              <div className="text-[12.5px] font-bold text-red-700">{exam.pet.note || "Không ghi nhận"}</div>
             </div>
           </div>
 
@@ -545,9 +527,9 @@ export function ExamPage({ onBack }: { onBack: () => void }) {
                 <span className="text-white text-[18px]">🐱</span>
               </div>
               <div>
-                <div className="text-[17px] font-bold text-foreground">Luna</div>
-                <div className="text-[12.5px] text-muted-foreground">British Shorthair · Mèo cái</div>
-                <div className="text-[11.5px] text-muted-foreground font-mono mt-0.5">3 tuổi 4 tháng</div>
+                <div className="text-[17px] font-bold text-foreground">{exam.pet.name || "Chưa có tên"}</div>
+                <div className="text-[12.5px] text-muted-foreground">{[exam.pet.breed, exam.pet.species, exam.pet.gender].filter(Boolean).join(" · ")}</div>
+                <div className="text-[11.5px] text-muted-foreground font-mono mt-0.5">{exam.pet.weightKg ? `${exam.pet.weightKg} kg` : ""}</div>
               </div>
             </div>
 
@@ -555,19 +537,19 @@ export function ExamPage({ onBack }: { onBack: () => void }) {
             <div className="space-y-1.5 text-[12.5px]">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Chủ sở hữu</span>
-                <span className="font-semibold text-foreground">Trần Minh Khoa</span>
+                <span className="font-semibold text-foreground">{exam.pet.owner}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">SĐT</span>
-                <span className="font-mono text-foreground">0912 345 678</span>
+                <span className="font-mono text-foreground">{exam.pet.phone}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Mã lịch hẹn</span>
-                <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded text-foreground">APT-004</span>
+                <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded text-foreground">{exam.header.appointmentCode}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Dịch vụ</span>
-                <span className="font-semibold text-foreground text-right">Khám da liễu</span>
+                <span className="font-semibold text-foreground text-right">{exam.pet.service}</span>
               </div>
             </div>
           </div>
@@ -578,13 +560,21 @@ export function ExamPage({ onBack }: { onBack: () => void }) {
           <div className="px-4 py-4">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Chỉ số sinh tồn</div>
             <div className="space-y-2">
-              <VitalChip icon={Thermometer} label="Nhiệt độ" value="39.4" unit="°C" state="warn" />
-              <VitalChip icon={Heart}       label="Nhịp tim"  value="128"  unit="bpm" state="normal" />
-              <VitalChip icon={Wind}        label="Nhịp thở" value="20"   unit="/phút" state="normal" />
-              <VitalChip icon={Weight}      label="Cân nặng" value="4.1"  unit="kg" state="warn" />
-            </div>
-            <div className="mt-2 text-[11px] text-amber-600 flex items-center gap-1.5">
-              <AlertTriangle size={11} /> Giảm 100g so với lần trước (4.2 kg)
+              {exam.vitals.length === 0 && (
+                <div className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-4 text-center text-xs text-muted-foreground">
+                  Chưa có chỉ số sinh tồn.
+                </div>
+              )}
+              {exam.vitals.map((vital, index) => (
+                <VitalChip
+                  key={`${vital.label}-${index}`}
+                  icon={index === 0 ? Thermometer : index === 1 ? Heart : index === 2 ? Wind : Weight}
+                  label={vital.label}
+                  value={vital.value}
+                  unit={vital.unit}
+                  state={vital.state}
+                />
+              ))}
             </div>
           </div>
 
@@ -594,11 +584,12 @@ export function ExamPage({ onBack }: { onBack: () => void }) {
           <div className="px-4 py-4 flex-1">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Lịch sử khám gần đây</div>
             <div className="space-y-2.5">
-              {[
-                { date: "12/03/2026", service: "Khám tổng quát",   outcome: "Bình thường" },
-                { date: "15/01/2026", service: "Tiêm phòng combo", outcome: "Đã tiêm đủ liều" },
-                { date: "02/11/2025", service: "Khám da liễu",     outcome: "Viêm da nhẹ, đã khỏi" },
-              ].map((h, i) => (
+              {exam.history.length === 0 && (
+                <div className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-4 text-center text-xs text-muted-foreground">
+                  Chưa có lịch sử khám.
+                </div>
+              )}
+              {exam.history.map((h, i) => (
                 <div key={i} className="border-l-2 border-slate-200 pl-3">
                   <div className="font-mono text-[11px] text-muted-foreground">{h.date}</div>
                   <div className="text-[12.5px] font-medium text-foreground">{h.service}</div>

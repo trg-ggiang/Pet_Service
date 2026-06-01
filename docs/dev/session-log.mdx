@@ -1262,3 +1262,186 @@ Fix frontend fetch URLs so `VITE_API_URL=http://localhost:5050/api` does not pro
 ### Result
 
 Frontend build passed. Vite still reports the existing large chunk warning.
+
+## 2026-06-01 - Staff Portal Backend Data Refactor
+
+### Goal
+
+Refactor staff role structure to match the doctor/customer feature layout and remove frontend sample data by wiring staff portal tabs to backend APIs.
+
+### Work Completed
+
+- Moved staff portal UI sections into `frontend/src/components/staff/StaffPortalView.tsx`.
+- Rebuilt `frontend/src/features/staff/pages/StaffPortal.tsx` as a thin data/loading/mutation container.
+- Removed sample arrays for staff appointments, grooming tasks, boarding guests, payments, and settings profile data.
+- Expanded the staff frontend API client to load profile, appointments, grooming, boarding, and payments from `/api/staff/*`.
+- Added `backend/src/services/staff/staffPortalService.js` for staff portal shaping and mutations.
+- Changed the staff route mount to `/api/staff` and added endpoints for profile, appointments, grooming, boarding, and payments.
+- Updated backend/API/frontend docs for the new staff API contract.
+
+### Files Changed
+
+- `backend/src/server.js`
+- `backend/src/routes/staffRoutes.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `frontend/src/components/staff/StaffPortalView.tsx`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/staffRoutes.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Admin Role API Refactor
+
+### Goal
+
+Refactor admin role structure to match the completed role pattern and replace rendered admin mock data with backend-backed data.
+
+### Work Completed
+
+- Added backend-shaped admin report and settings payloads in `adminService`.
+- Extended admin dashboard payload with revenue, appointment status, activity, and boarding data.
+- Added `GET /api/admin/reports` and `GET /api/admin/settings`.
+- Added `frontend/src/components/admin/` for admin dashboard, reports, and settings views.
+- Converted admin dashboard, reports, and settings pages into API-loading containers.
+- Switched admin appointment modal service/staff options to derive from loaded appointment API data instead of fixed frontend lists.
+
+### Files Changed
+
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `frontend/src/app/App.tsx`
+- `frontend/src/components/admin/AdminDashboardView.tsx`
+- `frontend/src/components/admin/AdminReportsView.tsx`
+- `frontend/src/components/admin/AdminSettingsView.tsx`
+- `frontend/src/features/admin/pages/AdminDashboardPage.tsx`
+- `frontend/src/features/admin/pages/ReportsPage.tsx`
+- `frontend/src/features/admin/pages/SettingsPage.tsx`
+- `frontend/src/features/admin/pages/AppointmentsPage.tsx`
+- `frontend/src/features/admin/services/admin.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Admin Page Sample Data Cleanup
+
+### Goal
+
+Remove remaining raw/sample data from admin page files.
+
+### Work Completed
+
+- Removed unused sample arrays from `AppointmentsPage.tsx`, `UsersPage.tsx`, `ServicesPage.tsx`, and `StaffPage.tsx`.
+- Added `GET /api/admin/exam-context` for the admin exam screen.
+- Rewired `ExamPage.tsx` to load appointment, pet, history, symptom, body-system, and prescription option data from the admin API instead of local initial arrays.
+- Added the exam context client method and TypeScript contract to the admin frontend service.
+
+### Files Changed
+
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `frontend/src/features/admin/pages/AppointmentsPage.tsx`
+- `frontend/src/features/admin/pages/ExamPage.tsx`
+- `frontend/src/features/admin/pages/UsersPage.tsx`
+- `frontend/src/features/admin/pages/ServicesPage.tsx`
+- `frontend/src/features/admin/pages/StaffPage.tsx`
+- `frontend/src/features/admin/services/admin.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Doctor Settings Text Fix
+
+### Goal
+
+Fix corrupted Vietnamese text in the doctor settings screen.
+
+### Work Completed
+
+- Rewrote `DoctorSettingsView.tsx` labels, headings, button text, and modal text with valid Vietnamese strings.
+- Updated doctor settings empty/error copy in `DoctorSettingsPage.tsx`.
+- Added normalization in `doctorData.ts` so known mojibake values returned by `/api/doctor/settings` render correctly in the settings UI.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Staff Portal Component Split Follow-up
+
+### Goal
+
+Split `StaffPortalView.tsx` into smaller staff component files and fix the backend `getInitials is not defined` response.
+
+### Work Completed
+
+- Added the missing `getInitials` helper in `backend/src/services/doctor/doctorService.js`.
+- Converted `frontend/src/components/staff/StaffPortalView.tsx` into a barrel export.
+- Split staff UI into shell, common helpers, tab views, modal views, and shared config files.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/components/staff/StaffPortalView.tsx`
+- `frontend/src/components/staff/StaffCommon.tsx`
+- `frontend/src/components/staff/StaffShell.tsx`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/components/staff/StaffGroomingTab.tsx`
+- `frontend/src/components/staff/StaffBoardingTab.tsx`
+- `frontend/src/components/staff/StaffPaymentsTab.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
+- `frontend/src/components/staff/staffPortalConfig.ts`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/routes/staffRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.

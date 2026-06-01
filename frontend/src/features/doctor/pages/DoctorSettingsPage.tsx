@@ -36,7 +36,7 @@ export function DoctorSettingsPage({ onLogout }: { onLogout?: () => void }) {
       } catch (err) {
         if (!active) return;
         setSettings(null);
-        setError(err instanceof Error ? err.message : "Khong the tai cai dat bac si");
+        setError(err instanceof Error ? err.message : "Không thể tải cài đặt bác sĩ");
       } finally {
         if (active) setLoading(false);
       }
@@ -52,7 +52,7 @@ export function DoctorSettingsPage({ onLogout }: { onLogout?: () => void }) {
   function renderContent() {
     if (loading) return <DoctorSettingsLoading />;
     if (error) return <DoctorSettingsError message={error} />;
-    if (!settings) return <DoctorSettingsError message="Khong co du lieu cai dat" />;
+    if (!settings) return <DoctorSettingsError message="Không có dữ liệu cài đặt" />;
 
     if (tab === "schedule") return <DoctorScheduleSettings schedule={settings.schedule} />;
     if (tab === "notifications") return <DoctorNotificationSettings notifications={settings.notifications} />;

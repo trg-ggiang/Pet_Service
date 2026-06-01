@@ -120,6 +120,122 @@ export type AdminDashboard = {
     activeServices: number;
     appointments: number;
     scheduledAppointments: number;
+    revenue: number;
+    cages: number;
+    occupiedCages: number;
+  };
+  appointmentsByStatus: Array<{ status: string; label: string; value: number }>;
+  revenueByMonth: Array<{ label: string; value: number }>;
+  recentActivity: Array<{ id: number | string; time: string; title: string; description: string }>;
+  boardingRooms: Array<{
+    id: number | string;
+    number: string;
+    status: "occupied" | "available";
+    pet: string;
+    species: string;
+    owner: string;
+  }>;
+};
+
+export type AdminReports = {
+  summary: {
+    revenue: number;
+    customers: number;
+    bookings: number;
+    avgRevenue: number;
+  };
+  revenueByPeriod: Array<{
+    label: string;
+    clinic: number;
+    vaccination: number;
+    grooming: number;
+    boarding: number;
+  }>;
+  topServices: Array<{
+    id: number | string;
+    name: string;
+    category: "clinic" | "vaccination" | "grooming" | "boarding";
+    bookings: number;
+    revenue: number;
+    rating: number;
+  }>;
+  appointmentStats: {
+    scheduled: number;
+    inProgress: number;
+    completed: number;
+    cancelled: number;
+    total: number;
+  };
+  staffPerformance: Array<{
+    id: string;
+    name: string;
+    department: string;
+    appointments: number;
+    completed: number;
+    revenue: number;
+    completionRate: number;
+  }>;
+};
+
+export type AdminSettings = {
+  clinic: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
+    taxCode: string;
+    openFrom: string;
+    openTo: string;
+    timezone: string;
+  };
+  account: {
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+    initials: string;
+  };
+  notifications: Record<string, boolean>;
+  payment: {
+    method: "cash" | "bank" | "both";
+    bankName: string;
+    bankAccount: string;
+    bankOwner: string;
+    autoInvoice: boolean;
+    vatEnabled: boolean;
+  };
+  security: {
+    twoFactorEnabled: boolean;
+    sessions: Array<{ device: string; location: string; time: string; current: boolean }>;
+  };
+};
+
+export type AdminExamContext = {
+  header: {
+    appointmentCode: string;
+    status: "scheduled" | "in_progress" | "completed" | "cancelled";
+    time: string;
+    room: string;
+    provider: string;
+  };
+  pet: {
+    name: string;
+    species: string;
+    breed: string;
+    gender: string;
+    weightKg: string;
+    owner: string;
+    phone: string;
+    service: string;
+    note: string;
+  };
+  vitals: Array<{ label: string; value: string; unit: string; state: "normal" | "warn" | "critical" }>;
+  history: Array<{ date: string; service: string; outcome: string }>;
+  options: {
+    symptoms: Array<{ id: string; label: string; active: boolean }>;
+    bodySystems: Array<{ id: string; label: string; status: "normal" | "abnormal" | "not_checked"; note: string }>;
+    drugs: Array<{ id: number; name: string; dose: string; frequency: string; duration: string; note: string }>;
   };
 };
 
@@ -152,5 +268,17 @@ export const adminService = {
 
   listStaff() {
     return adminGet<{ staff: AdminStaffMember[] }>("/api/admin/staff");
+  },
+
+  getReports() {
+    return adminGet<{ reports: AdminReports }>("/api/admin/reports");
+  },
+
+  getSettings() {
+    return adminGet<{ settings: AdminSettings }>("/api/admin/settings");
+  },
+
+  getExamContext() {
+    return adminGet<{ exam: AdminExamContext }>("/api/admin/exam-context");
   },
 };

@@ -1,7 +1,7 @@
 import { getAuthHeaders } from "../../../utils/authSession";
 import { apiUrl } from "../../../utils/apiUrl";
 
-async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+async function fetchWithAuth<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = getAuthHeaders();
   if (!headers.Authorization) {
     throw new Error("Vui lòng đăng nhập lại");
@@ -15,11 +15,30 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
       ...options.headers,
     },
   });
+  const data = await response.json().catch(() => null);
 
-  return response;
+  if (!response.ok || data?.ok === false) {
+    throw new Error(data?.message || "Request thất bại");
+  }
+
+  return data as T;
 }
 
 export type StaffAppointmentStatus = "scheduled" | "checked_in" | "in_progress" | "completed";
+export type StaffServiceType = "exam" | "grooming" | "boarding" | "vaccination";
+export type GroomingTaskStatus = "scheduled" | "in_progress" | "completed";
+export type PaymentStatus = "pending" | "paid";
+export type PaymentMethod = "cash" | "transfer" | "card";
+
+export interface StaffProfile {
+  id: number;
+  fullName: string;
+  initials: string;
+  roleLabel: string;
+  email: string;
+  phone: string;
+  address: string;
+}
 
 export interface StaffAppointment {
   id: string;
@@ -32,45 +51,141 @@ export interface StaffAppointment {
   owner: string;
   phone: string;
   service: string;
-  serviceType: string;
+  serviceType: StaffServiceType;
   status: StaffAppointmentStatus;
   queue?: string;
   note: string;
   createdAt: string;
 }
 
+export interface GroomingTask {
+  id: number;
+  time: string;
+  petName: string;
+  breed: string;
+  service: string;
+  status: GroomingTaskStatus;
+  owner: string;
+  notes?: string;
+}
+
+export interface BoardingDailyStatus {
+  breakfast: boolean;
+  lunch: boolean;
+  dinner: boolean;
+  cleaned: boolean;
+  exercised: boolean;
+  healthCheck: boolean;
+}
+
+export interface BoardingGuest {
+  id: number;
+  room: string;
+  petName: string;
+  species: string;
+  breed: string;
+  owner: string;
+  phone: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  foodType: string;
+  mealsPerDay: number;
+  specialNotes: string;
+  todayStatus: BoardingDailyStatus;
+}
+
+export interface PaymentItem {
+  id: string;
+  invoiceId: number;
+  date: string;
+  petName: string;
+  owner: string;
+  service: string;
+  amount: number;
+  status: PaymentStatus;
+}
+
+interface ProfileResponse {
+  ok: boolean;
+  profile: StaffProfile;
+}
+
 interface StaffAppointmentsResponse {
   ok: boolean;
   appointments: StaffAppointment[];
-  message?: string;
+}
+
+interface GroomingResponse {
+  ok: boolean;
+  tasks: GroomingTask[];
+}
+
+interface BoardingResponse {
+  ok: boolean;
+  guests: BoardingGuest[];
+}
+
+interface PaymentsResponse {
+  ok: boolean;
+  payments: PaymentItem[];
+}
+
+interface MutationResponse {
+  ok: boolean;
+  message: string;
 }
 
 export const staffAppointmentsService = {
+  async fetchProfile(): Promise<StaffProfile> {
+    const data = await fetchWithAuth<ProfileResponse>("/api/staff/profile");
+    return data.profile;
+  },
+
   async fetchPendingAppointments(): Promise<StaffAppointment[]> {
-    console.log("[FRONTEND] fetchPendingAppointments called");
-    const response = await fetchWithAuth("/api/staff/appointments");
-    const data: StaffAppointmentsResponse = await response.json();
-
-    console.log("[FRONTEND] fetchPendingAppointments response:", data);
-
-    if (!data.ok) {
-      throw new Error(data.message || "Không thể tải danh sách lịch hẹn");
-    }
-
+    const data = await fetchWithAuth<StaffAppointmentsResponse>("/api/staff/appointments");
     return data.appointments || [];
   },
 
   async checkInAppointment(appointmentId: number): Promise<void> {
-    console.log("[FRONTEND] checkInAppointment called with id:", appointmentId);
-    const response = await fetchWithAuth(`/api/staff/appointments/${appointmentId}/checkin`, {
+    await fetchWithAuth<MutationResponse>(`/api/staff/appointments/${appointmentId}/checkin`, {
       method: "PUT",
     });
-    const data = await response.json();
+  },
 
-    if (!data.ok) {
-      throw new Error(data.message || "Không thể check-in");
-    }
+  async fetchGroomingTasks(): Promise<GroomingTask[]> {
+    const data = await fetchWithAuth<GroomingResponse>("/api/staff/grooming");
+    return data.tasks || [];
+  },
 
-    console.log("[FRONTEND] Check-in thành công");
+  async updateGroomingStatus(taskId: number, status: "IN_PROGRESS" | "COMPLETED"): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/grooming/${taskId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async fetchBoardingGuests(): Promise<BoardingGuest[]> {
+    const data = await fetchWithAuth<BoardingResponse>("/api/staff/boarding");
+    return data.guests || [];
+  },
+
+  async updateBoardingDailyStatus(guestId: number, todayStatus: BoardingDailyStatus): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/boarding/${guestId}/daily-status`, {
+      method: "PATCH",
+      body: JSON.stringify({ todayStatus }),
+    });
+  },
+
+  async fetchPayments(): Promise<PaymentItem[]> {
+    const data = await fetchWithAuth<PaymentsResponse>("/api/staff/payments");
+    return data.payments || [];
+  },
+
+  async markPaymentPaid(invoiceId: number, method: PaymentMethod): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/payments/${invoiceId}/pay`, {
+      method: "PATCH",
+      body: JSON.stringify({ method }),
+    });
   },
 };

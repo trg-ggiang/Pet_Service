@@ -58,7 +58,20 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `GET /api/admin/services` lists service catalog rows for the admin service-management page.
   - `GET /api/admin/appointments` lists appointment rows for the admin appointment page.
   - `GET /api/admin/staff` lists doctor and staff rows for the staff-management page.
+  - `GET /api/admin/reports` returns invoice, service, appointment, and staff-performance report data for the admin reports page.
+  - `GET /api/admin/settings` returns backend-shaped clinic, account, notification, payment, and security settings data for the admin settings page.
+  - `GET /api/admin/exam-context` returns appointment, pet, history, symptom, body-system, and prescription option data for the admin exam page.
   - Existing doctor profile helper routes remain under `/api/admin/doctors`.
+- `/api/staff`
+  - `GET /api/staff/profile` returns the authenticated staff profile for the staff portal shell.
+  - `GET /api/staff/appointments` lists active appointments for staff check-in and service intake.
+  - `PUT /api/staff/appointments/:appointmentId/checkin` marks a pending appointment as checked in.
+  - `GET /api/staff/grooming` lists grooming work items assigned to the current staff member or unassigned work.
+  - `PATCH /api/staff/grooming/:groomingId/status` starts or completes one grooming work item.
+  - `GET /api/staff/boarding` lists current boarding guests with today's care status.
+  - `PATCH /api/staff/boarding/:boardingId/daily-status` updates today's boarding care checklist for one guest.
+  - `GET /api/staff/payments` lists invoice rows for staff payment collection.
+  - `PATCH /api/staff/payments/:invoiceId/pay` marks one invoice as paid.
 - `/api/doctor`
   - `GET /api/doctor/profile` returns the authenticated doctor's profile.
   - `GET /api/doctor/records` lists appointment-backed medical records for the authenticated doctor and accepts `search` and `species` filters.
@@ -96,3 +109,5 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 Doctor appointment portal schedule shaping lives in `backend/src/services/doctor/doctorAppointmentService.js`; routes should call the service and return its payload.
 Doctor records, stats, exam context, and settings shaping lives in `backend/src/services/doctor/doctorService.js`; frontend role pages should render those payloads without rebuilding business-facing rows locally.
+Staff portal shaping lives in `backend/src/services/staff/staffPortalService.js`; staff routes should stay thin and return render-ready appointments, grooming tasks, boarding guests, payments, and profile payloads.
+Admin dashboard, report, settings, user, service, appointment, and staff-management shaping lives in `backend/src/services/adminService.js`; admin routes should stay thin and return backend-shaped payloads for role pages.

@@ -200,6 +200,40 @@ function authInit(init?: RequestInit): RequestInit {
   };
 }
 
+function hasEncodingNoise(value: string) {
+  return /[ÃÂ�]|áÂ|â€|â„|Æ|»/.test(value);
+}
+
+function normalizeDoctorSettings(settings: DoctorSettingsPayload): DoctorSettingsPayload {
+  return {
+    ...settings,
+    profile: {
+      ...settings.profile,
+      specialty: hasEncodingNoise(settings.profile.specialty) ? "Nội khoa" : settings.profile.specialty,
+      room: hasEncodingNoise(settings.profile.room) ? "Phòng 1" : settings.profile.room,
+      statusLabel: hasEncodingNoise(settings.profile.statusLabel) ? "Đang làm việc" : settings.profile.statusLabel,
+    },
+    schedule: {
+      ...settings.schedule,
+      rows: settings.schedule.rows.map((row) => ({
+        ...row,
+        day: hasEncodingNoise(row.day)
+          ? row.day.includes("7") ? "Thứ 7" : row.day.includes("6") ? "Thứ 6" : row.day.includes("5") ? "Thứ 5" : row.day.includes("4") ? "Thứ 4" : row.day.includes("3") ? "Thứ 3" : "Thứ 2"
+          : row.day,
+        roomName: hasEncodingNoise(row.roomName) ? "Phòng 1" : row.roomName,
+      })),
+    },
+    security: {
+      ...settings.security,
+      sessions: settings.security.sessions.map((session) => ({
+        ...session,
+        location: hasEncodingNoise(session.location) ? "Thiết bị hiện tại" : session.location,
+        time: hasEncodingNoise(session.time) ? "Hiện tại" : session.time,
+      })),
+    },
+  };
+}
+
 export const doctorDataService = {
   async listRecords(filters: { search?: string; species?: string } = {}): Promise<DoctorMedicalRecord[]> {
     const params = new URLSearchParams();
@@ -226,7 +260,7 @@ export const doctorDataService = {
       apiUrl("/api/doctor/settings"),
       authInit(),
     );
-    return data.settings;
+    return normalizeDoctorSettings(data.settings);
   },
 
   async getExamContext(appointmentId: number): Promise<DoctorExamContext> {

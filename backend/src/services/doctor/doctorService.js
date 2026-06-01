@@ -36,6 +36,16 @@ function formatTime(value) {
   return String(value).slice(0, 5);
 }
 
+function getInitials(name) {
+  return String(name || "?")
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 function getAppointmentDate(appointment) {
   return appointment.requested_date || appointment.created_at;
 }
