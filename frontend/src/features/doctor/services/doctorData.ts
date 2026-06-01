@@ -1,7 +1,6 @@
 import { getAuthHeaders } from "../../../utils/authSession";
+import { apiUrl } from "../../../utils/apiUrl";
 import { requestJson } from "../../../utils/requestJson";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5050";
 
 type ApiOk<T> = { ok: true } & T;
 
@@ -66,6 +65,16 @@ export interface DoctorStatsPayload {
     averageMinutes: number;
     completionRate: number;
   };
+  kpiCards: Array<{
+    key: string;
+    label: string;
+    sub: string;
+    value: number;
+    icon: string;
+    bg: string;
+    color: string;
+    unit?: string;
+  }>;
   trend: Array<{ label: string; total: number; completed: number }>;
   byDay: Array<{ label: string; value: number }>;
   speciesPie: Array<{ name: string; value: number; color: string }>;
@@ -81,6 +90,49 @@ export interface DoctorStatsPayload {
 }
 
 export type DoctorStatsResponse = Record<DoctorStatsPeriod, DoctorStatsPayload>;
+
+export interface DoctorSettingsPayload {
+  profile: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    specialty: string;
+    room: string;
+    bio: string;
+    license: string;
+    initials: string;
+    statusLabel: string;
+  };
+  schedule: {
+    rows: Array<{
+      id: number;
+      day: string;
+      date: string;
+      on: boolean;
+      from: string;
+      to: string;
+      roomName: string;
+      status: string;
+    }>;
+    options: {
+      maxAppointments: string;
+      slotDuration: string;
+      breakFrom: string;
+      breakTo: string;
+    };
+  };
+  notifications: Record<string, boolean>;
+  security: {
+    twoFa: boolean;
+    sessions: Array<{
+      device: string;
+      location: string;
+      time: string;
+      current: boolean;
+    }>;
+  };
+}
 
 export interface DoctorExamContext {
   appointment: {
@@ -149,9 +201,13 @@ function authInit(init?: RequestInit): RequestInit {
 }
 
 export const doctorDataService = {
-  async listRecords(): Promise<DoctorMedicalRecord[]> {
+  async listRecords(filters: { search?: string; species?: string } = {}): Promise<DoctorMedicalRecord[]> {
+    const params = new URLSearchParams();
+    if (filters.search) params.set("search", filters.search);
+    if (filters.species && filters.species !== "all") params.set("species", filters.species);
+    const query = params.toString();
     const data = await requestJson<ApiOk<{ records: DoctorMedicalRecord[] }>>(
-      `${API_BASE}/api/doctor/records`,
+      apiUrl(`/api/doctor/records${query ? `?${query}` : ""}`),
       authInit(),
     );
     return data.records || [];
@@ -159,15 +215,23 @@ export const doctorDataService = {
 
   async getStats(): Promise<DoctorStatsResponse> {
     const data = await requestJson<ApiOk<{ stats: DoctorStatsResponse }>>(
-      `${API_BASE}/api/doctor/stats`,
+      apiUrl("/api/doctor/stats"),
       authInit(),
     );
     return data.stats;
   },
 
+  async getSettings(): Promise<DoctorSettingsPayload> {
+    const data = await requestJson<ApiOk<{ settings: DoctorSettingsPayload }>>(
+      apiUrl("/api/doctor/settings"),
+      authInit(),
+    );
+    return data.settings;
+  },
+
   async getExamContext(appointmentId: number): Promise<DoctorExamContext> {
     const data = await requestJson<ApiOk<{ context: DoctorExamContext }>>(
-      `${API_BASE}/api/doctor/exam/${appointmentId}`,
+      apiUrl(`/api/doctor/exam/${appointmentId}`),
       authInit(),
     );
     return data.context;

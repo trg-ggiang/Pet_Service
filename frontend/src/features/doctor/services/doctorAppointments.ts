@@ -1,23 +1,29 @@
 import { getAuthHeaders } from "../../../utils/authSession";
+import { apiUrl } from "../../../utils/apiUrl";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5050";
+async function fetchWithAuth<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const authHeaders = getAuthHeaders();
 
-async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  const headers = getAuthHeaders();
-  if (!headers.Authorization) {
+  if (!authHeaders.Authorization) {
     throw new Error("Vui lòng đăng nhập lại");
   }
 
-  const response = await fetch(`${API_BASE}${url}`, {
+  const response = await fetch(apiUrl(url), {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...headers,
+      ...authHeaders,
       ...options.headers,
     },
   });
 
-  return response;
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok || data?.ok === false) {
+    throw new Error(data?.message || "Request thất bại");
+  }
+
+  return data as T;
 }
 
 export interface DoctorAppointment {
@@ -25,6 +31,8 @@ export interface DoctorAppointment {
   appointmentId: number;
   date: string;
   time: string;
+  endTime: string;
+  roomName: string;
   petName: string;
   petImage: string | null;
   species: string;
@@ -38,56 +46,240 @@ export interface DoctorAppointment {
     color: string;
     bg: string;
   };
+  statusKey: "scheduled" | "in_progress" | "completed";
+  statusView: DoctorPortalStatusView;
   note: string;
   createdAt: string;
+  scheduleRow: DoctorScheduleRow;
+}
+
+export interface DoctorPortalStatusView {
+  label: string;
+  cls: string;
+  dot: string;
+}
+
+export interface DoctorScheduleRow {
+  id: string;
+  appointmentId: number;
+  time: string;
+  patient: string;
+  species: string;
+  owner: string;
+  service: string;
+  statusKey: DoctorAppointment["statusKey"];
+  statusView: DoctorPortalStatusView;
+}
+
+export interface DoctorScheduleSummary {
+  total: number;
+  completed: number;
+  inProgress: number;
+  scheduled: number;
+}
+
+export interface DoctorScheduleMeta {
+  title: string;
+  dateLabel: string;
+  roomLabel: string;
+  activityLabel: string;
+}
+
+export interface DoctorAppointmentsPayload {
+  appointments: DoctorAppointment[];
+  summary: DoctorScheduleSummary;
+  meta: DoctorScheduleMeta;
+}
+
+export type ExamSystemStatus = "normal" | "abnormal" | "not_examined";
+
+export interface ExamSystemEntry {
+  status: ExamSystemStatus;
+  notes: string;
+}
+
+export interface DoctorExamRecord {
+  chiefComplaint: string;
+  selectedSymptoms: string[];
+  duration: string;
+  onset: string;
+  severity: number;
+  ownerNotes: string;
+  vitals: {
+    temp: string;
+    heart: string;
+    resp: string;
+    spo2: string;
+    weight: string;
+  };
+  systems: Record<string, ExamSystemEntry>;
+  clinicalNote: string;
+  nextVisitDate: string | null;
+}
+
+export interface DoctorExamDetail {
+  appointment: {
+    id: number;
+    displayId: string;
+    status: string;
+    statusLabel: string;
+    serviceType: string;
+    serviceLabel: string;
+    date: string;
+    dateLabel: string;
+    time: string;
+    endTime: string;
+    roomName: string;
+    note: string;
+  };
+  patientCard: {
+    id: number | null;
+    name: string;
+    initials: string;
+    imageUrl: string | null;
+    subtitle: string;
+    serviceBadge: string;
+  };
+  petInfoItems: Array<{
+    key: string;
+    icon: string;
+    label: string;
+    value: string;
+  }>;
+  owner: {
+    id: number | null;
+    fullName: string;
+    phone: string;
+    address: string;
+  };
+  riskAlerts: Array<{
+    key: string;
+    label: string;
+    value: string;
+  }>;
+  vaccinations: Array<{
+    id: number;
+    name: string;
+    dateGiven: string;
+    nextDueDate: string | null;
+    dateGivenLabel: string;
+    nextDueDateLabel: string;
+    note: string;
+    isDue: boolean;
+  }>;
+  history: Array<{
+    id: number;
+    date: string;
+    time: string;
+    service: string;
+    status: string;
+    doctorName: string;
+    diagnosisNote: string;
+    nextVisitDate: string | null;
+  }>;
+  formSchema: {
+    symptomOptions: Array<{ id: number; label: string }>;
+    bodySystems: Array<{ id: string; label: string }>;
+    durationOptions: Array<{ value: string; label: string }>;
+    onsetOptions: Array<{ value: string; label: string }>;
+    severityOptions: Array<{ value: string; label: string }>;
+    systemStatusOptions: Array<{ value: string; label: string }>;
+    vitalFields: Array<{
+      key: keyof DoctorExamRecord["vitals"];
+      icon: string;
+      label: string;
+      unit: string;
+      tone: string;
+    }>;
+  };
+  record: DoctorExamRecord;
 }
 
 interface DoctorAppointmentsResponse {
   ok: boolean;
   appointments: DoctorAppointment[];
+  summary?: DoctorScheduleSummary;
+  meta?: DoctorScheduleMeta;
   message?: string;
 }
 
+interface DoctorExamDetailResponse {
+  ok: boolean;
+  detail: DoctorExamDetail;
+  message?: string;
+}
+
+interface MutationResponse {
+  ok: boolean;
+  message: string;
+}
+
 export const doctorAppointmentsService = {
-  async fetchAppointments(): Promise<DoctorAppointment[]> {
-    console.log("[FRONTEND] fetchDoctorAppointments called");
-    const response = await fetchWithAuth("/api/doctor/appointments");
-    const data: DoctorAppointmentsResponse = await response.json();
+  async fetchAppointments(): Promise<DoctorAppointmentsPayload> {
+    const data = await fetchWithAuth<DoctorAppointmentsResponse>("/api/doctor/appointments");
+    const appointments = data.appointments || [];
 
-    console.log("[FRONTEND] fetchDoctorAppointments response:", data);
-
-    if (!data.ok) {
-      throw new Error(data.message || "Không thể tải danh sách lịch hẹn");
-    }
-
-    return data.appointments || [];
+    return {
+      appointments,
+      summary: data.summary || {
+        total: appointments.length,
+        completed: 0,
+        inProgress: 0,
+        scheduled: appointments.length,
+      },
+      meta: data.meta || {
+        title: "Lịch khám của bác sĩ",
+        dateLabel: "",
+        roomLabel: "Phòng 1",
+        activityLabel: "Phòng 1 · Đang hoạt động",
+      },
+    };
   },
 
   async startExam(appointmentId: number): Promise<void> {
-    console.log("[FRONTEND] startExam called with id:", appointmentId);
-    const response = await fetchWithAuth(`/api/doctor/appointments/${appointmentId}/start`, {
+    await fetchWithAuth<MutationResponse>(`/api/doctor/appointments/${appointmentId}/start`, {
       method: "PUT",
     });
-    const result = await response.json();
+  },
 
-    if (!result.ok) {
-      throw new Error(result.message || "Không thể bắt đầu khám");
-    }
+  async fetchExamDetail(appointmentId: number): Promise<DoctorExamDetail> {
+    const data = await fetchWithAuth<DoctorExamDetailResponse>(
+      `/api/doctor/appointments/${appointmentId}/exam-detail`,
+    );
 
-    console.log("[FRONTEND] Bắt đầu khám thành công");
+    return data.detail;
+  },
+
+  async saveExamDraft(appointmentId: number, record: DoctorExamRecord): Promise<string> {
+    const data = await fetchWithAuth<MutationResponse>(
+      `/api/doctor/appointments/${appointmentId}/exam-draft`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ record }),
+      },
+    );
+
+    return data.message;
+  },
+
+  async completeExamWithRecord(
+    appointmentId: number,
+    record: DoctorExamRecord,
+  ): Promise<string> {
+    const data = await fetchWithAuth<MutationResponse>(
+      `/api/doctor/appointments/${appointmentId}/exam-complete`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ record }),
+      },
+    );
+
+    return data.message;
   },
 
   async completeExam(appointmentId: number): Promise<void> {
-    console.log("[FRONTEND] completeExam called with id:", appointmentId);
-    const response = await fetchWithAuth(`/api/doctor/appointments/${appointmentId}/complete`, {
+    await fetchWithAuth<MutationResponse>(`/api/doctor/appointments/${appointmentId}/complete`, {
       method: "PUT",
     });
-    const result = await response.json();
-
-    if (!result.ok) {
-      throw new Error(result.message || "Không thể hoàn thành khám");
-    }
-
-    console.log("[FRONTEND] Hoàn thành khám thành công");
   },
 };

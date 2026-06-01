@@ -7,8 +7,7 @@ import type {
   Doctor,
 } from "../types/appointments";
 import { getAuthHeaders } from "../utils/authSession";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5050";
+import { apiUrl } from "../utils/apiUrl";
 
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = getAuthHeaders();
@@ -16,7 +15,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
     throw new Error("Vui lòng đăng nhập lại");
   }
 
-  const response = await fetch(`${API_BASE}${url}`, {
+  const response = await fetch(apiUrl(url), {
     ...options,
     headers: {
       "Content-Type": "application/json",

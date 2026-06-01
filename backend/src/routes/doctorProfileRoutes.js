@@ -1,7 +1,7 @@
 const express = require("express");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
-const { getDoctorExamContext, getDoctorStats, listDoctorRecords } = require("../services/doctorService");
+const { getDoctorExamContext, getDoctorSettings, getDoctorStats, listDoctorRecords } = require("../services/doctor/doctorService");
 
 const router = express.Router();
 
@@ -61,7 +61,10 @@ router.get("/records", async function(req, res) {
       return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
     }
 
-    const records = await listDoctorRecords(doctorId);
+    const records = await listDoctorRecords(doctorId, {
+      search: req.query.search,
+      species: req.query.species,
+    });
     res.json({ ok: true, records });
   } catch (error) {
     console.error("[ROUTES] GET /doctor/records ERROR:", error.message);
@@ -95,6 +98,21 @@ router.get("/stats", async function(req, res) {
     res.json({ ok: true, stats });
   } catch (error) {
     console.error("[ROUTES] GET /doctor/stats ERROR:", error.message);
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.get("/settings", async function(req, res) {
+  try {
+    const doctorId = req.auth?.user?.doctorId;
+    if (!doctorId) {
+      return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
+    }
+
+    const settings = await getDoctorSettings(doctorId);
+    res.json({ ok: true, settings });
+  } catch (error) {
+    console.error("[ROUTES] GET /doctor/settings ERROR:", error.message);
     res.status(500).json({ ok: false, message: error.message });
   }
 });

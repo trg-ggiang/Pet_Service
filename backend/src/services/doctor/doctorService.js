@@ -1,4 +1,4 @@
-const { supabase } = require("../lib/supabaseClient");
+const { supabase } = require("../../lib/supabaseClient");
 
 const SERVICE_TYPE_LABELS = {
   MEDICAL: "Khám bệnh",
@@ -29,6 +29,11 @@ function formatDateShort(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("vi-VN");
+}
+
+function formatTime(value) {
+  if (!value) return "--:--";
+  return String(value).slice(0, 5);
 }
 
 function getAppointmentDate(appointment) {
@@ -103,7 +108,23 @@ function durationText(days) {
   return `${days} ngày`;
 }
 
-async function listDoctorRecords(doctorId) {
+function filterDoctorRecords(records, filters = {}) {
+  const search = String(filters.search || "").trim().toLowerCase();
+  const species = String(filters.species || "all");
+
+  return records.filter((record) => {
+    const matchesSearch = !search
+      || record.pet.toLowerCase().includes(search)
+      || record.owner.toLowerCase().includes(search)
+      || record.diagnosis.toLowerCase().includes(search)
+      || record.id.toLowerCase().includes(search);
+    const matchesSpecies = species === "all" || !species || record.species === species;
+
+    return matchesSearch && matchesSpecies;
+  });
+}
+
+async function listDoctorRecords(doctorId, filters = {}) {
   const { data: appointments, error } = await supabase
     .from("appointments")
     .select(`
@@ -213,7 +234,7 @@ async function listDoctorRecords(doctorId) {
     servicesByAppointmentId.set(row.appointment_id, current);
   });
 
-  return appointmentRows.map((appointment) => {
+  const records = appointmentRows.map((appointment) => {
     const visit = visitsByAppointmentId.get(appointment.id);
     const diseases = visit ? diseasesByVisitId.get(visit.id) || [] : [];
     const prescriptions = visit ? prescriptionsByVisitId.get(visit.id) || [] : [];
@@ -270,6 +291,8 @@ async function listDoctorRecords(doctorId) {
       allergy: pet.allergies || "Không ghi nhận",
     };
   });
+
+  return filterDoctorRecords(records, filters);
 }
 
 function periodStart(period) {
@@ -350,14 +373,24 @@ function buildStatsForPeriod(period, appointments, reviews) {
     ? Number((reviews.reduce((sum, row) => sum + Number(row.rating || 0), 0) / reviews.length).toFixed(1))
     : 0;
 
+  const kpis = {
+    total,
+    completed,
+    newPatients: uniquePets,
+    averageMinutes: 0,
+    completionRate,
+  };
+
   return {
     kpis: {
-      total,
-      completed,
-      newPatients: uniquePets,
-      averageMinutes: 0,
-      completionRate,
+      ...kpis,
     },
+    kpiCards: [
+      { key: "total", label: "Ca kham", sub: "theo ky", value: kpis.total, icon: "Calendar", bg: "bg-cyan-50", color: "text-cyan-600" },
+      { key: "completed", label: "Hoan thanh", sub: "ca da xong", value: kpis.completed, icon: "CheckCircle2", bg: "bg-emerald-50", color: "text-emerald-600" },
+      { key: "newPatients", label: "Benh nhan", sub: "thu cung duy nhat", value: kpis.newPatients, icon: "Users", bg: "bg-violet-50", color: "text-violet-600" },
+      { key: "completionRate", label: "Ty le hoan thanh", sub: "trong ky", value: kpis.completionRate, icon: "Clock", bg: "bg-amber-50", color: "text-amber-600", unit: "%" },
+    ],
     trend: [...buckets.values()],
     byDay: [...buckets.values()].map((row) => ({ label: row.label, value: row.total })),
     speciesPie: [...speciesCounts.entries()].map(([name, count], index) => ({
@@ -414,6 +447,96 @@ async function getDoctorStats(doctorId) {
     week: buildStatsForPeriod("week", appointmentRows, reviewsResult.data || []),
     month: buildStatsForPeriod("month", appointmentRows, reviewsResult.data || []),
     quarter: buildStatsForPeriod("quarter", appointmentRows, reviewsResult.data || []),
+  };
+}
+
+function weekdayLabel(day) {
+  const labels = ["CN", "Thá»© 2", "Thá»© 3", "Thá»© 4", "Thá»© 5", "Thá»© 6", "Thá»© 7"];
+  return labels[day] || "Thá»© 2";
+}
+
+async function getDoctorSettings(doctorId) {
+  const [{ data: doctor, error: doctorError }, { data: schedules, error: scheduleError }] = await Promise.all([
+    supabase
+      .from("doctors")
+      .select(`
+        id,
+        full_name,
+        specialization,
+        degree,
+        experience_years,
+        room_name,
+        user:user_id (email)
+      `)
+      .eq("id", doctorId)
+      .single(),
+    supabase
+      .from("doctor_schedules")
+      .select("id, work_date, start_time, end_time, room_name, status")
+      .eq("doctor_id", doctorId)
+      .order("work_date", { ascending: true })
+      .order("start_time", { ascending: true }),
+  ]);
+
+  if (doctorError || !doctor) throw new Error("Không tìm thấy hồ sơ bác sĩ");
+  if (scheduleError) throw new Error(scheduleError.message);
+
+  const scheduleRows = (schedules || []).map((row) => {
+    const date = row.work_date ? new Date(row.work_date) : null;
+    const day = date && !Number.isNaN(date.getTime()) ? weekdayLabel(date.getDay()) : "Thứ 2";
+
+    return {
+      id: row.id,
+      day,
+      date: formatDateShort(row.work_date),
+      on: !["OFF", "DONE"].includes(row.status),
+      from: formatTime(row.start_time),
+      to: formatTime(row.end_time),
+      roomName: row.room_name || doctor.room_name || "Phòng 1",
+      status: row.status,
+    };
+  });
+
+  return {
+    profile: {
+      id: doctor.id,
+      name: doctor.full_name || "",
+      email: doctor.user?.email || "",
+      phone: "",
+      specialty: doctor.specialization || "Ná»™i khoa",
+      room: doctor.room_name || "Phòng 1",
+      bio: doctor.degree || "",
+      license: doctor.degree || "",
+      initials: getInitials(doctor.full_name),
+      statusLabel: "Đang làm việc",
+    },
+    schedule: {
+      rows: scheduleRows,
+      options: {
+        maxAppointments: "12",
+        slotDuration: "30",
+        breakFrom: "12:00",
+        breakTo: "13:30",
+      },
+    },
+    notifications: {
+      aptEmail: true,
+      aptSms: false,
+      aptPush: true,
+      remEmail: true,
+      remSms: true,
+      remPush: true,
+      sysEmail: false,
+      sysSms: false,
+      sysPush: true,
+      reportEmail: true,
+    },
+    security: {
+      twoFa: false,
+      sessions: [
+        { device: "Chrome", location: "Thiáº¿t bá»‹ hiá»‡n táº¡i", time: "Hiá»‡n táº¡i", current: true },
+      ],
+    },
   };
 }
 
@@ -546,6 +669,7 @@ async function getDoctorExamContext(doctorId, appointmentId) {
 
 module.exports = {
   getDoctorExamContext,
+  getDoctorSettings,
   getDoctorStats,
   listDoctorRecords,
 };

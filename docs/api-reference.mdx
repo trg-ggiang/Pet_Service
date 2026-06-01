@@ -51,9 +51,11 @@ Routes are mounted under `/api/doctor` and require a doctor auth token.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/doctor/profile` | Get the current doctor's profile. |
-| `GET` | `/api/doctor/records` | List medical records and appointment-backed patient history for the current doctor. |
-| `GET` | `/api/doctor/stats` | Get current doctor's dashboard statistics for week, month, and quarter views. |
-| `GET` | `/api/doctor/appointments` | List current doctor's active appointments using requested appointment date/time. |
+| `GET` | `/api/doctor/records` | List medical records and appointment-backed patient history for the current doctor. Supports `search` and `species` query filters. |
+| `GET` | `/api/doctor/stats` | Get current doctor's dashboard statistics for week, month, and quarter views, including render-ready KPI cards. |
+| `GET` | `/api/doctor/settings` | Get current doctor's settings payload, including profile, schedule rows, notification preferences, and security/session metadata. |
+| `GET` | `/api/doctor/exam/:appointmentId` | Get database-backed context for `DoctorExamScreen`, including pet, owner, vaccination, visit history, and initial form data. |
+| `GET` | `/api/doctor/appointments` | List current doctor's active appointments with backend-shaped portal rows, status view metadata, schedule summary counts, and header metadata. |
 | `PUT` | `/api/doctor/appointments/:appointmentId/start` | Mark one current-doctor appointment as in progress. |
 | `PUT` | `/api/doctor/appointments/:appointmentId/complete` | Mark one current-doctor appointment as completed. |
 
