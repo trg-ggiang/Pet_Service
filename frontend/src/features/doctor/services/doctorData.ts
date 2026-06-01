@@ -15,6 +15,7 @@ export interface DoctorPrescription {
 export interface DoctorMedicalRecord {
   id: string;
   appointmentId: number;
+  petId: number;
   date: string;
   dateShort: string;
   pet: string;
@@ -55,7 +56,7 @@ export interface DoctorMedicalRecord {
   allergy: string;
 }
 
-export type DoctorStatsPeriod = "week" | "month" | "quarter";
+export type DoctorStatsPeriod = "month" | "week" | "day";
 
 export interface DoctorStatsPayload {
   kpis: {

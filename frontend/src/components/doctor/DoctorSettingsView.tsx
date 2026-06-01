@@ -78,15 +78,13 @@ export function DoctorSettingsHeader() {
 export function DoctorSettingsNav({
   tab,
   onTabChange,
-  onLogoutClick,
 }: {
   tab: DoctorSettingsTabId;
   onTabChange: (tab: DoctorSettingsTabId) => void;
-  onLogoutClick: () => void;
 }) {
   return (
     <nav className="w-48 flex-shrink-0 bg-white border-r border-border flex flex-col p-3">
-      <div className="flex flex-col gap-0.5 flex-1">
+      <div className="flex flex-col gap-0.5">
         {DOCTOR_SETTINGS_TABS.map(({ id, label, icon: Icon }) => {
           const active = tab === id;
           return (
@@ -102,14 +100,6 @@ export function DoctorSettingsNav({
             </button>
           );
         })}
-      </div>
-      <div className="pt-3 mt-3 border-t border-border">
-        <button
-          onClick={onLogoutClick}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-red-500 hover:bg-red-50 hover:text-red-600 transition-all"
-        >
-          Đăng xuất
-        </button>
       </div>
     </nav>
   );

@@ -1,21 +1,57 @@
-import { useEffect, useState } from "react";
-import { DoctorRecordDetail } from "../../../components/doctor/DoctorRecordDetail";
+import { useEffect, useMemo, useState } from "react";
 import {
   DoctorRecordsError,
+  DoctorRecordsHistory,
   DoctorRecordsLoading,
-  DoctorRecordsSideList,
-  DoctorRecordsTable,
+  DoctorRecordsPetList,
   DoctorRecordsToolbar,
 } from "../../../components/doctor/DoctorRecordsView";
 import { doctorDataService, type DoctorMedicalRecord } from "../services/doctorData";
+
+function patientKey(record: DoctorMedicalRecord) {
+  return String(record.petId || `${record.pet}-${record.owner}`);
+}
 
 export function DoctorRecordsPage() {
   const [search, setSearch] = useState("");
   const [speciesFilter, setSpeciesFilter] = useState("all");
   const [records, setRecords] = useState<DoctorMedicalRecord[]>([]);
-  const [selected, setSelected] = useState<DoctorMedicalRecord | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const patients = useMemo(() => {
+    const grouped = new Map<string, DoctorMedicalRecord[]>();
+    records.forEach((record) => {
+      const key = patientKey(record);
+      grouped.set(key, [...(grouped.get(key) || []), record]);
+    });
+
+    return [...grouped.entries()].map(([id, patientRecords]) => {
+      const sortedRecords = [...patientRecords].sort((a, b) => {
+        const dateA = new Date(a.dateShort.split("/").reverse().join("-")).getTime() || 0;
+        const dateB = new Date(b.dateShort.split("/").reverse().join("-")).getTime() || 0;
+        return dateB - dateA;
+      });
+      const latest = sortedRecords[0];
+
+      return {
+        id,
+        name: latest.pet,
+        image: latest.petImage,
+        species: latest.species,
+        breed: latest.breed,
+        owner: latest.owner,
+        phone: latest.phone,
+        allergy: latest.allergy,
+        latestDate: latest.dateShort,
+        recordCount: sortedRecords.length,
+        records: sortedRecords,
+      };
+    });
+  }, [records]);
+
+  const selectedPatient = patients.find((patient) => patient.id === selectedPetId) || patients[0] || null;
 
   useEffect(() => {
     let active = true;
@@ -29,12 +65,15 @@ export function DoctorRecordsPage() {
         });
         if (!active) return;
         setRecords(data);
-        setSelected((current) => current && data.some((record) => record.id === current.id) ? current : data[0] ?? null);
+        setSelectedPetId((current) => {
+          const keys = new Set(data.map(patientKey));
+          return current && keys.has(current) ? current : data[0] ? patientKey(data[0]) : null;
+        });
         setError(null);
       } catch (err) {
         if (!active) return;
         setRecords([]);
-        setSelected(null);
+        setSelectedPetId(null);
         setError(err instanceof Error ? err.message : "Khong the tai ho so benh an");
       } finally {
         if (active) setLoading(false);
@@ -51,25 +90,10 @@ export function DoctorRecordsPage() {
     };
   }, [search, speciesFilter]);
 
-  if (selected) {
-    return (
-      <div className="flex h-full min-h-0">
-        <DoctorRecordsSideList
-          records={records}
-          selectedId={selected.id}
-          search={search}
-          onSearchChange={setSearch}
-          onSelect={setSelected}
-        />
-        <DoctorRecordDetail record={selected} onClose={() => setSelected(null)} />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <DoctorRecordsToolbar
-        total={records.length}
+        total={patients.length}
         search={search}
         speciesFilter={speciesFilter}
         onSearchChange={setSearch}
@@ -78,7 +102,16 @@ export function DoctorRecordsPage() {
 
       {loading && <DoctorRecordsLoading text="Dang tai ho so benh an..." />}
       {!loading && error && <DoctorRecordsError message={error} />}
-      {!loading && !error && <DoctorRecordsTable records={records} onSelect={setSelected} />}
+      {!loading && !error && (
+        <div className="flex-1 overflow-hidden flex min-h-0">
+          <DoctorRecordsPetList
+            patients={patients}
+            selectedId={selectedPatient?.id || ""}
+            onSelect={(patient) => setSelectedPetId(patient.id)}
+          />
+          <DoctorRecordsHistory patient={selectedPatient} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,65 @@
+import { useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import type { DoctorExamDetail, DoctorExamRecord } from "../../services/doctorAppointments";
+
+function DoctorSelectField({
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  options: Array<{ label: string; value: string }>;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value) ?? null;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-[13px] font-semibold transition-all ${
+          open ? "border-cyan-300 ring-2 ring-cyan-500/15" : "border-border hover:border-slate-300"
+        }`}
+      >
+        <span className={selectedOption ? "truncate text-foreground" : "truncate text-muted-foreground"}>
+          {selectedOption?.label ?? placeholder}
+        </span>
+        <ChevronDown size={16} className={`flex-shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+            {options.map((option) => {
+              const selected = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`flex h-9 w-full items-center justify-between rounded-xl px-3 text-left text-[12px] font-semibold transition-colors ${
+                    selected ? "bg-cyan-50 text-cyan-700" : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="truncate">{option.label}</span>
+                  {selected && <Check size={15} strokeWidth={3} />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function SymptomForm({
   schema,
@@ -78,18 +139,12 @@ export function SymptomForm({
             <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
               Thời gian xuất hiện
             </label>
-            <select
+            <DoctorSelectField
               value={record.duration}
-              onChange={(event) => patchRecord({ duration: event.target.value })}
-              className="h-10 px-3 bg-white border border-border rounded-xl text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 transition-all"
-            >
-              <option value="">Chọn...</option>
-              {schema.durationOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              options={schema.durationOptions}
+              placeholder="Chọn..."
+              onChange={(value) => patchRecord({ duration: value })}
+            />
           </div>
 
           <div className="flex flex-col gap-2">

@@ -4,6 +4,7 @@ import { DoctorSidebar, type DoctorPortalNavId } from "../../../components/docto
 import { DoctorScheduleHeader } from "../../../components/doctor/DoctorScheduleHeader";
 import { DoctorScheduleStats } from "../../../components/doctor/DoctorScheduleStats";
 import { DoctorScheduleTable } from "../../../components/doctor/DoctorScheduleTable";
+import { DoctorLogoutConfirm } from "../../../components/doctor/DoctorSettingsView";
 import { DoctorExamScreen } from "./DoctorExamScreen";
 import { DoctorRecordsPage } from "./DoctorRecordsPage";
 import { DoctorStatsPage } from "./DoctorStatsPage";
@@ -39,6 +40,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(null);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const loadAppointments = useCallback(async () => {
     try {
@@ -95,10 +97,21 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="min-h-screen flex" style={{ background: "#F8FAFC" }}>
+      {logoutConfirmOpen && (
+        <DoctorLogoutConfirm
+          onCancel={() => setLogoutConfirmOpen(false)}
+          onConfirm={() => {
+            setLogoutConfirmOpen(false);
+            onLogout();
+          }}
+        />
+      )}
+
       <DoctorSidebar
         activeNav={activeNav}
         profile={doctorProfile}
         onNavigate={setActiveNav}
+        onLogoutClick={() => setLogoutConfirmOpen(true)}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -124,7 +137,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
 
         {!examPatient && activeNav === "settings" && (
           <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-            <DoctorSettingsPage onLogout={onLogout} />
+            <DoctorSettingsPage />
           </div>
         )}
 

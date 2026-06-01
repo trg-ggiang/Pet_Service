@@ -74,8 +74,8 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `PATCH /api/staff/payments/:invoiceId/pay` marks one invoice as paid.
 - `/api/doctor`
   - `GET /api/doctor/profile` returns the authenticated doctor's profile.
-  - `GET /api/doctor/records` lists appointment-backed medical records for the authenticated doctor and accepts `search` and `species` filters.
-  - `GET /api/doctor/stats` returns doctor statistics for week, month, and quarter dashboard views with KPI card view data.
+  - `GET /api/doctor/records` lists appointment-backed patient history for the authenticated doctor, includes pet identity for grouping records by pet, and accepts `search` and `species` filters.
+  - `GET /api/doctor/stats` returns doctor statistics for month, week, day, and quarter dashboard views with KPI card view data.
   - `GET /api/doctor/settings` returns doctor profile, schedule, notification, and security/session settings payloads.
   - `GET /api/doctor/exam/:appointmentId` returns exam-screen context for one current-doctor appointment from database rows.
   - `GET /api/doctor/appointments` lists active appointments for the authenticated doctor.
