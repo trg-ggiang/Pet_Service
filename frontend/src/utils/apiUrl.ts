@@ -6,6 +6,10 @@ function getApiOrigin() {
 }
 
 export function apiUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${getApiOrigin()}${normalizedPath}`;
 }

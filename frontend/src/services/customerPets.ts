@@ -1,4 +1,5 @@
 import { getAuthHeaders } from "../utils/authSession";
+import { apiUrl } from "../utils/apiUrl";
 import { requestJson } from "../utils/requestJson";
 import type {
   CreateCustomerPetInput,
@@ -99,7 +100,7 @@ function getFilenameFromContentDisposition(headerValue: string | null, fallback:
 }
 
 async function downloadInvoicePdfFromUrl(url: string, fallbackFilename: string): Promise<void> {
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl(url), {
     headers: getAuthHeaders(),
   });
 

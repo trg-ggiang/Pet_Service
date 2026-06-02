@@ -1302,6 +1302,44 @@ Refactor staff role structure to match the doctor/customer feature layout and re
 
 Checks passed. The frontend build still reports the existing large chunk warning.
 
+## 2026-06-02 - Vercel Demo Preparation
+
+### Goal
+
+Prepare the frontend and backend for a Vercel demo deployment.
+
+### Work Completed
+
+- Added Vercel rewrite configuration for the Vite SPA and Express API.
+- Updated the backend server entrypoint to export the Express app for Vercel while preserving local `app.listen`.
+- Updated backend CORS handling to allow comma-separated frontend origins.
+- Routed shared frontend JSON requests and invoice PDF downloads through `VITE_API_URL`.
+- Kept absolute API URLs intact in the shared API URL helper.
+- Documented the two-project Vercel deployment settings and required environment variables.
+
+### Files Changed
+
+- `backend/src/server.js`
+- `backend/vercel.json`
+- `frontend/vercel.json`
+- `frontend/src/utils/apiUrl.ts`
+- `frontend/src/utils/requestJson.ts`
+- `frontend/src/services/customerPets.ts`
+- `.env.example`
+- `frontend/.env.local.example`
+- `docs/architecture.mdx`
+- `docs/deployment/overview.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/server.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
 ## 2026-06-02 - Doctor Dropdown Polish
 
 ### Goal
