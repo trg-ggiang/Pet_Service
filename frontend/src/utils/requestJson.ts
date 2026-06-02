@@ -1,5 +1,7 @@
+import { apiUrl } from "./apiUrl";
+
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl(url), {
     ...init,
     headers: {
       "Content-Type": "application/json",

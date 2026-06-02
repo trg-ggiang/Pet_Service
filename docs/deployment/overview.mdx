@@ -7,8 +7,8 @@ description: Deployment notes and environment requirements.
 
 ## Components
 
-- Frontend: Vite build output.
-- Backend: Node.js Express service.
+- Frontend: Vite build output in `frontend/dist`.
+- Backend: Node.js Express API exported from `backend/src/server.js`.
 - Database: PostgreSQL.
 - Docs: Mintlify.
 
@@ -19,3 +19,62 @@ description: Deployment notes and environment requirements.
 - Supabase configuration when used.
 - Frontend API URL.
 - Backend CORS client URL.
+
+## Vercel Demo Deployment
+
+Deploy the demo as two Vercel projects from the same repository.
+
+### Frontend project
+
+Use these Vercel settings:
+
+```text
+Framework Preset: Vite
+Root Directory: frontend
+Build Command: npm run build
+Output Directory: dist
+Install Command: npm install
+```
+
+Set frontend environment variables:
+
+```text
+VITE_API_URL=https://<backend-vercel-project>.vercel.app
+NEXT_PUBLIC_SUPABASE_URL=https://<supabase-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<supabase-anon-or-publishable-key>
+```
+
+`frontend/vercel.json` rewrites non-API routes to `index.html` so direct navigation and refreshes work in the Vite SPA.
+
+### Backend project
+
+Use these Vercel settings:
+
+```text
+Root Directory: backend
+Install Command: npm install
+Build Command: npm run prisma:generate
+Output Directory: leave empty
+```
+
+Set backend environment variables:
+
+```text
+DATABASE_URL=<postgres-or-supabase-pooler-url>
+JWT_SECRET=<strong-random-secret>
+CLIENT_URL=https://<frontend-vercel-project>.vercel.app
+FRONTEND_URL=https://<frontend-vercel-project>.vercel.app
+BACKEND_URL=https://<backend-vercel-project>.vercel.app
+SUPABASE_URL=https://<supabase-project>.supabase.co
+SUPABASE_KEY=<supabase-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<supabase-service-role-key>
+```
+
+`CLIENT_URL` and `FRONTEND_URL` may contain comma-separated origins when both production and preview domains need API access.
+
+After deployment, verify:
+
+```text
+https://<backend-vercel-project>.vercel.app/api/health
+https://<frontend-vercel-project>.vercel.app
+```

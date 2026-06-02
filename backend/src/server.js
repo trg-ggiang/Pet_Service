@@ -15,11 +15,23 @@ const { isPrismaConfigured } = require("./lib/prisma");
 
 const app = express();
 const port = process.env.PORT || 5050;
-const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+const clientUrls = [
+  ...(process.env.CLIENT_URL || "http://localhost:5173").split(","),
+  ...(process.env.FRONTEND_URL || "").split(","),
+]
+  .map((url) => url.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: clientUrl,
+    origin(origin, callback) {
+      if (!origin || clientUrls.includes(origin.replace(/\/+$/, ""))) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
@@ -50,6 +62,10 @@ app.use((req, res) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Backend running on http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Backend running on http://localhost:${port}`);
+  });
+}
+
+module.exports = app;

@@ -81,6 +81,15 @@ npm run docs:check
 
 Docs source lives in `docs/` and should use `.mdx`.
 
+## Vercel Demo Deployment
+
+Use two Vercel projects from this repository:
+
+- Frontend: root directory `frontend`, Vite preset, build command `npm run build`, output directory `dist`.
+- Backend: root directory `backend`, build command `npm run prisma:generate`, Express API served from `backend/src/server.js`.
+
+See `docs/deployment/overview.mdx` for the required Vercel environment variables and verification checklist.
+
 ## Codex Workflow
 - Read `README.md`, `AGENTS.md`, `.codex/AGENTS.md`, and relevant docs before editing.
 - Keep changes small and scoped.

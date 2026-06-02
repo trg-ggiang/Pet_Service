@@ -9,7 +9,8 @@ Pet Service is split into a Vite frontend and an Express API backend.
 
 ```text
 React/Vite frontend
-  -> /api proxy in Vite
+  -> VITE_API_URL in deployed environments
+  -> /api proxy in local Vite dev
   -> Express backend
   -> Prisma client
   -> PostgreSQL/Supabase database
@@ -21,11 +22,11 @@ The frontend lives in `frontend/`. The app entrypoint is `frontend/src/main.tsx`
 
 Role-specific API clients live beside those pages in `frontend/src/features/<role>/services` when the client is only used by that role. Shared customer API clients remain under `frontend/src/services/customer`, and top-level role service files re-export feature service modules for compatibility with existing imports.
 
-Vite proxies `/api` requests to `http://localhost:5050` during development.
+Vite proxies `/api` requests to `http://localhost:5050` during development. Shared frontend request helpers resolve API requests through `VITE_API_URL` in deployed environments, falling back to the local backend origin.
 
 ## Backend
 
-The backend lives in `backend/`. `backend/src/server.js` configures Express, CORS, JSON parsing, auth routes, customer routes, and the health endpoint.
+The backend lives in `backend/`. `backend/src/server.js` configures Express, CORS, JSON parsing, auth routes, customer routes, and the health endpoint. It exports the Express app for Vercel while keeping `app.listen` for local development.
 
 Current route groups:
 
