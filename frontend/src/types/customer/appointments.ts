@@ -1,4 +1,4 @@
-export type CustomerAppointmentStatus =
+﻿export type CustomerAppointmentStatus =
   | "PENDING"
   | "CONFIRMED"
   | "CHECKED_IN"
@@ -94,4 +94,42 @@ export type CustomerAppointmentProviderInput = {
   serviceType: CustomerAppointmentServiceType;
   date: string;
   time: string;
+};
+
+export type CustomerAppointmentStatusFilter =
+  | "all"
+  | "upcoming"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export type CustomerAppointmentListParams = {
+  status?: CustomerAppointmentStatusFilter;
+  pet?: string;
+  serviceType?: CustomerAppointmentServiceType | "all";
+  page?: number;
+  pageSize?: number;
+};
+
+export type CustomerAppointmentSummary = {
+  total: number;
+  filtered: number;
+  statusCounts: Array<{ status: CustomerAppointmentStatusFilter; count: number }>;
+  petOptions: string[];
+  serviceTypeOptions: CustomerAppointmentServiceType[];
+};
+
+export type CustomerAppointmentPagination = {
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  total: number;
+  from: number;
+  to: number;
+};
+
+export type CustomerAppointmentListPayload = {
+  appointments: CustomerAppointment[];
+  summary: CustomerAppointmentSummary;
+  pagination: CustomerAppointmentPagination;
 };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Check, ChevronDown, Upload, X, Calendar as CalendarIcon } from "lucide-react";
 import type { BreedOption, PetDetail, SpeciesOption } from "../../../types/customer/pets";
 import { Calendar as CalendarPicker } from "../../ui/calendar";
@@ -36,6 +36,11 @@ function parseDateInput(value: string) {
   }
 
   return null;
+}
+
+function formatDate(value: string) {
+  const parsedDate = parseDateInput(value);
+  return parsedDate ? parsedDate.toLocaleDateString("vi-VN") : value;
 }
 
 function isFutureDate(value: string) {

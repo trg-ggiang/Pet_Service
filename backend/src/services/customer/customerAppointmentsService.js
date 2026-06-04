@@ -274,6 +274,69 @@ async function listCustomerAppointments(customerId) {
   return (appointments ?? []).map((appointment) => mapAppointment(appointment, maps));
 }
 
+function appointmentStatusGroup(status) {
+  if (["PENDING", "CONFIRMED"].includes(status)) return "upcoming";
+  if (["CHECKED_IN", "IN_PROGRESS"].includes(status)) return "in_progress";
+  if (status === "COMPLETED") return "completed";
+  if (["CANCELLED", "NO_SHOW"].includes(status)) return "cancelled";
+  return "all";
+}
+
+function filterCustomerAppointments(appointments, filters = {}) {
+  const status = String(filters.status || "all");
+  const pet = String(filters.pet || "all");
+  const serviceType = String(filters.serviceType || "all");
+
+  return appointments.filter((appointment) => {
+    const statusMatched = status === "all" || appointmentStatusGroup(appointment.status) === status;
+    const petMatched = pet === "all" || appointment.pet === pet;
+    const serviceMatched = serviceType === "all" || appointment.serviceType === serviceType;
+    return statusMatched && petMatched && serviceMatched;
+  });
+}
+
+function buildCustomerAppointmentSummary(allAppointments, filteredAppointments) {
+  const statuses = ["all", "upcoming", "in_progress", "completed", "cancelled"];
+  const statusCounts = statuses.map((status) => ({
+    status,
+    count: status === "all"
+      ? allAppointments.length
+      : allAppointments.filter((appointment) => appointmentStatusGroup(appointment.status) === status).length,
+  }));
+
+  return {
+    total: allAppointments.length,
+    filtered: filteredAppointments.length,
+    statusCounts,
+    petOptions: Array.from(new Set(allAppointments.map((appointment) => appointment.pet).filter(Boolean))).sort(),
+    serviceTypeOptions: Array.from(new Set(allAppointments.map((appointment) => appointment.serviceType).filter(Boolean))).sort(),
+  };
+}
+
+async function listCustomerAppointmentsView(customerId, filters = {}) {
+  const allAppointments = await listCustomerAppointments(customerId);
+  const filteredAppointments = filterCustomerAppointments(allAppointments, filters);
+  const pageSize = Math.max(1, Math.min(50, Number(filters.pageSize || 5)));
+  const pageCount = Math.max(1, Math.ceil(filteredAppointments.length / pageSize));
+  const requestedPage = Number(filters.page || 1);
+  const page = Math.min(Math.max(1, Number.isFinite(requestedPage) ? requestedPage : 1), pageCount);
+  const start = (page - 1) * pageSize;
+  const appointments = filteredAppointments.slice(start, start + pageSize);
+
+  return {
+    appointments,
+    summary: buildCustomerAppointmentSummary(allAppointments, filteredAppointments),
+    pagination: {
+      page,
+      pageSize,
+      pageCount,
+      total: filteredAppointments.length,
+      from: filteredAppointments.length ? start + 1 : 0,
+      to: Math.min(start + pageSize, filteredAppointments.length),
+    },
+  };
+}
+
 async function listCustomerAppointmentOptions(customerId) {
   assertCustomerId(customerId);
 
@@ -761,6 +824,7 @@ module.exports = {
   listCustomerAppointmentOptions,
   listCustomerAppointmentProviders,
   listCustomerAppointments,
+  listCustomerAppointmentsView,
   createCustomerAppointment,
   rescheduleCustomerAppointment,
   cancelCustomerAppointment,

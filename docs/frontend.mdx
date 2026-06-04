@@ -84,7 +84,7 @@ The app imports role pages directly from `frontend/src/features/<role>/pages/`. 
 
 Customer shared API clients live under `frontend/src/services/customer/` because they are also used by shared customer components and types. Admin pages load backend data through `frontend/src/features/admin/services/admin.ts` instead of rendering Figma/sample arrays directly in page state.
 
-Admin dashboard, reports, and settings UI sections live under `frontend/src/components/admin/`; role page files stay as stateful containers that call the admin feature service.
+Admin dashboard, appointments, users, services, staff, reports, and settings UI sections live under `frontend/src/components/admin/`; role page files stay as route entrypoints or stateful containers that call the admin feature service.
 
 Doctor pages load profile, schedule, medical records, statistics, and exam-screen context through `frontend/src/features/doctor/services/`. Doctor role pages should not render sample patient, record, vaccine, visit history, schedule summary, or report arrays directly from page files.
 
@@ -119,6 +119,8 @@ Auth pages keep page-level state and submit handlers under `frontend/src/feature
 
 ## Customer Portal UX Notes
 
+- `CustomerPortal.tsx` should stay as the customer container for navigation state, API loading, and modal orchestration.
+- Customer appointment, history, notifications, home, and pet UI sections live under `frontend/src/components/customer/`.
 - Customer dashboard cards should keep child content inside their parent panel at desktop and mobile breakpoints.
 - Appointment and service-history filter bars should use available horizontal space to avoid sparse layouts.
 - Custom dropdown menus are preferred over native selects when option-list styling needs consistent spacing, hover states, and selected indicators.

@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const { supabase } = require("../lib/supabaseClient");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const {
@@ -6,10 +6,15 @@ const {
   getAdminExamContext,
   getAdminReports,
   getAdminSettings,
+  createAdminService,
   listAdminAppointments,
   listAdminServices,
   listAdminStaff,
   listAdminUsers,
+  updateAdminAppointmentStatus,
+  updateAdminService,
+  updateAdminServiceStatus,
+  updateAdminUserLock,
 } = require("../services/adminService");
 
 const router = express.Router();
@@ -28,37 +33,106 @@ router.get("/dashboard", async function(req, res) {
 
 router.get("/users", async function(req, res) {
   try {
-    const users = await listAdminUsers();
+    const users = await listAdminUsers({
+      role: req.query.role,
+      search: req.query.search,
+    });
     res.json({ ok: true, ...users });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message || "Failed to load users" });
   }
 });
 
+router.patch("/users/:role/:id/lock", async function(req, res) {
+  try {
+    const user = await updateAdminUserLock(req.params.role, req.params.id, Boolean(req.body?.locked));
+    res.json({ ok: true, user });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update user lock" });
+  }
+});
+
 router.get("/services", async function(req, res) {
   try {
-    const services = await listAdminServices();
-    res.json({ ok: true, services });
+    const result = await listAdminServices({
+      category: req.query.category,
+      status: req.query.status,
+      search: req.query.search,
+    });
+    res.json({ ok: true, ...result });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message || "Failed to load services" });
   }
 });
 
+router.post("/services", async function(req, res) {
+  try {
+    const service = await createAdminService(req.body);
+    res.status(201).json({ ok: true, service });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to create service" });
+  }
+});
+
+router.patch("/services/:id", async function(req, res) {
+  try {
+    const service = await updateAdminService(req.params.id, req.body);
+    res.json({ ok: true, service });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update service" });
+  }
+});
+
+router.patch("/services/:id/status", async function(req, res) {
+  try {
+    const service = await updateAdminServiceStatus(req.params.id, req.body?.status);
+    res.json({ ok: true, service });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update service status" });
+  }
+});
+
 router.get("/appointments", async function(req, res) {
   try {
-    const appointments = await listAdminAppointments();
-    res.json({ ok: true, appointments });
+    const result = await listAdminAppointments({
+      status: req.query.status,
+      search: req.query.search,
+    });
+    res.json({ ok: true, ...result });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message || "Failed to load appointments" });
   }
 });
 
+router.patch("/appointments/:id/status", async function(req, res) {
+  try {
+    const appointment = await updateAdminAppointmentStatus(req.params.id, req.body?.status);
+    res.json({ ok: true, appointment });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update appointment status" });
+  }
+});
+
 router.get("/staff", async function(req, res) {
   try {
-    const staff = await listAdminStaff();
-    res.json({ ok: true, staff });
+    const result = await listAdminStaff({
+      department: req.query.department,
+      status: req.query.status,
+      search: req.query.search,
+    });
+    res.json({ ok: true, ...result });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message || "Failed to load staff" });
+  }
+});
+
+router.patch("/staff/:id/lock", async function(req, res) {
+  try {
+    const role = String(req.params.id || "").startsWith("NV-C") ? "doctor" : "staff";
+    const user = await updateAdminUserLock(role, req.params.id, Boolean(req.body?.locked));
+    res.json({ ok: true, user });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update staff lock" });
   }
 });
 

@@ -1,4 +1,4 @@
-const { supabase } = require("../lib/supabaseClient");
+﻿const { supabase } = require("../lib/supabaseClient");
 
 function normalizeRole(role) {
   return String(role || "").toLowerCase();
@@ -67,7 +67,138 @@ function buildMaps(rows, key) {
   return new Map(rows.map((row) => [row[key], row]));
 }
 
-async function listAdminUsers() {
+function parseProfileDisplayId(value, prefixes) {
+  const text = String(value || "").trim();
+  const prefixList = Array.isArray(prefixes) ? prefixes : [prefixes];
+  for (const prefix of prefixList) {
+    const match = text.match(new RegExp(`^${prefix}(\\d+)$`, "i"));
+    if (match) {
+      const id = Number(match[1]);
+      return Number.isInteger(id) && id > 0 ? id : null;
+    }
+  }
+  const id = Number(text);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+async function resolveUserIdByProfile(role, displayId) {
+  const normalizedRole = normalizeRole(role);
+  const config = {
+    customer: { table: "customers", prefixes: ["C"] },
+    doctor: { table: "doctors", prefixes: ["D", "NV-C"] },
+    staff: { table: "staffs", prefixes: ["S", "NV-S"] },
+  }[normalizedRole];
+
+  if (!config) {
+    const error = new Error("Invalid user role");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const id = parseProfileDisplayId(displayId, config.prefixes);
+  if (!id) {
+    const error = new Error("Invalid user id");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { data, error } = await supabase
+    .from(config.table)
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (error || !data?.user_id) {
+    const notFound = new Error(error?.message || "User profile not found");
+    notFound.statusCode = 404;
+    throw notFound;
+  }
+
+  return data.user_id;
+}
+
+async function updateAdminUserLock(role, displayId, locked) {
+  const userId = await resolveUserIdByProfile(role, displayId);
+  const { error } = await supabase
+    .from("users")
+    .update({ status: locked ? "LOCKED" : "ACTIVE" })
+    .eq("id", userId);
+
+  if (error) throw new Error(error.message);
+
+  return { id: displayId, role: normalizeRole(role), locked: Boolean(locked) };
+}
+
+function normalizeAdminUsersRole(value) {
+  const role = String(value || "customers").toLowerCase();
+  if (["customers", "doctors", "staff"].includes(role)) return role;
+  return "customers";
+}
+
+function matchesAdminUserSearch(user, query) {
+  if (!query) return true;
+  const source = [
+    user.id,
+    user.name,
+    user.phone,
+    user.email,
+    user.role,
+    user.address,
+    user.specialty,
+    user.room,
+    user.department,
+    user.position,
+    ...(Array.isArray(user.pets) ? user.pets : []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return source.includes(query);
+}
+
+function filterAdminUsersByRole(groups, filters = {}) {
+  const role = normalizeAdminUsersRole(filters.role);
+  const search = String(filters.search || "").trim().toLowerCase();
+
+  return {
+    customers: role === "customers" ? groups.customers.filter((user) => matchesAdminUserSearch(user, search)) : groups.customers,
+    doctors: role === "doctors" ? groups.doctors.filter((user) => matchesAdminUserSearch(user, search)) : groups.doctors,
+    staff: role === "staff" ? groups.staff.filter((user) => matchesAdminUserSearch(user, search)) : groups.staff,
+  };
+}
+
+function buildAdminUsersSummary(allGroups, filteredGroups, filters = {}) {
+  const allUsers = [...allGroups.customers, ...allGroups.doctors, ...allGroups.staff];
+  const activeDoctors = allGroups.doctors.filter((doctor) => !doctor.locked && doctor.status === "active").length;
+  const activeStaff = allGroups.staff.filter((member) => !member.locked && member.status === "active").length;
+  const vipCustomers = allGroups.customers.filter((customer) => customer.tier === "vip").length;
+
+  return {
+    role: normalizeAdminUsersRole(filters.role),
+    search: String(filters.search || "").trim(),
+    totals: {
+      customers: allGroups.customers.length,
+      doctors: allGroups.doctors.length,
+      staff: allGroups.staff.length,
+      locked: allUsers.filter((user) => user.locked).length,
+      activeDoctors,
+      activeStaff,
+      vipCustomers,
+    },
+    filtered: {
+      customers: filteredGroups.customers.length,
+      doctors: filteredGroups.doctors.length,
+      staff: filteredGroups.staff.length,
+    },
+    tabs: [
+      { role: "customers", label: "Khách hàng", count: allGroups.customers.length },
+      { role: "doctors", label: "Bác sĩ", count: allGroups.doctors.length },
+      { role: "staff", label: "Nhân viên", count: allGroups.staff.length },
+    ],
+  };
+}
+
+async function listAdminUsers(filters = {}) {
   const [users, customers, doctors, staffs, pets, appointments] = await Promise.all([
     readTable("users", "id, email, role, status, created_at", {
       order: { column: "created_at", ascending: false },
@@ -197,10 +328,16 @@ async function listAdminUsers() {
     }
   });
 
-  return {
+  const allGroups = {
     customers: customersResult,
     doctors: doctorsResult,
     staff: staffResult,
+  };
+  const filteredGroups = filterAdminUsersByRole(allGroups, filters);
+
+  return {
+    ...filteredGroups,
+    summary: buildAdminUsersSummary(allGroups, filteredGroups, filters),
   };
 }
 
@@ -214,7 +351,112 @@ function serviceCategory(type) {
   return map[type] || "clinic";
 }
 
-async function listAdminServices() {
+function serviceTypeFromCategory(category) {
+  const map = {
+    clinic: "MEDICAL",
+    vaccination: "VACCINE",
+    grooming: "GROOMING",
+    boarding: "BOARDING",
+  };
+  return map[category] || null;
+}
+
+function parseServiceId(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^SV-(\d+)$/i);
+  const rawId = match ? match[1] : text;
+  const id = Number(rawId);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function matchesServiceSearch(service, query) {
+  if (!query) return true;
+  return [service.id, service.name, service.description, service.category]
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
+}
+
+function mapAdminService(service, stats) {
+  return {
+    id: `SV-${service.id}`,
+    category: serviceCategory(service.type),
+    name: service.name,
+    description: service.description || "",
+    duration: service.type === "BOARDING" ? 1 : 30,
+    durationUnit: service.type === "BOARDING" ? "đêm" : "phút",
+    pricingType: "fixed",
+    basePrice: Number(service.price || 0),
+    variants: [],
+    status: service.is_active ? "active" : "inactive",
+    bookingsMonth: stats.bookings,
+    revenueMonth: stats.revenue,
+  };
+}
+
+function buildServiceSummary(allServices, filteredServices, category) {
+  const categories = ["clinic", "vaccination", "grooming", "boarding"].map((item) => {
+    const rows = allServices.filter((service) => service.category === item);
+    const revenueMonth = rows.reduce((sum, service) => sum + Number(service.revenueMonth || 0), 0);
+    return {
+      category: item,
+      count: rows.length,
+      activeCount: rows.filter((service) => service.status === "active").length,
+      revenueMonth,
+      revenueMonthText: moneyText(revenueMonth),
+    };
+  });
+  const topService = [...allServices].sort((a, b) => b.bookingsMonth - a.bookingsMonth)[0] || null;
+  const totalRevenueMonth = allServices.reduce((sum, service) => sum + Number(service.revenueMonth || 0), 0);
+  const activeCategory = categories.find((item) => item.category === category) || categories[0];
+
+  return {
+    total: allServices.length,
+    filtered: filteredServices.length,
+    totalActive: allServices.filter((service) => service.status === "active").length,
+    totalBookings: allServices.reduce((sum, service) => sum + Number(service.bookingsMonth || 0), 0),
+    totalRevenueMonth,
+    totalRevenueMonthText: moneyText(totalRevenueMonth),
+    topService: topService ? { name: topService.name, bookingsMonth: topService.bookingsMonth } : null,
+    categories,
+    activeCategory,
+  };
+}
+
+function servicePayload(input, existingType) {
+  const name = String(input?.name || "").trim();
+  const category = String(input?.category || "").trim();
+  const type = serviceTypeFromCategory(category) || existingType;
+  const price = Number(input?.basePrice ?? input?.price ?? 0);
+
+  if (!name) {
+    const error = new Error("Service name is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!type) {
+    const error = new Error("Invalid service category");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!Number.isFinite(price) || price < 0) {
+    const error = new Error("Invalid service price");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return {
+    name,
+    type,
+    price,
+    description: String(input?.description || "").trim() || null,
+    is_active: input?.status ? input.status === "active" : true,
+  };
+}
+
+async function listAdminServices(filters = {}) {
   const [services, appointmentServices] = await Promise.all([
     readTable("services", "id, name, type, price, description, is_active", {
       order: { column: "name", ascending: true },
@@ -231,23 +473,98 @@ async function listAdminServices() {
     serviceStats.set(row.service_id, current);
   });
 
-  return services.map((service) => {
+  const mapped = services.map((service) => {
     const stats = serviceStats.get(service.id) || { bookings: 0, revenue: 0 };
-    return {
-      id: `SV-${service.id}`,
-      category: serviceCategory(service.type),
-      name: service.name,
-      description: service.description || "",
-      duration: service.type === "BOARDING" ? 1 : 30,
-      durationUnit: service.type === "BOARDING" ? "đêm" : "phút",
-      pricingType: "fixed",
-      basePrice: Number(service.price || 0),
-      variants: [],
-      status: service.is_active ? "active" : "inactive",
-      bookingsMonth: stats.bookings,
-      revenueMonth: stats.revenue,
-    };
+    return mapAdminService(service, stats);
   });
+
+  const category = String(filters.category || "clinic");
+  const status = String(filters.status || "all");
+  const search = String(filters.search || "").trim().toLowerCase();
+  const filtered = mapped.filter((service) => {
+    const categoryMatched = !category || category === "all" || service.category === category;
+    const statusMatched = status === "all" || !status || service.status === status;
+    return categoryMatched && statusMatched && matchesServiceSearch(service, search);
+  });
+
+  return {
+    services: filtered,
+    summary: buildServiceSummary(mapped, filtered, category),
+  };
+}
+
+async function createAdminService(input) {
+  const payload = servicePayload(input);
+  const { data, error } = await supabase
+    .from("services")
+    .insert(payload)
+    .select("id, name, type, price, description, is_active")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return mapAdminService(data, { bookings: 0, revenue: 0 });
+}
+
+async function updateAdminService(displayId, input) {
+  const id = parseServiceId(displayId);
+  if (!id) {
+    const error = new Error("Invalid service id");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { data: existing, error: readError } = await supabase
+    .from("services")
+    .select("type")
+    .eq("id", id)
+    .single();
+
+  if (readError) {
+    const error = new Error(readError.message);
+    error.statusCode = readError.code === "PGRST116" ? 404 : undefined;
+    throw error;
+  }
+
+  const payload = servicePayload(input, existing.type);
+  const { data, error } = await supabase
+    .from("services")
+    .update(payload)
+    .eq("id", id)
+    .select("id, name, type, price, description, is_active")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const result = await listAdminServices();
+  return result.services.find((service) => service.id === `SV-${id}`) || mapAdminService(data, { bookings: 0, revenue: 0 });
+}
+
+async function updateAdminServiceStatus(displayId, status) {
+  const id = parseServiceId(displayId);
+  if (!id) {
+    const error = new Error("Invalid service id");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!["active", "inactive"].includes(status)) {
+    const error = new Error("Invalid service status");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { data, error } = await supabase
+    .from("services")
+    .update({ is_active: status === "active" })
+    .eq("id", id)
+    .select("id, name, type, price, description, is_active")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const result = await listAdminServices();
+  return result.services.find((service) => service.id === `SV-${id}`) || mapAdminService(data, { bookings: 0, revenue: 0 });
 }
 
 function mapAppointmentStatus(status) {
@@ -262,7 +579,75 @@ function mapAppointmentStatus(status) {
   return map[status] || "scheduled";
 }
 
-async function listAdminAppointments() {
+function appointmentDbStatus(status) {
+  const map = {
+    scheduled: "CONFIRMED",
+    in_progress: "IN_PROGRESS",
+    completed: "COMPLETED",
+    cancelled: "CANCELLED",
+  };
+  return map[status] || null;
+}
+
+function appointmentStatusLabel(status) {
+  const map = {
+    all: "Tất cả",
+    scheduled: "Chờ khám",
+    in_progress: "Đang khám",
+    completed: "Hoàn thành",
+    cancelled: "Đã hủy",
+  };
+  return map[status] || status;
+}
+
+function parseAppointmentId(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^APT-(\d+)$/i);
+  const rawId = match ? match[1] : text;
+  const id = Number(rawId);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function matchesAppointmentSearch(appointment, query) {
+  if (!query) return true;
+  const source = [
+    appointment.id,
+    appointment.customer,
+    appointment.pet,
+    appointment.species,
+    appointment.service,
+    appointment.staff,
+    appointment.phone,
+    appointment.email,
+    appointment.notes,
+  ].join(" ").toLowerCase();
+  return source.includes(query);
+}
+
+function buildAppointmentSummary(allAppointments, filteredAppointments) {
+  const statuses = ["scheduled", "in_progress", "completed", "cancelled"];
+  const tabs = [
+    { status: "all", label: appointmentStatusLabel("all"), count: allAppointments.length },
+    ...statuses.map((status) => ({
+      status,
+      label: appointmentStatusLabel(status),
+      count: allAppointments.filter((appointment) => appointment.status === status).length,
+    })),
+  ];
+  const totalAmount = filteredAppointments.reduce((sum, appointment) => sum + Number(appointment.amountValue || 0), 0);
+
+  return {
+    total: allAppointments.length,
+    filtered: filteredAppointments.length,
+    totalAmount,
+    totalAmountText: moneyText(totalAmount),
+    tabs,
+    serviceOptions: Array.from(new Set(allAppointments.map((appointment) => appointment.service).filter(Boolean))).sort(),
+    staffOptions: Array.from(new Set(allAppointments.map((appointment) => appointment.staff).filter(Boolean))).sort(),
+  };
+}
+
+async function listAdminAppointments(filters = {}) {
   const appointments = await readTable(
     "appointments",
     `
@@ -280,7 +665,7 @@ async function listAdminAppointments() {
     { order: { column: "created_at", ascending: false }, limit: 100 },
   );
 
-  return appointments.map((appointment) => {
+  const mapped = appointments.map((appointment) => {
     const amount = (appointment.appointment_services || []).reduce(
       (sum, item) => sum + Number(item.quantity || 1) * Number(item.unit_price || 0),
       0,
@@ -297,14 +682,136 @@ async function listAdminAppointments() {
       staff: appointment.doctor?.full_name || appointment.staff?.full_name || "Chưa phân công",
       status: mapAppointmentStatus(appointment.status),
       amount: moneyText(amount),
+      amountValue: moneyNumber(amount),
       phone: appointment.pet?.customer?.phone || "",
       email: "",
       notes: appointment.note || "",
     };
   });
+
+  const status = String(filters.status || "all");
+  const search = String(filters.search || "").trim().toLowerCase();
+  const filtered = mapped.filter((appointment) => {
+    const statusMatched = status === "all" || !status || appointment.status === status;
+    return statusMatched && matchesAppointmentSearch(appointment, search);
+  });
+
+  return {
+    appointments: filtered,
+    summary: buildAppointmentSummary(mapped, filtered),
+  };
 }
 
-async function listAdminStaff() {
+async function updateAdminAppointmentStatus(displayId, status) {
+  const id = parseAppointmentId(displayId);
+  const dbStatus = appointmentDbStatus(status);
+
+  if (!id) {
+    const error = new Error("Invalid appointment id");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!dbStatus) {
+    const error = new Error("Invalid appointment status");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { error } = await supabase
+    .from("appointments")
+    .update({ status: dbStatus })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  const result = await listAdminAppointments();
+  const appointment = result.appointments.find((item) => item.id === `APT-${String(id).padStart(3, "0")}`);
+  if (!appointment) {
+    const notFound = new Error("Appointment not found");
+    notFound.statusCode = 404;
+    throw notFound;
+  }
+
+  return appointment;
+}
+
+const ADMIN_STAFF_DEPARTMENTS = ["clinic", "grooming", "boarding", "reception", "admin"];
+const ADMIN_STAFF_STATUSES = ["active", "on_leave", "probation"];
+
+function normalizeAdminStaffDepartment(value) {
+  const department = String(value || "all").toLowerCase();
+  if (department === "all" || ADMIN_STAFF_DEPARTMENTS.includes(department)) return department;
+  return "all";
+}
+
+function normalizeAdminStaffStatus(value) {
+  const status = String(value || "all").toLowerCase();
+  if (status === "all" || status === "locked" || ADMIN_STAFF_STATUSES.includes(status)) return status;
+  return "all";
+}
+
+function matchesAdminStaffSearch(member, query) {
+  if (!query) return true;
+  return [
+    member.id,
+    member.name,
+    member.department,
+    member.position,
+    member.phone,
+    member.email,
+    member.specialty,
+    member.room,
+    member.licenseNo,
+    member.notes,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
+}
+
+function filterAdminStaffRows(staff, filters = {}) {
+  const department = normalizeAdminStaffDepartment(filters.department);
+  const status = normalizeAdminStaffStatus(filters.status);
+  const search = String(filters.search || "").trim().toLowerCase();
+
+  return staff.filter((member) => {
+    const departmentMatched = department === "all" || member.department === department;
+    const statusMatched = status === "all" || (status === "locked" ? member.locked : member.workStatus === status);
+    return departmentMatched && statusMatched && matchesAdminStaffSearch(member, search);
+  });
+}
+
+function buildAdminStaffSummary(allStaff, filteredStaff, filters = {}) {
+  const avgPerf = allStaff.length
+    ? Math.round(allStaff.reduce((sum, member) => sum + Number(member.monthlyPerf || 0), 0) / allStaff.length)
+    : 0;
+  const avgRating = allStaff.length
+    ? (allStaff.reduce((sum, member) => sum + Number(member.rating || 0), 0) / allStaff.length).toFixed(1)
+    : "0.0";
+
+  return {
+    department: normalizeAdminStaffDepartment(filters.department),
+    status: normalizeAdminStaffStatus(filters.status),
+    search: String(filters.search || "").trim(),
+    total: allStaff.length,
+    filtered: filteredStaff.length,
+    activeFiltered: filteredStaff.filter((member) => member.workStatus === "active" && !member.locked).length,
+    active: allStaff.filter((member) => member.workStatus === "active" && !member.locked).length,
+    onLeave: allStaff.filter((member) => member.workStatus === "on_leave").length,
+    probation: allStaff.filter((member) => member.workStatus === "probation").length,
+    locked: allStaff.filter((member) => member.locked).length,
+    avgPerf,
+    avgRating,
+    departments: ADMIN_STAFF_DEPARTMENTS.map((department) => ({
+      department,
+      count: allStaff.filter((member) => member.department === department).length,
+    })),
+  };
+}
+
+async function listAdminStaff(filters = {}) {
   const users = await listAdminUsers();
   const doctors = users.doctors.map((doctor) => ({
     id: doctor.id.replace(/^D/, "NV-C"),
@@ -347,7 +854,13 @@ async function listAdminStaff() {
     notes: "",
   }));
 
-  return [...doctors, ...staff];
+  const allStaff = [...doctors, ...staff];
+  const filteredStaff = filterAdminStaffRows(allStaff, filters);
+
+  return {
+    staff: filteredStaff,
+    summary: buildAdminStaffSummary(allStaff, filteredStaff, filters),
+  };
 }
 
 async function getAdminDashboard() {
@@ -729,6 +1242,7 @@ async function getAdminExamContext() {
 }
 
 module.exports = {
+  createAdminService,
   getAdminDashboard,
   getAdminExamContext,
   getAdminReports,
@@ -737,4 +1251,8 @@ module.exports = {
   listAdminServices,
   listAdminStaff,
   listAdminUsers,
+  updateAdminAppointmentStatus,
+  updateAdminService,
+  updateAdminServiceStatus,
+  updateAdminUserLock,
 };

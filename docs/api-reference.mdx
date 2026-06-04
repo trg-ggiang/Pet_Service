@@ -36,10 +36,16 @@ Routes are mounted under `/api/admin` and require an admin auth token.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/admin/dashboard` | Get admin totals for dashboard widgets. |
-| `GET` | `/api/admin/users` | List customers, doctors, and staff users for `UsersPage`. |
-| `GET` | `/api/admin/services` | List service catalog rows for `ServicesPage`. |
-| `GET` | `/api/admin/appointments` | List appointment rows for `AppointmentsPage`. |
-| `GET` | `/api/admin/staff` | List doctor and staff rows for `StaffPage`. |
+| `GET` | `/api/admin/users?role=&search=` | List customers, doctors, and staff users with backend search and user-management summary for `UsersPage`. |
+| `PATCH` | `/api/admin/users/:role/:id/lock` | Lock or unlock one customer, doctor, or staff account from `UsersPage`. |
+| `GET` | `/api/admin/services?category=&status=&search=` | List backend-filtered service catalog rows plus category counts and service KPI summary for `ServicesPage`. |
+| `POST` | `/api/admin/services` | Create one service catalog row. |
+| `PATCH` | `/api/admin/services/:id` | Update one service catalog row. |
+| `PATCH` | `/api/admin/services/:id/status` | Activate or deactivate one service catalog row. |
+| `GET` | `/api/admin/appointments?status=&search=` | List backend-filtered appointment rows plus tab counts, service/staff options, and amount summary for `AppointmentsPage`. |
+| `PATCH` | `/api/admin/appointments/:id/status` | Update one appointment status from the admin appointment drawer. |
+| `GET` | `/api/admin/staff?department=&status=&search=` | List backend-filtered doctor and staff rows with staff-management summary for `StaffPage`. |
+| `PATCH` | `/api/admin/staff/:id/lock` | Lock or unlock one doctor/staff account from `StaffPage`. |
 | `GET` | `/api/admin/reports` | Get backend-shaped revenue, appointment, service, and staff-performance report data. |
 | `GET` | `/api/admin/settings` | Get backend-shaped clinic, account, notification, payment, and security settings data. |
 | `GET` | `/api/admin/exam-context` | Get appointment, pet, history, symptom, body-system, and prescription option data for `ExamPage`. |
@@ -94,9 +100,10 @@ Routes are mounted under `/api/customer` and require a customer auth token. Noti
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/customer/notifications` | List notifications for the current user. |
+| `GET` | `/api/customer/notifications` | List notifications for the current user with total and unread summary. |
 | `PATCH` | `/api/customer/notifications/:notificationId/read` | Mark one current-user notification as read. |
 | `PATCH` | `/api/customer/notifications/read-all` | Mark all current-user notifications as read. |
+| `DELETE` | `/api/customer/notifications/:notificationId` | Dismiss one current-user notification. |
 
 ## Customer Appointments
 
@@ -106,7 +113,7 @@ Routes are mounted under `/api/customer` and require a customer auth token. Appo
 | --- | --- | --- |
 | `GET` | `/api/customer/appointment-options` | List database-backed service options for customer booking. |
 | `POST` | `/api/customer/appointment-provider-options` | List providers for the requested service slot. Doctor services return doctors whose `doctor_schedules` cover the selected time and who are not already booked at that exact date/time; staff services return the staff list. |
-| `GET` | `/api/customer/appointments` | List current customer's appointments. |
+| `GET` | `/api/customer/appointments?status=&pet=&serviceType=&page=&pageSize=` | List current customer's appointments with backend filtering, status counts, and pagination summary. |
 | `POST` | `/api/customer/appointments` | Create a pending appointment for one current-customer pet and the selected provider. |
 | `PATCH` | `/api/customer/appointments/:appointmentId/reschedule` | Update appointment schedule date/time when a linked doctor schedule is available. |
 | `PATCH` | `/api/customer/appointments/:appointmentId/cancel` | Cancel one current-customer appointment. |
@@ -117,7 +124,7 @@ Routes are mounted under `/api/customer` and require a customer auth token.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/customer/service-history` | List invoice-backed service history for current customer's pets. |
+| `GET` | `/api/customer/service-history?type=` | List invoice-backed service history for current customer's pets with backend type filtering and summary counts. |
 
 ## Customer
 

@@ -11,15 +11,28 @@ export type CustomerNotification = {
   created_at: string;
 };
 
-export async function fetchCustomerNotifications(): Promise<CustomerNotification[]> {
-  const payload = await requestJson<{ ok: true; notifications: CustomerNotification[] }>(
+export type CustomerNotificationSummary = {
+  total: number;
+  unreadCount: number;
+};
+
+export type CustomerNotificationsPayload = {
+  notifications: CustomerNotification[];
+  summary: CustomerNotificationSummary;
+};
+
+export async function fetchCustomerNotifications(): Promise<CustomerNotificationsPayload> {
+  const payload = await requestJson<{ ok: true } & CustomerNotificationsPayload>(
     "/api/customer/notifications",
     {
       headers: getAuthHeaders(),
     },
   );
 
-  return payload.notifications;
+  return {
+    notifications: payload.notifications,
+    summary: payload.summary,
+  };
 }
 
 export async function markCustomerNotificationRead(notificationId: number): Promise<void> {
@@ -37,6 +50,16 @@ export async function markAllCustomerNotificationsRead(): Promise<void> {
     "/api/customer/notifications/read-all",
     {
       method: "PATCH",
+      headers: getAuthHeaders(),
+    },
+  );
+}
+
+export async function dismissCustomerNotification(notificationId: number): Promise<void> {
+  await requestJson<{ ok: true }>(
+    `/api/customer/notifications/${notificationId}`,
+    {
+      method: "DELETE",
       headers: getAuthHeaders(),
     },
   );

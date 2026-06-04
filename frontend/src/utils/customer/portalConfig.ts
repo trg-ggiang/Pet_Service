@@ -1,4 +1,4 @@
-import { AlertTriangle, Bell, Calendar, Info, Megaphone, Star, Stethoscope, Syringe } from "lucide-react";
+﻿import { AlertTriangle, Bell, Calendar, Info, Megaphone, Star, Stethoscope, Syringe } from "lucide-react";
 import type { CustomerAppointment } from "../../types/customer/appointments";
 import type { Apt, ServiceType } from "../../types/customer/portal";
 import type { CustomerNotification } from "../../types/customer/notifications";
@@ -13,7 +13,7 @@ const PET_COLOR_PRESETS = [
 ];
 
 export function getPetColorById(id: string) {
-  return PET_COLOR_PRESETS.find((c) => c.id === id) ?? PET_COLOR_PRESETS[0];
+  return PET_COLOR_PRESETS.find((color) => color.id === id) ?? PET_COLOR_PRESETS[0];
 }
 
 export const STATUS_CONFIG = {
