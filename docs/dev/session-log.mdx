@@ -1823,6 +1823,33 @@ Refactor staff role structure to match the doctor/customer feature layout and re
 
 Checks passed. The frontend build still reports the existing large chunk warning.
 
+## 2026-06-04 - Customer Appointment Modal Text Fix
+
+### Goal
+
+Fix the remaining broken Vietnamese text in the customer appointment modal.
+
+### Work Completed
+
+- Corrected mojibake labels in the provider assignment section.
+- Corrected doctor/staff selection labels and selected-state text.
+- Corrected the appointment request success message and appointment code label.
+- Re-ran the customer mojibake scan across customer frontend/backend files.
+
+### Files Changed
+
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg "�|Ã|Ä|Æ|Â|áº|á»|â€|ðŸ|H\\?|Chua|dang|M�|B�c|Nh�n|��|Cannot load" frontend/src/features/customer frontend/src/components/customer frontend/src/utils/customer frontend/src/services/customer frontend/src/services/customerNotifications.ts backend/src/services/customer backend/src/services/customerNotificationsService.js backend/src/routes/customerPetsRoutes.js -n`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
 ## 2026-06-04 - Customer Notification Text Fix
 
 ### Goal
