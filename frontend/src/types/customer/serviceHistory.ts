@@ -4,6 +4,8 @@ export type CustomerServiceHistoryType =
   | "grooming"
   | "boarding";
 
+export type CustomerServiceHistoryTypeFilter = CustomerServiceHistoryType | "all";
+
 export type CustomerServiceHistoryRecord = {
   id: string;
   invoiceId?: number;
@@ -24,4 +26,18 @@ export type CustomerServiceHistoryRecord = {
   type: CustomerServiceHistoryType;
   staff: string;
   details?: string;
+};
+
+export type CustomerServiceHistorySummary = {
+  total: number;
+  filtered: number;
+  typeCounts: Array<{
+    type: CustomerServiceHistoryTypeFilter;
+    count: number;
+  }>;
+};
+
+export type CustomerServiceHistoryListPayload = {
+  history: CustomerServiceHistoryRecord[];
+  summary: CustomerServiceHistorySummary;
 };

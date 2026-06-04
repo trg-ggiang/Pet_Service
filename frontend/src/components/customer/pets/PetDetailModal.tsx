@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Calendar as CalendarIcon, Check, CheckCircle2, ChevronLeft, ClipboardList, Download, Heart, Loader2, Pencil, Scissors, Syringe, X } from "lucide-react";
 import { downloadCustomerInvoicePdf } from "../../../services/customer/customerPetsApi";
 import type { PetDetail, PetSummary } from "../../../types/customer/pets";

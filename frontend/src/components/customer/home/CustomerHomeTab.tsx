@@ -1,15 +1,6 @@
-import { Calendar, ChevronRight, Clock, Heart, MapPin, Plus } from "lucide-react";
-import type { Apt, Pet } from "../../../types/customer/portal";
+﻿import { Calendar, ChevronRight, Clock, Heart, MapPin, Plus } from "lucide-react";
+import type { Apt, CustomerPortalNotification, Pet } from "../../../types/customer/portal";
 import { getNotifConfig, getPetColorById } from "../../../utils/customer/portalConfig";
-
-type NotificationView = {
-  id: number;
-  type: "high" | "medium" | "info" | "promo";
-  title: string;
-  desc: string;
-  time: string;
-  read: boolean;
-};
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -41,7 +32,7 @@ export function CustomerHomeTab({
   userName: string;
   apts: Apt[];
   pets: Pet[];
-  notifications: NotificationView[];
+  notifications: CustomerPortalNotification[];
   notificationsLoading: boolean;
   notificationsError: string;
   unreadCount: number;
@@ -50,7 +41,7 @@ export function CustomerHomeTab({
   onOpenPets: () => void;
   onOpenHistory: () => void;
   onOpenNotifications: () => void;
-  onNotificationClick: (notification: NotificationView) => void;
+  onNotificationClick: (notification: CustomerPortalNotification) => void;
 }) {
   return (
     <div className="grid grid-cols-6 gap-4 auto-rows-[88px]">

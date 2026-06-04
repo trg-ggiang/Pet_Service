@@ -64,3 +64,12 @@ export interface HistoryRecord {
   staff: string;
   details?: string;
 }
+
+export interface CustomerPortalNotification {
+  id: number;
+  type: "high" | "medium" | "info" | "promo";
+  title: string;
+  desc: string;
+  time: string;
+  read: boolean;
+}

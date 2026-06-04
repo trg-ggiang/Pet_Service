@@ -1,4 +1,4 @@
-import { BarChart3, Calendar, CheckCircle2, Download, Scissors, Stethoscope, Syringe, Users, XCircle, BedDouble } from "lucide-react";
+﻿import { BarChart3, Calendar, CheckCircle2, Download, Scissors, Stethoscope, Syringe, Users, XCircle, BedDouble } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { AdminReports } from "../../features/admin/services/admin";
 

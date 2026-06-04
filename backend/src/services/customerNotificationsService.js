@@ -21,7 +21,14 @@ async function listCustomerNotifications(userId) {
 
   if (error) throw new Error(error.message);
 
-  return data ?? [];
+  const notifications = data ?? [];
+  return {
+    notifications,
+    summary: {
+      total: notifications.length,
+      unreadCount: notifications.filter((notification) => !notification.is_read).length,
+    },
+  };
 }
 
 async function markCustomerNotificationRead(userId, notificationId) {
@@ -64,7 +71,36 @@ async function markAllCustomerNotificationsRead(userId) {
   if (error) throw new Error(error.message);
 }
 
+async function dismissCustomerNotification(userId, notificationId) {
+  const effectiveUserId = assertUserId(userId);
+  const effectiveNotificationId = Number(notificationId);
+
+  if (!Number.isFinite(effectiveNotificationId)) {
+    const error = new Error("Ma thong bao khong hop le");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("id", effectiveNotificationId)
+    .eq("user_id", effectiveUserId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    const errorNotFound = new Error("Khong tim thay thong bao");
+    errorNotFound.statusCode = 404;
+    throw errorNotFound;
+  }
+
+  return data;
+}
+
 module.exports = {
+  dismissCustomerNotification,
   listCustomerNotifications,
   markCustomerNotificationRead,
   markAllCustomerNotificationsRead,

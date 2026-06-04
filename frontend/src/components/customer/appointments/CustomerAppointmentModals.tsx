@@ -225,7 +225,7 @@ export function NewAppointmentModal({
               </div>
 
               <div>
-                <label className={LABEL_CLS}>Hệ thống phân công</label>
+                <label className={LABEL_CLS}>H? th?ng ph�n c�ng</label>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   {!form.date || !form.time ? (
                     <p className="text-sm font-semibold text-slate-500">Chọn ngày và khung giờ để hệ thống tìm người phụ trách.</p>
@@ -249,12 +249,12 @@ export function NewAppointmentModal({
                               <div className="min-w-0">
                                 <div className="text-sm font-bold text-slate-900">{provider.name}</div>
                                 <div className="mt-0.5 text-xs font-semibold text-slate-500">
-                                  {provider.role === "doctor" ? "Bác sĩ" : "Nhân viên"}
+                                  {provider.role === "doctor" ? "B�c si" : "Nh�n vi�n"}
                                   {provider.title ? ` · ${provider.title}` : ""}
                                 </div>
                               </div>
                               <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${selected ? "bg-cyan-500 text-white" : "bg-slate-100 text-slate-500"}`}>
-                                {selected ? "Đã chọn" : "Chọn"}
+                                {selected ? "�� ch?n" : "Ch?n"}
                               </span>
                             </div>
                             <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-semibold text-slate-500">
@@ -295,7 +295,7 @@ export function NewAppointmentModal({
               {[
                 { label: "Dịch vụ",   value: svc?.name ?? "" },
                 { label: "Thú cưng",  value: form.pet },
-                { label: selectedProvider?.role === "staff" ? "Nhân viên" : "Bác sĩ", value: selectedProvider?.name ?? "Chưa chọn" },
+                { label: selectedProvider?.role === "staff" ? "Nh�n vi�n" : "B�c si", value: selectedProvider?.name ?? "Chua ch?n" },
                 { label: "Ngày khám", value: form.date },
                 { label: "Giờ khám",  value: form.time },
                 { label: "Trạng thái", value: "Chờ xác nhận" },
@@ -319,10 +319,10 @@ export function NewAppointmentModal({
               <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mb-5 border-4 border-emerald-100">
                 <CheckCircle2 size={40} className="text-emerald-500" strokeWidth={2.5} />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Đã gửi yêu cầu đặt lịch</h3>
-              <p className="text-sm text-slate-500 mb-1">Lịch hẹn của bạn đang chờ trung tâm xác nhận.</p>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">�� g?i y�u c?u d?t l?ch</h3>
+              <p className="text-sm text-slate-500 mb-1">L?ch h?n c?a b?n dang ch? trung t�m x�c nh?n.</p>
               <div className="inline-flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-xl mt-4 mb-8">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mã lịch hẹn</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">M� l?ch h?n</span>
                 <span className="text-base font-bold text-cyan-600">{newAptId}</span>
               </div>
               <div className="space-y-3 w-full">
@@ -399,7 +399,7 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel }:
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">{apt.service}</h3>
-              <p className="text-sm text-slate-500 mt-0.5">Mã: {apt.id}</p>
+              <p className="text-sm text-slate-500 mt-0.5">M�: {apt.id}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

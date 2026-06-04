@@ -12,6 +12,7 @@ const {
   buildMatchingCustomerInvoicePdf,
 } = require("../services/invoicePdfService");
 const {
+  dismissCustomerNotification,
   listCustomerNotifications,
   markCustomerNotificationRead,
   markAllCustomerNotificationsRead,
@@ -20,12 +21,13 @@ const {
   listCustomerAppointmentOptions,
   listCustomerAppointmentProviders,
   listCustomerAppointments,
+  listCustomerAppointmentsView,
   createCustomerAppointment,
   rescheduleCustomerAppointment,
   cancelCustomerAppointment,
 } = require("../services/customer/customerAppointmentsService");
 const {
-  listCustomerServiceHistory,
+  listCustomerServiceHistoryView,
 } = require("../services/customer/customerServiceHistoryService");
 
 const router = express.Router();
@@ -81,8 +83,14 @@ router.post("/appointment-provider-options", async (req, res) => {
 
 router.get("/appointments", async (req, res) => {
   try {
-    const appointments = await listCustomerAppointments(req.auth.user.customerId);
-    res.json({ ok: true, appointments });
+    const result = await listCustomerAppointmentsView(req.auth.user.customerId, {
+      status: req.query.status,
+      pet: req.query.pet,
+      serviceType: req.query.serviceType,
+      page: req.query.page,
+      pageSize: req.query.pageSize,
+    });
+    res.json({ ok: true, ...result });
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
@@ -139,8 +147,10 @@ router.patch("/appointments/:appointmentId/cancel", async (req, res) => {
 
 router.get("/service-history", async (req, res) => {
   try {
-    const history = await listCustomerServiceHistory(req.auth.user.customerId);
-    res.json({ ok: true, history });
+    const result = await listCustomerServiceHistoryView(req.auth.user.customerId, {
+      type: req.query.type,
+    });
+    res.json({ ok: true, ...result });
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
@@ -162,12 +172,27 @@ router.post("/pets", async (req, res) => {
 
 router.get("/notifications", async (req, res) => {
   try {
-    const notifications = await listCustomerNotifications(req.auth.rawUser.id);
-    res.json({ ok: true, notifications });
+    const result = await listCustomerNotifications(req.auth.rawUser.id);
+    res.json({ ok: true, ...result });
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
       message: error.message || "Failed to load notifications",
+    });
+  }
+});
+
+router.delete("/notifications/:notificationId", async (req, res) => {
+  try {
+    await dismissCustomerNotification(
+      req.auth.rawUser.id,
+      req.params.notificationId,
+    );
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Failed to dismiss notification",
     });
   }
 });

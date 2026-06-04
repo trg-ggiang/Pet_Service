@@ -186,6 +186,44 @@ async function listCustomerServiceHistory(customerId) {
   });
 }
 
+const HISTORY_TYPES = ["medical", "vaccine", "grooming", "boarding"];
+
+function normalizeHistoryTypeFilter(type) {
+  if (type === "all" || type == null || type === "") return "all";
+  return HISTORY_TYPES.includes(type) ? type : "all";
+}
+
+function filterCustomerServiceHistory(history, filters = {}) {
+  const type = normalizeHistoryTypeFilter(filters.type);
+  if (type === "all") return history;
+  return history.filter((record) => record.type === type);
+}
+
+function buildCustomerServiceHistorySummary(history, filteredHistory) {
+  return {
+    total: history.length,
+    filtered: filteredHistory.length,
+    typeCounts: [
+      { type: "all", count: history.length },
+      ...HISTORY_TYPES.map((type) => ({
+        type,
+        count: history.filter((record) => record.type === type).length,
+      })),
+    ],
+  };
+}
+
+async function listCustomerServiceHistoryView(customerId, filters = {}) {
+  const history = await listCustomerServiceHistory(customerId);
+  const filteredHistory = filterCustomerServiceHistory(history, filters);
+
+  return {
+    history: filteredHistory,
+    summary: buildCustomerServiceHistorySummary(history, filteredHistory),
+  };
+}
+
 module.exports = {
   listCustomerServiceHistory,
+  listCustomerServiceHistoryView,
 };

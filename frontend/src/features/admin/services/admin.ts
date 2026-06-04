@@ -1,9 +1,17 @@
-import { requestJson } from "../../../utils/requestJson";
+﻿import { requestJson } from "../../../utils/requestJson";
 import { getAuthHeaders } from "../../../utils/authSession";
 
 type ApiOk<T> = { ok: true } & T;
 
 export type AdminUserRole = "customer" | "doctor" | "staff";
+
+export type AdminUserLockResult = {
+  id: string;
+  role: AdminUserRole;
+  locked: boolean;
+};
+
+export type AdminUsersTab = "customers" | "doctors" | "staff";
 
 export type AdminCustomer = {
   id: string;
@@ -56,6 +64,26 @@ export type AdminStaffUser = {
   tasksToday: number;
 };
 
+export type AdminUsersSummary = {
+  role: AdminUsersTab;
+  search: string;
+  totals: {
+    customers: number;
+    doctors: number;
+    staff: number;
+    locked: number;
+    activeDoctors: number;
+    activeStaff: number;
+    vipCustomers: number;
+  };
+  filtered: {
+    customers: number;
+    doctors: number;
+    staff: number;
+  };
+  tabs: Array<{ role: AdminUsersTab; label: string; count: number }>;
+};
+
 export type AdminService = {
   id: string;
   category: "clinic" | "vaccination" | "grooming" | "boarding";
@@ -72,6 +100,46 @@ export type AdminService = {
   tag?: string;
 };
 
+export type AdminServiceCategory = AdminService["category"];
+export type AdminServiceStatus = AdminService["status"];
+
+export type AdminServicePayload = {
+  category: AdminServiceCategory;
+  name: string;
+  description: string;
+  duration?: number;
+  durationUnit?: AdminService["durationUnit"];
+  pricingType?: AdminService["pricingType"];
+  basePrice: number;
+  variants?: AdminService["variants"];
+  status: AdminServiceStatus;
+  tag?: string;
+};
+
+export type AdminServiceSummary = {
+  total: number;
+  filtered: number;
+  totalActive: number;
+  totalBookings: number;
+  totalRevenueMonth: number;
+  totalRevenueMonthText: string;
+  topService: { name: string; bookingsMonth: number } | null;
+  categories: Array<{
+    category: AdminServiceCategory;
+    count: number;
+    activeCount: number;
+    revenueMonth: number;
+    revenueMonthText: string;
+  }>;
+  activeCategory: {
+    category: AdminServiceCategory;
+    count: number;
+    activeCount: number;
+    revenueMonth: number;
+    revenueMonthText: string;
+  };
+};
+
 export type AdminAppointment = {
   id: string;
   time: string;
@@ -85,6 +153,18 @@ export type AdminAppointment = {
   phone?: string;
   email?: string;
   notes?: string;
+};
+
+export type AdminAppointmentStatus = AdminAppointment["status"];
+
+export type AdminAppointmentSummary = {
+  total: number;
+  filtered: number;
+  totalAmount: number;
+  totalAmountText: string;
+  tabs: Array<{ status: AdminAppointmentStatus | "all"; label: string; count: number }>;
+  serviceOptions: string[];
+  staffOptions: string[];
 };
 
 export type AdminStaffMember = {
@@ -108,6 +188,25 @@ export type AdminStaffMember = {
   room?: string;
   licenseNo?: string;
   todayPatients?: number;
+};
+
+export type AdminStaffDepartment = AdminStaffMember["department"];
+export type AdminStaffStatusFilter = AdminStaffMember["workStatus"] | "all" | "locked";
+
+export type AdminStaffSummary = {
+  department: AdminStaffDepartment | "all";
+  status: AdminStaffStatusFilter;
+  search: string;
+  total: number;
+  filtered: number;
+  activeFiltered: number;
+  active: number;
+  onLeave: number;
+  probation: number;
+  locked: number;
+  avgPerf: number;
+  avgRating: string;
+  departments: Array<{ department: AdminStaffDepartment; count: number }>;
 };
 
 export type AdminDashboard = {
@@ -245,29 +344,94 @@ function adminGet<T>(url: string) {
   });
 }
 
+function adminPost<T>(url: string, body: unknown) {
+  return requestJson<ApiOk<T>>(url, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+function adminPatch<T>(url: string, body: unknown) {
+  return requestJson<ApiOk<T>>(url, {
+    method: "PATCH",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 export const adminService = {
   getDashboard() {
     return adminGet<{ dashboard: AdminDashboard }>("/api/admin/dashboard");
   },
 
-  listUsers() {
+  listUsers(params?: { role?: AdminUsersTab; search?: string }) {
+    const query = new URLSearchParams();
+    if (params?.role) query.set("role", params.role);
+    if (params?.search?.trim()) query.set("search", params.search.trim());
+    const suffix = query.toString() ? `?${query.toString()}` : "";
     return adminGet<{
       customers: AdminCustomer[];
       doctors: AdminDoctor[];
       staff: AdminStaffUser[];
-    }>("/api/admin/users");
+      summary: AdminUsersSummary;
+    }>(`/api/admin/users${suffix}`);
   },
 
-  listServices() {
-    return adminGet<{ services: AdminService[] }>("/api/admin/services");
+  updateUserLock(role: AdminUserRole, id: string, locked: boolean) {
+    return adminPatch<{ user: AdminUserLockResult }>(`/api/admin/users/${role}/${encodeURIComponent(id)}/lock`, { locked });
   },
 
-  listAppointments() {
-    return adminGet<{ appointments: AdminAppointment[] }>("/api/admin/appointments");
+  listServices(params?: { category?: AdminServiceCategory | "all"; status?: AdminServiceStatus | "all"; search?: string }) {
+    const query = new URLSearchParams();
+    if (params?.category) query.set("category", params.category);
+    if (params?.status && params.status !== "all") query.set("status", params.status);
+    if (params?.search?.trim()) query.set("search", params.search.trim());
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return adminGet<{ services: AdminService[]; summary: AdminServiceSummary }>(`/api/admin/services${suffix}`);
   },
 
-  listStaff() {
-    return adminGet<{ staff: AdminStaffMember[] }>("/api/admin/staff");
+  createService(payload: AdminServicePayload) {
+    return adminPost<{ service: AdminService }>("/api/admin/services", payload);
+  },
+
+  updateService(id: string, payload: AdminServicePayload) {
+    return adminPatch<{ service: AdminService }>(`/api/admin/services/${encodeURIComponent(id)}`, payload);
+  },
+
+  updateServiceStatus(id: string, status: AdminServiceStatus) {
+    return adminPatch<{ service: AdminService }>(`/api/admin/services/${encodeURIComponent(id)}/status`, { status });
+  },
+
+  listAppointments(params?: { status?: AdminAppointmentStatus | "all"; search?: string }) {
+    const query = new URLSearchParams();
+    if (params?.status && params.status !== "all") query.set("status", params.status);
+    if (params?.search?.trim()) query.set("search", params.search.trim());
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return adminGet<{ appointments: AdminAppointment[]; summary: AdminAppointmentSummary }>(`/api/admin/appointments${suffix}`);
+  },
+
+  updateAppointmentStatus(id: string, status: AdminAppointmentStatus) {
+    return adminPatch<{ appointment: AdminAppointment }>(`/api/admin/appointments/${encodeURIComponent(id)}/status`, { status });
+  },
+
+  listStaff(params?: { department?: AdminStaffDepartment | "all"; status?: AdminStaffStatusFilter; search?: string }) {
+    const query = new URLSearchParams();
+    if (params?.department) query.set("department", params.department);
+    if (params?.status && params.status !== "all") query.set("status", params.status);
+    if (params?.search?.trim()) query.set("search", params.search.trim());
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return adminGet<{ staff: AdminStaffMember[]; summary: AdminStaffSummary }>(`/api/admin/staff${suffix}`);
+  },
+
+  updateStaffLock(id: string, locked: boolean) {
+    return adminPatch<{ user: AdminUserLockResult }>(`/api/admin/staff/${encodeURIComponent(id)}/lock`, { locked });
   },
 
   getReports() {
