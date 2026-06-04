@@ -1823,6 +1823,32 @@ Refactor staff role structure to match the doctor/customer feature layout and re
 
 Checks passed. The frontend build still reports the existing large chunk warning.
 
+## 2026-06-04 - Customer Notification Text Fix
+
+### Goal
+
+Fix the broken Vietnamese text in the customer notification dropdown.
+
+### Work Completed
+
+- Corrected the dropdown action label from mojibake text to `Đánh dấu đã đọc`.
+- Updated two customer portal appointment fallback errors from English to Vietnamese.
+- Verified the customer notification/portal files no longer match the mojibake scan pattern.
+
+### Files Changed
+
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg "�|Ã|Ä|Æ|Â|áº|á»|â€|ðŸ|Cannot load" frontend/src/features/customer/pages/CustomerPortal.tsx frontend/src/components/customer/notifications frontend/src/utils/customer/portalConfig.ts frontend/src/services/customerNotifications.ts backend/src/services/customerNotificationsService.js -n`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
 ## 2026-06-04 - Admin Staff Backend Filtering Step 3
 
 ### Goal

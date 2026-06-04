@@ -170,7 +170,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         setAppointmentPagination(payload.pagination);
       } catch (error) {
         if (!ignore) {
-          setAppointmentsError(error instanceof Error ? error.message : "Cannot load appointments.");
+          setAppointmentsError(error instanceof Error ? error.message : "Không thể tải lịch hẹn.");
           setAppointmentRows([]);
           setAppointmentSummary({ total: 0, filtered: 0, statusCounts: [], petOptions: [], serviceTypeOptions: [] });
           setAppointmentPagination({ page: 1, pageSize: appointmentsPageSize, pageCount: 1, total: 0, from: 0, to: 0 });
@@ -305,7 +305,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         if (!ignore) setAppointmentOptions(options);
       } catch (error) {
         if (!ignore) {
-          setAppointmentsError(error instanceof Error ? error.message : "Cannot load appointments.");
+          setAppointmentsError(error instanceof Error ? error.message : "Không thể tải lịch hẹn.");
           setApts([]);
         }
       } finally {
@@ -360,7 +360,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => void markAllRead()} className="text-[12px] text-cyan-600 font-semibold hover:underline">��nh d?u d� d?c</button>
+                      <button onClick={() => void markAllRead()} className="text-[12px] text-cyan-600 font-semibold hover:underline">Đánh dấu đã đọc</button>
                       <button onClick={() => { setShowNotifDropdown(false); setTab("notifications"); }} className="text-[12px] text-slate-500 font-semibold hover:text-slate-700">Xem tất cả</button>
                     </div>
                   </div>
