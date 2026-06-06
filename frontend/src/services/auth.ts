@@ -75,3 +75,24 @@ export async function restoreSession() {
     return null;
   }
 }
+
+export async function requestPasswordReset(email: string) {
+  return requestJson<{ ok: true; devCode?: string }>("/api/auth/forgot-password/request", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyPasswordResetCode(email: string, code: string) {
+  return requestJson<{ ok: true }>("/api/auth/forgot-password/verify", {
+    method: "POST",
+    body: JSON.stringify({ email, code }),
+  });
+}
+
+export async function resetPassword(email: string, code: string, password: string) {
+  return requestJson<{ ok: true }>("/api/auth/forgot-password/reset", {
+    method: "POST",
+    body: JSON.stringify({ email, code, password }),
+  });
+}

@@ -1823,6 +1823,78 @@ Refactor staff role structure to match the doctor/customer feature layout and re
 
 Checks passed. The frontend build still reports the existing large chunk warning.
 
+## 2026-06-06 - Full FE-BE-DB Consistency Remediation
+
+### Goal
+
+Fix the project-wide audit findings around frontend-only logic, sample data, runtime logic, and inconsistent FE/BE/DB structure.
+
+### Work Completed
+
+- Replaced the simulated forgot-password flow with persisted, expiring, hashed OTP records and backend reset APIs.
+- Blocked authenticated requests from locked or deleted users and invalidated existing JWT sessions after password reset.
+- Removed the duplicate legacy customer appointment route, service, and frontend client.
+- Added schedule release, provider collision checks, rollback handling, and staff ownership checks.
+- Persisted admin and doctor settings through `app_settings`.
+- Moved staff portal KPI summary calculation to the backend.
+- Removed the unused frontend Supabase client and browser Supabase configuration.
+- Rebuilt `App.tsx` without embedded mock dashboard datasets.
+- Removed the non-persisting admin exam screen from the admin workflow.
+- Added Prisma models and migration for settings and password reset tokens.
+- Upgraded React Router and Vite to patched releases after the dependency audit reported high-severity advisories.
+
+### Verification
+
+- `npm --prefix frontend run build`
+- `npm --prefix frontend run lint`
+- Backend JavaScript syntax checks
+- `npm --prefix backend run prisma:generate`
+- `npx prisma validate --schema prisma/schema.prisma`
+- `npm run docs:check`
+- `npm --prefix frontend audit --omit=dev --audit-level=high`
+- `npm --prefix backend run email:reminders`
+- Admin email-template GET/PUT API checks
+
+### Result
+
+The main role workflows now follow the FE service -> Express API -> database path. Apply the new migration before using settings and password-reset APIs.
+
+### Deployment Follow-up
+
+- Applied all pending Prisma migrations to the configured PostgreSQL database with `npx prisma migrate deploy`.
+- Verified `/api/auth/login` and authenticated `/api/auth/me` return successful responses with a newly issued JWT.
+- Removed the duplicate logout action from admin settings and added a collapsible admin sidebar with a hamburger toggle.
+- Replaced the password-reset email webhook requirement with Gmail SMTP delivery configured by `SMTP_USER` and `SMTP_APP_PASSWORD`.
+- Added shared transactional email templates, admin template editing/test APIs and UI, event-driven appointment/exam/payment/boarding emails, and a deduplicated reminder job for appointments, follow-ups, and vaccinations.
+
+## 2026-06-06 - Understand Anything Graph Refresh
+
+### Goal
+
+Refresh the repository knowledge graph after the role-based frontend and backend API expansion.
+
+### Work Completed
+
+- Re-scanned the full repository with Understand Anything.
+- Rebuilt deterministic file, function, class, and import relationships.
+- Split frontend architecture layers by admin, auth, customer, doctor, staff, and shared ownership.
+- Regenerated the guided tour, validation report, fingerprints, and graph metadata.
+
+### Files Changed
+
+- `.understand-anything/knowledge-graph.json`
+- `.understand-anything/fingerprints.json`
+- `.understand-anything/meta.json`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Understand Anything deterministic graph validation
+
+### Result
+
+Knowledge graph validation passed with no dangling references.
+
 ## 2026-06-04 - Customer Appointment Modal Text Fix
 
 ### Goal

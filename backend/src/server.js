@@ -5,13 +5,13 @@ const cors = require("cors");
 const { isSupabaseConfigured } = require("./lib/supabaseClient");
 const authRoutes = require("./routes/authRoutes");
 const customerPetsRoutes = require("./routes/customerPetsRoutes");
-const customerAppointmentRoutes = require("./routes/customerAppointmentRoutes");
 const customerServicesRoutes = require("./routes/customerServicesRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const doctorAppointmentRoutes = require("./routes/doctorAppointmentRoutes");
 const doctorProfileRoutes = require("./routes/doctorProfileRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const { isPrismaConfigured } = require("./lib/prisma");
+const { runEmailReminders } = require("./scripts/sendEmailReminders");
 
 const app = express();
 const port = process.env.PORT || 5050;
@@ -39,7 +39,6 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/customer", customerPetsRoutes);
-app.use("/api/customer/appointments", customerAppointmentRoutes);
 app.use("/api/customer/services", customerServicesRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/doctor/appointments", doctorAppointmentRoutes);
@@ -66,6 +65,15 @@ if (require.main === module) {
   app.listen(port, () => {
     console.log(`Backend running on http://localhost:${port}`);
   });
+
+  const reminderIntervalMinutes = Number(process.env.EMAIL_REMINDER_INTERVAL_MINUTES || 0);
+  if (Number.isFinite(reminderIntervalMinutes) && reminderIntervalMinutes > 0) {
+    const intervalMs = reminderIntervalMinutes * 60 * 1000;
+    const runReminders = () => runEmailReminders().catch((error) => console.error("[EMAIL] Reminder scheduler failed:", error));
+    setTimeout(runReminders, 5_000);
+    setInterval(runReminders, intervalMs);
+    console.log(`[EMAIL] Reminder scheduler enabled every ${reminderIntervalMinutes} minute(s).`);
+  }
 }
 
 module.exports = app;

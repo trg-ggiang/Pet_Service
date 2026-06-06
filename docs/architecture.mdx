@@ -37,7 +37,7 @@ Current route groups:
 
 ## Data
 
-Prisma schema is in `backend/prisma/schema.prisma`. The database provider is PostgreSQL. Supabase is used through `@supabase/supabase-js` where configured.
+Prisma schema is in `backend/prisma/schema.prisma`. The database provider is PostgreSQL. The browser does not access Supabase directly; all database access flows through the Express backend and its server-side Supabase client.
 
 ## AI Architecture Maintenance
 

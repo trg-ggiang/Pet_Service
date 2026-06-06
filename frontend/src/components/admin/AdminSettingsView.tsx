@@ -1,13 +1,14 @@
-﻿import { Bell, Building2, Check, CreditCard, Eye, EyeOff, LogOut, Save, Shield, User } from "lucide-react";
+﻿import { Bell, Building2, Check, CreditCard, Eye, EyeOff, Mail, Save, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { AdminSettings } from "../../features/admin/services/admin";
+import type { AdminEmailTemplates, AdminSettings } from "../../features/admin/services/admin";
 
-type Tab = "clinic" | "account" | "notifications" | "payment" | "security";
+type Tab = "clinic" | "account" | "notifications" | "emailTemplates" | "payment" | "security";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "clinic", label: "Phòng khám", icon: Building2 },
   { id: "account", label: "Tài khoản", icon: User },
   { id: "notifications", label: "Thông báo", icon: Bell },
+  { id: "emailTemplates", label: "Mẫu email", icon: Mail },
   { id: "payment", label: "Thanh toán", icon: CreditCard },
   { id: "security", label: "Bảo mật", icon: Shield },
 ];
@@ -16,14 +17,20 @@ const DESCRIPTIONS: Record<Tab, string> = {
   clinic: "Thông tin và cấu hình cơ bản của phòng khám",
   account: "Thông tin tài khoản cá nhân và mật khẩu",
   notifications: "Quản lý các loại thông báo qua email, SMS và trong ứng dụng",
+  emailTemplates: "Tùy chỉnh tiêu đề và nội dung email tự động",
   payment: "Cấu hình phương thức thanh toán và thông tin ngân hàng",
   security: "Bảo mật tài khoản và quản lý phiên đăng nhập",
 };
 
 const NOTIFICATION_LABELS: Record<string, { label: string; desc: string; group: string }> = {
-  emailNewAppt: { label: "Lịch hẹn mới", desc: "Email khi khách hàng đặt lịch", group: "Email" },
+  emailNewAppt: { label: "Xác nhận đặt lịch", desc: "Email khi khách hàng đặt lịch", group: "Email" },
   emailCancelAppt: { label: "Hủy lịch hẹn", desc: "Email khi lịch bị hủy", group: "Email" },
   emailReminder: { label: "Nhắc lịch hẹn", desc: "Email nhắc trước lịch hẹn", group: "Email" },
+  emailExamResult: { label: "Kết quả khám", desc: "Email khi kết quả khám được hoàn tất", group: "Email" },
+  emailPaymentConfirmation: { label: "Xác nhận thanh toán", desc: "Email sau khi thanh toán thành công", group: "Email" },
+  emailFollowUpReminder: { label: "Nhắc tái khám", desc: "Email trước ngày tái khám", group: "Email" },
+  emailVaccinationReminder: { label: "Nhắc tiêm chủng", desc: "Email trước ngày đến hạn vaccine", group: "Email" },
+  emailBoardingUpdate: { label: "Cập nhật lưu trú", desc: "Email khi nhân viên cập nhật chăm sóc lưu trú", group: "Email" },
   smsNewAppt: { label: "Lịch hẹn mới", desc: "SMS xác nhận cho khách hàng", group: "SMS" },
   smsReminder: { label: "Nhắc lịch", desc: "SMS nhắc trước lịch hẹn", group: "SMS" },
   smsCancelAppt: { label: "Hủy lịch", desc: "SMS khi lịch bị hủy", group: "SMS" },
@@ -34,6 +41,18 @@ const NOTIFICATION_LABELS: Record<string, { label: string; desc: string; group: 
   monthlyReport: { label: "Báo cáo tháng", desc: "Gửi báo cáo định kỳ", group: "Báo cáo" },
   lowInventory: { label: "Tồn kho thấp", desc: "Khi vật tư sắp hết", group: "Cảnh báo" },
   vaccineExpiry: { label: "Vaccine sắp đến hạn", desc: "Nhắc tiêm nhắc lại", group: "Cảnh báo" },
+};
+
+const EMAIL_TEMPLATE_LABELS: Record<string, string> = {
+  password_reset: "Đặt lại mật khẩu",
+  appointment_confirmation: "Xác nhận đặt lịch",
+  appointment_reminder: "Nhắc lịch hẹn",
+  exam_result: "Kết quả khám",
+  payment_confirmation: "Xác nhận thanh toán",
+  follow_up_reminder: "Nhắc tái khám",
+  vaccination_reminder: "Nhắc tiêm chủng",
+  boarding_update: "Cập nhật lưu trú",
+  custom: "Template tùy chỉnh",
 };
 
 function Field({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
@@ -79,26 +98,41 @@ function SaveButton({ saved, onClick }: { saved: boolean; onClick: () => void })
 
 export function AdminSettingsView({
   settings,
+  emailTemplates,
   loading,
   error,
-  onLogout,
+  onSave,
+  onSaveEmailTemplates,
+  onSendTestEmail,
 }: {
   settings: AdminSettings | null;
+  emailTemplates: AdminEmailTemplates | null;
   loading: boolean;
   error: string;
-  onLogout?: () => void;
+  onSave: (settings: AdminSettings) => Promise<void>;
+  onSaveEmailTemplates: (templates: AdminEmailTemplates) => Promise<void>;
+  onSendTestEmail: (input: { to: string; subject: string; heading: string; message: string }) => Promise<void>;
 }) {
   const [tab, setTab] = useState<Tab>("clinic");
   const [draft, setDraft] = useState<AdminSettings | null>(settings);
+  const [templateDraft, setTemplateDraft] = useState<AdminEmailTemplates | null>(emailTemplates);
   const [saved, setSaved] = useState(false);
+  const [templateSaved, setTemplateSaved] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testStatus, setTestStatus] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     setDraft(settings);
   }, [settings]);
 
-  function saveLocal() {
+  useEffect(() => {
+    setTemplateDraft(emailTemplates);
+  }, [emailTemplates]);
+
+  async function saveLocal() {
+    if (!draft) return;
+    await onSave(draft);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2000);
   }
@@ -132,6 +166,33 @@ export function AdminSettingsView({
       security: { ...current.security, twoFactorEnabled: !current.security.twoFactorEnabled },
     });
     setSaved(false);
+  }
+
+  function setTemplateField(key: string, field: "subject" | "heading" | "message", value: string) {
+    setTemplateDraft((current) => current && ({
+      ...current,
+      [key]: { ...current[key], [field]: value },
+    }));
+    setTemplateSaved(false);
+  }
+
+  async function saveTemplates() {
+    if (!templateDraft) return;
+    await onSaveEmailTemplates(templateDraft);
+    setTemplateSaved(true);
+    window.setTimeout(() => setTemplateSaved(false), 2000);
+  }
+
+  async function sendTest() {
+    const template = templateDraft?.custom;
+    if (!template || !testEmail.trim()) return;
+    setTestStatus("Đang gửi...");
+    try {
+      await onSendTestEmail({ to: testEmail, ...template });
+      setTestStatus("Đã gửi email thử.");
+    } catch (sendError) {
+      setTestStatus(sendError instanceof Error ? sendError.message : "Không thể gửi email thử.");
+    }
   }
 
   const content = () => {
@@ -211,6 +272,36 @@ export function AdminSettingsView({
       );
     }
 
+    if (tab === "emailTemplates") {
+      if (!templateDraft) return <div className="py-8 text-center text-sm text-muted-foreground">Đang tải mẫu email...</div>;
+      return (
+        <div className="space-y-5">
+          <p className="rounded-xl bg-cyan-50 px-4 py-3 text-xs leading-relaxed text-cyan-800">
+            Có thể dùng biến như {"{{petName}}"}, {"{{appointmentDate}}"}, {"{{appointmentTime}}"}, {"{{amount}}"} trong nội dung.
+          </p>
+          {Object.entries(templateDraft).map(([key, template]) => (
+            <div key={key} className="rounded-xl border border-border p-4">
+              <h3 className="mb-3 text-sm font-bold text-foreground">{EMAIL_TEMPLATE_LABELS[key] || key}</h3>
+              <div className="space-y-3">
+                <input value={template.subject} onChange={(event) => setTemplateField(key, "subject", event.target.value)} placeholder="Tiêu đề email" className="h-9 w-full rounded-xl border border-border px-3 text-sm" />
+                <input value={template.heading} onChange={(event) => setTemplateField(key, "heading", event.target.value)} placeholder="Tiêu đề nội dung" className="h-9 w-full rounded-xl border border-border px-3 text-sm" />
+                <textarea value={template.message} onChange={(event) => setTemplateField(key, "message", event.target.value)} placeholder="Nội dung email" rows={3} className="w-full rounded-xl border border-border px-3 py-2 text-sm" />
+              </div>
+            </div>
+          ))}
+          <div className="rounded-xl border border-border p-4">
+            <h3 className="mb-3 text-sm font-bold text-foreground">Gửi thử template tùy chỉnh</h3>
+            <div className="flex gap-2">
+              <input type="email" value={testEmail} onChange={(event) => setTestEmail(event.target.value)} placeholder="email@example.com" className="h-9 flex-1 rounded-xl border border-border px-3 text-sm" />
+              <button onClick={sendTest} className="h-9 rounded-xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-bold text-cyan-700">Gửi thử</button>
+            </div>
+            {testStatus && <p className="mt-2 text-xs text-muted-foreground">{testStatus}</p>}
+          </div>
+          <SaveButton saved={templateSaved} onClick={saveTemplates} />
+        </div>
+      );
+    }
+
     if (tab === "payment") {
       return (
         <div>
@@ -257,20 +348,6 @@ export function AdminSettingsView({
 
   return (
     <div className="space-y-6">
-      {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={() => setConfirmOpen(false)} />
-          <div className="relative mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="text-center text-base font-bold text-foreground">Xác nhận đăng xuất</h3>
-            <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">Phiên làm việc hiện tại sẽ kết thúc.</p>
-            <div className="mt-5 flex gap-3">
-              <button onClick={() => setConfirmOpen(false)} className="h-10 flex-1 rounded-xl border border-border text-sm font-semibold hover:bg-muted">Hủy</button>
-              <button onClick={() => { setConfirmOpen(false); onLogout?.(); }} className="h-10 flex-1 rounded-xl bg-red-500 text-sm font-bold text-white hover:bg-red-600">Đăng xuất</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div>
         <h1 className="text-xl font-bold text-foreground tracking-tight">Cài đặt</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Dữ liệu cấu hình được lấy từ backend</p>
@@ -290,12 +367,6 @@ export function AdminSettingsView({
                 </button>
               ))}
             </nav>
-            <div className="mt-4 border-t border-border pt-4">
-              <button onClick={() => setConfirmOpen(true)} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-50 hover:text-red-600">
-                <LogOut size={16} />
-                Đăng xuất
-              </button>
-            </div>
           </aside>
 
           <div className="flex-1 rounded-2xl border border-border bg-white px-8 py-6">

@@ -10,9 +10,11 @@ description: "Frontend structure, commands, and conventions."
 - TypeScript
 - Tailwind CSS
 - Radix UI and MUI
-- Supabase browser client
+- Express API service clients
 
 ## Structure
+
+The frontend does not access Supabase directly. Data and mutations flow through frontend service modules into the Express API. `App.tsx` owns role routing and navigation only; role data belongs to backend-backed feature pages.
 
 ```text
 frontend/
@@ -65,13 +67,10 @@ npm --prefix frontend run lint
 
 ## Environment
 
-Frontend Supabase variables are read from `NEXT_PUBLIC_*` first, with `VITE_*` fallback:
+The frontend only needs the backend API URL when it is not using the local Vite proxy:
 
 ```text
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-VITE_SUPABASE_URL=
-VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_API_URL=
 ```
 
 ## API Access
@@ -115,7 +114,7 @@ Auth pages keep page-level state and submit handlers under `frontend/src/feature
 
 - Login, register, splash, welcome, and forgot-password UI sections live under `frontend/src/components/auth/`.
 - Auth page files should remain thin containers for local form state, validation, and service callbacks.
-- Login and register submit through the backend-backed helpers in `frontend/src/services/auth.ts`; forgot-password currently remains a local mock flow until a reset-password API is added.
+- Login, register, and forgot-password submit through the backend-backed helpers in `frontend/src/services/auth.ts`.
 
 ## Customer Portal UX Notes
 

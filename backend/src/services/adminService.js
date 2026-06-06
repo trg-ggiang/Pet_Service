@@ -1,5 +1,7 @@
 ﻿const { supabase } = require("../lib/supabaseClient");
 
+const { getStoredSetting, saveStoredSetting } = require("./settingsService");
+
 function normalizeRole(role) {
   return String(role || "").toLowerCase();
 }
@@ -1072,7 +1074,7 @@ async function getAdminSettings(authUser) {
   const adminName = authUser?.fullName || authUser?.email || "Quản trị viên";
   const adminEmail = authUser?.email || "";
 
-  return {
+  const defaults = {
     clinic: {
       name: process.env.CLINIC_NAME || "Pet Service",
       address: process.env.CLINIC_ADDRESS || "",
@@ -1095,6 +1097,11 @@ async function getAdminSettings(authUser) {
       emailNewAppt: true,
       emailCancelAppt: true,
       emailReminder: true,
+      emailExamResult: true,
+      emailPaymentConfirmation: true,
+      emailFollowUpReminder: true,
+      emailVaccinationReminder: true,
+      emailBoardingUpdate: true,
       smsNewAppt: false,
       smsReminder: false,
       smsCancelAppt: false,
@@ -1126,6 +1133,32 @@ async function getAdminSettings(authUser) {
       ],
     },
   };
+  const stored = await getStoredSetting("admin.settings");
+  if (!stored) return defaults;
+  return {
+    ...defaults,
+    ...stored,
+    clinic: { ...defaults.clinic, ...stored.clinic },
+    account: { ...defaults.account, ...stored.account, initials: initials(stored.account?.name || adminName) },
+    notifications: { ...defaults.notifications, ...stored.notifications },
+    payment: { ...defaults.payment, ...stored.payment },
+    security: { ...defaults.security, ...stored.security },
+  };
+}
+
+async function updateAdminSettings(input, authUser) {
+  const current = await getAdminSettings(authUser);
+  const next = {
+    ...current,
+    ...input,
+    clinic: { ...current.clinic, ...(input?.clinic || {}) },
+    account: { ...current.account, ...(input?.account || {}) },
+    notifications: { ...current.notifications, ...(input?.notifications || {}) },
+    payment: { ...current.payment, ...(input?.payment || {}) },
+    security: { ...current.security, ...(input?.security || {}) },
+  };
+  next.account.initials = initials(next.account.name);
+  return saveStoredSetting("admin.settings", next);
 }
 
 async function getAdminExamContext() {
@@ -1142,8 +1175,8 @@ async function getAdminExamContext() {
           id,
           name,
           gender,
-          date_of_birth,
-          weight_kg,
+          dob,
+          weight,
           animal_species:species_id(name),
           breed:breed_id(name),
           customer:customers(full_name, phone)
@@ -1210,7 +1243,7 @@ async function getAdminExamContext() {
       species: pet.animal_species?.name || "",
       breed: pet.breed?.name || "",
       gender: pet.gender || "",
-      weightKg: pet.weight_kg ? String(pet.weight_kg) : "",
+      weightKg: pet.weight ? String(pet.weight) : "",
       owner: pet.customer?.full_name || "",
       phone: pet.customer?.phone || "",
       service,
@@ -1244,9 +1277,9 @@ async function getAdminExamContext() {
 module.exports = {
   createAdminService,
   getAdminDashboard,
-  getAdminExamContext,
   getAdminReports,
   getAdminSettings,
+  updateAdminSettings,
   listAdminAppointments,
   listAdminServices,
   listAdminStaff,

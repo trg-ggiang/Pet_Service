@@ -1,8 +1,8 @@
 {
-    "lastAnalyzedAt":  "2026-05-27T06:36:02.3984907Z",
-    "gitCommitHash":  "97ebc00d343ca73ac84be681ddbbfc2185d0d3dc",
+    "lastAnalyzedAt":  "2026-06-06T07:54:32.9509093Z",
+    "gitCommitHash":  "b6367510d422c68ac99facd18e92bc7f6779f726",
     "version":  "1.0.0",
-    "analyzedFiles":  160,
+    "analyzedFiles":  256,
     "mode":  "deterministic-structure",
-    "notes":  "Generated via Understand deterministic scan/import/structure scripts without LLM subagent descriptions."
+    "notes":  "Refreshed via Understand deterministic scan/import/structure scripts."
 }

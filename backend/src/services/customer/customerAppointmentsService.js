@@ -1,4 +1,5 @@
 ﻿const { supabase } = require("../../lib/supabaseClient");
+const { sendAppointmentEventEmail } = require("../emailService");
 
 const SERVICE_TYPE_UI = {
   MEDICAL: "Khám bệnh",
@@ -425,7 +426,7 @@ async function resolveServiceById(serviceId) {
   return data ?? null;
 }
 
-async function findDoctorAssignment(date, time, { doctorId = null } = {}) {
+async function findDoctorAssignment(date, time, { doctorId = null, excludeAppointmentId = null } = {}) {
   const normalizedDate = normalizeDate(date);
   const normalizedTime = normalizeTime(time);
   if (!normalizedDate || !normalizedTime) {
@@ -442,14 +443,19 @@ async function findDoctorAssignment(date, time, { doctorId = null } = {}) {
   }
 
   if (await hasRequestedSlotColumns()) {
-    const busyAppointments = await supabase
+    let busyAppointmentsQuery = supabase
       .from("appointments")
       .select("id")
       .eq("doctor_id", selectedDoctorId)
       .eq("requested_date", normalizedDate)
       .eq("requested_time", normalizedTime)
-      .not("status", "in", "(CANCELLED,NO_SHOW)")
-      .limit(1);
+      .not("status", "in", "(CANCELLED,NO_SHOW)");
+
+    if (excludeAppointmentId) {
+      busyAppointmentsQuery = busyAppointmentsQuery.neq("id", excludeAppointmentId);
+    }
+
+    const busyAppointments = await busyAppointmentsQuery.limit(1);
 
     if (busyAppointments.error) throw new Error(busyAppointments.error.message);
     if ((busyAppointments.data ?? []).length > 0) {
@@ -484,12 +490,12 @@ async function findDoctorAssignment(date, time, { doctorId = null } = {}) {
     role: "doctor",
     id: availableSchedule.data.doctor_id,
     name: availableSchedule.data.doctor?.full_name ?? "Bác sĩ",
-    scheduleId: null,
+    scheduleId: availableSchedule.data.id,
     room: availableSchedule.data.room_name ?? undefined,
   };
 }
 
-async function findStaffAssignment(date, time, { staffId = null } = {}) {
+async function findStaffAssignment(date, time, { staffId = null, excludeAppointmentId = null } = {}) {
   const normalizedDate = normalizeDate(date);
   const normalizedTime = normalizeTime(time);
   if (!normalizedDate || !normalizedTime) {
@@ -517,6 +523,28 @@ async function findStaffAssignment(date, time, { staffId = null } = {}) {
     const error = new Error("Không tìm thấy nhân viên.");
     error.statusCode = 409;
     throw error;
+  }
+
+  if (await hasRequestedSlotColumns()) {
+    let busyAppointmentsQuery = supabase
+      .from("appointments")
+      .select("id")
+      .eq("staff_id", selectedStaffId)
+      .eq("requested_date", normalizedDate)
+      .eq("requested_time", normalizedTime)
+      .not("status", "in", "(CANCELLED,NO_SHOW)");
+
+    if (excludeAppointmentId) {
+      busyAppointmentsQuery = busyAppointmentsQuery.neq("id", excludeAppointmentId);
+    }
+
+    const busyAppointments = await busyAppointmentsQuery.limit(1);
+    if (busyAppointments.error) throw new Error(busyAppointments.error.message);
+    if ((busyAppointments.data ?? []).length > 0) {
+      const error = new Error("Nhân viên đã có lịch hẹn trong khung giờ này.");
+      error.statusCode = 409;
+      throw error;
+    }
   }
 
   return {
@@ -705,6 +733,22 @@ async function createCustomerAppointment(input, customerId) {
 
   if (error) throw new Error(error.message);
 
+  if (assignment.scheduleId) {
+    const scheduleUpdate = await supabase
+      .from("doctor_schedules")
+      .update({ status: "BOOKED", updated_at: new Date().toISOString() })
+      .eq("id", assignment.scheduleId)
+      .eq("status", "AVAILABLE")
+      .select("id")
+      .maybeSingle();
+    if (scheduleUpdate.error || !scheduleUpdate.data) {
+      await supabase.from("appointments").delete().eq("id", appointment.id);
+      const scheduleError = new Error(scheduleUpdate.error?.message || "Ca làm việc của bác sĩ vừa được đặt.");
+      scheduleError.statusCode = 409;
+      throw scheduleError;
+    }
+  }
+
   if (service?.id) {
     const item = await supabase.from("appointment_services").insert({
       appointment_id: appointment.id,
@@ -714,9 +758,16 @@ async function createCustomerAppointment(input, customerId) {
       status: "PENDING",
     });
 
-    if (item.error) throw new Error(item.error.message);
+    if (item.error) {
+      await supabase.from("appointments").delete().eq("id", appointment.id);
+      if (assignment.scheduleId) {
+        await supabase.from("doctor_schedules").update({ status: "AVAILABLE" }).eq("id", assignment.scheduleId);
+      }
+      throw new Error(item.error.message);
+    }
   }
 
+  await sendAppointmentEventEmail("appointment_confirmation", appointment.id);
   return getOneCustomerAppointment(appointment.id, effectiveCustomerId);
 }
 
@@ -752,18 +803,10 @@ async function rescheduleCustomerAppointment(appointmentCode, input, customerId)
 
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
 
-  if (appointment.doctor_schedule_id) {
-    const updated = await supabase
-      .from("doctor_schedules")
-      .update({
-        work_date: requestedDate,
-        start_time: requestedTime,
-        end_time: addMinutes(requestedTime, 30),
-        status: "BOOKED",
-      })
-      .eq("id", appointment.doctor_schedule_id);
-
-    if (updated.error) throw new Error(updated.error.message);
+  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
+    const invalidStatus = new Error("Chỉ có thể đổi lịch hẹn đang chờ hoặc đã xác nhận.");
+    invalidStatus.statusCode = 409;
+    throw invalidStatus;
   }
 
   if (!(await hasRequestedSlotColumns())) {
@@ -771,10 +814,25 @@ async function rescheduleCustomerAppointment(appointmentCode, input, customerId)
     missingSlots.statusCode = 500;
     throw missingSlots;
   }
+
+  let newDoctorAssignment = null;
+  if (appointment.doctor_id) {
+    newDoctorAssignment = await findDoctorAssignment(requestedDate, requestedTime, {
+      doctorId: appointment.doctor_id,
+      excludeAppointmentId: appointment.id,
+    });
+  } else if (appointment.staff_id) {
+    await findStaffAssignment(requestedDate, requestedTime, {
+      staffId: appointment.staff_id,
+      excludeAppointmentId: appointment.id,
+    });
+  }
+
   const updatePayload = {
     updated_at: new Date().toISOString(),
     requested_date: requestedDate,
     requested_time: requestedTime,
+    ...(newDoctorAssignment ? { doctor_schedule_id: newDoctorAssignment.scheduleId } : {}),
   };
 
   const updatedAppointment = await supabase
@@ -783,6 +841,22 @@ async function rescheduleCustomerAppointment(appointmentCode, input, customerId)
     .eq("id", appointment.id);
 
   if (updatedAppointment.error) throw new Error(updatedAppointment.error.message);
+
+  if (newDoctorAssignment?.scheduleId && newDoctorAssignment.scheduleId !== appointment.doctor_schedule_id) {
+    const newScheduleUpdate = await supabase
+      .from("doctor_schedules")
+      .update({ status: "BOOKED", updated_at: new Date().toISOString() })
+      .eq("id", newDoctorAssignment.scheduleId);
+    if (newScheduleUpdate.error) throw new Error(newScheduleUpdate.error.message);
+
+    if (appointment.doctor_schedule_id) {
+      const oldScheduleUpdate = await supabase
+        .from("doctor_schedules")
+        .update({ status: "AVAILABLE", updated_at: new Date().toISOString() })
+        .eq("id", appointment.doctor_schedule_id);
+      if (oldScheduleUpdate.error) throw new Error(oldScheduleUpdate.error.message);
+    }
+  }
 
   return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
 }
@@ -793,7 +867,7 @@ async function cancelCustomerAppointment(appointmentCode, customerId) {
 
   const { data: appointment, error } = await supabase
     .from("appointments")
-    .select("id, pet_id")
+    .select("id, pet_id, doctor_schedule_id, status")
     .eq("id", appointmentId)
     .maybeSingle();
 
@@ -806,6 +880,12 @@ async function cancelCustomerAppointment(appointmentCode, customerId) {
 
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
 
+  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
+    const invalidStatus = new Error("Chỉ có thể hủy lịch hẹn đang chờ hoặc đã xác nhận.");
+    invalidStatus.statusCode = 409;
+    throw invalidStatus;
+  }
+
   const updated = await supabase
     .from("appointments")
     .update({
@@ -816,6 +896,14 @@ async function cancelCustomerAppointment(appointmentCode, customerId) {
     .eq("id", appointmentId);
 
   if (updated.error) throw new Error(updated.error.message);
+
+  if (appointment.doctor_schedule_id) {
+    const scheduleUpdate = await supabase
+      .from("doctor_schedules")
+      .update({ status: "AVAILABLE", updated_at: new Date().toISOString() })
+      .eq("id", appointment.doctor_schedule_id);
+    if (scheduleUpdate.error) throw new Error(scheduleUpdate.error.message);
+  }
 
   return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
 }

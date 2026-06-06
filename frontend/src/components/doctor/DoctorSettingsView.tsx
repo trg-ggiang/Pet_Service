@@ -8,7 +8,6 @@ import {
   Mail,
   Monitor,
   Phone,
-  Save,
   Shield,
   Smartphone,
   User,
@@ -52,17 +51,6 @@ function Toggle({ on }: { on: boolean }) {
     <span className={`relative w-10 rounded-full transition-colors flex-shrink-0 ${on ? "bg-cyan-500" : "bg-slate-200"}`} style={{ height: 22 }}>
       <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all" style={{ left: on ? "calc(100% - 18px)" : 2 }} />
     </span>
-  );
-}
-
-function SaveBtn() {
-  return (
-    <button
-      className="flex items-center gap-1.5 h-9 px-5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-[0.98] hover:opacity-90"
-      style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)", boxShadow: "0 3px 12px rgba(8,145,178,0.25)" }}
-    >
-      <Save size={14} /> Lưu thay đổi
-    </button>
   );
 }
 
@@ -157,7 +145,6 @@ export function DoctorProfileSettings({ profile }: { profile: DoctorSettingsPayl
       <Field label="Giới thiệu bản thân">
         <textarea rows={3} value={profile.bio} readOnly className="px-3.5 py-3 bg-white border border-border rounded-xl text-[13px] text-foreground focus:outline-none resize-none" />
       </Field>
-      <div className="flex justify-end"><SaveBtn /></div>
     </div>
   );
 }
@@ -188,7 +175,6 @@ export function DoctorScheduleSettings({ schedule }: { schedule: DoctorSettingsP
         <Field label="Tối đa ca/ngày"><ReadOnlyInput value={schedule.options.maxAppointments} /></Field>
         <Field label="Nghỉ giải lao"><ReadOnlyInput value={`${schedule.options.breakFrom} → ${schedule.options.breakTo}`} /></Field>
       </div>
-      <div className="flex justify-end"><SaveBtn /></div>
     </div>
   );
 }
@@ -235,7 +221,6 @@ export function DoctorNotificationSettings({ notifications }: { notifications: D
           </div>
         ))}
       </div>
-      <div className="flex justify-end"><SaveBtn /></div>
     </div>
   );
 }
