@@ -1,4 +1,5 @@
 const { supabase } = require("../../lib/supabaseClient");
+const { getStoredSetting, saveStoredSetting } = require("../settingsService");
 
 const SERVICE_TYPE_LABELS = {
   MEDICAL: "Khám bệnh",
@@ -549,7 +550,7 @@ async function getDoctorSettings(doctorId) {
     };
   });
 
-  return {
+  const defaults = {
     profile: {
       id: doctor.id,
       name: doctor.full_name || "",
@@ -589,6 +590,25 @@ async function getDoctorSettings(doctorId) {
         { device: "Chrome", location: "Thiáº¿t bá»‹ hiá»‡n táº¡i", time: "Hiá»‡n táº¡i", current: true },
       ],
     },
+  };
+  const key = `doctor.settings.${doctorId}`;
+  const stored = await getStoredSetting(key);
+  if (!stored) {
+    await saveStoredSetting(key, {
+      schedule: { options: defaults.schedule.options },
+      notifications: defaults.notifications,
+      security: { twoFa: defaults.security.twoFa },
+    });
+    return defaults;
+  }
+  return {
+    ...defaults,
+    schedule: {
+      ...defaults.schedule,
+      options: { ...defaults.schedule.options, ...stored.schedule?.options },
+    },
+    notifications: { ...defaults.notifications, ...stored.notifications },
+    security: { ...defaults.security, ...stored.security, sessions: defaults.security.sessions },
   };
 }
 

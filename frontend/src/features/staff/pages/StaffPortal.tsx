@@ -22,6 +22,7 @@ import {
   type PaymentMethod,
   type StaffAppointment,
   type StaffProfile,
+  type StaffPortalSummary,
 } from "../services/staffAppointments";
 
 type DataKey = "appointments" | "grooming" | "boarding" | "payments";
@@ -46,6 +47,13 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [activeNav, setActiveNav] = useState<StaffNavId>("appointments");
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
+  const [summary, setSummary] = useState<StaffPortalSummary>({
+    doneGrooming: 0,
+    totalGrooming: 0,
+    pendingCheckIn: 0,
+    needsFed: 0,
+    pendingPayments: 0,
+  });
   const [appointments, setAppointments] = useState<StaffAppointment[]>([]);
   const [groomingTasks, setGroomingTasks] = useState<GroomingTask[]>([]);
   const [boardingGuests, setBoardingGuests] = useState<BoardingGuest[]>([]);
@@ -69,6 +77,14 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
       setProfile(await staffAppointmentsService.fetchProfile());
     } catch (error) {
       console.error("[FRONTEND] Failed to load staff profile:", error);
+    }
+  }, []);
+
+  const loadSummary = useCallback(async () => {
+    try {
+      setSummary(await staffAppointmentsService.fetchSummary());
+    } catch (error) {
+      console.error("[FRONTEND] Failed to load staff summary:", error);
     }
   }, []);
 
@@ -131,7 +147,8 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     void loadProfile();
     void loadAppointments();
-  }, [loadAppointments, loadProfile]);
+    void loadSummary();
+  }, [loadAppointments, loadProfile, loadSummary]);
 
   useEffect(() => {
     if (activeNav === "grooming") void loadGrooming();
@@ -139,17 +156,14 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
     if (activeNav === "payments") void loadPayments();
   }, [activeNav, loadBoarding, loadGrooming, loadPayments]);
 
-  const doneGrooming = groomingTasks.filter((task) => task.status === "completed").length;
-  const totalGrooming = groomingTasks.length;
-  const pendingCheckIn = appointments.filter((appointment) => appointment.status === "scheduled").length;
-  const needsFed = boardingGuests.filter((guest) => !guest.todayStatus.breakfast || !guest.todayStatus.lunch || !guest.todayStatus.dinner).length;
-  const pendingPayments = payments.filter((payment) => payment.status === "pending").length;
+  const { doneGrooming, totalGrooming, pendingCheckIn, needsFed, pendingPayments } = summary;
 
   async function handleCheckIn(appointment: StaffAppointment) {
     try {
       await staffAppointmentsService.checkInAppointment(appointment.appointmentId);
       setViewingApt(null);
       await loadAppointments();
+      await loadSummary();
     } catch (error) {
       console.error("[FRONTEND] Check-in failed:", error);
       alert("Không thể check-in: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
@@ -163,6 +177,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
         task.status === "in_progress" ? "COMPLETED" : "IN_PROGRESS",
       );
       await loadGrooming();
+      await loadSummary();
     } catch (error) {
       console.error("[FRONTEND] Update grooming failed:", error);
       alert("Không thể cập nhật grooming: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
@@ -183,6 +198,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 
     try {
       await staffAppointmentsService.updateBoardingDailyStatus(guest.id, nextGuest.todayStatus);
+      await loadSummary();
     } catch (error) {
       console.error("[FRONTEND] Update boarding failed:", error);
       await loadBoarding();
@@ -195,6 +211,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
       await staffAppointmentsService.markPaymentPaid(payment.invoiceId, method);
       setProcessingPayment(null);
       await loadPayments();
+      await loadSummary();
     } catch (error) {
       console.error("[FRONTEND] Payment failed:", error);
       alert("Không thể xác nhận thanh toán: " + (error instanceof Error ? error.message : "Lỗi không xác định"));

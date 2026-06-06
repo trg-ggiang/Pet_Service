@@ -106,6 +106,14 @@ export interface PaymentItem {
   status: PaymentStatus;
 }
 
+export interface StaffPortalSummary {
+  doneGrooming: number;
+  totalGrooming: number;
+  pendingCheckIn: number;
+  needsFed: number;
+  pendingPayments: number;
+}
+
 interface ProfileResponse {
   ok: boolean;
   profile: StaffProfile;
@@ -136,10 +144,20 @@ interface MutationResponse {
   message: string;
 }
 
+interface SummaryResponse {
+  ok: boolean;
+  summary: StaffPortalSummary;
+}
+
 export const staffAppointmentsService = {
   async fetchProfile(): Promise<StaffProfile> {
     const data = await fetchWithAuth<ProfileResponse>("/api/staff/profile");
     return data.profile;
+  },
+
+  async fetchSummary(): Promise<StaffPortalSummary> {
+    const data = await fetchWithAuth<SummaryResponse>("/api/staff/summary");
+    return data.summary;
   },
 
   async fetchPendingAppointments(): Promise<StaffAppointment[]> {

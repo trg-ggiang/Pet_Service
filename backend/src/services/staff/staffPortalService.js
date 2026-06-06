@@ -1,4 +1,5 @@
 const { supabase } = require("../../lib/supabaseClient");
+const { sendAppointmentEventEmail } = require("../emailService");
 
 const SERVICE_LABELS = {
   MEDICAL: "Khám bệnh",
@@ -225,8 +226,9 @@ async function getStaffProfile(staffId) {
   };
 }
 
-async function listStaffAppointments() {
-  const { data, error } = await supabase
+async function listStaffAppointments(staffId) {
+  const effectiveStaffId = assertStaffId(staffId);
+  const query = supabase
     .from("appointments")
     .select(`
       id,
@@ -251,21 +253,29 @@ async function listStaffAppointments() {
     .in("status", ["PENDING", "CONFIRMED", "IN_PROGRESS"])
     .order("requested_date", { ascending: true, nullsFirst: false })
     .order("requested_time", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .or(`staff_id.eq.${effectiveStaffId},staff_id.is.null`);
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
   return (data || []).map(mapAppointment);
 }
 
-async function checkInAppointment(appointmentId) {
+async function checkInAppointment(appointmentId, staffId) {
+  const effectiveStaffId = assertStaffId(staffId);
   const id = parsePositiveId(appointmentId, "ID lịch hẹn");
   const { data: appointment, error: fetchError } = await supabase
     .from("appointments")
-    .select("id, status")
+    .select("id, status, staff_id")
     .eq("id", id)
     .single();
 
   if (fetchError || !appointment) throw new Error("Không tìm thấy lịch hẹn");
+  if (appointment.staff_id && appointment.staff_id !== effectiveStaffId) {
+    const error = new Error("Bạn không có quyền check-in lịch hẹn này");
+    error.statusCode = 403;
+    throw error;
+  }
   if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
     const error = new Error("Không thể check-in lịch hẹn ở trạng thái hiện tại");
     error.statusCode = 400;
@@ -274,7 +284,7 @@ async function checkInAppointment(appointmentId) {
 
   const { error } = await supabase
     .from("appointments")
-    .update({ status: "CONFIRMED", updated_at: new Date().toISOString() })
+    .update({ status: "CONFIRMED", staff_id: effectiveStaffId, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) throw new Error(error.message);
@@ -328,6 +338,17 @@ async function updateGroomingStatus(groomingId, status, staffId) {
   }
 
   const now = new Date().toISOString();
+  const { data: record, error: recordError } = await supabase
+    .from("grooming_records")
+    .select("id, staff_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (recordError) throw new Error(recordError.message);
+  if (!record || (record.staff_id && record.staff_id !== effectiveStaffId)) {
+    const error = new Error("Bạn không có quyền cập nhật nhiệm vụ grooming này");
+    error.statusCode = 403;
+    throw error;
+  }
   const payload = {
     status,
     staff_id: effectiveStaffId,
@@ -398,7 +419,7 @@ async function updateBoardingDailyStatus(boardingId, status, staffId) {
 
   const { data: existing, error: fetchError } = await supabase
     .from("boarding_daily_updates")
-    .select("id")
+    .select("id, health_status")
     .eq("boarding_id", id)
     .eq("date", today)
     .maybeSingle();
@@ -420,6 +441,19 @@ async function updateBoardingDailyStatus(boardingId, status, staffId) {
     : await supabase.from("boarding_daily_updates").insert(payload);
 
   if (result.error) throw new Error(result.error.message);
+
+  if (normalizedStatus.healthCheck && existing?.health_status !== "CHECKED") {
+    const { data: boarding } = await supabase
+      .from("boarding")
+      .select("appointment_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (boarding?.appointment_id) {
+      await sendAppointmentEventEmail("boarding_update", boarding.appointment_id, {
+        boardingStatus: note || "Đã cập nhật tình trạng chăm sóc.",
+      });
+    }
+  }
 }
 
 async function listPayments() {
@@ -459,7 +493,15 @@ async function markPaymentPaid(invoiceId, method = "CASH") {
     VNPAY: "VNPAY",
   };
 
-  const { error } = await supabase
+  const { data: existingInvoice, error: fetchError } = await supabase
+    .from("invoices")
+    .select("id, payment_status")
+    .eq("id", id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+  if (existingInvoice.payment_status === "PAID") return;
+
+  const { data: invoice, error } = await supabase
     .from("invoices")
     .update({
       payment_status: "PAID",
@@ -468,9 +510,31 @@ async function markPaymentPaid(invoiceId, method = "CASH") {
       paid_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id, appointment_id, total_amount")
+    .single();
 
   if (error) throw new Error(error.message);
+  await sendAppointmentEventEmail("payment_confirmation", invoice.appointment_id, {
+    invoiceCode: `INV-${String(invoice.id).padStart(4, "0")}`,
+    amount: `${Number(invoice.total_amount || 0).toLocaleString("vi-VN")} ₫`,
+  });
+}
+
+async function getStaffPortalSummary(staffId) {
+  const [appointments, grooming, boarding, payments] = await Promise.all([
+    listStaffAppointments(staffId),
+    listGroomingTasks(staffId),
+    listBoardingGuests(),
+    listPayments(),
+  ]);
+  return {
+    doneGrooming: grooming.filter((task) => task.status === "completed").length,
+    totalGrooming: grooming.length,
+    pendingCheckIn: appointments.filter((appointment) => appointment.status === "scheduled").length,
+    needsFed: boarding.filter((guest) => !guest.todayStatus.breakfast || !guest.todayStatus.lunch || !guest.todayStatus.dinner).length,
+    pendingPayments: payments.filter((payment) => payment.status === "pending").length,
+  };
 }
 
 module.exports = {
@@ -483,4 +547,5 @@ module.exports = {
   updateBoardingDailyStatus,
   listPayments,
   markPaymentPaid,
+  getStaffPortalSummary,
 };

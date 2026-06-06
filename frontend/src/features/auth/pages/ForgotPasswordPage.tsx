@@ -5,6 +5,7 @@ import {
   ForgotPasswordView,
   type ForgotPasswordStep,
 } from "../../../components/auth/ForgotPasswordView";
+import { requestPasswordReset, resetPassword, verifyPasswordResetCode } from "../../../services/auth";
 
 const EMPTY_OTP = ["", "", "", "", "", ""];
 const STRENGTH_LABELS = ["", "Yếu", "Trung bình", "Mạnh"];
@@ -31,7 +32,7 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
 
   const passwordStrengthLevel = newPassword.length === 0 ? 0 : newPassword.length < 6 ? 1 : newPassword.length < 10 ? 2 : 3;
 
-  function handleSendEmail(event: React.FormEvent) {
+  async function handleSendEmail(event: React.FormEvent) {
     event.preventDefault();
     if (!email.trim() || !email.includes("@")) {
       setError("Vui lòng nhập địa chỉ email hợp lệ.");
@@ -40,11 +41,16 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
 
     setError("");
     setLoading(true);
-    window.setTimeout(() => {
+    try {
+      const result = await requestPasswordReset(email);
+      if (result.devCode) setOtp(result.devCode.split(""));
       setLoading(false);
       setCountdown(60);
       setStep("otp");
-    }, 1200);
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "Không thể gửi mã xác minh.");
+    }
   }
 
   function handleOtpChange(index: number, value: string) {
@@ -68,7 +74,7 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
     }
   }
 
-  function handleVerifyOtp(event: React.FormEvent) {
+  async function handleVerifyOtp(event: React.FormEvent) {
     event.preventDefault();
     if (otp.join("").length < EMPTY_OTP.length) {
       setError("Vui lòng nhập đủ 6 chữ số.");
@@ -77,20 +83,30 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
 
     setError("");
     setLoading(true);
-    window.setTimeout(() => {
+    try {
+      await verifyPasswordResetCode(email, otp.join(""));
       setLoading(false);
       setStep("newpw");
-    }, 1000);
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "Mã xác minh không hợp lệ.");
+    }
   }
 
-  function handleResend() {
+  async function handleResend() {
     setOtp(EMPTY_OTP);
-    setCountdown(60);
     setError("");
-    otpRefs.current[0]?.focus();
+    try {
+      const result = await requestPasswordReset(email);
+      if (result.devCode) setOtp(result.devCode.split(""));
+      setCountdown(60);
+      otpRefs.current[0]?.focus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể gửi lại mã.");
+    }
   }
 
-  function handleSetPassword(event: React.FormEvent) {
+  async function handleSetPassword(event: React.FormEvent) {
     event.preventDefault();
     if (newPassword.length < 8) {
       setError("Mật khẩu phải có ít nhất 8 ký tự.");
@@ -103,10 +119,14 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
 
     setError("");
     setLoading(true);
-    window.setTimeout(() => {
+    try {
+      await resetPassword(email, otp.join(""), newPassword);
       setLoading(false);
       setStep("done");
-    }, 1200);
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "Không thể đổi mật khẩu.");
+    }
   }
 
   function handleStepBack() {

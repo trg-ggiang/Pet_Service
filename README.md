@@ -3,7 +3,7 @@
 Pet Service is a fullstack pet service management app for customer, staff, doctor, and admin workflows.
 
 ## Tech Stack
-- Frontend: React 18, Vite, TypeScript, Tailwind CSS, Radix UI, MUI, Supabase browser client.
+- Frontend: React 18, Vite, TypeScript, Tailwind CSS, Radix UI, and MUI.
 - Backend: Node.js, Express 5, Prisma, Supabase server client, JWT, bcrypt.
 - Database: PostgreSQL via Prisma. Supabase can provide hosted PostgreSQL and auth/storage services.
 - Docs: Mintlify in `docs/`.
@@ -62,6 +62,7 @@ Prisma schema is in `backend/prisma/schema.prisma`.
 
 ```powershell
 npm --prefix backend run prisma:generate
+npm --prefix backend run email:reminders
 ```
 
 Migration and seed commands need the team to confirm the production-safe workflow before standardizing them. Current seed file: `backend/prisma/seed.js`.

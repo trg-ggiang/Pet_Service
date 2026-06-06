@@ -2,7 +2,7 @@
 import {
   Plus, Search, Download, Eye, Edit, X, Clock, ChevronDown,
   Calendar, Stethoscope,
-  CheckCircle2, AlertTriangle, ArrowRight, User,
+  CheckCircle2, AlertTriangle, User,
   Phone, Mail,
 } from "lucide-react";
 import { adminService, type AdminAppointmentSummary } from "../../features/admin/services/admin";
@@ -68,12 +68,11 @@ function StatusBadge({ status }: { status: Status }) {
 // ─── Appointment Detail Drawer ────────────────────────────────────────────────
 
 function AptDrawer({
-  apt, onClose, onEdit, onOpenExam, onStatusChange,
+  apt, onClose, onEdit, onStatusChange,
 }: {
   apt: Appointment;
   onClose: () => void;
   onEdit: () => void;
-  onOpenExam: () => void;
   onStatusChange: (id: string, status: Status) => void;
 }) {
   const cfg = STATUS_CFG[apt.status];
@@ -201,14 +200,6 @@ function AptDrawer({
                     className={`flex-1 h-10 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${nextAction.cls}`}
                   >
                     <CheckCircle2 size={15} /> {nextAction.label}
-                  </button>
-                )}
-                {apt.status === "in_progress" && (
-                  <button
-                    onClick={onOpenExam}
-                    className="flex-1 h-10 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-primary text-white hover:opacity-90 transition-opacity"
-                  >
-                    Mở phiếu khám <ArrowRight size={15} />
                   </button>
                 )}
                 <button
@@ -372,13 +363,7 @@ function AptModal({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function AdminAppointmentsView({
-  onNewAppt,
-  onOpenExam,
-}: {
-  onNewAppt: () => void;
-  onOpenExam?: () => void;
-}) {
+export function AdminAppointmentsView() {
   const [apts, setApts] = useState<Appointment[]>([]);
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [search, setSearch] = useState("");
@@ -584,7 +569,6 @@ export function AdminAppointmentsView({
           apt={drawerApt}
           onClose={() => setDrawerApt(null)}
           onEdit={() => { setEditApt(drawerApt); setDrawerApt(null); }}
-          onOpenExam={() => { setDrawerApt(null); onOpenExam?.(); }}
           onStatusChange={handleStatusChange}
         />
       )}

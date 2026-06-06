@@ -25,12 +25,20 @@ async function authMiddleware(req, res, next) {
 
     const { data: user, error } = await supabase
       .from("users")
-      .select("id, email, role, status, created_at, updated_at, deleted_at")
+      .select("id, email, role, status, auth_version, created_at, updated_at, deleted_at")
       .eq("id", userId)
       .single();
 
     if (error || !user) {
       return res.status(401).json({ ok: false, message: "Người dùng không tồn tại" });
+    }
+
+    if (String(user.status || "").toUpperCase() !== "ACTIVE" || user.deleted_at) {
+      return res.status(401).json({ ok: false, message: "Tài khoản đã bị khóa hoặc vô hiệu hóa" });
+    }
+
+    if (Number(payload.authVersion) !== Number(user.auth_version ?? 0)) {
+      return res.status(401).json({ ok: false, message: "Phiên đăng nhập đã hết hiệu lực" });
     }
 
     const authContext = await getUserAuthContext(user);

@@ -2,6 +2,7 @@ const express = require("express");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
 const { listDoctorAppointmentsForPortal } = require("../services/doctor/doctorAppointmentService");
+const { sendAppointmentEventEmail } = require("../services/emailService");
 
 const router = express.Router();
 
@@ -382,6 +383,17 @@ async function getOwnedAppointment(appointmentId, doctorId) {
   return data;
 }
 
+async function updateDoctorScheduleStatus(scheduleId, status) {
+  if (!scheduleId) return;
+
+  const { error } = await supabase
+    .from("doctor_schedules")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", scheduleId);
+
+  if (error) throw new Error(error.message);
+}
+
 async function getCurrentMedicalVisit(appointmentId) {
   const { data, error } = await supabase
     .from("medical_visits")
@@ -639,6 +651,7 @@ router.put("/:id/start", async function startExam(req, res) {
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "IN_PROGRESS");
 
     res.json({ ok: true, message: "Bắt đầu khám thành công" });
   } catch (error) {
@@ -692,6 +705,7 @@ router.put("/:id/exam-draft", async function saveExamDraft(req, res) {
         .eq("id", appointmentId);
 
       if (error) throw new Error(error.message);
+      await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "IN_PROGRESS");
     }
 
     res.json({ ok: true, message: "Đã lưu nháp phiếu khám" });
@@ -706,7 +720,7 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
     const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
     const doctorId = req.auth?.user?.doctorId;
 
-    await getOwnedAppointment(appointmentId, doctorId);
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
     await saveMedicalVisit(appointmentId, req.body?.record);
 
     const { error } = await supabase
@@ -718,6 +732,10 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "DONE");
+    await sendAppointmentEventEmail("exam_result", appointmentId, {
+      diagnosis: req.body?.record?.clinicalNote || "Kết quả khám đã được cập nhật trên hệ thống.",
+    });
 
     res.json({ ok: true, message: "Đã hoàn thành ca khám" });
   } catch (error) {
@@ -748,6 +766,10 @@ router.put("/:id/complete", async function completeExamOnly(req, res) {
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "DONE");
+    await sendAppointmentEventEmail("exam_result", appointmentId, {
+      diagnosis: "Kết quả khám đã được cập nhật trên hệ thống.",
+    });
 
     res.json({ ok: true, message: "Hoàn thành khám thành công" });
   } catch (error) {

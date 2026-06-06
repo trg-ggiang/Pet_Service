@@ -310,33 +310,13 @@ export type AdminSettings = {
   };
 };
 
-export type AdminExamContext = {
-  header: {
-    appointmentCode: string;
-    status: "scheduled" | "in_progress" | "completed" | "cancelled";
-    time: string;
-    room: string;
-    provider: string;
-  };
-  pet: {
-    name: string;
-    species: string;
-    breed: string;
-    gender: string;
-    weightKg: string;
-    owner: string;
-    phone: string;
-    service: string;
-    note: string;
-  };
-  vitals: Array<{ label: string; value: string; unit: string; state: "normal" | "warn" | "critical" }>;
-  history: Array<{ date: string; service: string; outcome: string }>;
-  options: {
-    symptoms: Array<{ id: string; label: string; active: boolean }>;
-    bodySystems: Array<{ id: string; label: string; status: "normal" | "abnormal" | "not_checked"; note: string }>;
-    drugs: Array<{ id: number; name: string; dose: string; frequency: string; duration: string; note: string }>;
-  };
+export type AdminEmailTemplate = {
+  subject: string;
+  heading: string;
+  message: string;
 };
+
+export type AdminEmailTemplates = Record<string, AdminEmailTemplate>;
 
 function adminGet<T>(url: string) {
   return requestJson<ApiOk<T>>(url, {
@@ -358,6 +338,17 @@ function adminPost<T>(url: string, body: unknown) {
 function adminPatch<T>(url: string, body: unknown) {
   return requestJson<ApiOk<T>>(url, {
     method: "PATCH",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+function adminPut<T>(url: string, body: unknown) {
+  return requestJson<ApiOk<T>>(url, {
+    method: "PUT",
     headers: {
       ...getAuthHeaders(),
       "Content-Type": "application/json",
@@ -442,7 +433,20 @@ export const adminService = {
     return adminGet<{ settings: AdminSettings }>("/api/admin/settings");
   },
 
-  getExamContext() {
-    return adminGet<{ exam: AdminExamContext }>("/api/admin/exam-context");
+  updateSettings(settings: AdminSettings) {
+    return adminPut<{ settings: AdminSettings }>("/api/admin/settings", settings);
   },
+
+  getEmailTemplates() {
+    return adminGet<{ templates: AdminEmailTemplates }>("/api/admin/email-templates");
+  },
+
+  updateEmailTemplates(templates: AdminEmailTemplates) {
+    return adminPut<{ templates: AdminEmailTemplates }>("/api/admin/email-templates", { templates });
+  },
+
+  sendTestEmail(input: { to: string; subject: string; heading: string; message: string }) {
+    return adminPost<{ sent: boolean }>("/api/admin/email-templates/test", input);
+  },
+
 };

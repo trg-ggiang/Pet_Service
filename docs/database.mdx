@@ -7,6 +7,8 @@ description: "Database model, Prisma setup, and safe database rules."
 
 The project uses PostgreSQL through Prisma. Supabase can provide the hosted PostgreSQL database.
 
+Application settings are persisted in `app_settings`. Password reset OTP hashes and expiration metadata are stored in `password_reset_tokens`; raw OTP values are never stored. `users.auth_version` invalidates existing JWT sessions after a password reset.
+
 ## Schema
 
 Main schema file:

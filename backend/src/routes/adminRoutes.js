@@ -3,9 +3,9 @@ const { supabase } = require("../lib/supabaseClient");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const {
   getAdminDashboard,
-  getAdminExamContext,
   getAdminReports,
   getAdminSettings,
+  updateAdminSettings,
   createAdminService,
   listAdminAppointments,
   listAdminServices,
@@ -16,6 +16,11 @@ const {
   updateAdminServiceStatus,
   updateAdminUserLock,
 } = require("../services/adminService");
+const {
+  getEmailTemplates,
+  updateEmailTemplates,
+  sendCustomEmail,
+} = require("../services/emailService");
 
 const router = express.Router();
 
@@ -154,14 +159,47 @@ router.get("/settings", async function(req, res) {
   }
 });
 
-router.get("/exam-context", async function(req, res) {
+router.put("/settings", async function(req, res) {
   try {
-    const exam = await getAdminExamContext();
-    res.json({ ok: true, exam });
+    const settings = await updateAdminSettings(req.body || {}, req.auth?.user);
+    res.json({ ok: true, settings });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load exam context" });
+    res.status(500).json({ ok: false, message: error.message || "Failed to update settings" });
   }
 });
+
+router.get("/email-templates", async function(req, res) {
+  try {
+    const templates = await getEmailTemplates();
+    res.json({ ok: true, templates });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to load email templates" });
+  }
+});
+
+router.put("/email-templates", async function(req, res) {
+  try {
+    const templates = await updateEmailTemplates(req.body?.templates || {});
+    res.json({ ok: true, templates });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Failed to update email templates" });
+  }
+});
+
+router.post("/email-templates/test", async function(req, res) {
+  try {
+    const result = await sendCustomEmail({
+      to: req.body?.to,
+      subject: req.body?.subject || "Email thử nghiệm Pet Service",
+      heading: req.body?.heading || "Email thử nghiệm",
+      message: req.body?.message || "Cấu hình SMTP và template email đang hoạt động.",
+    });
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message || "Failed to send test email" });
+  }
+});
+
 // GET /api/admin/doctors - Lấy danh sách doctors chưa có hồ sơ
 router.get("/doctors", async function(req, res) {
   try {

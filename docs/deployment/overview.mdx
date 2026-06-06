@@ -40,8 +40,6 @@ Set frontend environment variables:
 
 ```text
 VITE_API_URL=https://<backend-vercel-project>.vercel.app
-NEXT_PUBLIC_SUPABASE_URL=https://<supabase-project>.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<supabase-anon-or-publishable-key>
 ```
 
 `frontend/vercel.json` rewrites non-API routes to `index.html` so direct navigation and refreshes work in the Vite SPA.
@@ -66,11 +64,19 @@ CLIENT_URL=https://<frontend-vercel-project>.vercel.app
 FRONTEND_URL=https://<frontend-vercel-project>.vercel.app
 BACKEND_URL=https://<backend-vercel-project>.vercel.app
 SUPABASE_URL=https://<supabase-project>.supabase.co
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=<shared-gmail-address>
+SMTP_APP_PASSWORD=<google-app-password>
+EMAIL_FROM=Pet Service <shared-gmail-address>
+EMAIL_REMINDER_INTERVAL_MINUTES=60
 SUPABASE_KEY=<supabase-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<supabase-service-role-key>
 ```
 
 `CLIENT_URL` and `FRONTEND_URL` may contain comma-separated origins when both production and preview domains need API access.
+
+For serverless deployments, schedule `npm run email:reminders` with the platform cron instead of relying on the in-process interval.
 
 After deployment, verify:
 

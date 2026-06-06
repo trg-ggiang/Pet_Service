@@ -10,6 +10,7 @@ const {
   updateBoardingDailyStatus,
   listPayments,
   markPaymentPaid,
+  getStaffPortalSummary,
 } = require("../services/staff/staffPortalService");
 
 const router = express.Router();
@@ -30,9 +31,18 @@ router.get("/profile", async function getProfile(req, res) {
   }
 });
 
+router.get("/summary", async function getSummary(req, res) {
+  try {
+    const summary = await getStaffPortalSummary(req.auth?.user?.staffId);
+    res.json({ ok: true, summary });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
 router.get("/appointments", async function getAppointments(req, res) {
   try {
-    const appointments = await listStaffAppointments();
+    const appointments = await listStaffAppointments(req.auth?.user?.staffId);
     res.json({ ok: true, appointments });
   } catch (error) {
     sendError(res, error);
@@ -41,7 +51,7 @@ router.get("/appointments", async function getAppointments(req, res) {
 
 router.put("/appointments/:id/checkin", async function checkIn(req, res) {
   try {
-    await checkInAppointment(req.params.id);
+    await checkInAppointment(req.params.id, req.auth?.user?.staffId);
     res.json({ ok: true, message: "Check-in thành công" });
   } catch (error) {
     sendError(res, error);

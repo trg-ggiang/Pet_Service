@@ -151,6 +151,7 @@ model User {
   passwordHash String     @map("password_hash") @db.VarChar(255)
   role         Role       @default(CUSTOMER)
   status       UserStatus @default(ACTIVE)
+  authVersion  Int        @default(0) @map("auth_version")
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -162,8 +163,32 @@ model User {
 
   notifications  Notification[]
   repliedReviews Review[]       @relation("ReviewRepliedBy")
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+model AppSetting {
+  key       String   @id @db.VarChar(100)
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("app_settings")
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  codeHash  String    @map("code_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model Customer {

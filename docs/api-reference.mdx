@@ -21,6 +21,12 @@ Frontend dev server proxies `/api` to the backend.
 
 ## Auth
 
+- `POST /api/auth/forgot-password/request` creates a short-lived reset OTP.
+- `POST /api/auth/forgot-password/verify` verifies the OTP.
+- `POST /api/auth/forgot-password/reset` verifies the OTP, updates the password hash, and invalidates existing JWT sessions.
+
+Password reset emails are sent through Gmail SMTP when `SMTP_USER` and `SMTP_APP_PASSWORD` are configured. For local non-production testing without SMTP credentials, the request endpoint returns `devCode`.
+
 Routes are mounted under `/api/auth`.
 
 | Method | Path | Purpose |
@@ -48,6 +54,11 @@ Routes are mounted under `/api/admin` and require an admin auth token.
 | `PATCH` | `/api/admin/staff/:id/lock` | Lock or unlock one doctor/staff account from `StaffPage`. |
 | `GET` | `/api/admin/reports` | Get backend-shaped revenue, appointment, service, and staff-performance report data. |
 | `GET` | `/api/admin/settings` | Get backend-shaped clinic, account, notification, payment, and security settings data. |
+| `GET` | `/api/admin/email-templates` | Get persisted templates for transactional and reminder emails. |
+| `PUT` | `/api/admin/email-templates` | Update email subjects, headings, and messages. |
+| `POST` | `/api/admin/email-templates/test` | Send a custom test email through configured SMTP. |
+
+Template content supports variables such as `{{petName}}`, `{{appointmentCode}}`, `{{appointmentDate}}`, `{{appointmentTime}}`, `{{diagnosis}}`, and `{{amount}}`.
 | `GET` | `/api/admin/exam-context` | Get appointment, pet, history, symptom, body-system, and prescription option data for `ExamPage`. |
 | `GET` | `/api/admin/doctors` | List doctor users without doctor profiles. |
 | `POST` | `/api/admin/doctors/create-profile` | Create one doctor profile for a doctor user. |
