@@ -9,6 +9,7 @@ import {
   DoctorSettingsLoading,
   DoctorSettingsNav,
   type DoctorSettingsTabId,
+  type ScheduleRowInput,
 } from "../../../components/doctor/DoctorSettingsView";
 import {
   doctorDataService,
@@ -21,10 +22,24 @@ export function DoctorSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  async function loadSettings() {
+    try {
+      setLoading(true);
+      const payload = await doctorDataService.getSettings();
+      setSettings(payload);
+      setError(null);
+    } catch (err) {
+      setSettings(null);
+      setError(err instanceof Error ? err.message : "Không thể tải cài đặt bác sĩ");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
-    async function loadSettings() {
+    async function init() {
       try {
         setLoading(true);
         const payload = await doctorDataService.getSettings();
@@ -40,19 +55,24 @@ export function DoctorSettingsPage() {
       }
     }
 
-    void loadSettings();
+    void init();
 
     return () => {
       active = false;
     };
   }, []);
 
+  async function handleSaveSchedule(rows: ScheduleRowInput[]) {
+    await doctorDataService.saveSchedule(rows);
+    await loadSettings();
+  }
+
   function renderContent() {
     if (loading) return <DoctorSettingsLoading />;
     if (error) return <DoctorSettingsError message={error} />;
     if (!settings) return <DoctorSettingsError message="Không có dữ liệu cài đặt" />;
 
-    if (tab === "schedule") return <DoctorScheduleSettings schedule={settings.schedule} />;
+    if (tab === "schedule") return <DoctorScheduleSettings schedule={settings.schedule} onSave={handleSaveSchedule} />;
     if (tab === "notifications") return <DoctorNotificationSettings notifications={settings.notifications} />;
     if (tab === "security") return <DoctorSecuritySettings security={settings.security} />;
     return <DoctorProfileSettings profile={settings.profile} />;

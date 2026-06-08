@@ -3,6 +3,7 @@ const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
 const { listDoctorAppointmentsForPortal } = require("../services/doctor/doctorAppointmentService");
 const { sendAppointmentEventEmail } = require("../services/emailService");
+const { assertScheduleAvailable } = require("../services/scheduleService");
 
 const router = express.Router();
 const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
@@ -277,6 +278,7 @@ function emptyExamRecord() {
       ]),
     ),
     clinicalNote: "",
+    prescriptions: [],
     nextVisitDate: null,
     nextVisitTime: "",
   };
@@ -311,6 +313,7 @@ function normalizeExamRecord(rawVisit) {
       ...(clinicalExam.systems || {}),
     },
     clinicalNote: rawVisit.diagnosis_note || "",
+    prescriptions: Array.isArray(clinicalExam.prescriptions) ? clinicalExam.prescriptions : [],
     nextVisitDate: rawVisit.next_visit_date || null,
     nextVisitTime: clinicalExam.nextVisitTime || "",
   };
@@ -340,6 +343,20 @@ function sanitizeExamRecord(input) {
 
   const severity = Number(record.severity || 0);
 
+  // Sanitize prescriptions
+  const rawPrescriptions = Array.isArray(record.prescriptions) ? record.prescriptions : [];
+  const prescriptions = rawPrescriptions
+    .filter((rx) => rx && typeof rx === "object" && String(rx.medicineName || "").trim() !== "")
+    .map((rx) => ({
+      id: String(rx.id || Math.random().toString(36).substring(2, 9)),
+      medicineName: String(rx.medicineName || "").trim(),
+      dosage: String(rx.dosage || "").trim(),
+      frequency: String(rx.frequency || "2 lần/ngày").trim(),
+      route: String(rx.route || "Uống").trim(),
+      durationDays: rx.durationDays && Number.isInteger(rx.durationDays) ? rx.durationDays : null,
+      instructions: String(rx.instructions || "").trim(),
+    }));
+
   return {
     ...empty,
     chiefComplaint: String(record.chiefComplaint || "").trim(),
@@ -361,6 +378,7 @@ function sanitizeExamRecord(input) {
     },
     systems,
     clinicalNote: String(record.clinicalNote || "").trim(),
+    prescriptions,
     nextVisitDate: normalizeDateInput(record.nextVisitDate) || null,
     nextVisitTime: normalizeTimeInput(record.nextVisitTime)?.slice(0, 5) || "",
   };
@@ -507,8 +525,27 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
   const slot = assertFutureFollowUpSlot(cleanRecord);
   if (!slot) return null;
 
-  const customer = originalAppointment.pets?.customers;
   const schedule = await findFollowUpScheduleIfExists(originalAppointment.doctor_id, slot.date, slot.time);
+
+  // Reserve the schedule first to avoid duplicate doctor_schedule_id conflicts
+  if (schedule?.id) {
+    const reserveResult = await supabase
+      .from("doctor_schedules")
+      .update({ status: "BOOKED", updated_at: new Date().toISOString() })
+      .eq("id", schedule.id)
+      .eq("status", "AVAILABLE")
+      .select("id")
+      .maybeSingle();
+
+    if (reserveResult.error) throw new Error(reserveResult.error.message);
+    if (!reserveResult.data) {
+      const error = new Error("Ca làm việc của bác sĩ đã được đặt. Vui lòng chọn khung giờ khác.");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  const customer = originalAppointment.pets?.customers;
   const service = await resolveFollowUpService();
   const now = new Date().toISOString();
   const note = [
@@ -533,7 +570,12 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
     .select("id")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (schedule?.id) {
+      await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: now }).eq("id", schedule.id);
+    }
+    throw new Error(error.message);
+  }
 
   if (service?.id) {
     const item = await supabase.from("appointment_services").insert({
@@ -546,6 +588,9 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
 
     if (item.error) {
       await supabase.from("appointments").delete().eq("id", appointment.id);
+      if (schedule?.id) {
+        await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: now }).eq("id", schedule.id);
+      }
       throw new Error(item.error.message);
     }
   }
@@ -558,6 +603,9 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
     });
   } catch (notificationError) {
     await supabase.from("appointments").delete().eq("id", appointment.id);
+    if (schedule?.id) {
+      await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: now }).eq("id", schedule.id);
+    }
     throw notificationError;
   }
 
@@ -581,6 +629,88 @@ async function getCurrentMedicalVisit(appointmentId) {
 
   if (error) throw new Error(error.message);
   return data || null;
+}
+
+async function getPrescriptionsForVisit(medicalVisitId) {
+  const { data, error } = await supabase
+    .from("prescription_items")
+    .select(`
+      id,
+      medicine_name,
+      dosage,
+      frequency,
+      duration_days,
+      instructions,
+      prescriptions:prescription_id (
+        id
+      )
+    `)
+    .eq("prescription_id", medicalVisitId);
+
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((item) => ({
+    id: String(item.id),
+    medicineName: item.medicine_name || "",
+    dosage: item.dosage || "",
+    frequency: item.frequency || "",
+    route: "", // Route is not stored in DB, default to empty
+    durationDays: item.duration_days || null,
+    instructions: item.instructions || "",
+  }));
+}
+
+async function savePrescriptions(medicalVisitId, prescriptions) {
+  if (!prescriptions || prescriptions.length === 0) return;
+
+  // Get existing prescription IDs for this medical visit
+  const { data: existingPrescriptions, error: fetchError } = await supabase
+    .from("prescriptions")
+    .select("id")
+    .eq("medical_visit_id", medicalVisitId);
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  // Create prescription records
+  const prescriptionInserts = prescriptions.map((rx) => ({
+    medical_visit_id: medicalVisitId,
+    notes: rx.instructions || "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
+
+  const { data: createdPrescriptions, error: prescriptionError } = await supabase
+    .from("prescriptions")
+    .insert(prescriptionInserts)
+    .select("id");
+
+  if (prescriptionError) throw new Error(prescriptionError.message);
+
+  // Create prescription items
+  const prescriptionItemsInserts = [];
+  for (let i = 0; i < prescriptions.length; i++) {
+    const rx = prescriptions[i];
+    const prescriptionId = createdPrescriptions[i]?.id;
+
+    if (!prescriptionId) continue;
+
+    prescriptionItemsInserts.push({
+      prescription_id: prescriptionId,
+      medicine_name: String(rx.medicineName || "").trim(),
+      dosage: String(rx.dosage || "").trim(),
+      frequency: String(rx.frequency || "").trim(),
+      duration_days: rx.durationDays && Number.isInteger(rx.durationDays) ? rx.durationDays : null,
+      instructions: String(rx.instructions || "").trim(),
+    });
+  }
+
+  if (prescriptionItemsInserts.length > 0) {
+    const { error: itemsError } = await supabase
+      .from("prescription_items")
+      .insert(prescriptionItemsInserts);
+
+    if (itemsError) throw new Error(itemsError.message);
+  }
 }
 
 async function getVaccinations(petId) {
@@ -666,12 +796,25 @@ async function getVisitHistory(petId, currentAppointmentId) {
   });
 }
 
-function buildExamDetail({ appointment, vaccinations, history, visit }) {
+async function buildExamDetail({ appointment, vaccinations, history, visit }) {
   const pet = appointment.pets;
   const owner = pet?.customers;
   const schedule = appointment.doctor_schedules;
   const record = normalizeExamRecord(visit);
   const appointmentNote = cleanAppointmentNote(appointment.note);
+
+  // Fetch prescriptions from database if visit exists
+  let prescriptions = record.prescriptions;
+  if (visit?.id) {
+    try {
+      const dbPrescriptions = await getPrescriptionsForVisit(visit.id);
+      if (dbPrescriptions && dbPrescriptions.length > 0) {
+        prescriptions = dbPrescriptions;
+      }
+    } catch (e) {
+      // Fall back to clinical_exam data
+    }
+  }
 
   return {
     appointment: {
@@ -731,7 +874,10 @@ function buildExamDetail({ appointment, vaccinations, history, visit }) {
         { key: "weight", icon: "Weight", label: "Cân nặng thực tế", unit: "kg", tone: "emerald" },
       ],
     },
-    record,
+    record: {
+      ...record,
+      prescriptions,
+    },
   };
 }
 
@@ -764,6 +910,8 @@ async function saveMedicalVisit(appointmentId, record) {
     updated_at: now,
   };
 
+  let medicalVisitId;
+
   if (existingVisit?.id) {
     const { data, error } = await supabase
       .from("medical_visits")
@@ -773,20 +921,27 @@ async function saveMedicalVisit(appointmentId, record) {
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    medicalVisitId = data.id;
+  } else {
+    const { data, error } = await supabase
+      .from("medical_visits")
+      .insert({
+        ...payload,
+        created_at: now,
+      })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    medicalVisitId = data.id;
   }
 
-  const { data, error } = await supabase
-    .from("medical_visits")
-    .insert({
-      ...payload,
-      created_at: now,
-    })
-    .select("id")
-    .single();
+  // Save prescriptions to database
+  if (cleanRecord.prescriptions && cleanRecord.prescriptions.length > 0) {
+    await savePrescriptions(medicalVisitId, cleanRecord.prescriptions);
+  }
 
-  if (error) throw new Error(error.message);
-  return data;
+  return medicalVisitId;
 }
 
 function repairNotificationText(value) {
@@ -961,7 +1116,7 @@ router.get("/:id/exam-detail", async function getExamDetail(req, res) {
 
     res.json({
       ok: true,
-      detail: buildExamDetail({
+      detail: await buildExamDetail({
         appointment,
         vaccinations,
         history,

@@ -271,4 +271,27 @@ export const doctorDataService = {
     );
     return data.context;
   },
+
+  async saveSchedule(rows: DoctorSettingsPayload["schedule"]["rows"]): Promise<string> {
+    const data = await requestJson<ApiOk<{ message: string }>>(
+      apiUrl("/api/doctor/settings/schedule"),
+      {
+        method: "PUT",
+        ...authInit(),
+        body: JSON.stringify({ rows }),
+      },
+    );
+    return data.message || "Đã lưu lịch làm việc";
+  },
+
+  async deleteSchedule(scheduleId: number): Promise<string> {
+    const data = await requestJson<ApiOk<{ message: string }>>(
+      apiUrl(`/api/doctor/settings/schedule/${scheduleId}`),
+      {
+        method: "DELETE",
+        ...authInit(),
+      },
+    );
+    return data.message || "Đã xóa lịch làm việc";
+  },
 };

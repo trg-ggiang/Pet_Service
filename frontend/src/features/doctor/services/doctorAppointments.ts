@@ -115,6 +115,16 @@ export interface ExamSystemEntry {
   notes: string;
 }
 
+export interface PrescriptionEntry {
+  id: string;
+  medicineName: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  durationDays: number | null;
+  instructions: string;
+}
+
 export interface DoctorExamRecord {
   chiefComplaint: string;
   selectedSymptoms: string[];
@@ -131,6 +141,7 @@ export interface DoctorExamRecord {
   };
   systems: Record<string, ExamSystemEntry>;
   clinicalNote: string;
+  prescriptions: PrescriptionEntry[];
   nextVisitDate: string | null;
   nextVisitTime: string;
 }

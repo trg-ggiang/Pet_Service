@@ -227,6 +227,8 @@ function mapAppointment(appointment, maps) {
     updatedAt: appointment.updated_at,
     createdAtLabel: formatShortDateTime(appointment.created_at),
     updatedAtLabel: formatShortDateTime(appointment.updated_at),
+    hasPrescription: (maps.prescriptionAppointmentIds ?? new Set()).has(appointment.id),
+    prescriptions: (maps.prescriptionsByAppointmentId ?? new Map()).get(appointment.id),
     ...icon,
   };
 }
@@ -238,7 +240,7 @@ async function loadAppointmentMaps(appointments) {
   const scheduleIds = [...new Set(appointments.map((row) => row.doctor_schedule_id).filter(Boolean))];
   const appointmentIds = appointments.map((row) => row.id);
 
-  const [petsResult, doctorsResult, staffsResult, schedulesResult, servicesResult] = await Promise.all([
+  const [petsResult, doctorsResult, staffsResult, schedulesResult, servicesResult, medicalVisitsResult] = await Promise.all([
     petIds.length
       ? supabase.from("pets").select("id, name").in("id", petIds)
       : Promise.resolve({ data: [], error: null }),
@@ -257,11 +259,24 @@ async function loadAppointmentMaps(appointments) {
           .select("id, appointment_id, quantity, unit_price, service:services(id, name, type, price)")
           .in("appointment_id", appointmentIds)
       : Promise.resolve({ data: [], error: null }),
+    appointmentIds.length
+      ? supabase
+          .from("medical_visits")
+          .select("appointment_id, prescriptions(id)")
+          .in("appointment_id", appointmentIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
-  for (const result of [petsResult, doctorsResult, staffsResult, schedulesResult, servicesResult]) {
+  for (const result of [petsResult, doctorsResult, staffsResult, schedulesResult, servicesResult, medicalVisitsResult]) {
     if (result.error) throw new Error(result.error.message);
   }
+
+  const prescriptionAppointmentIds = new Set();
+  (medicalVisitsResult.data ?? []).forEach((row) => {
+    if (row.prescriptions && row.prescriptions.length > 0) {
+      prescriptionAppointmentIds.add(row.appointment_id);
+    }
+  });
 
   const servicesByAppointmentId = new Map();
   (servicesResult.data ?? []).forEach((row) => {
@@ -270,12 +285,53 @@ async function loadAppointmentMaps(appointments) {
     servicesByAppointmentId.set(row.appointment_id, current);
   });
 
+  const prescriptionIdsByVisitId = new Map();
+  const allPrescriptionIds = [];
+  (medicalVisitsResult.data ?? []).forEach((row) => {
+    if (row.prescriptions && row.prescriptions.length > 0) {
+      prescriptionIdsByVisitId.set(row.appointment_id, row.prescriptions.map((p) => p.id));
+      allPrescriptionIds.push(...row.prescriptions.map((p) => p.id));
+    }
+  });
+
+  const prescriptionItemsResult = allPrescriptionIds.length
+    ? await supabase
+        .from("prescription_items")
+        .select("id, prescription_id, medicine_name, dosage, frequency, duration_days, instructions")
+        .in("prescription_id", allPrescriptionIds)
+    : { data: [], error: null };
+
+  if (prescriptionItemsResult.error) throw new Error(prescriptionItemsResult.error.message);
+
+  const prescriptionItemsByPrescriptionId = new Map();
+  (prescriptionItemsResult.data ?? []).forEach((item) => {
+    const current = prescriptionItemsByPrescriptionId.get(item.prescription_id) ?? [];
+    current.push(item);
+    prescriptionItemsByPrescriptionId.set(item.prescription_id, current);
+  });
+
+  const prescriptionsByAppointmentId = new Map();
+  prescriptionIdsByVisitId.forEach((rxIds, aptId) => {
+    const items = rxIds.flatMap((rxId) => prescriptionItemsByPrescriptionId.get(rxId) ?? []);
+    if (items.length > 0) {
+      prescriptionsByAppointmentId.set(aptId, items.map((item) => ({
+        medicineName: item.medicine_name,
+        dosage: item.dosage,
+        frequency: item.frequency,
+        durationDays: item.duration_days,
+        instructions: item.instructions,
+      })));
+    }
+  });
+
   return {
     petsById: new Map((petsResult.data ?? []).map((row) => [row.id, row])),
     doctorsById: new Map((doctorsResult.data ?? []).map((row) => [row.id, row])),
     staffsById: new Map((staffsResult.data ?? []).map((row) => [row.id, row])),
     schedulesById: new Map((schedulesResult.data ?? []).map((row) => [row.id, row])),
     servicesByAppointmentId,
+    prescriptionAppointmentIds,
+    prescriptionsByAppointmentId,
   };
 }
 
@@ -759,14 +815,8 @@ async function createCustomerAppointment(input, customerId) {
     requested_time: requestedTime,
   };
 
-  const { data: appointment, error } = await supabase
-    .from("appointments")
-    .insert(insertPayload)
-    .select("id")
-    .single();
-
-  if (error) throw new Error(error.message);
-
+  // Reserve the schedule first to avoid duplicate doctor_schedule_id conflicts
+  let appointmentId = null;
   if (assignment.scheduleId) {
     const scheduleUpdate = await supabase
       .from("doctor_schedules")
@@ -775,17 +825,36 @@ async function createCustomerAppointment(input, customerId) {
       .eq("status", "AVAILABLE")
       .select("id")
       .maybeSingle();
-    if (scheduleUpdate.error || !scheduleUpdate.data) {
-      await supabase.from("appointments").delete().eq("id", appointment.id);
-      const scheduleError = new Error(scheduleUpdate.error?.message || "Ca làm việc của bác sĩ vừa được đặt.");
-      scheduleError.statusCode = 409;
-      throw scheduleError;
+
+    if (scheduleUpdate.error) {
+      throw new Error(scheduleUpdate.error.message);
+    }
+    if (!scheduleUpdate.data) {
+      const error = new Error("Ca làm việc của bác sĩ vừa được đặt. Vui lòng chọn khung giờ khác.");
+      error.statusCode = 409;
+      throw error;
     }
   }
 
+  const { data: appointment, error } = await supabase
+    .from("appointments")
+    .insert(insertPayload)
+    .select("id")
+    .single();
+
+  if (error) {
+    // Rollback schedule if appointment insert fails
+    if (assignment.scheduleId) {
+      await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: new Date().toISOString() }).eq("id", assignment.scheduleId);
+    }
+    throw new Error(error.message);
+  }
+
+  appointmentId = appointment.id;
+
   if (service?.id) {
     const item = await supabase.from("appointment_services").insert({
-      appointment_id: appointment.id,
+      appointment_id: appointmentId,
       service_id: service.id,
       quantity: 1,
       unit_price: service.price ?? 0,
@@ -793,16 +862,16 @@ async function createCustomerAppointment(input, customerId) {
     });
 
     if (item.error) {
-      await supabase.from("appointments").delete().eq("id", appointment.id);
+      await supabase.from("appointments").delete().eq("id", appointmentId);
       if (assignment.scheduleId) {
-        await supabase.from("doctor_schedules").update({ status: "AVAILABLE" }).eq("id", assignment.scheduleId);
+        await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: new Date().toISOString() }).eq("id", assignment.scheduleId);
       }
       throw new Error(item.error.message);
     }
   }
 
-  await sendAppointmentEventEmail("appointment_confirmation", appointment.id);
-  return getOneCustomerAppointment(appointment.id, effectiveCustomerId);
+  await sendAppointmentEventEmail("appointment_confirmation", appointmentId);
+  return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
 }
 
 async function getOneCustomerAppointment(appointmentId, customerId) {

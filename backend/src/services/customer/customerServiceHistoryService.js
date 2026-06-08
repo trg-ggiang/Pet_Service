@@ -55,7 +55,7 @@ function getServiceNames(invoice, appointment) {
 }
 
 async function loadDetails(appointmentIds, invoiceIds) {
-  const [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult] = await Promise.all([
+  const [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult, prescriptionResult] = await Promise.all([
     invoiceIds.length
       ? supabase
           .from("invoice_items")
@@ -87,9 +87,27 @@ async function loadDetails(appointmentIds, invoiceIds) {
           .select("id, appointment_id, habit_note, special_note")
           .in("appointment_id", appointmentIds)
       : Promise.resolve({ data: [], error: null }),
+    appointmentIds.length
+      ? supabase
+          .from("prescription_items")
+          .select(`
+            id,
+            prescriptions:prescription_id (
+              medical_visits:medical_visit_id (
+                appointment_id
+              )
+            ),
+            medicine_name,
+            dosage,
+            frequency,
+            duration_days,
+            instructions
+          `)
+          .in("appointment_id", appointmentIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
-  for (const result of [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult]) {
+  for (const result of [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult, prescriptionResult]) {
     if (result.error) throw new Error(result.error.message);
   }
 
@@ -100,12 +118,30 @@ async function loadDetails(appointmentIds, invoiceIds) {
     itemsByInvoiceId.set(item.invoice_id, current);
   });
 
+  // Build prescriptions by appointment_id
+  const prescriptionsByAppointmentId = new Map();
+  (prescriptionResult.data ?? []).forEach((item) => {
+    const appointmentId = item.prescriptions?.medical_visits?.appointment_id;
+    if (appointmentId) {
+      const current = prescriptionsByAppointmentId.get(appointmentId) ?? [];
+      current.push({
+        medicineName: item.medicine_name || "",
+        dosage: item.dosage || "",
+        frequency: item.frequency || "",
+        durationDays: item.duration_days,
+        instructions: item.instructions || "",
+      });
+      prescriptionsByAppointmentId.set(appointmentId, current);
+    }
+  });
+
   return {
     itemsByInvoiceId,
     medicalVisitsByAppointmentId: new Map((medicalResult.data ?? []).map((row) => [row.appointment_id, row])),
     vaccinationsByAppointmentId: new Map((vaccinationResult.data ?? []).map((row) => [row.appointment_id, row])),
     groomingByAppointmentId: new Map((groomingResult.data ?? []).map((row) => [row.appointment_id, row])),
     boardingByAppointmentId: new Map((boardingResult.data ?? []).map((row) => [row.appointment_id, row])),
+    prescriptionsByAppointmentId,
   };
 }
 
@@ -153,6 +189,7 @@ async function listCustomerServiceHistory(customerId) {
     const pet = appointment ? petsById.get(appointment.pet_id) : null;
     const items = details.itemsByInvoiceId.get(invoice.id) ?? [];
     const services = getServiceNames({ ...invoice, items }, appointment);
+    const prescriptions = details.prescriptionsByAppointmentId.get(invoice.appointment_id) ?? [];
 
     return {
       id: `INV-${String(invoice.id).padStart(6, "0")}`,
@@ -182,6 +219,7 @@ async function listCustomerServiceHistory(customerId) {
       type: getHistoryType({ ...invoice, items }, details),
       staff: invoice.transaction_code ?? invoice.payment_status,
       details: getHistoryDetails(invoice, details),
+      prescriptions,
     };
   });
 }
