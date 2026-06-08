@@ -1,5 +1,96 @@
 const { supabase } = require("../../lib/supabaseClient");
 const { getStoredSetting, saveStoredSetting } = require("../settingsService");
+const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
+const MOJIBAKE_PATTERN = /\u00c3|\u00c4|\u00c6|\u00c2|\u00e1\u00ba|\u00e1\u00bb|\u00e2\u20ac|\u00f0\u0178|\ufffd/;
+const CP1252_REVERSE = {
+  "\u20ac": 0x80, "\u201a": 0x82, "\u0192": 0x83, "\u201e": 0x84, "\u2026": 0x85, "\u2020": 0x86, "\u2021": 0x87,
+  "\u02c6": 0x88, "\u2030": 0x89, "\u0160": 0x8A, "\u2039": 0x8B, "\u0152": 0x8C, "\u017d": 0x8E,
+  "\u2018": 0x91, "\u2019": 0x92, "\u201c": 0x93, "\u201d": 0x94, "\u2022": 0x95, "\u2013": 0x96, "\u2014": 0x97,
+  "\u02dc": 0x98, "\u2122": 0x99, "\u0161": 0x9A, "\u203a": 0x9B, "\u0153": 0x9C, "\u017e": 0x9E, "\u0178": 0x9F,
+};
+
+function decodeWindows1252AsUtf8(text) {
+  const bytes = [];
+  for (const char of String(text)) {
+    const code = char.codePointAt(0);
+    if (code <= 0xff) {
+      bytes.push(code);
+      continue;
+    }
+    const mapped = CP1252_REVERSE[char];
+    if (mapped == null) return text;
+    bytes.push(mapped);
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
+function decodeMojibakeToken(value) {
+  let text = String(value ?? "");
+  for (let i = 0; i < 3 && MOJIBAKE_PATTERN.test(text); i += 1) {
+    const decoded = decodeWindows1252AsUtf8(text);
+    if (!decoded || decoded === text) break;
+    text = decoded;
+  }
+  return text;
+}
+
+function normalizeText(value) {
+  const text = String(value ?? "");
+  if (!MOJIBAKE_PATTERN.test(text)) return text;
+
+  const decoded = decodeMojibakeToken(text);
+  if (decoded !== text && !MOJIBAKE_PATTERN.test(decoded)) return decoded;
+
+  return text
+    .split(/(\s+)/)
+    .map((part) => (MOJIBAKE_PATTERN.test(part) ? decodeMojibakeToken(part) : part))
+    .join("");
+}
+
+function isFollowUpSystemNote(value) {
+  const text = normalizeText(value)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replaceAll(String.fromCharCode(273), "d")
+    .replaceAll(String.fromCharCode(272), "d");
+  return text.startsWith("tai kham tu lich");
+}
+function getAppointmentDisplayNote(value) {
+  const note = cleanAppointmentNote(value);
+  return isFollowUpSystemNote(note) ? "" : note;
+}
+
+function getAppointmentChiefComplaint({ clinicalExam, appointmentNote, symptoms }) {
+  const chiefComplaint = String(clinicalExam?.chiefComplaint || "").trim();
+  if (chiefComplaint) return chiefComplaint;
+  if (symptoms) return String(symptoms).trim();
+  if (isFollowUpSystemNote(appointmentNote)) return "Tái khám";
+  return appointmentNote || "Chưa ghi nhận";
+}
+function cleanAppointmentNote(value) {
+  const text = normalizeText(value).trim();
+  if (!text) return "";
+
+  return text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith(REQUEST_PREFIX))
+    .filter((line) => !(line.startsWith("{") && line.endsWith("}")))
+    .join("\n")
+    .trim();
+}
+
+function normalizeTextDeep(value) {
+  if (typeof value === "string") return normalizeText(value);
+  if (Array.isArray(value)) return value.map(normalizeTextDeep);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, normalizeTextDeep(item)]),
+  );
+}
 
 const SERVICE_TYPE_LABELS = {
   MEDICAL: "Khám bệnh",
@@ -58,7 +149,40 @@ function splitSymptoms(symptoms) {
     .map((item) => item.trim())
     .filter(Boolean);
 }
+function parseClinicalExam(value) {
+  if (!value) return {};
+  if (typeof value === "object") return value;
+  try {
+    const parsed = JSON.parse(String(value));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
+function summarizeClinicalExam(clinicalExam, fallback = "") {
+  return [
+    clinicalExam.clinicalNote,
+    clinicalExam.ownerNotes ? `Ghi chú chủ nuôi: ${clinicalExam.ownerNotes}` : "",
+  ]
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .join("\n") || fallback;
+}
+function systemLabel(systemId) {
+  const labels = {
+    general: "Tổng thể",
+    skin: "Da & lông",
+    eyes_ears: "Mắt & tai",
+    lymph: "Hạch bạch huyết",
+    cardiac: "Tim mạch",
+    respiratory: "Hô hấp",
+    gastro: "Tiêu hoá",
+    musculo: "Cơ xương khớp",
+    neuro: "Thần kinh",
+  };
+  return labels[systemId] || systemId;
+}
 function yearsBetween(value) {
   if (!value) return null;
   const dob = new Date(value);
@@ -72,11 +196,20 @@ function yearsBetween(value) {
 
 function buildSystemResults(clinicalExam, diseaseRows) {
   const rows = [];
-  if (clinicalExam) {
+
+  Object.entries(clinicalExam.systems || {}).forEach(([systemId, entry]) => {
+    rows.push({
+      system: systemLabel(systemId),
+      status: entry?.status === "abnormal" ? "abnormal" : "normal",
+      note: String(entry?.notes || "").trim(),
+    });
+  });
+
+  if (rows.length === 0 && summarizeClinicalExam(clinicalExam)) {
     rows.push({
       system: "Khám lâm sàng",
       status: "abnormal",
-      note: clinicalExam,
+      note: summarizeClinicalExam(clinicalExam),
     });
   }
 
@@ -94,7 +227,24 @@ function buildSystemResults(clinicalExam, diseaseRows) {
 
   return rows;
 }
+function examDurationLabel(value) {
+  const labels = {
+    "<1d": "Dưới 1 ngày",
+    "1-3d": "1-3 ngày",
+    "3-7d": "3-7 ngày",
+    "1-2w": "1-2 tuần",
+    ">2w": "Hơn 2 tuần",
+  };
+  return labels[value] || value || "Chưa cập nhật";
+}
 
+function examOnsetLabel(value) {
+  const labels = {
+    sudden: "Đột ngột",
+    gradual: "Từ từ",
+  };
+  return labels[value] || value || "Chưa cập nhật";
+}
 function serviceColor(type) {
   if (type === "VACCINE") return "bg-emerald-100 text-emerald-700";
   if (type === "GROOMING") return "bg-amber-100 text-amber-700";
@@ -122,8 +272,8 @@ function durationText(days) {
 function filterDoctorRecords(records, filters = {}) {
   const search = String(filters.search || "").trim().toLowerCase();
   const speciesAliases = {
-    "ChÃ³": "Chó",
-    "MÃ¨o": "Mèo",
+    "Chó": "Chó",
+    "Mèo": "Mèo",
   };
   const rawSpecies = String(filters.species || "all");
   const species = speciesAliases[rawSpecies] || rawSpecies;
@@ -259,6 +409,16 @@ async function listDoctorRecords(doctorId, filters = {}) {
     const date = getAppointmentDate(appointment);
     const pet = appointment.pets || {};
     const age = yearsBetween(pet.dob);
+    const clinicalExam = parseClinicalExam(visit?.clinical_exam);
+    const appointmentNote = cleanAppointmentNote(appointment.note);
+    const appointmentDisplayNote = getAppointmentDisplayNote(appointment.note);
+    const selectedSymptoms = Array.isArray(clinicalExam.selectedSymptoms) && clinicalExam.selectedSymptoms.length > 0
+      ? clinicalExam.selectedSymptoms
+      : splitSymptoms(visit?.symptoms);
+    const clinicalSummary = summarizeClinicalExam(
+      clinicalExam,
+      visit?.diagnosis_note || appointmentDisplayNote || "",
+    );
 
     return {
       id: visit ? `MR-${String(visit.id).padStart(6, "0")}` : `APT-${String(appointment.id).padStart(6, "0")}`,
@@ -278,22 +438,22 @@ async function listDoctorRecords(doctorId, filters = {}) {
       doctor: appointment.doctor?.full_name || "Bác sĩ",
       service: primaryService?.name || SERVICE_TYPE_LABELS[appointment.appointment_type] || appointment.appointment_type,
       serviceColor: serviceColor(primaryService?.type || appointment.appointment_type),
-      chiefComplaint: appointment.note || visit?.symptoms || "Chưa ghi nhận",
-      symptoms: splitSymptoms(visit?.symptoms),
-      duration: "Chưa cập nhật",
-      onset: "Chưa cập nhật",
-      severity: diseases.length > 0 ? 3 : 0,
+      chiefComplaint: getAppointmentChiefComplaint({ clinicalExam, appointmentNote, symptoms: visit?.symptoms }),
+      symptoms: selectedSymptoms,
+      duration: examDurationLabel(clinicalExam.duration),
+      onset: examOnsetLabel(clinicalExam.onset),
+      severity: Number(clinicalExam.severity || 0),
       vitals: {
-        temp: "",
-        heart: "",
-        resp: "",
-        spo2: "",
-        weight: pet.weight ? String(pet.weight) : "",
+        temp: clinicalExam.vitals?.temp || "",
+        heart: clinicalExam.vitals?.heart || "",
+        resp: clinicalExam.vitals?.resp || "",
+        spo2: clinicalExam.vitals?.spo2 || "",
+        weight: clinicalExam.vitals?.weight || (pet.weight ? String(pet.weight) : ""),
       },
-      sysResults: buildSystemResults(visit?.clinical_exam, diseases),
+      sysResults: buildSystemResults(clinicalExam, diseases),
       diagnosis: visit?.diagnosis_note || "Chưa có chẩn đoán",
       diagnosisCode: "",
-      clinicalNote: visit?.clinical_exam || visit?.diagnosis_note || appointment.note || "Chưa có ghi chú lâm sàng",
+      clinicalNote: clinicalSummary,
       prescriptions: prescriptions.flatMap((prescription) =>
         (itemsByPrescriptionId.get(prescription.id) || []).map((item) => ({
           drug: item.medicine_name,
@@ -309,7 +469,7 @@ async function listDoctorRecords(doctorId, filters = {}) {
     };
   });
 
-  return filterDoctorRecords(records, filters);
+  return filterDoctorRecords(normalizeTextDeep(records), filters);
 }
 
 function periodStart(period, anchorDate = new Date()) {
@@ -413,7 +573,7 @@ function buildStatsForPeriod(period, appointments, reviews) {
     return {
       name: appointment.pets?.name || "Thú cưng",
       species: appointment.pets?.species?.name || "Khác",
-      diagnosis: appointment.medical_visits?.[0]?.diagnosis_note || appointment.note || "Khám thú y",
+      diagnosis: appointment.medical_visits?.[0]?.diagnosis_note || cleanAppointmentNote(appointment.note) || "Khám thú y",
       date: formatDateShort(getAppointmentDate(appointment)).slice(0, 5),
       rating: review?.rating || 0,
     };
@@ -495,17 +655,17 @@ async function getDoctorStats(doctorId) {
 
   if (reviewsResult.error) throw new Error(reviewsResult.error.message);
 
-  return {
+  return normalizeTextDeep({
     month: buildStatsForPeriod("month", appointmentRows, reviewsResult.data || []),
     week: buildStatsForPeriod("week", appointmentRows, reviewsResult.data || []),
     day: buildStatsForPeriod("day", appointmentRows, reviewsResult.data || []),
     quarter: buildStatsForPeriod("quarter", appointmentRows, reviewsResult.data || []),
-  };
+  });
 }
 
 function weekdayLabel(day) {
-  const labels = ["CN", "Thá»© 2", "Thá»© 3", "Thá»© 4", "Thá»© 5", "Thá»© 6", "Thá»© 7"];
-  return labels[day] || "Thá»© 2";
+  const labels = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  return labels[day] || "Thứ 2";
 }
 
 function scheduleTimeToMinutes(value) {
@@ -590,7 +750,7 @@ async function getDoctorSettings(doctorId) {
       name: doctor.full_name || "",
       email: doctor.user?.email || "",
       phone: "",
-      specialty: doctor.specialization || "Ná»™i khoa",
+      specialty: doctor.specialization || "Nội khoa",
       room: doctor.room_name || "Phòng 1",
       bio: doctor.degree || "",
       license: doctor.degree || "",
@@ -621,7 +781,7 @@ async function getDoctorSettings(doctorId) {
     security: {
       twoFa: false,
       sessions: [
-        { device: "Chrome", location: "Thiáº¿t bá»‹ hiá»‡n táº¡i", time: "Hiá»‡n táº¡i", current: true },
+        { device: "Chrome", location: "Thiết bị hiện tại", time: "Hiện tại", current: true },
       ],
     },
   };
@@ -633,9 +793,9 @@ async function getDoctorSettings(doctorId) {
       notifications: defaults.notifications,
       security: { twoFa: defaults.security.twoFa },
     });
-    return defaults;
+    return normalizeTextDeep(defaults);
   }
-  return {
+  return normalizeTextDeep({
     ...defaults,
     schedule: {
       ...defaults.schedule,
@@ -643,7 +803,7 @@ async function getDoctorSettings(doctorId) {
     },
     notifications: { ...defaults.notifications, ...stored.notifications },
     security: { ...defaults.security, ...stored.security, sessions: defaults.security.sessions },
-  };
+  });
 }
 
 async function getDoctorExamContext(doctorId, appointmentId) {
@@ -718,14 +878,14 @@ async function getDoctorExamContext(doctorId, appointmentId) {
   if (vaccinationsResult.error) throw new Error(vaccinationsResult.error.message);
   if (historyResult.error) throw new Error(historyResult.error.message);
 
-  return {
+  return normalizeTextDeep({
     appointment: {
       id: appointment.id,
       code: `APT-${String(appointment.id).padStart(5, "0")}`,
       status: appointment.status,
       service: primaryService?.name || SERVICE_TYPE_LABELS[appointment.appointment_type] || appointment.appointment_type,
       serviceType: primaryService?.type || appointment.appointment_type,
-      note: appointment.note || "",
+      note: cleanAppointmentNote(appointment.note) || "",
       date: formatDateShort(appointment.requested_date || appointment.created_at),
       time: appointment.requested_time || "",
     },
@@ -748,20 +908,20 @@ async function getDoctorExamContext(doctorId, appointmentId) {
       date: formatDateShort(row.date_given),
       due: formatDateShort(row.next_due_date),
       ok: isVaccinationValid(row.next_due_date),
-      note: row.note || "",
+      note: cleanAppointmentNote(row.note) || "",
     })),
     visitHistory: (historyResult.data || []).map((row) => ({
       id: row.id,
       date: formatDateShort(row.requested_date || row.created_at),
       reason: row.medical_visits?.[0]?.diagnosis_note
-        || row.note
+        || cleanAppointmentNote(row.note)
         || SERVICE_TYPE_LABELS[row.appointment_type]
         || "Khám thú y",
       doctor: row.doctor?.full_name || "Chưa phân công",
     })),
     initialForm: {
-      chiefComplaint: appointment.note || "",
-      ownerNotes: appointment.note || "",
+      chiefComplaint: isFollowUpSystemNote(appointment.note) ? "Tái khám" : cleanAppointmentNote(appointment.note) || "",
+      ownerNotes: getAppointmentDisplayNote(appointment.note) || "",
       vitals: {
         temp: "",
         heart: "",
@@ -770,7 +930,7 @@ async function getDoctorExamContext(doctorId, appointmentId) {
         weight: pet.weight ? String(pet.weight) : "",
       },
     },
-  };
+  });
 }
 
 module.exports = {

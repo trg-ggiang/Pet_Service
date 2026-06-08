@@ -2,6 +2,7 @@ const express = require("express");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
 const { getDoctorExamContext, getDoctorSettings, getDoctorStats, listDoctorRecords } = require("../services/doctor/doctorService");
+const { assertScheduleAvailable } = require("../services/scheduleService");
 
 const router = express.Router();
 

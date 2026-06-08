@@ -9,10 +9,12 @@ import type {
 } from "../../features/staff/services/staffAppointments";
 import { APT_STATUS_CONFIG, SERVICE_ICONS } from "./staffPortalConfig";
 
-export function AppointmentDetailModal({ apt, onClose, onCheckIn }: {
+export function AppointmentDetailModal({ apt, onClose, onCheckIn, onApproveRequest, approving }: {
   apt: StaffAppointment;
   onClose: () => void;
   onCheckIn: () => void;
+  onApproveRequest: () => void;
+  approving?: boolean;
 }) {
   const statusCfg = APT_STATUS_CONFIG[apt.status];
   const svcIcon = SERVICE_ICONS[apt.serviceType] || SERVICE_ICONS.exam;
@@ -55,16 +57,31 @@ export function AppointmentDetailModal({ apt, onClose, onCheckIn }: {
           ))}
           {apt.note && (
             <div className="py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-500 font-medium">Ghi chú</span>
+              <span className="text-sm text-slate-500 font-medium">Ghi ch?</span>
               <p className="text-sm font-medium text-slate-700 mt-1">{apt.note}</p>
+            </div>
+          )}
+          {apt.pendingRequest && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+              <div>{apt.pendingRequest.type === "RESCHEDULE" ? "Yêu cầu đổi lịch" : "Yêu cầu hủy lịch"}</div>
+              {apt.pendingRequest.type === "RESCHEDULE" && (
+                <div className="mt-1 text-amber-700">Lịch mới: {apt.pendingRequest.date || "--"} {String(apt.pendingRequest.time || "").slice(0, 5)}</div>
+              )}
+              {apt.pendingRequest.reason && <div className="mt-1 text-amber-700">Lý do: {apt.pendingRequest.reason}</div>}
             </div>
           )}
         </div>
         {apt.status === "scheduled" && (
           <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
-            <button onClick={onCheckIn} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-              <CheckCircle2 size={16} /> Check-in ngay
-            </button>
+            {apt.pendingRequest ? (
+              <button onClick={onApproveRequest} disabled={approving} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
+                <CheckCircle2 size={16} /> {approving ? "Đang duyệt..." : "Duyệt yêu cầu"}
+              </button>
+            ) : (
+              <button onClick={onCheckIn} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+                <CheckCircle2 size={16} /> Check-in ngay
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -1,4 +1,52 @@
 const { supabase } = require("../../lib/supabaseClient");
+const MOJIBAKE_PATTERN = /\u00c3|\u00c4|\u00c6|\u00c2|\u00e1\u00ba|\u00e1\u00bb|\u00e2\u20ac|\u00f0\u0178|\ufffd/;
+const CP1252_REVERSE = {
+  "\u20ac": 0x80, "\u201a": 0x82, "\u0192": 0x83, "\u201e": 0x84, "\u2026": 0x85, "\u2020": 0x86, "\u2021": 0x87,
+  "\u02c6": 0x88, "\u2030": 0x89, "\u0160": 0x8A, "\u2039": 0x8B, "\u0152": 0x8C, "\u017d": 0x8E,
+  "\u2018": 0x91, "\u2019": 0x92, "\u201c": 0x93, "\u201d": 0x94, "\u2022": 0x95, "\u2013": 0x96, "\u2014": 0x97,
+  "\u02dc": 0x98, "\u2122": 0x99, "\u0161": 0x9A, "\u203a": 0x9B, "\u0153": 0x9C, "\u017e": 0x9E, "\u0178": 0x9F,
+};
+
+function decodeWindows1252AsUtf8(text) {
+  const bytes = [];
+  for (const char of String(text)) {
+    const code = char.codePointAt(0);
+    if (code <= 0xff) {
+      bytes.push(code);
+      continue;
+    }
+    const mapped = CP1252_REVERSE[char];
+    if (mapped == null) return text;
+    bytes.push(mapped);
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
+function decodeMojibakeToken(value) {
+  let text = String(value ?? "");
+  for (let i = 0; i < 3 && MOJIBAKE_PATTERN.test(text); i += 1) {
+    const decoded = decodeWindows1252AsUtf8(text);
+    if (!decoded || decoded === text) break;
+    text = decoded;
+  }
+  return text;
+}
+
+function normalizeText(value) {
+  const text = String(value ?? "");
+  if (!MOJIBAKE_PATTERN.test(text)) return text;
+  const decoded = decodeMojibakeToken(text);
+  if (decoded !== text && !MOJIBAKE_PATTERN.test(decoded)) return decoded;
+  return text.split(/(\s+)/).map((part) => (MOJIBAKE_PATTERN.test(part) ? decodeMojibakeToken(part) : part)).join("");
+}
+
+function normalizeTextDeep(value) {
+  if (typeof value === "string") return normalizeText(value);
+  if (Array.isArray(value)) return value.map(normalizeTextDeep);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizeTextDeep(item)]));
+}
+
 
 const SERVICE_LABELS = {
   MEDICAL: "Khám bệnh",
@@ -224,7 +272,7 @@ async function listDoctorAppointmentsForPortal(doctorId) {
   const roomLabel = formattedAppointments.find((appointment) => appointment.roomName)?.roomName
     || await getDoctorRoomLabel(doctorId);
 
-  return {
+  return normalizeTextDeep({
     appointments: formattedAppointments,
     summary: buildDoctorScheduleSummary(formattedAppointments),
     meta: {
@@ -233,9 +281,11 @@ async function listDoctorAppointmentsForPortal(doctorId) {
       roomLabel,
       activityLabel: `${roomLabel} · Đang hoạt động`,
     },
-  };
+  });
 }
 
 module.exports = {
   listDoctorAppointmentsForPortal,
 };
+
+

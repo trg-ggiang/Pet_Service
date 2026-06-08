@@ -67,6 +67,7 @@ export type CreateCustomerAppointmentInput = {
 export type RescheduleCustomerAppointmentInput = {
   date: string;
   time: string;
+  reason: string;
 };
 
 export type CustomerAppointmentOptions = {

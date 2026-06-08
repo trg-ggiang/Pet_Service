@@ -55,7 +55,7 @@ function getServiceNames(invoice, appointment) {
 }
 
 async function loadDetails(appointmentIds, invoiceIds) {
-  const [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult] = await Promise.all([
+  const [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult, prescriptionResult] = await Promise.all([
     invoiceIds.length
       ? supabase
           .from("invoice_items")
@@ -87,9 +87,27 @@ async function loadDetails(appointmentIds, invoiceIds) {
           .select("id, appointment_id, habit_note, special_note")
           .in("appointment_id", appointmentIds)
       : Promise.resolve({ data: [], error: null }),
+    appointmentIds.length
+      ? supabase
+          .from("prescription_items")
+          .select(`
+            id,
+            prescriptions:prescription_id (
+              medical_visits:medical_visit_id (
+                appointment_id
+              )
+            ),
+            medicine_name,
+            dosage,
+            frequency,
+            duration_days,
+            instructions
+          `)
+          .in("appointment_id", appointmentIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
-  for (const result of [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult]) {
+  for (const result of [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult, prescriptionResult]) {
     if (result.error) throw new Error(result.error.message);
   }
 

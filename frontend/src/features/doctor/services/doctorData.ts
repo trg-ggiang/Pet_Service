@@ -205,7 +205,7 @@ function authInit(init?: RequestInit): RequestInit {
 }
 
 function hasEncodingNoise(value: string) {
-  return /[ÃÂ�]|áÂ|â€|â„|Æ|»/.test(value);
+  return /[\u00c3\u00c2\ufffd]|\u00e1\u00c2|\u00e2\u20ac|\u00e2\u201e|\u00c6|\u00bb/.test(value);
 }
 
 function normalizeDoctorSettings(settings: DoctorSettingsPayload): DoctorSettingsPayload {
@@ -273,5 +273,28 @@ export const doctorDataService = {
       authInit(),
     );
     return data.context;
+  },
+
+  async saveSchedule(rows: DoctorSettingsPayload["schedule"]["rows"]): Promise<string> {
+    const data = await requestJson<ApiOk<{ message: string }>>(
+      apiUrl("/api/doctor/settings/schedule"),
+      {
+        method: "PUT",
+        ...authInit(),
+        body: JSON.stringify({ rows }),
+      },
+    );
+    return data.message || "Đã lưu lịch làm việc";
+  },
+
+  async deleteSchedule(scheduleId: number): Promise<string> {
+    const data = await requestJson<ApiOk<{ message: string }>>(
+      apiUrl(`/api/doctor/settings/schedule/${scheduleId}`),
+      {
+        method: "DELETE",
+        ...authInit(),
+      },
+    );
+    return data.message || "Đã xóa lịch làm việc";
   },
 };
