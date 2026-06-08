@@ -37,6 +37,14 @@ export interface Apt {
   note?: string | null;
   serviceFee?: number;
   totalCost?: number;
+  hasPrescription?: boolean;
+  prescriptions?: Array<{
+    medicineName: string;
+    dosage: string;
+    frequency: string;
+    durationDays: number | null;
+    instructions: string;
+  }>;
   createdAt?: string;
   updatedAt?: string;
   createdAtLabel?: string;
@@ -63,6 +71,13 @@ export interface HistoryRecord {
   type: "medical" | "vaccine" | "grooming" | "boarding";
   staff: string;
   details?: string;
+  prescriptions?: Array<{
+    medicineName: string;
+    dosage: string;
+    frequency: string;
+    durationDays: number | null;
+    instructions: string;
+  }>;
 }
 
 export interface CustomerPortalNotification {

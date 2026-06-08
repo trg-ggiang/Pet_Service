@@ -1,6 +1,7 @@
 import type { DoctorExamDetail, DoctorExamRecord, ExamSystemEntry } from "../../services/doctorAppointments";
 import { VitalInput } from "./VitalInput";
 import { SystemRow } from "./SystemRow";
+import { PrescriptionForm } from "./PrescriptionForm";
 
 function getTodayValue() {
   const now = new Date();
@@ -35,6 +36,8 @@ export function ClinicalExamForm({
   function patchRecord(patch: Partial<DoctorExamRecord>) {
     onChange({ ...record, ...patch });
   }
+
+  const prescriptions = record.prescriptions ?? [];
 
   function updateVital(key: keyof DoctorExamRecord["vitals"], value: string) {
     patchRecord({
@@ -114,6 +117,11 @@ export function ClinicalExamForm({
             className="w-full px-3.5 py-3 bg-white border border-border rounded-xl text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 transition-all resize-none"
           />
         </div>
+
+        <PrescriptionForm
+          prescriptions={prescriptions}
+          onChange={(prescriptions) => patchRecord({ prescriptions })}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">
