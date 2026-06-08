@@ -48,7 +48,7 @@ function getInitials(name) {
 }
 
 function getAppointmentDate(appointment) {
-  return appointment.requested_date || appointment.doctor_schedules?.work_date || appointment.created_at;
+  return appointment.requested_date || appointment.doctor_schedule_slots?.slot_date || appointment.created_at;
 }
 
 function splitSymptoms(symptoms) {
@@ -474,7 +474,7 @@ async function getDoctorStats(doctorId) {
       note,
       requested_date,
       created_at,
-      doctor_schedules:doctor_schedule_id (work_date),
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (slot_date),
       pets:pet_id (name, species:species_id (name)),
       appointment_services:appointment_services (service:services(name, type)),
       medical_visits:medical_visits (diagnosis_note)
@@ -508,6 +508,54 @@ function weekdayLabel(day) {
   return labels[day] || "Thá»© 2";
 }
 
+function scheduleTimeToMinutes(value) {
+  const [hour, minute] = String(value || "00:00").split(":").map(Number);
+  return hour * 60 + minute;
+}
+
+function groupScheduleSlots(schedules, doctor) {
+  const sorted = [...(schedules || [])].sort((a, b) => {
+    const dateCompare = String(a.work_date || "").localeCompare(String(b.work_date || ""));
+    if (dateCompare !== 0) return dateCompare;
+    return scheduleTimeToMinutes(a.start_time) - scheduleTimeToMinutes(b.start_time);
+  });
+
+  const groups = [];
+  for (const row of sorted) {
+    const latest = groups[groups.length - 1];
+    const sameWindow = latest
+      && latest.work_date === row.work_date
+      && latest.room_name === row.room_name
+      && formatTime(latest.end_time) === formatTime(row.start_time);
+
+    if (sameWindow) {
+      latest.end_time = row.end_time;
+      latest.slotCount += row.slots?.length || 0;
+      continue;
+    }
+
+    groups.push({ ...row, slotCount: row.slots?.length || 0 });
+  }
+
+  return groups.map((row) => {
+    const date = row.work_date ? new Date(row.work_date) : null;
+    const dayIndex = date && !Number.isNaN(date.getTime()) ? date.getDay() : 1;
+
+    return {
+      id: row.id,
+      day: weekdayLabel(dayIndex),
+      dayIndex,
+      date: formatDateShort(row.work_date),
+      on: true,
+      from: formatTime(row.start_time),
+      to: formatTime(row.end_time),
+      roomName: row.room_name || doctor.room_name || "Phòng 1",
+      slotCount: row.slotCount,
+    };
+  });
+}
+
+
 async function getDoctorSettings(doctorId) {
   const [{ data: doctor, error: doctorError }, { data: schedules, error: scheduleError }] = await Promise.all([
     supabase
@@ -525,7 +573,7 @@ async function getDoctorSettings(doctorId) {
       .single(),
     supabase
       .from("doctor_schedules")
-      .select("id, work_date, start_time, end_time, room_name, status")
+      .select("id, work_date, start_time, end_time, room_name, slots:doctor_schedule_slots!doctor_schedule_slots_doctor_schedule_id_fkey(id)")
       .eq("doctor_id", doctorId)
       .order("work_date", { ascending: true })
       .order("start_time", { ascending: true }),
@@ -534,21 +582,7 @@ async function getDoctorSettings(doctorId) {
   if (doctorError || !doctor) throw new Error("Không tìm thấy hồ sơ bác sĩ");
   if (scheduleError) throw new Error(scheduleError.message);
 
-  const scheduleRows = (schedules || []).map((row) => {
-    const date = row.work_date ? new Date(row.work_date) : null;
-    const day = date && !Number.isNaN(date.getTime()) ? weekdayLabel(date.getDay()) : "Thứ 2";
-
-    return {
-      id: row.id,
-      day,
-      date: formatDateShort(row.work_date),
-      on: !["OFF", "DONE"].includes(row.status),
-      from: formatTime(row.start_time),
-      to: formatTime(row.end_time),
-      roomName: row.room_name || doctor.room_name || "Phòng 1",
-      status: row.status,
-    };
-  });
+  const scheduleRows = groupScheduleSlots(schedules, doctor);
 
   const defaults = {
     profile: {

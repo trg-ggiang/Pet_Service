@@ -8,9 +8,13 @@ import {
   Mail,
   Monitor,
   Phone,
+  Plus,
+  Save,
   Shield,
   Smartphone,
+  Trash2,
   User,
+  X,
 } from "lucide-react";
 import type { DoctorSettingsPayload } from "../../features/doctor/services/doctorData";
 
@@ -149,10 +153,217 @@ export function DoctorProfileSettings({ profile }: { profile: DoctorSettingsPayl
   );
 }
 
-export function DoctorScheduleSettings({ schedule }: { schedule: DoctorSettingsPayload["schedule"] }) {
+export interface ScheduleRowInput {
+  id?: number;
+  day: string;
+  date: string;
+  on: boolean;
+  from: string;
+  to: string;
+  roomName: string;
+  status: string;
+}
+
+interface ScheduleFormProps {
+  initialRows: DoctorSettingsPayload["schedule"]["rows"];
+  onSave: (rows: ScheduleRowInput[]) => Promise<void>;
+  onDelete: (scheduleId: number) => Promise<void>;
+  onCancel: () => void;
+}
+
+function generateDateFromDay(index: number): string {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diff = (index - dayOfWeek + 7) % 7;
+  const targetDate = new Date(now);
+  targetDate.setDate(now.getDate() + diff);
+  const yyyy = targetDate.getFullYear();
+  const mm = String(targetDate.getMonth() + 1).padStart(2, "0");
+  const dd = String(targetDate.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+const TIME_OPTIONS = Array.from({ length: 28 }, (_, i) => {
+  const totalMinutes = 7 * 60 + i * 30;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+});
+
+export function DoctorScheduleForm({ initialRows, onSave, onDelete, onCancel }: ScheduleFormProps) {
+  const [rows, setRows] = useState<ScheduleRowInput[]>(() =>
+    initialRows.length > 0
+      ? initialRows.map((r) => ({
+          id: r.id,
+          day: r.day,
+          date: r.date,
+          on: r.on,
+          from: r.from,
+          to: r.to,
+          roomName: r.roomName,
+          status: r.status,
+        }))
+      : Array.from({ length: 7 }, (_, i) => ({
+          day: ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"][i],
+          date: generateDateFromDay(i === 0 ? 0 : i === 6 ? 6 : i),
+          on: i >= 1 && i <= 6,
+          from: "08:00",
+          to: "17:00",
+          roomName: "Phòng 1",
+          status: "AVAILABLE",
+        })),
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  function updateRow(index: number, patch: Partial<ScheduleRowInput>) {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  }
+
+  async function handleAddRow() {
+    setRows((prev) => {
+      const nextIndex = prev.length;
+      return [
+        ...prev,
+        {
+          day: "",
+          date: generateDateFromDay(nextIndex === 0 ? 0 : nextIndex === 6 ? 6 : nextIndex),
+          on: true,
+          from: "08:00",
+          to: "17:00",
+          roomName: "Phòng 1",
+          status: "AVAILABLE",
+        },
+      ];
+    });
+  }
+
+  async function handleSave() {
+    setError("");
+    setSaving(true);
+    try {
+      await onSave(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể lưu lịch");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-2">
+        <SectionTitle>Cấu hình ngày làm việc</SectionTitle>
+        <button
+          type="button"
+          onClick={handleAddRow}
+          className="h-8 px-3 border border-border rounded-lg text-[12px] font-semibold text-foreground hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+        >
+          <Plus size={14} />
+          Thêm ngày
+        </button>
+      </div>
+      <div className="flex flex-col gap-2">
+        {rows.map((row, index) => (
+          <div
+            key={index}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+              row.on ? "bg-white border-border" : "bg-slate-50 border-border opacity-70"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => updateRow(index, { on: !row.on })}
+              className="flex-shrink-0 focus:outline-none"
+            >
+              <Toggle on={row.on} />
+            </button>
+
+            <input
+              type="text"
+              value={row.day}
+              onChange={(e) => updateRow(index, { day: e.target.value })}
+              placeholder="Thứ 2"
+              className="w-20 h-8 px-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-400"
+            />
+
+            <input
+              type="date"
+              value={row.date}
+              onChange={(e) => updateRow(index, { date: e.target.value })}
+              className="h-8 px-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-400"
+            />
+
+            <select
+              value={row.from}
+              onChange={(e) => updateRow(index, { from: e.target.value })}
+              disabled={!row.on}
+              className="h-8 px-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-400 disabled:bg-slate-100"
+            >
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+
+            <span className="text-[12px] text-muted-foreground">→</span>
+
+            <select
+              value={row.to}
+              onChange={(e) => updateRow(index, { to: e.target.value })}
+              disabled={!row.on}
+              className="h-8 px-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-400 disabled:bg-slate-100"
+            >
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              value={row.roomName}
+              onChange={(e) => updateRow(index, { roomName: e.target.value })}
+              placeholder="Phòng 1"
+              className="w-28 h-8 px-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-400"
+            />
+          </div>
+        ))}
+      </div>
+
+      {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
+
+      <div className="flex gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="h-10 px-5 border border-border rounded-xl text-[13px] font-semibold text-foreground hover:bg-slate-50 transition-colors disabled:opacity-50"
+        >
+          Hủy
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="h-10 px-5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-[13px] font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          Lưu lịch
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function DoctorScheduleSettings({
+  schedule,
+}: {
+  schedule: DoctorSettingsPayload["schedule"];
+}) {
   return (
     <div className="flex flex-col gap-6">
-      <SectionTitle>Ngày & giờ làm việc từ database</SectionTitle>
+      <div className="flex items-center justify-between">
+        <SectionTitle>Ngày và giờ làm việc từ admin</SectionTitle>
+      </div>
       <div className="flex flex-col gap-2">
         {schedule.rows.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
@@ -163,8 +374,10 @@ export function DoctorScheduleSettings({ schedule }: { schedule: DoctorSettingsP
             <Toggle on={row.on} />
             <span className="w-14 text-[13px] font-semibold text-foreground">{row.day}</span>
             <span className="text-[12px] text-muted-foreground">{row.date}</span>
-            <span className="text-[12px] font-semibold text-foreground">{row.from} → {row.to}</span>
-            <span className="ml-auto text-[11px] text-muted-foreground font-medium">{row.roomName} · {row.status}</span>
+            <span className="text-[12px] font-semibold text-foreground">{row.from} - {row.to}</span>
+            <span className="ml-auto text-[11px] text-muted-foreground font-medium">
+              {row.roomName} · {row.slotCount ?? 0} ca khám
+            </span>
           </div>
         ))}
       </div>
@@ -173,7 +386,7 @@ export function DoctorScheduleSettings({ schedule }: { schedule: DoctorSettingsP
       <div className="grid grid-cols-3 gap-4">
         <Field label="Thời lượng mỗi ca"><ReadOnlyInput value={`${schedule.options.slotDuration} phút`} /></Field>
         <Field label="Tối đa ca/ngày"><ReadOnlyInput value={schedule.options.maxAppointments} /></Field>
-        <Field label="Nghỉ giải lao"><ReadOnlyInput value={`${schedule.options.breakFrom} → ${schedule.options.breakTo}`} /></Field>
+        <Field label="Nghỉ giải lao"><ReadOnlyInput value={`${schedule.options.breakFrom} - ${schedule.options.breakTo}`} /></Field>
       </div>
     </div>
   );

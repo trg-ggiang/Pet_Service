@@ -93,11 +93,53 @@ async function loadDetails(appointmentIds, invoiceIds) {
     if (result.error) throw new Error(result.error.message);
   }
 
+  const medicalVisitIds = (medicalResult.data ?? []).map((visit) => visit.id);
+  const prescriptionResult = medicalVisitIds.length
+    ? await supabase
+        .from("prescriptions")
+        .select(`
+          id,
+          medical_visit_id,
+          items:prescription_items!prescription_items_prescription_id_fkey (
+            id,
+            medicine_name,
+            dosage,
+            frequency,
+            duration_days,
+            instructions
+          )
+        `)
+        .in("medical_visit_id", medicalVisitIds)
+    : { data: [], error: null };
+
+  if (prescriptionResult.error) throw new Error(prescriptionResult.error.message);
+
   const itemsByInvoiceId = new Map();
   (itemsResult.data ?? []).forEach((item) => {
     const current = itemsByInvoiceId.get(item.invoice_id) ?? [];
     current.push(item);
     itemsByInvoiceId.set(item.invoice_id, current);
+  });
+
+  const appointmentIdByMedicalVisitId = new Map(
+    (medicalResult.data ?? []).map((visit) => [visit.id, visit.appointment_id]),
+  );
+
+  const prescriptionsByAppointmentId = new Map();
+  (prescriptionResult.data ?? []).forEach((prescription) => {
+    const appointmentId = appointmentIdByMedicalVisitId.get(prescription.medical_visit_id);
+    (prescription.items ?? []).forEach((item) => {
+      if (!appointmentId) return;
+      const current = prescriptionsByAppointmentId.get(appointmentId) ?? [];
+      current.push({
+        medicineName: item.medicine_name || "",
+        dosage: item.dosage || "",
+        frequency: item.frequency || "",
+        durationDays: item.duration_days,
+        instructions: item.instructions || "",
+      });
+      prescriptionsByAppointmentId.set(appointmentId, current);
+    });
   });
 
   return {
@@ -106,6 +148,7 @@ async function loadDetails(appointmentIds, invoiceIds) {
     vaccinationsByAppointmentId: new Map((vaccinationResult.data ?? []).map((row) => [row.appointment_id, row])),
     groomingByAppointmentId: new Map((groomingResult.data ?? []).map((row) => [row.appointment_id, row])),
     boardingByAppointmentId: new Map((boardingResult.data ?? []).map((row) => [row.appointment_id, row])),
+    prescriptionsByAppointmentId,
   };
 }
 
@@ -153,6 +196,7 @@ async function listCustomerServiceHistory(customerId) {
     const pet = appointment ? petsById.get(appointment.pet_id) : null;
     const items = details.itemsByInvoiceId.get(invoice.id) ?? [];
     const services = getServiceNames({ ...invoice, items }, appointment);
+    const prescriptions = details.prescriptionsByAppointmentId.get(invoice.appointment_id) ?? [];
 
     return {
       id: `INV-${String(invoice.id).padStart(6, "0")}`,
@@ -182,6 +226,7 @@ async function listCustomerServiceHistory(customerId) {
       type: getHistoryType({ ...invoice, items }, details),
       staff: invoice.transaction_code ?? invoice.payment_status,
       details: getHistoryDetails(invoice, details),
+      prescriptions,
     };
   });
 }

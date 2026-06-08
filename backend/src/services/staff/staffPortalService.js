@@ -1,6 +1,54 @@
 const { supabase } = require("../../lib/supabaseClient");
 const { sendAppointmentEventEmail } = require("../emailService");
+const {
+  ensureDoctorScheduleSlot,
+  setDoctorScheduleSlotStatus,
+} = require("../doctorScheduleService");
 
+
+const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
+
+function getRequestPayload(value) {
+  const text = String(value || "");
+  const index = text.indexOf(REQUEST_PREFIX);
+  if (index < 0) return null;
+  try { return JSON.parse(text.slice(index + REQUEST_PREFIX.length)); } catch { return null; }
+}
+
+function stripRequestPayload(value) {
+  const text = String(value || "");
+  const index = text.indexOf(REQUEST_PREFIX);
+  return (index < 0 ? text : text.slice(0, index)).trim();
+}
+
+async function releaseDoctorScheduleSlot(scheduleId) {
+  await setDoctorScheduleSlotStatus(scheduleId, "AVAILABLE");
+}
+
+async function createUserNotification(userId, title, content) {
+  if (!userId) return;
+  const { error } = await supabase.from("notifications").insert({ user_id: userId, title, content, type: "APPOINTMENT", is_read: false });
+  if (error) throw new Error(error.message);
+}
+
+async function notifyAppointmentActor(userId, title, content) {
+  try {
+    await createUserNotification(userId, title, content);
+  } catch (error) {
+    console.warn("[STAFF] Failed to create appointment notification:", error.message);
+  }
+}
+
+async function getDoctorUserId(doctorId) {
+  if (!doctorId) return null;
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("user_id")
+    .eq("id", doctorId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.user_id || null;
+}
 const SERVICE_LABELS = {
   MEDICAL: "Khám bệnh",
   GROOMING: "Grooming",
@@ -103,6 +151,10 @@ function mapAppointment(appointment) {
   const primaryService = appointmentServices[0]?.services;
   const appointmentType = primaryService?.type || appointment.appointment_type;
 
+  const noteRequest = getRequestPayload(appointment.note);
+  const cancelRequest = getRequestPayload(appointment.cancel_reason);
+  const pendingRequest = cancelRequest?.type === "CANCEL" ? cancelRequest : noteRequest?.type === "RESCHEDULE" ? noteRequest : null;
+
   return {
     id: formatAppointmentCode(appointment.id),
     appointmentId: appointment.id,
@@ -117,7 +169,8 @@ function mapAppointment(appointment) {
     serviceType: getServiceType(appointmentType),
     status: APPOINTMENT_STATUS_MAP[appointment.status] || "scheduled",
     queue: `A${String(appointment.id).padStart(3, "0")}`,
-    note: appointment.note || "",
+    note: stripRequestPayload(appointment.note) || "",
+    pendingRequest,
     createdAt: appointment.created_at,
   };
 }
@@ -235,6 +288,7 @@ async function listStaffAppointments(staffId) {
       appointment_type,
       status,
       note,
+      cancel_reason,
       requested_date,
       requested_time,
       created_at,
@@ -290,6 +344,140 @@ async function checkInAppointment(appointmentId, staffId) {
   if (error) throw new Error(error.message);
 }
 
+async function approveAppointmentRequest(appointmentId, staffId) {
+  const effectiveStaffId = assertStaffId(staffId);
+  const id = parsePositiveId(appointmentId, "ID lịch hẹn");
+  const { data: appointment, error: fetchError } = await supabase
+    .from("appointments")
+    .select(`
+      id,
+      pet_id,
+      doctor_id,
+      staff_id,
+      status,
+      note,
+      cancel_reason,
+      requested_date,
+      requested_time,
+      doctor_schedule_slot_id,
+      pets:pet_id (
+        name,
+        customers:customer_id (user_id, full_name)
+      )
+    `)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (!appointment) throw new Error("Không tìm thấy lịch hẹn");
+
+  const request = getRequestPayload(appointment.cancel_reason) || getRequestPayload(appointment.note);
+  if (!request) {
+    const error = new Error("Lịch hẹn không có yêu cầu chờ duyệt");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const now = new Date().toISOString();
+  const code = `APT-${String(id).padStart(6, "0")}`;
+  const doctorUserId = await getDoctorUserId(appointment.doctor_id);
+
+  if (request.type === "RESCHEDULE") {
+    const cleanNote = stripRequestPayload(appointment.note);
+    let newSchedule = null;
+
+    if (appointment.doctor_id) {
+      const busy = await supabase
+        .from("appointments")
+        .select("id")
+        .eq("doctor_id", appointment.doctor_id)
+        .eq("requested_date", request.date)
+        .eq("requested_time", request.time)
+        .neq("id", appointment.id)
+        .not("status", "in", "(CANCELLED,NO_SHOW)")
+        .limit(1);
+      if (busy.error) throw new Error(busy.error.message);
+      if ((busy.data || []).length > 0) throw new Error("Bác sĩ đã có lịch hẹn trong khung giờ mới.");
+
+      newSchedule = await ensureDoctorScheduleSlot(appointment.doctor_id, request.date, request.time, { slotDuration: 30 });
+      if (!newSchedule) throw new Error("Bác sĩ không có ca làm việc trống trong khung giờ mới.");
+
+      const reserved = await supabase
+        .from("doctor_schedule_slots")
+        .update({ status: "BOOKED", updated_at: now })
+        .eq("id", newSchedule.id)
+        .eq("status", "AVAILABLE")
+        .select("id")
+        .maybeSingle();
+      if (reserved.error) throw new Error(reserved.error.message);
+      if (!reserved.data) throw new Error("Ca khám mới vừa được đặt. Vui lòng chọn khung giờ khác.");
+    }
+
+    const updated = await supabase
+      .from("appointments")
+      .update({
+        requested_date: request.date,
+        requested_time: request.time,
+        doctor_schedule_slot_id: newSchedule?.id ?? null,
+        note: cleanNote,
+        staff_id: appointment.staff_id || effectiveStaffId,
+        updated_at: now,
+      })
+      .eq("id", id);
+
+    if (updated.error) {
+      if (newSchedule?.id) await releaseDoctorScheduleSlot(newSchedule.id);
+      throw new Error(updated.error.message);
+    }
+    if (appointment.doctor_schedule_slot_id && appointment.doctor_schedule_slot_id !== newSchedule?.id) {
+      await releaseDoctorScheduleSlot(appointment.doctor_schedule_slot_id);
+    }
+
+    await notifyAppointmentActor(
+      appointment.pets?.customers?.user_id,
+      "Yêu cầu đổi lịch đã được duyệt",
+      `Lịch hẹn ${code} đã được đổi sang ${request.date} ${String(request.time || "").slice(0, 5)}.`,
+    );
+    await notifyAppointmentActor(
+      doctorUserId,
+      "Lịch hẹn đã được đổi",
+      `Staff đã duyệt yêu cầu đổi lịch ${code} sang ${request.date} ${String(request.time || "").slice(0, 5)}.`,
+    );
+    return;
+  }
+
+  if (request.type === "CANCEL") {
+    const updated = await supabase
+      .from("appointments")
+      .update({
+        status: "CANCELLED",
+        doctor_schedule_slot_id: null,
+        cancel_reason: request.reason || "Customer requested cancellation",
+        staff_id: appointment.staff_id || effectiveStaffId,
+        updated_at: now,
+      })
+      .eq("id", id);
+
+    if (updated.error) throw new Error(updated.error.message);
+    await releaseDoctorScheduleSlot(appointment.doctor_schedule_slot_id);
+
+    await notifyAppointmentActor(
+      appointment.pets?.customers?.user_id,
+      "Yêu cầu hủy lịch đã được duyệt",
+      `Lịch hẹn ${code} đã được hủy.`,
+    );
+    await notifyAppointmentActor(
+      doctorUserId,
+      "Lịch hẹn đã được hủy",
+      `Staff đã duyệt yêu cầu hủy lịch ${code}. Lý do: ${request.reason || "Không ghi rõ"}`,
+    );
+    return;
+  }
+
+  const error = new Error("Loại yêu cầu không hợp lệ");
+  error.statusCode = 400;
+  throw error;
+}
 async function listGroomingTasks(staffId) {
   const effectiveStaffId = assertStaffId(staffId);
   let query = supabase
@@ -541,6 +729,7 @@ module.exports = {
   getStaffProfile,
   listStaffAppointments,
   checkInAppointment,
+  approveAppointmentRequest,
   listGroomingTasks,
   updateGroomingStatus,
   listBoardingGuests,

@@ -2265,6 +2265,7 @@ Split `StaffPortalView.tsx` into smaller staff component files and fix the backe
 - `frontend/src/components/staff/StaffCommon.tsx`
 - `frontend/src/components/staff/StaffShell.tsx`
 - `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
 - `frontend/src/components/staff/StaffGroomingTab.tsx`
 - `frontend/src/components/staff/StaffBoardingTab.tsx`
 - `frontend/src/components/staff/StaffPaymentsTab.tsx`
@@ -2307,3 +2308,577 @@ Fix the doctor statistics page showing no data when appointment rows are dated t
 ### Result
 
 Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-06 - Doctor Records Clinical Exam JSON Fix
+
+### Goal
+
+Fix doctor medical records showing raw `clinical_exam` JSON after completing an exam.
+
+### Work Completed
+
+- Added parsing for `medical_visits.clinical_exam` in the doctor records backend payload.
+- Mapped exam JSON into readable complaint, symptoms, duration, onset, severity, vitals, body-system results, and clinical summary fields.
+- Stopped returning raw `clinical_exam` JSON as `clinicalNote` for the records UI.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Role Text Normalization Sweep
+
+### Goal
+
+Fix mojibake text across the doctor role after seeded/fallback data showed broken Vietnamese in records and schedule UI.
+
+### Work Completed
+
+- Added backend text normalization for doctor records, settings, exam context, and appointment schedule payloads so stale DB/seed mojibake is repaired before reaching the UI.
+- Cleaned mojibake string literals in doctor backend services and kept doctor record clinical exam fields readable instead of raw JSON.
+- Converted the frontend doctor encoding-noise detector to escaped Unicode regex and restored Vietnamese fallback labels.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` mojibake scan across doctor backend/frontend files (no matches)
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Schedule Row Alignment Fix
+
+### Goal
+
+Fix doctor schedule rows becoming misaligned after an appointment is completed.
+
+### Work Completed
+
+- Kept a fixed-width status/action area for every doctor schedule row.
+- Preserved the action column space when a row is completed, so status badges and service labels line up with pending/in-progress rows.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` mojibake scan on `DoctorScheduleTable.tsx` (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Follow-Up Appointment Flow
+
+### Goal
+
+Complete the doctor follow-up appointment flow so selected follow-up slots must be in the future and customers receive the new appointment.
+
+### Work Completed
+
+- Added follow-up date and time fields to the doctor clinical exam form with same-day time limiting.
+- Added frontend validation before completing an exam when a follow-up slot is selected.
+- Added backend validation for future follow-up slots on draft/save-complete.
+- When completing an exam with a follow-up slot, backend now creates a new pending medical appointment for the same pet and doctor, reserves the matching doctor schedule, creates the medical service item, sends customer notification, and sends appointment confirmation email through the existing safe email flow.
+- Added rollback for the new follow-up appointment and schedule reservation if customer notification creation fails.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `frontend/src/components/doctor/ClinicalExamForm.tsx`
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `rg` mojibake scan on follow-up files (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Follow-Up Time Picker Fix
+
+### Goal
+
+Fix the doctor follow-up time field not being selectable in the clinical exam form.
+
+### Work Completed
+
+- Replaced the native time input with a fixed 30-minute slot dropdown from 08:00 to 18:30.
+- Kept same-day filtering so past time slots are not offered.
+- Reset the selected follow-up time when the follow-up date changes.
+
+### Files Changed
+
+- `frontend/src/components/doctor/ClinicalExamForm.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` text/encoding scan on `ClinicalExamForm.tsx` (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-08 - Follow-Up Flow Without Doctor Schedule Dependency
+
+### Goal
+
+Keep doctor schedule setup out of unrelated features while the doctor schedule-setting feature is deferred.
+
+### Work Completed
+
+- Changed follow-up appointment creation so it no longer requires an available `doctor_schedules` row.
+- Kept duplicate protection by checking existing appointments for the same doctor, requested date, and requested time.
+- If a matching schedule row exists, the follow-up appointment links to it; otherwise it is created with `doctor_schedule_id: null` and still appears by `requested_date` / `requested_time`.
+- Removed schedule reservation/rollback from the follow-up flow.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `rg` text/encoding scan on follow-up files (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-08 - Customer Appointment Request Approval And Doctor Notifications
+
+### Goal
+
+Complete the follow-up appointment flow after a doctor creates a follow-up: customers can confirm, reschedule/cancel requests require a reason and staff approval, and doctors receive backend-backed notifications.
+
+### Work Completed
+
+- Added customer appointment confirmation from the appointment detail modal.
+- Changed customer reschedule and cancel actions to submit a reasoned pending request instead of applying immediately.
+- Added staff pending request data, approval API client, and appointment list action to approve reschedule/cancel requests.
+- Staff approval now applies the requested date/time or cancellation and notifies both customer and doctor.
+- Added doctor notification APIs and connected the doctor header bell dropdown to backend notifications with read/read-all actions.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/staffRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/doctor/DoctorScheduleHeader.tsx`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `node --check backend/src/routes/staffRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-08 - Appointment Request Approval Fixes
+
+### Goal
+
+Polish customer appointment notes, fix staff reschedule approval, and ensure doctors are notified only after staff approval succeeds.
+
+### Work Completed
+
+- Customer appointment detail now filters technical request payloads from notes and renders friendly note lines.
+- Customer appointment API now returns cleaned notes by stripping pending request markers.
+- Customer reschedule/cancel requests no longer notify doctors immediately.
+- Staff reschedule approval now fetches the doctor user separately, clears the stale schedule link, applies the requested date/time, then notifies customer and doctor after the update succeeds.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Staff Approval And Doctor Notification Repair
+
+### Goal
+
+Fix staff approval not completing reliably and repair doctor notification text for legacy corrupted appointment request notifications.
+
+### Work Completed
+
+- Made staff approval resilient: appointment update is the primary action, notification failures are logged without failing approval.
+- Added loading/disabled state to the staff approve request button.
+- Added doctor notification text repair for legacy mojibake/question-mark appointment request notifications returned by the backend.
+- Read-checked appointment `APT-000087`: it still has a valid pending reschedule request in `note`, `staff_id=2`, `doctor_id=5`, and no linked doctor schedule.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- Read-only Supabase query for appointment `87`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Did not mutate appointment `87` during verification. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Doctor Medical Record Note Cleanup
+
+### Goal
+
+Fix newly updated reschedule-request text leaking into doctor medical records.
+
+### Work Completed
+
+- Added appointment note cleanup for doctor medical record APIs.
+- Stripped `[CUSTOMER_REQUEST]` technical payload lines and raw JSON-like lines before using appointment notes as clinical note, chief complaint, owner note, or visit-history reason.
+- Applied the same cleanup to doctor exam detail notes.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Staff Approve Button Wiring Fix
+
+### Goal
+
+Fix staff approve request button doing nothing because the handler was not wired from the portal page into the appointment list.
+
+### Work Completed
+
+- Passed `onApproveRequest` and `approvingAppointmentId` from `StaffPortal` into `AppointmentsTab`.
+- Passed approve handler/loading state into staff appointment detail modal as well.
+- Confirmed the approve button now calls `handleApproveAppointmentRequest` instead of an undefined prop.
+
+### Files Changed
+
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/routes/staffRoutes.js`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Doctor Record Chief Complaint Cleanup
+
+### Goal
+
+Prevent follow-up system notes from being rendered as the chief complaint/reason in doctor medical records.
+
+### Work Completed
+
+- Added chief complaint mapping that treats follow-up system notes as `T?i kh?m` instead of copying the full appointment note.
+- Kept the full follow-up appointment note in the clinical note area only, where it belongs.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Doctor Record Note And Reason Separation
+
+### Goal
+
+Separate doctor record note text from chief complaint so follow-up system notes do not duplicate in the record cards.
+
+### Work Completed
+
+- Removed chief complaint from the small clinical note text under the record title.
+- Stopped using follow-up system notes as the clinical note fallback because date/time already appear in the calendar header.
+- Kept the reason box focused on chief complaint/symptoms; follow-up system notes map to `T?i kh?m` only.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+## 2026-06-08 - Appointment Slot Scheduling Recovery
+
+### Goal
+
+Restore the customer/doctor appointment fixes that were lost and fix doctor scheduling so one long work window does not block every appointment through the unique `doctor_schedule_id`.
+
+### Work Completed
+
+- Added a shared doctor schedule service that splits working windows into concrete 30-minute `doctor_schedules` slots.
+- Added an admin endpoint and admin staff drawer action for saving doctor working windows as 30-minute slots.
+- Locked doctor schedule write/delete endpoints; doctors now only view schedules because admin owns schedule creation.
+- Updated customer booking and doctor follow-up booking to reserve one concrete 30-minute slot, materializing a slot from legacy long windows when needed.
+- Updated staff-approved reschedules/cancellations and admin cancellations to reserve or release concrete doctor slots correctly.
+- Restored customer appointment confirmation status update, role normalization, friendly provider permission error, cancel reason modal, and pet-card booking shortcut.
+- Restored doctor schedule list wording, date display, ordering, and status dropdown filter.
+- Added prescription display to customer appointment cards and appointment detail modal.
+- Grouped 30-minute doctor schedule slots into readable windows on the doctor settings screen.
+
+### Files Changed
+
+- `backend/src/services/doctorScheduleService.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `backend/src/services/doctor/doctorService.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/middleware/authMiddleware.js`
+- `frontend/src/components/admin/AdminStaffView.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentsTab.tsx`
+- `frontend/src/components/doctor/DoctorScheduleStats.tsx`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `frontend/src/components/doctor/DoctorSidebar.tsx`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/features/customer/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/database.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctorScheduleService.js`
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `node --check backend/src/middleware/authMiddleware.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+- `buildScheduleSlots` smoke check with a local dummy Supabase env
+
+### Result
+
+Checks passed. The 08:00-16:00 smoke check creates 16 concrete 30-minute slots. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Separate Doctor Work Windows And Appointment Slots
+
+### Goal
+
+Keep admin-managed doctor work windows separate from concrete appointment slots so the appointment unique constraint applies to one 30-minute slot instead of an entire work window.
+
+### Work Completed
+
+- Kept work windows in `doctor_schedules` and moved slot status into the new `doctor_schedule_slots` table.
+- Added a migration that creates 30-minute slots, backfills existing appointment links, replaces `appointments.doctor_schedule_id` with unique `appointments.doctor_schedule_slot_id`, and removes `doctor_schedules.status`.
+- Updated admin schedule saving to create work windows and their concrete slots.
+- Updated customer booking, staff rescheduling/cancellation, doctor follow-up booking, doctor exam status changes, admin cancellation, appointment displays, invoice dates, and seed data to use concrete slots.
+- Updated Prisma schema, database snapshot, API/database docs, and frontend appointment input naming.
+
+### Verification
+
+- `npm --prefix backend run prisma:generate`
+- `npx prisma validate` from `backend/`
+- Backend JavaScript syntax checks
+- Frontend production build
+- `npm run docs:check`
+- `git diff --check`
+
+### Result
+
+All listed checks passed. The frontend build retains the existing large chunk warning.
+
+The migration was then applied successfully to the configured Supabase database with `npx prisma migrate deploy`. PostgREST relationship embeds were updated to use explicit FK constraint names, and service-level smoke checks passed for doctor appointments/settings/stats/records, customer appointments/provider options, staff appointments/summary, and admin appointments.
+
+## 2026-06-08 - Portal Viewport Overflow Audit
+
+### Goal
+
+Prevent long appointment lists from stretching fixed dashboard portals beyond the browser viewport.
+
+### Work Completed
+
+- Changed the doctor portal shell to a fixed viewport layout.
+- Made the doctor appointment card fill remaining space and scroll only its appointment rows while keeping the stats and filter header visible.
+- Changed the staff portal shell to a fixed viewport layout with its main content scrolling internally.
+- Audited admin and customer layouts: admin already uses a fixed viewport with internal scrolling; customer intentionally remains a naturally scrolling page with sticky navigation.
+
+### Verification
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Browser visual verification was unavailable in the current session.
+
+## 2026-06-08 - Doctor Work Schedule Slot Count Display
+
+### Goal
+
+Fix the doctor settings schedule rows showing broken separators, a constant `1 ca`, and the internal `AVAILABLE` status.
+
+### Work Completed
+
+- Loaded concrete slot IDs with each admin-managed work window.
+- Calculated the displayed appointment-slot count from `doctor_schedule_slots`.
+- Replaced the broken technical text with `Phòng ... · N ca khám`.
+
+### Verification
+
+- Queried doctor settings against Supabase and confirmed `08:00-16:00` returns 16 slots, `08:00-08:30` returns 1 slot, and `08:00-10:00` returns 4 slots.
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+## 2026-06-08 - Customer Service History Prescription Query
+
+### Goal
+
+Fix customer service history failing because it queried the nonexistent `prescription_items.appointment_id` column.
+
+### Work Completed
+
+- Loaded medical visits for the customer's appointment IDs.
+- Loaded prescriptions by `medical_visit_id` and embedded their prescription items through the real foreign key.
+- Mapped prescription items back to appointments through the medical visit relation.
+
+### Verification
+
+- Ran service-history queries for every customer in the configured Supabase database.
+- Confirmed Nguyễn Văn Minh returns 2 history records and 2 prescription items.
+- Confirmed no `prescription_items.appointment_id` references remain.
+- `node --check backend/src/services/customer/customerServiceHistoryService.js`
+- `git diff --check`
+
+## 2026-06-08 - Appointment Slot Conflict Resolution
+
+### Goal
+
+Resolve merge/stash conflicts across appointment scheduling files without dropping the concrete slot model.
+
+### Work Completed
+
+- Resolved conflicts in doctor, customer, staff, and doctor settings files by keeping `doctor_schedule_slots` as the bookable unit.
+- Removed the obsolete `scheduleService` conflict path and kept `doctorScheduleService` for slot reservation/status updates.
+- Preserved customer reschedule/cancel request handling and passed cancel reasons from the customer modal to the backend.
+
+### Verification
+
+- No remaining Git unmerged paths or conflict markers.
+- `npx prisma validate --schema backend/prisma/schema.prisma`
+- `npm --prefix backend run prisma:generate`
+- Backend JavaScript syntax checks for touched route/service files.
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+- `npx prisma migrate status --schema prisma/schema.prisma` from `backend/`
+- Service smoke checks for doctor, customer, staff, and admin appointment flows.

@@ -27,7 +27,11 @@ Key domains currently modeled include:
 
 Customer-created appointments store `requested_date` and `requested_time` on `appointments`.
 These fields preserve the requested slot for both doctor-backed services and staff-backed services such as grooming or boarding.
-Customer doctor availability uses `doctor_schedules.work_date`, `start_time`, and `end_time` as working windows. Booked doctor slots are blocked by matching `appointments.doctor_id`, `requested_date`, and `requested_time`, so one booked slot does not close the doctor's entire working window.
+Admin-managed doctor working windows are stored in `doctor_schedules`. Saving a window such as `08:00-16:00` creates 16 concrete 30-minute rows in `doctor_schedule_slots`.
+
+Each doctor appointment links to one concrete slot through the unique `appointments.doctor_schedule_slot_id`. The slot owns booking state (`AVAILABLE`, `BOOKED`, `IN_PROGRESS`, `DONE`, or `OFF`), while the parent schedule remains the admin-owned working window.
+
+Customer booking, staff rescheduling, and doctor follow-up booking may only reserve an `AVAILABLE` slot. Conditional slot reservation prevents two concurrent requests from booking the same slot.
 
 ## Environment
 

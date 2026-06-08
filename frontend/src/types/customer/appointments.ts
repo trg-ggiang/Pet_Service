@@ -42,6 +42,14 @@ export type CustomerAppointment = {
   updatedAt?: string;
   createdAtLabel?: string;
   updatedAtLabel?: string;
+  hasPrescription?: boolean;
+  prescriptions?: Array<{
+    medicineName: string;
+    dosage?: string | null;
+    frequency?: string | null;
+    durationDays?: number | null;
+    instructions?: string | null;
+  }>;
 };
 
 export type CreateCustomerAppointmentInput = {

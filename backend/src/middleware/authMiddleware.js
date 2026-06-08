@@ -58,8 +58,9 @@ async function authMiddleware(req, res, next) {
 
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
-    const role = req.auth?.user?.role;
-    if (!role || !allowedRoles.includes(role)) {
+    const role = String(req.auth?.user?.role || req.auth?.payload?.role || "").toLowerCase();
+    const normalizedAllowedRoles = allowedRoles.map((allowedRole) => String(allowedRole).toLowerCase());
+    if (!role || !normalizedAllowedRoles.includes(role)) {
       return res.status(403).json({ ok: false, message: "Bạn không có quyền truy cập" });
     }
     next();

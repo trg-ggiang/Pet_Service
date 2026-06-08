@@ -113,9 +113,9 @@ function PerfBar({ value }: { value: number }) {
 // ─── Detail Drawer ────────────────────────────────────────────────────────────
 
 function StaffDrawer({
-  staff, onClose, onEdit, onToggleLock,
+  staff, onClose, onEdit, onToggleLock, onSchedule,
 }: {
-  staff: StaffMember; onClose: () => void; onEdit: () => void; onToggleLock: () => void;
+  staff: StaffMember; onClose: () => void; onEdit: () => void; onToggleLock: () => void; onSchedule: () => void;
 }) {
   const dept = DEPT_CONFIG[staff.department];
   const DeptIcon = dept.icon;
@@ -243,6 +243,14 @@ function StaffDrawer({
 
         {/* Actions */}
         <div className="px-6 py-4 border-t border-border flex items-center gap-3 flex-shrink-0">
+          {staff.department === "clinic" && staff.position.toLowerCase().includes("bác sĩ") && (
+            <button
+              onClick={onSchedule}
+              className="flex items-center gap-2 h-10 px-4 rounded-xl text-[13px] font-semibold border border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition-colors"
+            >
+              <Calendar size={13} /> Lên lịch khám
+            </button>
+          )}
           <button onClick={onToggleLock}
             className={`flex items-center gap-2 h-10 px-4 rounded-xl text-[13px] font-semibold border transition-colors ${
               staff.locked
@@ -550,6 +558,82 @@ function StaffRow({
   );
 }
 
+function DoctorScheduleModal({
+  doctor,
+  onClose,
+  onSaved,
+}: {
+  doctor: StaffMember;
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const [date, setDate] = useState("");
+  const [from, setFrom] = useState("08:00");
+  const [to, setTo] = useState("17:00");
+  const [roomName, setRoomName] = useState(doctor.room || "Phòng 1");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSave() {
+    try {
+      setSaving(true);
+      setError("");
+      const result = await adminService.saveDoctorSchedule(doctor.id, [{ date, from, to, roomName, on: true }]);
+      onSaved(result.message);
+    } catch (scheduleError) {
+      setError(scheduleError instanceof Error ? scheduleError.message : "Không thể lưu lịch bác sĩ.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-2xl border border-border bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-base font-bold text-foreground">Lên lịch khám cho {doctor.name}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Khung giờ sẽ tự động được chia thành các ca 30 phút.</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={16} /></button>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          <label className="col-span-2 text-xs font-bold text-muted-foreground">
+            Ngày làm việc
+            <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+          </label>
+          <label className="text-xs font-bold text-muted-foreground">
+            Bắt đầu
+            <input type="time" step={1800} value={from} onChange={(event) => setFrom(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+          </label>
+          <label className="text-xs font-bold text-muted-foreground">
+            Kết thúc
+            <input type="time" step={1800} value={to} onChange={(event) => setTo(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+          </label>
+          <label className="col-span-2 text-xs font-bold text-muted-foreground">
+            Phòng khám
+            <input value={roomName} onChange={(event) => setRoomName(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+          </label>
+        </div>
+
+        {error && <p className="mt-4 text-sm font-medium text-red-600">{error}</p>}
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button onClick={onClose} className="h-10 rounded-xl border border-border px-4 text-sm font-semibold text-foreground hover:bg-muted">Hủy</button>
+          <button
+            onClick={() => void handleSave()}
+            disabled={saving || !date || !from || !to || from >= to}
+            className="h-10 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {saving ? "Đang lưu..." : "Lưu và chia ca"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── StaffPage ────────────────────────────────────────────────────────────────
 
 export function AdminStaffView() {
@@ -560,6 +644,7 @@ export function AdminStaffView() {
   const [statusFilter, setStatusFilter] = useState<WorkStatus | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [schedulingDoctor, setSchedulingDoctor] = useState<StaffMember | null>(null);
   const [showModal, setShowModal]   = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -775,6 +860,10 @@ export function AdminStaffView() {
           onClose={() => setSelectedId(null)}
           onEdit={() => { openEdit(selectedMember); setSelectedId(null); }}
           onToggleLock={() => toggleLock(selectedMember)}
+          onSchedule={() => {
+            setSchedulingDoctor(selectedMember);
+            setSelectedId(null);
+          }}
         />
       )}
 
@@ -784,6 +873,17 @@ export function AdminStaffView() {
           editing={editingStaff}
           onClose={() => { setShowModal(false); setEditingStaff(null); }}
           onSave={handleSave}
+        />
+      )}
+
+      {schedulingDoctor && (
+        <DoctorScheduleModal
+          doctor={schedulingDoctor}
+          onClose={() => setSchedulingDoctor(null)}
+          onSaved={(message) => {
+            setActionError(message);
+            setSchedulingDoctor(null);
+          }}
         />
       )}
     </div>

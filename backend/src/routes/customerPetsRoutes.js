@@ -134,6 +134,7 @@ router.patch("/appointments/:appointmentId/cancel", async (req, res) => {
   try {
     const appointment = await cancelCustomerAppointment(
       req.params.appointmentId,
+      req.body ?? {},
       req.auth.user.customerId,
     );
     res.json({ ok: true, appointment });

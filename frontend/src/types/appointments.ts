@@ -69,7 +69,7 @@ export interface Doctor {
 export interface CreateAppointmentInput {
   petId: number;
   doctorId?: number | null;
-  doctorScheduleId?: number | null;
+  doctorScheduleSlotId?: number | null;
   appointmentType: AppointmentType;
   appointmentDate: string;
   appointmentTime: string;

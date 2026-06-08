@@ -109,12 +109,15 @@ export interface DoctorSettingsPayload {
     rows: Array<{
       id: number;
       day: string;
+      dayIndex?: number;
       date: string;
       on: boolean;
       from: string;
       to: string;
       roomName: string;
-      status: string;
+      status?: string;
+      statusLabel?: string;
+      slotCount?: number;
     }>;
     options: {
       maxAppointments: string;

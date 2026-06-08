@@ -11,6 +11,19 @@ const date = (value) => new Date(`${value}T00:00:00.000Z`);
 const time = (value) => new Date(`1970-01-01T${value}.000Z`);
 const money = (value) => new Prisma.Decimal(value);
 
+function addMinutesToTime(value, minutes) {
+  const next = new Date(value);
+  next.setUTCMinutes(next.getUTCMinutes() + minutes);
+  return next;
+}
+
+function appointmentSlotStatus(status) {
+  if (status === "IN_PROGRESS") return "IN_PROGRESS";
+  if (status === "COMPLETED") return "DONE";
+  if (["CANCELLED", "NO_SHOW"].includes(status)) return "AVAILABLE";
+  return "BOOKED";
+}
+
 async function upsertUser(email, role) {
   return prisma.user.upsert({
     where: { email },
@@ -50,6 +63,20 @@ async function upsertAppointment(data) {
   }
 
   return prisma.appointment.create({ data });
+}
+
+async function upsertDoctorScheduleSlot(data) {
+  return prisma.doctorScheduleSlot.upsert({
+    where: {
+      doctorId_slotDate_startTime: {
+        doctorId: data.doctorId,
+        slotDate: data.slotDate,
+        startTime: data.startTime,
+      },
+    },
+    update: data,
+    create: data,
+  });
 }
 
 async function upsertAppointmentService(data) {
@@ -549,11 +576,11 @@ async function main() {
 
   const schedules = [];
   const scheduleData = [
-    { doctorId: doctors[0].id, workDate: date("2026-05-25"), startTime: time("09:00:00"), endTime: time("10:00:00"), roomName: "Phòng khám 01", status: "BOOKED" },
-    { doctorId: doctors[0].id, workDate: date("2026-05-25"), startTime: time("10:00:00"), endTime: time("11:00:00"), roomName: "Phòng khám 01", status: "AVAILABLE" },
-    { doctorId: doctors[1].id, workDate: date("2026-05-26"), startTime: time("14:00:00"), endTime: time("15:00:00"), roomName: "Phòng khám 02", status: "BOOKED" },
-    { doctorId: doctors[1].id, workDate: date("2026-05-27"), startTime: time("08:30:00"), endTime: time("09:30:00"), roomName: "Phòng khám 02", status: "AVAILABLE" },
-    { doctorId: doctors[2].id, workDate: date("2026-05-27"), startTime: time("09:30:00"), endTime: time("10:30:00"), roomName: "Phòng khám 03", status: "BOOKED" },
+    { doctorId: doctors[0].id, workDate: date("2026-05-25"), startTime: time("09:00:00"), endTime: time("10:00:00"), roomName: "Phòng khám 01" },
+    { doctorId: doctors[0].id, workDate: date("2026-05-25"), startTime: time("10:00:00"), endTime: time("11:00:00"), roomName: "Phòng khám 01" },
+    { doctorId: doctors[1].id, workDate: date("2026-05-26"), startTime: time("14:00:00"), endTime: time("15:00:00"), roomName: "Phòng khám 02" },
+    { doctorId: doctors[1].id, workDate: date("2026-05-27"), startTime: time("08:30:00"), endTime: time("09:30:00"), roomName: "Phòng khám 02" },
+    { doctorId: doctors[2].id, workDate: date("2026-05-27"), startTime: time("09:30:00"), endTime: time("10:30:00"), roomName: "Phòng khám 03" },
   ];
 
   for (const item of scheduleData) {
@@ -567,12 +594,33 @@ async function main() {
     schedules.push(existing ? await prisma.doctorSchedule.update({ where: { id: existing.id }, data: item }) : await prisma.doctorSchedule.create({ data: item }));
   }
 
+  const scheduleSlots = [];
+  for (const schedule of schedules) {
+    const firstSlot = await upsertDoctorScheduleSlot({
+      doctorScheduleId: schedule.id,
+      doctorId: schedule.doctorId,
+      slotDate: schedule.workDate,
+      startTime: schedule.startTime,
+      endTime: addMinutesToTime(schedule.startTime, 30),
+      status: "AVAILABLE",
+    });
+    await upsertDoctorScheduleSlot({
+      doctorScheduleId: schedule.id,
+      doctorId: schedule.doctorId,
+      slotDate: schedule.workDate,
+      startTime: addMinutesToTime(schedule.startTime, 30),
+      endTime: schedule.endTime,
+      status: "AVAILABLE",
+    });
+    scheduleSlots.push(firstSlot);
+  }
+
   const appointments = await Promise.all([
     upsertAppointment({
       petId: pets[0].id,
       doctorId: doctors[0].id,
       staffId: staffs[0].id,
-      doctorScheduleId: schedules[0].id,
+      doctorScheduleSlotId: scheduleSlots[0].id,
       appointmentType: "MEDICAL",
       status: "COMPLETED",
       note: `${seedTag} Milo khám tổng quát và kiểm tra da.`,
@@ -595,7 +643,7 @@ async function main() {
       petId: pets[3].id,
       doctorId: doctors[1].id,
       staffId: staffs[1].id,
-      doctorScheduleId: schedules[2].id,
+      doctorScheduleSlotId: scheduleSlots[2].id,
       appointmentType: "MIXED",
       status: "CONFIRMED",
       note: `${seedTag} Kem tiêm vaccine và grooming nhẹ.`,
@@ -603,7 +651,7 @@ async function main() {
     upsertAppointment({
       petId: pets[4].id,
       doctorId: doctors[2].id,
-      doctorScheduleId: schedules[4].id,
+      doctorScheduleSlotId: scheduleSlots[4].id,
       appointmentType: "MEDICAL",
       status: "PENDING",
       note: `${seedTag} Bông khám tư vấn dinh dưỡng.`,
@@ -630,6 +678,15 @@ async function main() {
       note: `${seedTag} Bông lưu trú ngắn ngày.`,
     }),
   ]);
+
+  await Promise.all([
+    [scheduleSlots[0], appointments[0]],
+    [scheduleSlots[2], appointments[3]],
+    [scheduleSlots[4], appointments[4]],
+  ].map(([slot, appointment]) => prisma.doctorScheduleSlot.update({
+    where: { id: slot.id },
+    data: { status: appointmentSlotStatus(appointment.status) },
+  })));
 
   const apptServices = await Promise.all([
     upsertAppointmentService({
@@ -1450,6 +1507,7 @@ async function main() {
     ["staffs", prisma.staff],
     ["doctors", prisma.doctor],
     ["doctor_schedules", prisma.doctorSchedule],
+    ["doctor_schedule_slots", prisma.doctorScheduleSlot],
     ["animal_species", prisma.animalSpecies],
     ["breeds", prisma.breed],
     ["pets", prisma.pet],

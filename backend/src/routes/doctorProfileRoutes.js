@@ -117,4 +117,20 @@ router.get("/settings", async function(req, res) {
   }
 });
 
+function parsePositiveId(value, fieldName = "id") {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error(`${fieldName} không hợp lệ`);
+  }
+  return id;
+}
+
+router.put("/settings/schedule", async function(req, res) {
+  res.status(403).json({ ok: false, message: "Lịch làm việc của bác sĩ do admin quản lý." });
+});
+
+router.delete("/settings/schedule/:id", async function(req, res) {
+  res.status(403).json({ ok: false, message: "Lịch làm việc của bác sĩ do admin quản lý." });
+});
+
 module.exports = router;

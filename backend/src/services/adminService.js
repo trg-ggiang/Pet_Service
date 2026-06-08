@@ -1,6 +1,7 @@
 ﻿const { supabase } = require("../lib/supabaseClient");
 
 const { getStoredSetting, saveStoredSetting } = require("./settingsService");
+const { setDoctorScheduleSlotStatus } = require("./doctorScheduleService");
 
 function normalizeRole(role) {
   return String(role || "").toLowerCase();
@@ -720,12 +721,26 @@ async function updateAdminAppointmentStatus(displayId, status) {
     throw error;
   }
 
+  const currentResult = await supabase
+    .from("appointments")
+    .select("doctor_schedule_slot_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (currentResult.error) throw new Error(currentResult.error.message);
+
+  const updatePayload = dbStatus === "CANCELLED"
+    ? { status: dbStatus, doctor_schedule_slot_id: null }
+    : { status: dbStatus };
+
   const { error } = await supabase
     .from("appointments")
-    .update({ status: dbStatus })
+    .update(updatePayload)
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+  if (dbStatus === "CANCELLED" && currentResult.data?.doctor_schedule_slot_id) {
+    await setDoctorScheduleSlotStatus(currentResult.data.doctor_schedule_slot_id, "AVAILABLE");
+  }
 
   const result = await listAdminAppointments();
   const appointment = result.appointments.find((item) => item.id === `APT-${String(id).padStart(3, "0")}`);

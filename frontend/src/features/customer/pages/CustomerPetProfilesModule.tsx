@@ -36,7 +36,7 @@ function getPetCoverImage(species?: string) {
   return (species && PET_COVER_IMAGES[species]) || PET_COVER_IMAGES.default;
 }
 
-export function CustomerPetProfilesModule() {
+export function CustomerPetProfilesModule({ onBookAppointment }: { onBookAppointment?: (petName: string) => void }) {
   const [dashboard, setDashboard] = useState<CustomerPetDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -229,7 +229,10 @@ export function CustomerPetProfilesModule() {
                         Hồ sơ đầy đủ
                       </button>
                       <button
-                        onClick={() => void openPetDetail(pet)}
+                        onClick={() => {
+                          if (onBookAppointment) onBookAppointment(pet.name);
+                          else void openPetDetail(pet);
+                        }}
                         className="flex-1 h-11 rounded-xl text-sm font-bold text-white shadow-sm transition-colors hover:shadow-md"
                         style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
                       >

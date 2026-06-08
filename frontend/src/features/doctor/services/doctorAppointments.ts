@@ -63,6 +63,8 @@ export interface DoctorScheduleRow {
   id: string;
   appointmentId: number;
   time: string;
+  date: string;
+  dateLabel: string;
   patient: string;
   species: string;
   owner: string;

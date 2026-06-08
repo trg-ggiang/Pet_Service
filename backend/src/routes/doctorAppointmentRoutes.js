@@ -3,8 +3,14 @@ const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
 const { listDoctorAppointmentsForPortal } = require("../services/doctor/doctorAppointmentService");
 const { sendAppointmentEventEmail } = require("../services/emailService");
+const {
+  ensureDoctorScheduleSlot,
+  reserveDoctorScheduleSlot,
+  setDoctorScheduleSlotStatus,
+} = require("../services/doctorScheduleService");
 
 const router = express.Router();
+const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
 
 router.use(authMiddleware);
 router.use(requireRole("doctor"));
@@ -150,6 +156,40 @@ function formatTime(value) {
   return String(value).slice(0, 5);
 }
 
+function normalizeDateInput(value) {
+  const text = String(value ?? "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function normalizeTimeInput(value) {
+  const text = String(value ?? "").trim();
+  if (!/^\d{2}:\d{2}/.test(text)) return null;
+  return text.slice(0, 5) + ":00";
+}
+
+function addMinutes(time, minutes) {
+  const [hourText, minuteText] = String(time || "09:00").split(":");
+  const date = new Date(2000, 0, 1, Number(hourText), Number(minuteText));
+  date.setMinutes(date.getMinutes() + minutes);
+  return String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0") + ":00";
+}
+
+function assertFutureFollowUpSlot(record) {
+  if (!record.nextVisitDate) return null;
+
+  const date = normalizeDateInput(record.nextVisitDate);
+  const time = normalizeTimeInput(record.nextVisitTime);
+  if (!date) throw new Error("Ngày tái khám không hợp lệ");
+  if (!time) throw new Error("Vui lòng chọn giờ tái khám");
+
+  const slot = new Date(date + "T" + time.slice(0, 5) + ":00");
+  if (Number.isNaN(slot.getTime()) || slot.getTime() <= Date.now()) {
+    throw new Error("Lịch tái khám phải nằm trong tương lai");
+  }
+
+  return { date, time };
+}
+
 function formatAge(dob) {
   if (!dob) return "Chưa rõ";
 
@@ -196,6 +236,17 @@ function getStatusLabel(status) {
   return STATUS_LABELS[status] || status || "Chưa rõ";
 }
 
+function cleanAppointmentNote(value) {
+  return String(value || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith(REQUEST_PREFIX))
+    .filter((line) => !(line.startsWith("{") && line.endsWith("}")))
+    .join("\n")
+    .trim();
+}
+
 function safeJsonParse(value, fallback) {
   if (!value) return fallback;
   try {
@@ -231,7 +282,9 @@ function emptyExamRecord() {
       ]),
     ),
     clinicalNote: "",
+    prescriptions: [],
     nextVisitDate: null,
+    nextVisitTime: "",
   };
 }
 
@@ -264,7 +317,9 @@ function normalizeExamRecord(rawVisit) {
       ...(clinicalExam.systems || {}),
     },
     clinicalNote: rawVisit.diagnosis_note || "",
+    prescriptions: Array.isArray(clinicalExam.prescriptions) ? clinicalExam.prescriptions : [],
     nextVisitDate: rawVisit.next_visit_date || null,
+    nextVisitTime: clinicalExam.nextVisitTime || "",
   };
 }
 
@@ -292,6 +347,20 @@ function sanitizeExamRecord(input) {
 
   const severity = Number(record.severity || 0);
 
+  // Sanitize prescriptions
+  const rawPrescriptions = Array.isArray(record.prescriptions) ? record.prescriptions : [];
+  const prescriptions = rawPrescriptions
+    .filter((rx) => rx && typeof rx === "object" && String(rx.medicineName || "").trim() !== "")
+    .map((rx) => ({
+      id: String(rx.id || Math.random().toString(36).substring(2, 9)),
+      medicineName: String(rx.medicineName || "").trim(),
+      dosage: String(rx.dosage || "").trim(),
+      frequency: String(rx.frequency || "2 lần/ngày").trim(),
+      route: String(rx.route || "Uống").trim(),
+      durationDays: rx.durationDays && Number.isInteger(rx.durationDays) ? rx.durationDays : null,
+      instructions: String(rx.instructions || "").trim(),
+    }));
+
   return {
     ...empty,
     chiefComplaint: String(record.chiefComplaint || "").trim(),
@@ -313,7 +382,9 @@ function sanitizeExamRecord(input) {
     },
     systems,
     clinicalNote: String(record.clinicalNote || "").trim(),
-    nextVisitDate: record.nextVisitDate || null,
+    prescriptions,
+    nextVisitDate: normalizeDateInput(record.nextVisitDate) || null,
+    nextVisitTime: normalizeTimeInput(record.nextVisitTime)?.slice(0, 5) || "",
   };
 }
 
@@ -328,7 +399,7 @@ async function getOwnedAppointment(appointmentId, doctorId) {
       id,
       pet_id,
       doctor_id,
-      doctor_schedule_id,
+      doctor_schedule_slot_id,
       appointment_type,
       status,
       note,
@@ -337,13 +408,13 @@ async function getOwnedAppointment(appointmentId, doctorId) {
       requested_time,
       created_at,
       updated_at,
-      doctor_schedules:doctor_schedule_id (
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
         id,
-        work_date,
+        slot_date,
         start_time,
         end_time,
-        room_name,
-        status
+        status,
+        schedule:doctor_schedules!doctor_schedule_slots_doctor_schedule_id_fkey (room_name)
       ),
       pets:pet_id (
         id,
@@ -368,7 +439,8 @@ async function getOwnedAppointment(appointmentId, doctorId) {
           id,
           full_name,
           phone,
-          address
+          address,
+          user_id
         )
       )
     `)
@@ -384,14 +456,140 @@ async function getOwnedAppointment(appointmentId, doctorId) {
 }
 
 async function updateDoctorScheduleStatus(scheduleId, status) {
-  if (!scheduleId) return;
+  await setDoctorScheduleSlotStatus(scheduleId, status);
+}
 
-  const { error } = await supabase
-    .from("doctor_schedules")
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", scheduleId);
+async function resolveFollowUpService() {
+  const { data, error } = await supabase
+    .from("services")
+    .select("id, name, type, price")
+    .eq("type", "MEDICAL")
+    .eq("is_active", true)
+    .order("id", { ascending: true })
+    .limit(1);
 
   if (error) throw new Error(error.message);
+  return data?.[0] || null;
+}
+
+async function findFollowUpScheduleIfExists(doctorId, date, time) {
+  const busyAppointments = await supabase
+    .from("appointments")
+    .select("id")
+    .eq("doctor_id", doctorId)
+    .eq("requested_date", date)
+    .eq("requested_time", time)
+    .not("status", "in", "(CANCELLED,NO_SHOW)")
+    .limit(1);
+
+  if (busyAppointments.error) throw new Error(busyAppointments.error.message);
+  if ((busyAppointments.data || []).length > 0) {
+    throw new Error("Bác sĩ đã có lịch hẹn trong khung giờ tái khám này");
+  }
+
+  return ensureDoctorScheduleSlot(doctorId, date, time, { slotDuration: 30 });
+}
+
+async function createCustomerNotification(userId, payload) {
+  if (!userId) throw new Error("Không tìm thấy tài khoản khách hàng để gửi thông báo tái khám");
+
+  const { error } = await supabase.from("notifications").insert({
+    user_id: userId,
+    title: payload.title,
+    content: payload.content,
+    type: "APPOINTMENT",
+    is_read: false,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+async function createFollowUpAppointment(originalAppointment, cleanRecord) {
+  const slot = assertFutureFollowUpSlot(cleanRecord);
+  if (!slot) return null;
+
+  const schedule = await findFollowUpScheduleIfExists(originalAppointment.doctor_id, slot.date, slot.time);
+
+  // Reserve one concrete 30-minute slot to avoid duplicate doctor_schedule_slot_id conflicts.
+  if (schedule?.id) {
+    if (!await reserveDoctorScheduleSlot(schedule.id)) {
+      const error = new Error("Ca làm việc của bác sĩ đã được đặt. Vui lòng chọn khung giờ khác.");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  const customer = originalAppointment.pets?.customers;
+  const service = await resolveFollowUpService();
+  const now = new Date().toISOString();
+  const note = [
+    "Tái khám từ lịch " + String(originalAppointment.id).padStart(6, "0"),
+    cleanRecord.clinicalNote ? "Ghi chú: " + cleanRecord.clinicalNote : "",
+  ].filter(Boolean).join(". ");
+
+  const { data: appointment, error } = await supabase
+    .from("appointments")
+    .insert({
+      pet_id: originalAppointment.pet_id,
+      doctor_id: originalAppointment.doctor_id,
+      staff_id: null,
+      doctor_schedule_slot_id: schedule?.id ?? null,
+      appointment_type: "MEDICAL",
+      status: "PENDING",
+      note,
+      updated_at: now,
+      requested_date: slot.date,
+      requested_time: slot.time,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (schedule?.id) {
+      await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
+    }
+    throw new Error(error.message);
+  }
+
+  if (service?.id) {
+    const item = await supabase.from("appointment_services").insert({
+      appointment_id: appointment.id,
+      service_id: service.id,
+      quantity: 1,
+      unit_price: service.price ?? 0,
+      status: "PENDING",
+    });
+
+    if (item.error) {
+      await supabase.from("appointments").delete().eq("id", appointment.id);
+      if (schedule?.id) {
+        await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
+      }
+      throw new Error(item.error.message);
+    }
+  }
+
+  const petName = originalAppointment.pets?.name || "thú cưng";
+  try {
+    await createCustomerNotification(customer?.user_id, {
+      title: "Lịch tái khám mới",
+      content: petName + " có lịch tái khám vào " + formatDate(slot.date) + " lúc " + formatTime(slot.time) + ". Mã lịch hẹn: APT-" + String(appointment.id).padStart(6, "0") + ".",
+    });
+  } catch (notificationError) {
+    await supabase.from("appointments").delete().eq("id", appointment.id);
+    if (schedule?.id) {
+      await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
+    }
+    throw notificationError;
+  }
+
+  await sendAppointmentEventEmail("appointment_confirmation", appointment.id);
+
+  return {
+    id: appointment.id,
+    date: slot.date,
+    time: slot.time,
+  };
 }
 
 async function getCurrentMedicalVisit(appointmentId) {
@@ -405,6 +603,88 @@ async function getCurrentMedicalVisit(appointmentId) {
 
   if (error) throw new Error(error.message);
   return data || null;
+}
+
+async function getPrescriptionsForVisit(medicalVisitId) {
+  const { data, error } = await supabase
+    .from("prescription_items")
+    .select(`
+      id,
+      medicine_name,
+      dosage,
+      frequency,
+      duration_days,
+      instructions,
+      prescriptions:prescription_id (
+        id
+      )
+    `)
+    .eq("prescription_id", medicalVisitId);
+
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((item) => ({
+    id: String(item.id),
+    medicineName: item.medicine_name || "",
+    dosage: item.dosage || "",
+    frequency: item.frequency || "",
+    route: "", // Route is not stored in DB, default to empty
+    durationDays: item.duration_days || null,
+    instructions: item.instructions || "",
+  }));
+}
+
+async function savePrescriptions(medicalVisitId, prescriptions) {
+  if (!prescriptions || prescriptions.length === 0) return;
+
+  // Get existing prescription IDs for this medical visit
+  const { data: existingPrescriptions, error: fetchError } = await supabase
+    .from("prescriptions")
+    .select("id")
+    .eq("medical_visit_id", medicalVisitId);
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  // Create prescription records
+  const prescriptionInserts = prescriptions.map((rx) => ({
+    medical_visit_id: medicalVisitId,
+    notes: rx.instructions || "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
+
+  const { data: createdPrescriptions, error: prescriptionError } = await supabase
+    .from("prescriptions")
+    .insert(prescriptionInserts)
+    .select("id");
+
+  if (prescriptionError) throw new Error(prescriptionError.message);
+
+  // Create prescription items
+  const prescriptionItemsInserts = [];
+  for (let i = 0; i < prescriptions.length; i++) {
+    const rx = prescriptions[i];
+    const prescriptionId = createdPrescriptions[i]?.id;
+
+    if (!prescriptionId) continue;
+
+    prescriptionItemsInserts.push({
+      prescription_id: prescriptionId,
+      medicine_name: String(rx.medicineName || "").trim(),
+      dosage: String(rx.dosage || "").trim(),
+      frequency: String(rx.frequency || "").trim(),
+      duration_days: rx.durationDays && Number.isInteger(rx.durationDays) ? rx.durationDays : null,
+      instructions: String(rx.instructions || "").trim(),
+    });
+  }
+
+  if (prescriptionItemsInserts.length > 0) {
+    const { error: itemsError } = await supabase
+      .from("prescription_items")
+      .insert(prescriptionItemsInserts);
+
+    if (itemsError) throw new Error(itemsError.message);
+  }
 }
 
 async function getVaccinations(petId) {
@@ -440,17 +720,17 @@ async function getVisitHistory(petId, currentAppointmentId) {
     .select(`
       id,
       doctor_id,
-      doctor_schedule_id,
+      doctor_schedule_slot_id,
       appointment_type,
       status,
       created_at,
       doctors:doctor_id (
         full_name
       ),
-      doctor_schedules:doctor_schedule_id (
-        work_date,
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
+        slot_date,
         start_time,
-        room_name
+        schedule:doctor_schedules!doctor_schedule_slots_doctor_schedule_id_fkey (room_name)
       )
     `)
     .eq("pet_id", petId)
@@ -475,11 +755,11 @@ async function getVisitHistory(petId, currentAppointmentId) {
 
   return (appointments || []).map((appointment) => {
     const visit = visitMap.get(appointment.id);
-    const schedule = appointment.doctor_schedules;
+    const schedule = appointment.doctor_schedule_slots;
 
     return {
       id: appointment.id,
-      date: formatDate(schedule?.work_date || appointment.created_at),
+      date: formatDate(schedule?.slot_date || appointment.created_at),
       time: formatTime(schedule?.start_time),
       service: getServiceLabel(appointment.appointment_type),
       status: getStatusLabel(appointment.status),
@@ -490,11 +770,25 @@ async function getVisitHistory(petId, currentAppointmentId) {
   });
 }
 
-function buildExamDetail({ appointment, vaccinations, history, visit }) {
+async function buildExamDetail({ appointment, vaccinations, history, visit }) {
   const pet = appointment.pets;
   const owner = pet?.customers;
-  const schedule = appointment.doctor_schedules;
+  const schedule = appointment.doctor_schedule_slots;
   const record = normalizeExamRecord(visit);
+  const appointmentNote = cleanAppointmentNote(appointment.note);
+
+  // Fetch prescriptions from database if visit exists
+  let prescriptions = record.prescriptions;
+  if (visit?.id) {
+    try {
+      const dbPrescriptions = await getPrescriptionsForVisit(visit.id);
+      if (dbPrescriptions && dbPrescriptions.length > 0) {
+        prescriptions = dbPrescriptions;
+      }
+    } catch (e) {
+      // Fall back to clinical_exam data
+    }
+  }
 
   return {
     appointment: {
@@ -504,12 +798,12 @@ function buildExamDetail({ appointment, vaccinations, history, visit }) {
       statusLabel: getStatusLabel(appointment.status),
       serviceType: appointment.appointment_type,
       serviceLabel: getServiceLabel(appointment.appointment_type),
-      date: appointment.requested_date || schedule?.work_date || appointment.created_at,
-      dateLabel: formatDate(appointment.requested_date || schedule?.work_date || appointment.created_at),
+      date: appointment.requested_date || schedule?.slot_date || appointment.created_at,
+      dateLabel: formatDate(appointment.requested_date || schedule?.slot_date || appointment.created_at),
       time: formatTime(appointment.requested_time || schedule?.start_time),
       endTime: formatTime(schedule?.end_time),
-      roomName: schedule?.room_name || "",
-      note: appointment.note || "",
+      roomName: schedule?.schedule?.room_name || "",
+      note: appointmentNote || "",
     },
     patientCard: {
       id: pet?.id || null,
@@ -554,7 +848,10 @@ function buildExamDetail({ appointment, vaccinations, history, visit }) {
         { key: "weight", icon: "Weight", label: "Cân nặng thực tế", unit: "kg", tone: "emerald" },
       ],
     },
-    record,
+    record: {
+      ...record,
+      prescriptions,
+    },
   };
 }
 
@@ -571,7 +868,10 @@ async function saveMedicalVisit(appointmentId, record) {
     ownerNotes: cleanRecord.ownerNotes,
     vitals: cleanRecord.vitals,
     systems: cleanRecord.systems,
+    nextVisitTime: cleanRecord.nextVisitTime,
   };
+
+  assertFutureFollowUpSlot(cleanRecord);
 
   const existingVisit = await getCurrentMedicalVisit(appointmentId);
 
@@ -584,6 +884,8 @@ async function saveMedicalVisit(appointmentId, record) {
     updated_at: now,
   };
 
+  let medicalVisitId;
+
   if (existingVisit?.id) {
     const { data, error } = await supabase
       .from("medical_visits")
@@ -593,20 +895,68 @@ async function saveMedicalVisit(appointmentId, record) {
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    medicalVisitId = data.id;
+  } else {
+    const { data, error } = await supabase
+      .from("medical_visits")
+      .insert({
+        ...payload,
+        created_at: now,
+      })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    medicalVisitId = data.id;
   }
 
-  const { data, error } = await supabase
-    .from("medical_visits")
-    .insert({
-      ...payload,
-      created_at: now,
-    })
-    .select("id")
-    .single();
+  // Save prescriptions to database
+  if (cleanRecord.prescriptions && cleanRecord.prescriptions.length > 0) {
+    await savePrescriptions(medicalVisitId, cleanRecord.prescriptions);
+  }
 
-  if (error) throw new Error(error.message);
-  return data;
+  return medicalVisitId;
+}
+
+function repairNotificationText(value) {
+  let text = String(value || "");
+
+  if (text.includes("?") || text.includes("?") || text.includes("?") || text.includes("?") || text.includes("??") || text.includes("??")) {
+    try {
+      const repaired = Buffer.from(text, "latin1").toString("utf8");
+      if (repaired && !repaired.includes("?")) text = repaired;
+    } catch {
+      // Keep original text if legacy repair fails.
+    }
+  }
+
+  const replacements = new Map([
+    ["Kh?ch h?ng", "Khách hàng"],
+    ["y?u c?u", "yêu cầu"],
+    ["??i l?ch", "đổi lịch"],
+    ["h?y l?ch", "hủy lịch"],
+    ["l?ch h?n", "lịch hẹn"],
+    ["L? do", "Lý do"],
+    ["?? x?c nh?n", "đã xác nhận"],
+    ["Kh?ng ghi r?", "Không ghi rõ"],
+  ]);
+
+  for (const [bad, good] of replacements) {
+    text = text.split(bad).join(good);
+  }
+
+  return text;
+}
+
+function mapDoctorNotification(notification) {
+  return {
+    id: notification.id,
+    title: repairNotificationText(notification.title || "Th?ng b?o"),
+    content: repairNotificationText(notification.content || ""),
+    type: notification.type || "APPOINTMENT",
+    isRead: Boolean(notification.is_read),
+    createdAt: notification.created_at,
+  };
 }
 
 // GET /api/doctor/appointments
@@ -623,6 +973,72 @@ router.get("/", async function getDoctorAppointments(req, res) {
 
     const payload = await listDoctorAppointmentsForPortal(doctorId);
     res.json({ ok: true, ...payload });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// GET /api/doctor/appointments/notifications
+router.get("/notifications", async function getDoctorNotifications(req, res) {
+  try {
+    const userId = req.auth?.rawUser?.id;
+    if (!userId) return res.status(403).json({ ok: false, message: "Không xác định được tài khoản bác sĩ" });
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("id, title, content, type, is_read, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) throw new Error(error.message);
+
+    const notifications = (data || []).map(mapDoctorNotification);
+    res.json({
+      ok: true,
+      notifications,
+      summary: {
+        total: notifications.length,
+        unreadCount: notifications.filter((notification) => !notification.isRead).length,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.patch("/notifications/read-all", async function markAllDoctorNotificationsRead(req, res) {
+  try {
+    const userId = req.auth?.rawUser?.id;
+    if (!userId) return res.status(403).json({ ok: false, message: "Không xác định được tài khoản bác sĩ" });
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.patch("/notifications/:notificationId/read", async function markDoctorNotificationRead(req, res) {
+  try {
+    const userId = req.auth?.rawUser?.id;
+    const notificationId = parsePositiveId(req.params.notificationId, "ID thông báo");
+    if (!userId) return res.status(403).json({ ok: false, message: "Không xác định được tài khoản bác sĩ" });
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", notificationId)
+      .eq("user_id", userId);
+
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message });
   }
@@ -651,7 +1067,7 @@ router.put("/:id/start", async function startExam(req, res) {
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
-    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "IN_PROGRESS");
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "IN_PROGRESS");
 
     res.json({ ok: true, message: "Bắt đầu khám thành công" });
   } catch (error) {
@@ -674,7 +1090,7 @@ router.get("/:id/exam-detail", async function getExamDetail(req, res) {
 
     res.json({
       ok: true,
-      detail: buildExamDetail({
+      detail: await buildExamDetail({
         appointment,
         vaccinations,
         history,
@@ -705,7 +1121,7 @@ router.put("/:id/exam-draft", async function saveExamDraft(req, res) {
         .eq("id", appointmentId);
 
       if (error) throw new Error(error.message);
-      await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "IN_PROGRESS");
+      await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "IN_PROGRESS");
     }
 
     res.json({ ok: true, message: "Đã lưu nháp phiếu khám" });
@@ -721,7 +1137,9 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
     const doctorId = req.auth?.user?.doctorId;
 
     const appointment = await getOwnedAppointment(appointmentId, doctorId);
-    await saveMedicalVisit(appointmentId, req.body?.record);
+    const cleanRecord = sanitizeExamRecord(req.body?.record);
+    await saveMedicalVisit(appointmentId, cleanRecord);
+    const followUpAppointment = await createFollowUpAppointment(appointment, cleanRecord);
 
     const { error } = await supabase
       .from("appointments")
@@ -732,12 +1150,18 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
-    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "DONE");
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
     await sendAppointmentEventEmail("exam_result", appointmentId, {
       diagnosis: req.body?.record?.clinicalNote || "Kết quả khám đã được cập nhật trên hệ thống.",
     });
 
-    res.json({ ok: true, message: "Đã hoàn thành ca khám" });
+    res.json({
+      ok: true,
+      message: followUpAppointment
+        ? "Đã hoàn thành ca khám và tạo lịch tái khám cho khách hàng"
+        : "Đã hoàn thành ca khám",
+      followUpAppointment,
+    });
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message });
   }
@@ -766,7 +1190,7 @@ router.put("/:id/complete", async function completeExamOnly(req, res) {
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
-    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "DONE");
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
     await sendAppointmentEventEmail("exam_result", appointmentId, {
       diagnosis: "Kết quả khám đã được cập nhật trên hệ thống.",
     });

@@ -310,6 +310,14 @@ export type AdminSettings = {
   };
 };
 
+export type AdminDoctorScheduleRow = {
+  date: string;
+  from: string;
+  to: string;
+  roomName: string;
+  on: boolean;
+};
+
 export type AdminEmailTemplate = {
   subject: string;
   heading: string;
@@ -423,6 +431,13 @@ export const adminService = {
 
   updateStaffLock(id: string, locked: boolean) {
     return adminPatch<{ user: AdminUserLockResult }>(`/api/admin/staff/${encodeURIComponent(id)}/lock`, { locked });
+  },
+
+  saveDoctorSchedule(doctorId: string, rows: AdminDoctorScheduleRow[]) {
+    return adminPut<{ message: string; slotCount: number }>(
+      `/api/admin/doctors/${encodeURIComponent(doctorId)}/schedules`,
+      { rows, slotDuration: 30 },
+    );
   },
 
   getReports() {
