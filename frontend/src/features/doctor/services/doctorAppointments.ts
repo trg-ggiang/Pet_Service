@@ -85,6 +85,23 @@ export interface DoctorScheduleMeta {
   activityLabel: string;
 }
 
+export interface DoctorNotification {
+  id: number;
+  title: string;
+  content: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface DoctorNotificationsPayload {
+  notifications: DoctorNotification[];
+  summary: {
+    total: number;
+    unreadCount: number;
+  };
+}
+
 export interface DoctorAppointmentsPayload {
   appointments: DoctorAppointment[];
   summary: DoctorScheduleSummary;
@@ -115,6 +132,7 @@ export interface DoctorExamRecord {
   systems: Record<string, ExamSystemEntry>;
   clinicalNote: string;
   nextVisitDate: string | null;
+  nextVisitTime: string;
 }
 
 export interface DoctorExamDetail {
@@ -214,7 +232,32 @@ interface MutationResponse {
   message: string;
 }
 
+interface DoctorNotificationsResponse extends DoctorNotificationsPayload {
+  ok: boolean;
+  message?: string;
+}
+
 export const doctorAppointmentsService = {
+  async fetchNotifications(): Promise<DoctorNotificationsPayload> {
+    const data = await fetchWithAuth<DoctorNotificationsResponse>("/api/doctor/appointments/notifications");
+    return {
+      notifications: data.notifications || [],
+      summary: data.summary || { total: 0, unreadCount: 0 },
+    };
+  },
+
+  async markNotificationRead(notificationId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/doctor/appointments/notifications/${notificationId}/read`, {
+      method: "PATCH",
+    });
+  },
+
+  async markAllNotificationsRead(): Promise<void> {
+    await fetchWithAuth<MutationResponse>("/api/doctor/appointments/notifications/read-all", {
+      method: "PATCH",
+    });
+  },
+
   async fetchAppointments(): Promise<DoctorAppointmentsPayload> {
     const data = await fetchWithAuth<DoctorAppointmentsResponse>("/api/doctor/appointments");
     const appointments = data.appointments || [];

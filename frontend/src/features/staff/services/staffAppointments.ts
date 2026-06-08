@@ -40,6 +40,13 @@ export interface StaffProfile {
   address: string;
 }
 
+export interface StaffAppointmentRequest {
+  type: "RESCHEDULE" | "CANCEL";
+  date?: string;
+  time?: string;
+  reason?: string;
+}
+
 export interface StaffAppointment {
   id: string;
   appointmentId: number;
@@ -55,6 +62,7 @@ export interface StaffAppointment {
   status: StaffAppointmentStatus;
   queue?: string;
   note: string;
+  pendingRequest?: StaffAppointmentRequest | null;
   createdAt: string;
 }
 
@@ -167,6 +175,12 @@ export const staffAppointmentsService = {
 
   async checkInAppointment(appointmentId: number): Promise<void> {
     await fetchWithAuth<MutationResponse>(`/api/staff/appointments/${appointmentId}/checkin`, {
+      method: "PUT",
+    });
+  },
+
+  async approveAppointmentRequest(appointmentId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/appointments/${appointmentId}/approve-request`, {
       method: "PUT",
     });
   },

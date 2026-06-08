@@ -10,6 +10,18 @@ import { SymptomForm } from "../../../components/doctor/SymptomForm";
 import { ClinicalExamForm } from "../../../components/doctor/ClinicalExamForm";
 import { LoadingState, ErrorState } from "../../../components/doctor/ExamState";
 
+function validateFollowUpSlot(record: DoctorExamRecord) {
+  if (!record.nextVisitDate) return "";
+  if (!record.nextVisitTime) return "Vui lòng chọn giờ tái khám";
+
+  const slot = new Date(record.nextVisitDate + "T" + record.nextVisitTime + ":00");
+  if (Number.isNaN(slot.getTime()) || slot.getTime() <= Date.now()) {
+    return "Lịch tái khám phải nằm trong tương lai";
+  }
+
+  return "";
+}
+
 export function DoctorExamScreen({
   appointmentId,
   onBack,
@@ -76,6 +88,13 @@ export function DoctorExamScreen({
 
   async function handleComplete() {
     if (!record) return;
+
+    const followUpError = validateFollowUpSlot(record);
+    if (followUpError) {
+      setError(followUpError);
+      setMessage("");
+      return;
+    }
 
     try {
       setCompleting(true);

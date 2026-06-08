@@ -18,6 +18,17 @@ function getServiceIcon(iconKey: string) {
 const INPUT_CLS = "w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all";
 const LABEL_CLS = "block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide";
 
+function getFriendlyAppointmentNoteLines(note?: string) {
+  const raw = String(note || "").trim();
+  if (!raw) return [];
+
+  return raw
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith("[CUSTOMER_REQUEST]") && !line.startsWith("{") && !line.endsWith("}"));
+}
+
 function formatCurrency(value?: number) {
   if (!Number.isFinite(value)) return "Chưa có";
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value ?? 0);
@@ -370,7 +381,7 @@ export function NewAppointmentModal({
 // Appointment Detail Modal
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel }: { apt: Apt; onClose: () => void; onReschedule: (apt: Apt) => void; onCancel: (id: string) => void }) {
+export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, onConfirm }: { apt: Apt; onClose: () => void; onReschedule: (apt: Apt) => void; onCancel: (id: string) => void; onConfirm: (id: string) => void }) {
   const Icon = apt.icon;
   const statusCfg = getStatusConfig(apt.status);
   const serviceTypeCfg = getServiceTypeConfig(apt.serviceType);
@@ -379,6 +390,7 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel }:
   const hasConfirmed = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"].includes(apt.status);
   const hasCheckedIn = ["CHECKED_IN", "IN_PROGRESS", "COMPLETED"].includes(apt.status);
   const hasInProgress = ["IN_PROGRESS", "COMPLETED"].includes(apt.status);
+  const noteLines = getFriendlyAppointmentNoteLines(apt.note);
 
   const timeline: { label: string; time: string; completed: boolean }[] = [
     { label: "Đặt lịch", time: apt.createdAtLabel || "-", completed: true },
@@ -493,6 +505,14 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel }:
         {/* Actions */}
         {(apt.status === "PENDING" || apt.status === "CONFIRMED") && (
           <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-3">
+            {apt.status === "PENDING" && (
+              <button
+                onClick={() => onConfirm(apt.id)}
+                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
+              >
+                Xác nhận lịch
+              </button>
+            )}
             <button
               onClick={() => onReschedule(apt)}
               className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors"
@@ -516,9 +536,10 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel }:
 // Reschedule Modal
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: () => void; onSave: (id: string, date: string, time: string) => void }) {
+export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: () => void; onSave: (id: string, date: string, time: string, reason: string) => void }) {
   const [date, setDate] = useState(apt.date);
   const [time, setTime] = useState(apt.time);
+  const [reason, setReason] = useState("");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -561,12 +582,23 @@ export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: (
               <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
           </div>
+
+          <div>
+            <label className={LABEL_CLS}>Lý do đổi lịch</label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder="Nhập lý do để nhân viên xác nhận yêu cầu đổi lịch..."
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all resize-none"
+            />
+          </div>
         </div>
 
         <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
           <button
-            onClick={() => onSave(apt.id, date, time)}
-            disabled={!date || !time}
+            onClick={() => onSave(apt.id, date, time, reason)}
+            disabled={!date || !time || !reason.trim()}
             className="w-full h-12 rounded-xl text-sm font-bold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
           >
