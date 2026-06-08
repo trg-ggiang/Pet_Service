@@ -167,7 +167,7 @@ async function listCustomerServiceHistory(customerId) {
 
   const { data: appointments, error: appointmentsError } = await supabase
     .from("appointments")
-    .select("id, pet_id, appointment_type")
+    .select("id, pet_id, appointment_type, doctor_id, staff_id, requested_date")
     .in("pet_id", petIds);
 
   if (appointmentsError) throw new Error(appointmentsError.message);
@@ -175,13 +175,31 @@ async function listCustomerServiceHistory(customerId) {
   const appointmentIds = (appointments ?? []).map((appointment) => appointment.id);
   if (appointmentIds.length === 0) return [];
 
-  const { data: invoices, error: invoicesError } = await supabase
-    .from("invoices")
-    .select("id, appointment_id, total_amount, payment_status, transaction_code, status, created_at")
-    .in("appointment_id", appointmentIds)
-    .order("created_at", { ascending: false });
+  const doctorIds = [...new Set((appointments ?? []).map((a) => a.doctor_id).filter(Boolean))];
+  const staffIds  = [...new Set((appointments ?? []).map((a) => a.staff_id).filter(Boolean))];
 
+  const [invoicesResult, doctorsResult, staffsResult] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, appointment_id, total_amount, payment_status, transaction_code, status, created_at")
+      .in("appointment_id", appointmentIds)
+      .order("created_at", { ascending: false }),
+    doctorIds.length
+      ? supabase.from("doctors").select("id, full_name").in("id", doctorIds)
+      : Promise.resolve({ data: [], error: null }),
+    staffIds.length
+      ? supabase.from("staffs").select("id, full_name").in("id", staffIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const invoicesError = invoicesResult.error;
+  const invoices = invoicesResult.data;
   if (invoicesError) throw new Error(invoicesError.message);
+  if (doctorsResult.error) throw new Error(doctorsResult.error.message);
+  if (staffsResult.error) throw new Error(staffsResult.error.message);
+
+  const doctorsById = new Map((doctorsResult.data ?? []).map((d) => [d.id, d]));
+  const staffsById  = new Map((staffsResult.data ?? []).map((s) => [s.id, s]));
 
   const details = await loadDetails(
     appointmentIds,
@@ -198,11 +216,17 @@ async function listCustomerServiceHistory(customerId) {
     const services = getServiceNames({ ...invoice, items }, appointment);
     const prescriptions = details.prescriptionsByAppointmentId.get(invoice.appointment_id) ?? [];
 
+    const doctor = appointment?.doctor_id ? doctorsById.get(appointment.doctor_id) : null;
+    const staff  = appointment?.staff_id  ? staffsById.get(appointment.staff_id)   : null;
+    const providerName = doctor?.full_name ?? staff?.full_name ?? null;
+
+    const serviceDate = appointment?.requested_date || invoice.created_at;
+
     return {
       id: `INV-${String(invoice.id).padStart(6, "0")}`,
       invoiceId: invoice.id,
-      sortAt: invoice.created_at,
-      date: formatDate(invoice.created_at),
+      sortAt: serviceDate,
+      date: formatDate(serviceDate),
       service: services.length > 1 ? `${services[0]} +${services.length - 1} dịch vụ` : services[0],
       services,
       items: items.length > 0
@@ -224,7 +248,7 @@ async function listCustomerServiceHistory(customerId) {
       cost: formatCurrency(invoice.total_amount),
       status: invoice.status === "CANCELLED" ? "cancelled" : invoice.payment_status === "PAID" ? "completed" : "pending",
       type: getHistoryType({ ...invoice, items }, details),
-      staff: invoice.transaction_code ?? invoice.payment_status,
+      staff: providerName ?? "Phòng khám",
       details: getHistoryDetails(invoice, details),
       prescriptions,
     };

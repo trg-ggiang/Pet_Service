@@ -390,6 +390,7 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, o
   const Icon = apt.icon;
   const statusCfg = getStatusConfig(apt.status);
   const serviceTypeCfg = getServiceTypeConfig(apt.serviceType);
+  const [confirming, setConfirming] = useState(false);
   const appointmentDate = apt.date || "Chưa lưu";
   const appointmentTime = apt.time || "Chưa lưu";
   const hasConfirmed = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"].includes(apt.status);
@@ -541,10 +542,21 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, o
           <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-3">
             {apt.status === "PENDING" && (
               <button
-                onClick={() => onConfirm(apt.id)}
-                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
+                onClick={async () => {
+                  if (confirming) return;
+                  setConfirming(true);
+                  try { await onConfirm(apt.id); } catch { setConfirming(false); }
+                }}
+                disabled={confirming}
+                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Xác nhận lịch
+                {confirming && (
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                )}
+                {confirming ? "Đang xử lý..." : "Xác nhận lịch"}
               </button>
             )}
             <button
@@ -570,25 +582,45 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, o
 // Reschedule Modal
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: () => void; onSave: (id: string, date: string, time: string, reason: string) => void }) {
+export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: () => void; onSave: (id: string, date: string, time: string, reason: string) => Promise<void> }) {
   const [date, setDate] = useState(apt.date);
   const [time, setTime] = useState(apt.time);
   const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    if (!date || !time || !reason.trim() || saving) return;
+    try {
+      setSaving(true);
+      setError("");
+      await onSave(apt.id, date, time, reason.trim());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể đổi lịch. Vui lòng thử lại.");
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={saving ? undefined : onClose}>
       <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-slate-900">Đổi lịch hẹn</h3>
             <p className="text-xs text-slate-400 mt-0.5">{apt.service} · {apt.pet}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} disabled={saving} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6 space-y-4">
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+              {error}
+            </div>
+          )}
+
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
             <p className="text-slate-400 font-medium text-xs uppercase tracking-wide mb-1">Lịch hiện tại</p>
             <p className="font-bold text-slate-700 text-sm">{apt.date} · {apt.time}</p>
@@ -601,14 +633,15 @@ export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: (
               value={date}
               min={new Date().toISOString().split("T")[0]}
               onChange={(e) => setDate(e.target.value)}
-              className={INPUT_CLS}
+              disabled={saving}
+              className={INPUT_CLS + " disabled:opacity-50"}
             />
           </div>
 
           <div>
             <label className={LABEL_CLS}>Giờ mới</label>
             <div className="relative">
-              <select value={time} onChange={(e) => setTime(e.target.value)} className={INPUT_CLS + " appearance-none"}>
+              <select value={time} onChange={(e) => setTime(e.target.value)} disabled={saving} className={INPUT_CLS + " appearance-none disabled:opacity-50"}>
                 {["08:00","08:30","09:00","09:30","10:00","10:30","11:00","13:30","14:00","14:30","15:00","15:30","16:00"].map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
@@ -623,20 +656,27 @@ export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: (
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
-              placeholder="Nhập lý do để nhân viên xác nhận yêu cầu đổi lịch..."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all resize-none"
+              disabled={saving}
+              placeholder="Nhập lý do đổi lịch..."
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all resize-none disabled:opacity-50"
             />
           </div>
         </div>
 
         <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
           <button
-            onClick={() => onSave(apt.id, date, time, reason)}
-            disabled={!date || !time || !reason.trim()}
-            className="w-full h-12 rounded-xl text-sm font-bold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => void handleSave()}
+            disabled={!date || !time || !reason.trim() || saving}
+            className="w-full h-12 rounded-xl text-sm font-bold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
           >
-            Xác nhận đổi lịch
+            {saving && (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            )}
+            {saving ? "Đang xử lý..." : "Xác nhận đổi lịch"}
           </button>
         </div>
       </div>

@@ -61,8 +61,8 @@ const SERVICE_LABELS = {
 
 const APPOINTMENT_STATUS_MAP = {
   PENDING: "scheduled",
-  CONFIRMED: "checked_in",
-  CHECKED_IN: "checked_in",
+  CONFIRMED: "confirmed",
+  CHECKED_IN: "in_progress",
   IN_PROGRESS: "in_progress",
   COMPLETED: "completed",
   CANCELLED: "completed",
@@ -172,6 +172,10 @@ function mapAppointment(appointment) {
     note: stripRequestPayload(appointment.note) || "",
     pendingRequest,
     createdAt: appointment.created_at,
+    rawDate: appointment.requested_date ? String(appointment.requested_date).slice(0, 10) : "",
+    doctorName: appointment.doctors?.full_name || null,
+    roomName: appointment.doctors?.room_name || null,
+    staffName: appointment.staffs?.full_name || null,
   };
 }
 
@@ -302,9 +306,11 @@ async function listStaffAppointments(staffId) {
         species:species_id (name),
         breed:breed_id (name),
         customers:customer_id (full_name, phone)
-      )
+      ),
+      doctors:doctor_id (full_name, room_name),
+      staffs:staff_id (full_name)
     `)
-    .in("status", ["PENDING", "CONFIRMED", "IN_PROGRESS"])
+    .in("status", ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS"])
     .order("requested_date", { ascending: true, nullsFirst: false })
     .order("requested_time", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -313,6 +319,35 @@ async function listStaffAppointments(staffId) {
 
   if (error) throw new Error(error.message);
   return (data || []).map(mapAppointment);
+}
+
+async function confirmAppointment(appointmentId, staffId) {
+  const effectiveStaffId = assertStaffId(staffId);
+  const id = parsePositiveId(appointmentId, "ID lịch hẹn");
+  const { data: appointment, error: fetchError } = await supabase
+    .from("appointments")
+    .select("id, status, staff_id")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !appointment) throw new Error("Không tìm thấy lịch hẹn");
+  if (appointment.staff_id && appointment.staff_id !== effectiveStaffId) {
+    const error = new Error("Bạn không có quyền xác nhận lịch hẹn này");
+    error.statusCode = 403;
+    throw error;
+  }
+  if (appointment.status !== "PENDING") {
+    const error = new Error("Chỉ có thể xác nhận lịch hẹn đang ở trạng thái chờ xác nhận");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { error } = await supabase
+    .from("appointments")
+    .update({ status: "CONFIRMED", staff_id: effectiveStaffId, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
 }
 
 async function checkInAppointment(appointmentId, staffId) {
@@ -330,15 +365,15 @@ async function checkInAppointment(appointmentId, staffId) {
     error.statusCode = 403;
     throw error;
   }
-  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
-    const error = new Error("Không thể check-in lịch hẹn ở trạng thái hiện tại");
+  if (appointment.status !== "CONFIRMED") {
+    const error = new Error("Chỉ có thể check-in lịch hẹn đã được xác nhận");
     error.statusCode = 400;
     throw error;
   }
 
   const { error } = await supabase
     .from("appointments")
-    .update({ status: "CONFIRMED", staff_id: effectiveStaffId, updated_at: new Date().toISOString() })
+    .update({ status: "IN_PROGRESS", staff_id: effectiveStaffId, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) throw new Error(error.message);
@@ -719,7 +754,7 @@ async function getStaffPortalSummary(staffId) {
   return {
     doneGrooming: grooming.filter((task) => task.status === "completed").length,
     totalGrooming: grooming.length,
-    pendingCheckIn: appointments.filter((appointment) => appointment.status === "scheduled").length,
+    pendingCheckIn: appointments.filter((a) => a.status === "scheduled" || a.status === "confirmed").length,
     needsFed: boarding.filter((guest) => !guest.todayStatus.breakfast || !guest.todayStatus.lunch || !guest.todayStatus.dinner).length,
     pendingPayments: payments.filter((payment) => payment.status === "pending").length,
   };
@@ -728,6 +763,7 @@ async function getStaffPortalSummary(staffId) {
 module.exports = {
   getStaffProfile,
   listStaffAppointments,
+  confirmAppointment,
   checkInAppointment,
   approveAppointmentRequest,
   listGroomingTasks,

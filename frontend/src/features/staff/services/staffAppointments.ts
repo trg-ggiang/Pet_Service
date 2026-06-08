@@ -24,7 +24,7 @@ async function fetchWithAuth<T>(url: string, options: RequestInit = {}): Promise
   return data as T;
 }
 
-export type StaffAppointmentStatus = "scheduled" | "checked_in" | "in_progress" | "completed";
+export type StaffAppointmentStatus = "scheduled" | "confirmed" | "in_progress" | "completed";
 export type StaffServiceType = "exam" | "grooming" | "boarding" | "vaccination";
 export type GroomingTaskStatus = "scheduled" | "in_progress" | "completed";
 export type PaymentStatus = "pending" | "paid";
@@ -64,6 +64,10 @@ export interface StaffAppointment {
   note: string;
   pendingRequest?: StaffAppointmentRequest | null;
   createdAt: string;
+  rawDate?: string;
+  doctorName?: string | null;
+  roomName?: string | null;
+  staffName?: string | null;
 }
 
 export interface GroomingTask {
@@ -171,6 +175,12 @@ export const staffAppointmentsService = {
   async fetchPendingAppointments(): Promise<StaffAppointment[]> {
     const data = await fetchWithAuth<StaffAppointmentsResponse>("/api/staff/appointments");
     return data.appointments || [];
+  },
+
+  async confirmAppointment(appointmentId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/appointments/${appointmentId}/confirm`, {
+      method: "PUT",
+    });
   },
 
   async checkInAppointment(appointmentId: number): Promise<void> {

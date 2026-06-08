@@ -4,9 +4,10 @@ import {
   Calendar, Star, Stethoscope, Scissors, BedDouble, Users,
   ShieldAlert, CheckCircle2, Clock, Activity, ToggleLeft,
   ToggleRight, Briefcase, Filter,
-  BarChart3, Award, TrendingUp,
+  BarChart3, Award, TrendingUp, CalendarRange,
 } from "lucide-react";
 import { adminService, type AdminStaffSummary } from "../../features/admin/services/admin";
+import { DoctorWeeklyScheduleModal } from "./DoctorWeeklySchedule";
 
 type Department = "all" | "clinic" | "grooming" | "boarding" | "reception" | "admin";
 type WorkStatus = "active" | "on_leave" | "probation";
@@ -646,6 +647,7 @@ export function AdminStaffView() {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [schedulingDoctor, setSchedulingDoctor] = useState<StaffMember | null>(null);
   const [showModal, setShowModal]   = useState(false);
+  const [showWeeklySchedule, setShowWeeklySchedule] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -717,6 +719,12 @@ export function AdminStaffView() {
           <p className="text-sm text-muted-foreground mt-0.5">{totalStaff} nhân viên · {DEPT_ORDER.length} bộ phận</p>
         </div>
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowWeeklySchedule(true)}
+            className="flex items-center gap-1.5 h-9 px-4 border border-cyan-200 bg-cyan-50 text-cyan-700 text-[13px] font-semibold rounded-lg hover:bg-cyan-100 transition-colors"
+          >
+            <CalendarRange size={14} /> Phân lịch tuần
+          </button>
           <button className="flex items-center gap-1.5 h-9 px-4 border border-border bg-white text-[13px] font-medium text-foreground rounded-lg hover:bg-muted transition-colors">
             <Filter size={13} /> Bộ lọc
           </button>
@@ -885,6 +893,10 @@ export function AdminStaffView() {
             setSchedulingDoctor(null);
           }}
         />
+      )}
+
+      {showWeeklySchedule && (
+        <DoctorWeeklyScheduleModal onClose={() => setShowWeeklySchedule(false)} />
       )}
     </div>
   );

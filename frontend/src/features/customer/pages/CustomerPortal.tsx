@@ -99,6 +99,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [reschedulingApt, setReschedulingApt] = useState<Apt | null>(null);
   const [cancellingAptId, setCancellingAptId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const unreadCount = notificationsSummary.unreadCount;
   const appointmentsPageSize = 5;
@@ -609,37 +610,56 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       )}
 
       {cancellingAptId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => { setCancellingAptId(null); setCancelReason(""); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={cancelLoading ? undefined : () => { setCancellingAptId(null); setCancelReason(""); }}>
           <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
             <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
               <X size={24} className="text-red-500" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 text-center">Gửi yêu cầu hủy lịch?</h3>
-            <p className="text-sm text-slate-500 text-center mt-2">Nhân viên sẽ xem xét lý do và xác nhận yêu cầu của bạn.</p>
+            <h3 className="text-lg font-bold text-slate-900 text-center">Hủy lịch hẹn?</h3>
+            <p className="text-sm text-slate-500 text-center mt-2">Nhập lý do hủy lịch để hoàn tất.</p>
             <div className="mt-5">
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Lý do hủy lịch</label>
               <textarea
                 value={cancelReason}
                 onChange={(event) => setCancelReason(event.target.value)}
                 rows={3}
-                placeholder="Nhập lý do để nhân viên xác nhận yêu cầu hủy lịch..."
-                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold transition-all focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/10"
+                disabled={cancelLoading}
+                placeholder="Nhập lý do hủy lịch..."
+                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold transition-all focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/10 disabled:opacity-50"
               />
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setCancellingAptId(null); setCancelReason(""); }} className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Giữ lại</button>
+              <button
+                onClick={() => { setCancellingAptId(null); setCancelReason(""); }}
+                disabled={cancelLoading}
+                className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40"
+              >
+                Giữ lại
+              </button>
               <button
                 onClick={async () => {
-                  await cancelCustomerAppointment(cancellingAptId, { reason: cancelReason.trim() });
-                  await refreshAppointments();
-                  await loadNotifications();
-                  setCancellingAptId(null);
-                  setCancelReason("");
+                  if (cancelLoading) return;
+                  setCancelLoading(true);
+                  try {
+                    await cancelCustomerAppointment(cancellingAptId, { reason: cancelReason.trim() });
+                    await refreshAppointments();
+                    await loadNotifications();
+                    setCancellingAptId(null);
+                    setCancelReason("");
+                  } finally {
+                    setCancelLoading(false);
+                  }
                 }}
-                disabled={!cancelReason.trim()}
-                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!cancelReason.trim() || cancelLoading}
+                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Gửi yêu cầu
+                {cancelLoading && (
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                )}
+                {cancelLoading ? "Đang xử lý..." : "Xác nhận hủy"}
               </button>
             </div>
           </div>
