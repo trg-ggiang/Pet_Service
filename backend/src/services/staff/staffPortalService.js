@@ -1,5 +1,9 @@
 const { supabase } = require("../../lib/supabaseClient");
 const { sendAppointmentEventEmail } = require("../emailService");
+const {
+  ensureDoctorScheduleSlot,
+  setDoctorScheduleSlotStatus,
+} = require("../doctorScheduleService");
 
 
 const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
@@ -15,6 +19,10 @@ function stripRequestPayload(value) {
   const text = String(value || "");
   const index = text.indexOf(REQUEST_PREFIX);
   return (index < 0 ? text : text.slice(0, index)).trim();
+}
+
+async function releaseDoctorScheduleSlot(scheduleId) {
+  await setDoctorScheduleSlotStatus(scheduleId, "AVAILABLE");
 }
 
 async function createUserNotification(userId, title, content) {
@@ -351,7 +359,7 @@ async function approveAppointmentRequest(appointmentId, staffId) {
       cancel_reason,
       requested_date,
       requested_time,
-      doctor_schedule_id,
+      doctor_schedule_slot_id,
       pets:pet_id (
         name,
         customers:customer_id (user_id, full_name)
@@ -376,19 +384,54 @@ async function approveAppointmentRequest(appointmentId, staffId) {
 
   if (request.type === "RESCHEDULE") {
     const cleanNote = stripRequestPayload(appointment.note);
+    let newSchedule = null;
+
+    if (appointment.doctor_id) {
+      const busy = await supabase
+        .from("appointments")
+        .select("id")
+        .eq("doctor_id", appointment.doctor_id)
+        .eq("requested_date", request.date)
+        .eq("requested_time", request.time)
+        .neq("id", appointment.id)
+        .not("status", "in", "(CANCELLED,NO_SHOW)")
+        .limit(1);
+      if (busy.error) throw new Error(busy.error.message);
+      if ((busy.data || []).length > 0) throw new Error("Bác sĩ đã có lịch hẹn trong khung giờ mới.");
+
+      newSchedule = await ensureDoctorScheduleSlot(appointment.doctor_id, request.date, request.time, { slotDuration: 30 });
+      if (!newSchedule) throw new Error("Bác sĩ không có ca làm việc trống trong khung giờ mới.");
+
+      const reserved = await supabase
+        .from("doctor_schedule_slots")
+        .update({ status: "BOOKED", updated_at: now })
+        .eq("id", newSchedule.id)
+        .eq("status", "AVAILABLE")
+        .select("id")
+        .maybeSingle();
+      if (reserved.error) throw new Error(reserved.error.message);
+      if (!reserved.data) throw new Error("Ca khám mới vừa được đặt. Vui lòng chọn khung giờ khác.");
+    }
+
     const updated = await supabase
       .from("appointments")
       .update({
         requested_date: request.date,
         requested_time: request.time,
-        doctor_schedule_id: null,
+        doctor_schedule_slot_id: newSchedule?.id ?? null,
         note: cleanNote,
         staff_id: appointment.staff_id || effectiveStaffId,
         updated_at: now,
       })
       .eq("id", id);
 
-    if (updated.error) throw new Error(updated.error.message);
+    if (updated.error) {
+      if (newSchedule?.id) await releaseDoctorScheduleSlot(newSchedule.id);
+      throw new Error(updated.error.message);
+    }
+    if (appointment.doctor_schedule_slot_id && appointment.doctor_schedule_slot_id !== newSchedule?.id) {
+      await releaseDoctorScheduleSlot(appointment.doctor_schedule_slot_id);
+    }
 
     await notifyAppointmentActor(
       appointment.pets?.customers?.user_id,
@@ -408,6 +451,7 @@ async function approveAppointmentRequest(appointmentId, staffId) {
       .from("appointments")
       .update({
         status: "CANCELLED",
+        doctor_schedule_slot_id: null,
         cancel_reason: request.reason || "Customer requested cancellation",
         staff_id: appointment.staff_id || effectiveStaffId,
         updated_at: now,
@@ -415,6 +459,7 @@ async function approveAppointmentRequest(appointmentId, staffId) {
       .eq("id", id);
 
     if (updated.error) throw new Error(updated.error.message);
+    await releaseDoctorScheduleSlot(appointment.doctor_schedule_slot_id);
 
     await notifyAppointmentActor(
       appointment.pets?.customers?.user_id,

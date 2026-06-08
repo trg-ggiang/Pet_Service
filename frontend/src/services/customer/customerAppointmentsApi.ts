@@ -93,13 +93,13 @@ export async function rescheduleCustomerAppointment(
   return payload.appointment;
 }
 
-export async function cancelCustomerAppointment(appointmentId: string, reason: string): Promise<CustomerAppointment> {
+export async function cancelCustomerAppointment(appointmentId: string, input?: { reason?: string }): Promise<CustomerAppointment> {
   const payload = await requestJson<{ ok: true; appointment: CustomerAppointment }>(
     `/api/customer/appointments/${encodeURIComponent(appointmentId)}/cancel`,
     {
       method: "PATCH",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ reason }),
+      body: input ? JSON.stringify(input) : undefined,
     },
   );
 

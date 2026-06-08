@@ -234,6 +234,7 @@ model Doctor {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   schedules    DoctorSchedule[]
+  scheduleSlots DoctorScheduleSlot[]
   appointments Appointment[]
 
   @@map("doctors")
@@ -253,19 +254,41 @@ model DoctorSchedule {
   startTime DateTime       @map("start_time") @db.Time(6)
   endTime   DateTime       @map("end_time") @db.Time(6)
   roomName  String?        @map("room_name") @db.VarChar(100)
-  status    ScheduleStatus @default(AVAILABLE)
-
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
-
-  appointment Appointment?
+  slots  DoctorScheduleSlot[]
 
   @@unique([id, doctorId])
   @@index([doctorId])
   @@index([workDate])
   @@map("doctor_schedules")
+}
+
+model DoctorScheduleSlot {
+  id               Int @id @default(autoincrement())
+  doctorScheduleId Int @map("doctor_schedule_id")
+  doctorId         Int @map("doctor_id")
+
+  slotDate  DateTime       @map("slot_date") @db.Date
+  startTime DateTime       @map("start_time") @db.Time(6)
+  endTime   DateTime       @map("end_time") @db.Time(6)
+  status    ScheduleStatus @default(AVAILABLE)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  schedule    DoctorSchedule @relation(fields: [doctorScheduleId], references: [id], onDelete: Cascade)
+  doctor      Doctor         @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  appointment Appointment?
+
+  @@unique([doctorId, slotDate, startTime])
+  @@index([doctorScheduleId])
+  @@index([doctorId])
+  @@index([slotDate])
+  @@index([status])
+  @@map("doctor_schedule_slots")
 }
 
 /**
@@ -346,7 +369,7 @@ model Appointment {
   petId            Int  @map("pet_id")
   doctorId         Int? @map("doctor_id")
   staffId          Int? @map("staff_id")
-  doctorScheduleId Int? @unique @map("doctor_schedule_id")
+  doctorScheduleSlotId Int? @unique @map("doctor_schedule_slot_id")
 
   appointmentType AppointmentType   @default(MEDICAL) @map("appointment_type")
   status          AppointmentStatus @default(PENDING)
@@ -362,7 +385,7 @@ model Appointment {
   pet            Pet             @relation(fields: [petId], references: [id], onDelete: Restrict)
   doctor         Doctor?         @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   staff          Staff?          @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  doctorSchedule DoctorSchedule? @relation(fields: [doctorScheduleId], references: [id], onDelete: Restrict)
+  doctorScheduleSlot DoctorScheduleSlot? @relation(fields: [doctorScheduleSlotId], references: [id], onDelete: Restrict)
 
   appointmentServices AppointmentService[]
   medicalVisit        MedicalVisit?

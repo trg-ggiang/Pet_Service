@@ -21,6 +21,7 @@ const {
   updateEmailTemplates,
   sendCustomEmail,
 } = require("../services/emailService");
+const { saveDoctorScheduleSlots } = require("../services/doctorScheduleService");
 
 const router = express.Router();
 
@@ -156,6 +157,25 @@ router.get("/settings", async function(req, res) {
     res.json({ ok: true, settings });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message || "Failed to load settings" });
+  }
+});
+
+router.put("/doctors/:doctorId/schedules", async function(req, res) {
+  try {
+    const doctorId = Number(String(req.params.doctorId || "").replace(/\D/g, ""));
+    if (!Number.isFinite(doctorId)) {
+      return res.status(400).json({ ok: false, message: "Doctor id không hợp lệ" });
+    }
+
+    const rows = req.body?.rows;
+    if (!Array.isArray(rows)) {
+      return res.status(400).json({ ok: false, message: "Dữ liệu lịch không hợp lệ" });
+    }
+
+    const result = await saveDoctorScheduleSlots(doctorId, rows, { slotDuration: req.body?.slotDuration || 30 });
+    res.json({ ok: true, message: `Đã lưu ${result.slotCount} ca khám 30 phút`, ...result });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ ok: false, message: error.message || "Failed to save doctor schedule" });
   }
 });
 

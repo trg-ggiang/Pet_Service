@@ -9,7 +9,7 @@ interface DoctorSidebarProfile {
 }
 
 const NAV_ITEMS: Array<{ id: DoctorPortalNavId; label: string; icon: typeof Calendar }> = [
-  { id: "schedule", label: "Lịch hôm nay", icon: Calendar },
+  { id: "schedule", label: "Lịch khám", icon: Calendar },
   { id: "records", label: "Hồ sơ bệnh án", icon: FileText },
   { id: "reports", label: "Thống kê", icon: BarChart3 },
   { id: "settings", label: "Cài đặt", icon: Settings },

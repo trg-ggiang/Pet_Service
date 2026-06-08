@@ -72,6 +72,7 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `PATCH /api/admin/appointments/:id/status` updates one admin appointment status.
   - `GET /api/admin/staff` lists backend-filtered doctor and staff rows with staff-management summary for the staff-management page.
   - `PATCH /api/admin/staff/:id/lock` locks or unlocks one doctor/staff account from the staff-management page.
+  - `PUT /api/admin/doctors/:doctorId/schedules` saves a doctor working window and materializes it into concrete 30-minute schedule slots.
   - `GET /api/admin/reports` returns invoice, service, appointment, and staff-performance report data for the admin reports page.
   - `GET /api/admin/settings` returns backend-shaped clinic, account, notification, payment, and security settings data for the admin settings page.
   - `GET /api/admin/exam-context` returns appointment, pet, history, symptom, body-system, and prescription option data for the admin exam page.
@@ -91,6 +92,7 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `GET /api/doctor/records` lists appointment-backed patient history for the authenticated doctor, includes pet identity for grouping records by pet, and accepts `search` and `species` filters.
   - `GET /api/doctor/stats` returns doctor statistics for month, week, day, and quarter dashboard views with KPI card view data.
   - `GET /api/doctor/settings` returns doctor profile, schedule, notification, and security/session settings payloads.
+    - Doctor schedules are read-only in the doctor portal; admin owns schedule creation and updates.
   - `GET /api/doctor/exam/:appointmentId` returns exam-screen context for one current-doctor appointment from database rows.
   - `GET /api/doctor/appointments` lists active appointments for the authenticated doctor.
     - The response includes render-ready portal data: appointment rows, status keys, status view classes, schedule summary counts, and header metadata.
@@ -101,8 +103,9 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `POST /api/customer/pets` creates a current-customer pet.
   - `PUT /api/customer/pets/:petId` updates a current-customer pet.
   - `GET /api/customer/appointment-options` lists service options for customer booking.
-  - `POST /api/customer/appointment-provider-options` lists doctors whose `doctor_schedules` cover the requested slot and are not already booked at that exact date/time, or lists staff for staff-backed services.
+  - `POST /api/customer/appointment-provider-options` lists doctors with an `AVAILABLE` row in `doctor_schedule_slots` for the requested date/time, or lists staff for staff-backed services.
   - `GET /api/customer/appointments` lists the current customer's appointments with backend filtering, status counts, and pagination summary.
+    - Completed appointment rows include prescription items when available.
   - `POST /api/customer/appointments` creates a pending appointment for a current-customer pet and selected doctor or staff member.
   - `PATCH /api/customer/appointments/:appointmentId/reschedule` updates a customer-owned appointment's schedule.
   - `PATCH /api/customer/appointments/:appointmentId/cancel` cancels a customer-owned appointment.

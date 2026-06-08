@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DoctorSidebar, type DoctorPortalNavId } from "../../../components/doctor/DoctorSidebar";
 import { DoctorScheduleHeader } from "../../../components/doctor/DoctorScheduleHeader";
 import { DoctorScheduleStats } from "../../../components/doctor/DoctorScheduleStats";
-import { DoctorScheduleTable } from "../../../components/doctor/DoctorScheduleTable";
+import { DoctorScheduleTable, type DoctorScheduleFilter } from "../../../components/doctor/DoctorScheduleTable";
 import { DoctorLogoutConfirm } from "../../../components/doctor/DoctorSettingsView";
 import { DoctorExamScreen } from "./DoctorExamScreen";
 import { DoctorRecordsPage } from "./DoctorRecordsPage";
@@ -36,6 +36,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   const [activeNav, setActiveNav] = useState<DoctorPortalNavId>("schedule");
   const [examPatient, setExamPatient] = useState<DoctorAppointment | null>(null);
   const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
+  const [appointmentFilter, setAppointmentFilter] = useState<DoctorScheduleFilter>("all");
   const [summary, setSummary] = useState<DoctorScheduleSummary>(EMPTY_SUMMARY);
   const [meta, setMeta] = useState<DoctorScheduleMeta>(EMPTY_META);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
@@ -130,8 +131,13 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
     await loadAppointments();
   }
 
+  const filteredAppointments = useMemo(() => {
+    if (appointmentFilter === "all") return appointments;
+    return appointments.filter((appointment) => appointment.statusKey === appointmentFilter);
+  }, [appointments, appointmentFilter]);
+
   return (
-    <div className="min-h-screen flex" style={{ background: "#F8FAFC" }}>
+    <div className="h-screen flex overflow-hidden" style={{ background: "#F8FAFC" }}>
       {logoutConfirmOpen && (
         <DoctorLogoutConfirm
           onCancel={() => setLogoutConfirmOpen(false)}
@@ -177,7 +183,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
         )}
 
         {!examPatient && activeNav === "schedule" && (
-          <>
+          <div className="flex-1 flex flex-col min-h-0">
             <DoctorScheduleHeader
               meta={meta}
               notifications={notifications}
@@ -185,17 +191,19 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
               onMarkNotificationRead={(id) => void handleMarkNotificationRead(id)}
               onMarkAllNotificationsRead={() => void handleMarkAllNotificationsRead()}
             />
-            <main className="flex-1 overflow-y-auto p-6">
+            <main className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
               <DoctorScheduleStats summary={summary} />
               <DoctorScheduleTable
-                appointments={appointments}
+                appointments={filteredAppointments}
                 loading={appointmentsLoading}
                 error={appointmentsError}
                 meta={meta}
+                filter={appointmentFilter}
+                onFilterChange={setAppointmentFilter}
                 onOpenExam={(appointment) => void handleOpenExam(appointment)}
               />
             </main>
-          </>
+          </div>
         )}
       </div>
     </div>

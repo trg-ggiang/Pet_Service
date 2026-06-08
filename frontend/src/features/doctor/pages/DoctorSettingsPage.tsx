@@ -9,7 +9,6 @@ import {
   DoctorSettingsLoading,
   DoctorSettingsNav,
   type DoctorSettingsTabId,
-  type ScheduleRowInput,
 } from "../../../components/doctor/DoctorSettingsView";
 import {
   doctorDataService,
@@ -62,17 +61,12 @@ export function DoctorSettingsPage() {
     };
   }, []);
 
-  async function handleSaveSchedule(rows: ScheduleRowInput[]) {
-    await doctorDataService.saveSchedule(rows);
-    await loadSettings();
-  }
-
   function renderContent() {
     if (loading) return <DoctorSettingsLoading />;
     if (error) return <DoctorSettingsError message={error} />;
     if (!settings) return <DoctorSettingsError message="Không có dữ liệu cài đặt" />;
 
-    if (tab === "schedule") return <DoctorScheduleSettings schedule={settings.schedule} onSave={handleSaveSchedule} />;
+    if (tab === "schedule") return <DoctorScheduleSettings schedule={settings.schedule} />;
     if (tab === "notifications") return <DoctorNotificationSettings notifications={settings.notifications} />;
     if (tab === "security") return <DoctorSecuritySettings security={settings.security} />;
     return <DoctorProfileSettings profile={settings.profile} />;

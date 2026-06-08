@@ -1,5 +1,5 @@
 ﻿import type { Dispatch, SetStateAction } from "react";
-import { AlertTriangle, Calendar, Check, ChevronDown, Clock, Heart, MapPin, Plus, Stethoscope } from "lucide-react";
+import { AlertTriangle, Calendar, Check, ChevronDown, Clock, Heart, MapPin, Pill, Plus, Stethoscope } from "lucide-react";
 import type {
   CustomerAppointmentListPayload,
   CustomerAppointmentStatusFilter,
@@ -265,6 +265,24 @@ export function CustomerAppointmentsTab({
                           </div>
                         )}
                       </div>
+                      {appointment.prescriptions && appointment.prescriptions.length > 0 && (
+                        <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                          <div className="mb-3 flex items-center gap-2 text-sm font-bold text-emerald-800">
+                            <Pill size={16} />
+                            Đơn thuốc
+                          </div>
+                          <div className="space-y-2">
+                            {appointment.prescriptions.map((item, index) => (
+                              <div key={`${item.medicineName}-${index}`} className="rounded-xl bg-white px-3 py-2 text-sm text-slate-700 ring-1 ring-emerald-100">
+                                <span className="font-bold text-slate-900">{item.medicineName}</span>
+                                {[item.dosage, item.frequency, item.durationDays ? `${item.durationDays} ngày` : "", item.instructions]
+                                  .filter(Boolean)
+                                  .map((value) => ` · ${value}`)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {(appointment.status === "PENDING" || appointment.status === "CONFIRMED") && (

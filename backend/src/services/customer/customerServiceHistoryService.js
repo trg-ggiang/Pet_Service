@@ -55,7 +55,7 @@ function getServiceNames(invoice, appointment) {
 }
 
 async function loadDetails(appointmentIds, invoiceIds) {
-  const [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult, prescriptionResult] = await Promise.all([
+  const [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult] = await Promise.all([
     invoiceIds.length
       ? supabase
           .from("invoice_items")
@@ -87,29 +87,32 @@ async function loadDetails(appointmentIds, invoiceIds) {
           .select("id, appointment_id, habit_note, special_note")
           .in("appointment_id", appointmentIds)
       : Promise.resolve({ data: [], error: null }),
-    appointmentIds.length
-      ? supabase
-          .from("prescription_items")
-          .select(`
+  ]);
+
+  for (const result of [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult]) {
+    if (result.error) throw new Error(result.error.message);
+  }
+
+  const medicalVisitIds = (medicalResult.data ?? []).map((visit) => visit.id);
+  const prescriptionResult = medicalVisitIds.length
+    ? await supabase
+        .from("prescriptions")
+        .select(`
+          id,
+          medical_visit_id,
+          items:prescription_items!prescription_items_prescription_id_fkey (
             id,
-            prescriptions:prescription_id (
-              medical_visits:medical_visit_id (
-                appointment_id
-              )
-            ),
             medicine_name,
             dosage,
             frequency,
             duration_days,
             instructions
-          `)
-          .in("appointment_id", appointmentIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
+          )
+        `)
+        .in("medical_visit_id", medicalVisitIds)
+    : { data: [], error: null };
 
-  for (const result of [itemsResult, medicalResult, vaccinationResult, groomingResult, boardingResult, prescriptionResult]) {
-    if (result.error) throw new Error(result.error.message);
-  }
+  if (prescriptionResult.error) throw new Error(prescriptionResult.error.message);
 
   const itemsByInvoiceId = new Map();
   (itemsResult.data ?? []).forEach((item) => {
@@ -118,11 +121,15 @@ async function loadDetails(appointmentIds, invoiceIds) {
     itemsByInvoiceId.set(item.invoice_id, current);
   });
 
-  // Build prescriptions by appointment_id
+  const appointmentIdByMedicalVisitId = new Map(
+    (medicalResult.data ?? []).map((visit) => [visit.id, visit.appointment_id]),
+  );
+
   const prescriptionsByAppointmentId = new Map();
-  (prescriptionResult.data ?? []).forEach((item) => {
-    const appointmentId = item.prescriptions?.medical_visits?.appointment_id;
-    if (appointmentId) {
+  (prescriptionResult.data ?? []).forEach((prescription) => {
+    const appointmentId = appointmentIdByMedicalVisitId.get(prescription.medical_visit_id);
+    (prescription.items ?? []).forEach((item) => {
+      if (!appointmentId) return;
       const current = prescriptionsByAppointmentId.get(appointmentId) ?? [];
       current.push({
         medicineName: item.medicine_name || "",
@@ -132,7 +139,7 @@ async function loadDetails(appointmentIds, invoiceIds) {
         instructions: item.instructions || "",
       });
       prescriptionsByAppointmentId.set(appointmentId, current);
-    }
+    });
   });
 
   return {

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { Calendar, Check, CheckCircle2, ChevronDown, Heart, Star, Stethoscope, Syringe, X } from "lucide-react";
+import { Calendar, Check, CheckCircle2, ChevronDown, Heart, Pill, Star, Stethoscope, Syringe, X } from "lucide-react";
 import type { CustomerAppointmentOptions, CustomerAppointmentProvider } from "../../../types/customer/appointments";
 import type { Apt, Pet, ServiceType } from "../../../types/customer/portal";
 import { getServiceTypeConfig, getStatusConfig } from "../../../utils/customer/portalConfig";
@@ -103,7 +103,12 @@ export function NewAppointmentModal({
         if (!ignore) {
           setProviders([]);
           setSelectedProviderKey("");
-          setProviderError(err instanceof Error ? err.message : "Không tìm thấy người phụ trách phù hợp.");
+          const message = err instanceof Error ? err.message : "";
+          setProviderError(
+            message.includes("không có quyền truy cập")
+              ? "Phiên đăng nhập không hợp lệ. Vui lòng đăng xuất và đăng nhập lại bằng tài khoản khách hàng."
+              : message || "Không tìm thấy người phụ trách phù hợp.",
+          );
         }
       } finally {
         if (!ignore) setProviderLoading(false);
@@ -495,9 +500,38 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, o
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Ghi chú</h4>
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                  <p className="text-sm text-slate-700 leading-relaxed">{apt.note?.trim() || "Không có ghi chú."}</p>
+                  {noteLines.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {noteLines.map((line) => (
+                        <p key={line} className="text-sm text-slate-700 leading-relaxed">{line}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-700 leading-relaxed">Không có ghi chú.</p>
+                  )}
                 </div>
               </div>
+
+              {apt.prescriptions && apt.prescriptions.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Đơn thuốc</h4>
+                  <div className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    {apt.prescriptions.map((item, index) => (
+                      <div key={`${item.medicineName}-${index}`} className="rounded-xl bg-white p-3 ring-1 ring-emerald-100">
+                        <div className="flex items-center gap-2 text-sm font-bold text-emerald-800">
+                          <Pill size={15} />
+                          {item.medicineName}
+                        </div>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                          {[item.dosage, item.frequency, item.durationDays ? `${item.durationDays} ngày` : "", item.instructions]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

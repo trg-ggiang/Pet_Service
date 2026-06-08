@@ -34,7 +34,7 @@ CREATE TABLE public.appointments (
   id integer NOT NULL DEFAULT nextval('appointments_id_seq'::regclass),
   pet_id integer NOT NULL,
   staff_id integer,
-  doctor_schedule_id integer,
+  doctor_schedule_slot_id integer,
   appointment_type USER-DEFINED NOT NULL DEFAULT 'MEDICAL'::"AppointmentType",
   status USER-DEFINED NOT NULL DEFAULT 'PENDING'::"AppointmentStatus",
   note text,
@@ -45,12 +45,9 @@ CREATE TABLE public.appointments (
   CONSTRAINT appointments_pkey PRIMARY KEY (id),
   CONSTRAINT appointments_pet_id_fkey FOREIGN KEY (pet_id) REFERENCES public.pets(id),
   CONSTRAINT appointments_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staffs(id),
-  CONSTRAINT appointments_doctor_schedule_id_fkey FOREIGN KEY (doctor_schedule_id) REFERENCES public.doctor_schedules(id),
+  CONSTRAINT appointments_doctor_schedule_slot_id_fkey FOREIGN KEY (doctor_schedule_slot_id) REFERENCES public.doctor_schedule_slots(id),
   CONSTRAINT appointments_doctor_id_fkey FOREIGN KEY (doctor_id) REFERENCES public.doctors(id),
-  CONSTRAINT appointments_schedule_doctor_match_fkey FOREIGN KEY (doctor_schedule_id) REFERENCES public.doctor_schedules(id),
-  CONSTRAINT appointments_schedule_doctor_match_fkey FOREIGN KEY (doctor_id) REFERENCES public.doctor_schedules(id),
-  CONSTRAINT appointments_schedule_doctor_match_fkey FOREIGN KEY (doctor_schedule_id) REFERENCES public.doctor_schedules(doctor_id),
-  CONSTRAINT appointments_schedule_doctor_match_fkey FOREIGN KEY (doctor_id) REFERENCES public.doctor_schedules(doctor_id)
+  CONSTRAINT appointments_doctor_schedule_slot_id_key UNIQUE (doctor_schedule_slot_id)
 );
 CREATE TABLE public.boarding (
   id integer NOT NULL DEFAULT nextval('boarding_id_seq'::regclass),
@@ -119,11 +116,25 @@ CREATE TABLE public.doctor_schedules (
   start_time time without time zone NOT NULL,
   end_time time without time zone NOT NULL,
   room_name character varying,
-  status USER-DEFINED NOT NULL DEFAULT 'AVAILABLE'::"ScheduleStatus",
   created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone NOT NULL,
   CONSTRAINT doctor_schedules_pkey PRIMARY KEY (id),
   CONSTRAINT doctor_schedules_doctor_id_fkey FOREIGN KEY (doctor_id) REFERENCES public.doctors(id)
+);
+CREATE TABLE public.doctor_schedule_slots (
+  id integer NOT NULL DEFAULT nextval('doctor_schedule_slots_id_seq'::regclass),
+  doctor_schedule_id integer NOT NULL,
+  doctor_id integer NOT NULL,
+  slot_date date NOT NULL,
+  start_time time without time zone NOT NULL,
+  end_time time without time zone NOT NULL,
+  status USER-DEFINED NOT NULL DEFAULT 'AVAILABLE'::"ScheduleStatus",
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp with time zone NOT NULL,
+  CONSTRAINT doctor_schedule_slots_pkey PRIMARY KEY (id),
+  CONSTRAINT doctor_schedule_slots_doctor_schedule_id_fkey FOREIGN KEY (doctor_schedule_id) REFERENCES public.doctor_schedules(id),
+  CONSTRAINT doctor_schedule_slots_doctor_id_fkey FOREIGN KEY (doctor_id) REFERENCES public.doctors(id),
+  CONSTRAINT doctor_schedule_slots_doctor_id_slot_date_start_time_key UNIQUE (doctor_id, slot_date, start_time)
 );
 CREATE TABLE public.doctors (
   id integer NOT NULL DEFAULT nextval('doctors_id_seq'::regclass),

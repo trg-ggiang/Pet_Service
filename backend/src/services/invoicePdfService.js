@@ -74,7 +74,7 @@ function getInvoiceServiceName(data) {
 }
 
 function getInvoiceServiceDate(data) {
-  return data.doctorSchedule?.work_date || data.invoice.created_at;
+  return data.doctorSchedule?.slot_date || data.invoice.created_at;
 }
 
 function buildInvoiceFilename(data) {
@@ -200,11 +200,11 @@ async function getInvoicePdfData(invoiceId, customerId) {
           .eq("id", appointment.staff_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
-    appointment.doctor_schedule_id
+    appointment.doctor_schedule_slot_id
       ? supabase
-          .from("doctor_schedules")
-          .select("id, work_date")
-          .eq("id", appointment.doctor_schedule_id)
+          .from("doctor_schedule_slots")
+          .select("id, slot_date")
+          .eq("id", appointment.doctor_schedule_slot_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ]);
@@ -308,7 +308,7 @@ async function findMatchingCustomerInvoiceId(customerId, criteria) {
 
   const appointmentsResult = await supabase
     .from("appointments")
-    .select("id, pet_id, appointment_type, created_at, doctor_schedule_id")
+    .select("id, pet_id, appointment_type, created_at, doctor_schedule_slot_id")
     .in("pet_id", petIds);
 
   if (appointmentsResult.error) throw new Error(appointmentsResult.error.message);

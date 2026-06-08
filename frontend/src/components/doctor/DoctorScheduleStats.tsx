@@ -3,10 +3,10 @@ import type { DoctorScheduleSummary } from "../../features/doctor/services/docto
 
 export function DoctorScheduleStats({ summary }: { summary: DoctorScheduleSummary }) {
   const stats = [
-    { label: "Tổng ca hôm nay", value: summary.total, icon: Calendar, bg: "bg-blue-50", color: "text-blue-600" },
+    { label: "Tổng ca khám", value: summary.total, icon: Calendar, bg: "bg-blue-50", color: "text-blue-600" },
     { label: "Đã hoàn thành", value: summary.completed, icon: CheckCircle2, bg: "bg-emerald-50", color: "text-emerald-600" },
     { label: "Đang khám", value: summary.inProgress, icon: Activity, bg: "bg-amber-50", color: "text-amber-600" },
-    { label: "Còn lại", value: summary.scheduled, icon: Clock, bg: "bg-violet-50", color: "text-violet-600" },
+    { label: "Chờ khám", value: summary.scheduled, icon: Clock, bg: "bg-violet-50", color: "text-violet-600" },
   ];
 
   return (

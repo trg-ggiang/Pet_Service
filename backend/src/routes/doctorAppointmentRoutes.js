@@ -3,7 +3,11 @@ const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
 const { listDoctorAppointmentsForPortal } = require("../services/doctor/doctorAppointmentService");
 const { sendAppointmentEventEmail } = require("../services/emailService");
-const { assertScheduleAvailable } = require("../services/scheduleService");
+const {
+  ensureDoctorScheduleSlot,
+  reserveDoctorScheduleSlot,
+  setDoctorScheduleSlotStatus,
+} = require("../services/doctorScheduleService");
 
 const router = express.Router();
 const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
@@ -395,7 +399,7 @@ async function getOwnedAppointment(appointmentId, doctorId) {
       id,
       pet_id,
       doctor_id,
-      doctor_schedule_id,
+      doctor_schedule_slot_id,
       appointment_type,
       status,
       note,
@@ -404,13 +408,13 @@ async function getOwnedAppointment(appointmentId, doctorId) {
       requested_time,
       created_at,
       updated_at,
-      doctor_schedules:doctor_schedule_id (
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
         id,
-        work_date,
+        slot_date,
         start_time,
         end_time,
-        room_name,
-        status
+        status,
+        schedule:doctor_schedules!doctor_schedule_slots_doctor_schedule_id_fkey (room_name)
       ),
       pets:pet_id (
         id,
@@ -452,14 +456,7 @@ async function getOwnedAppointment(appointmentId, doctorId) {
 }
 
 async function updateDoctorScheduleStatus(scheduleId, status) {
-  if (!scheduleId) return;
-
-  const { error } = await supabase
-    .from("doctor_schedules")
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", scheduleId);
-
-  if (error) throw new Error(error.message);
+  await setDoctorScheduleSlotStatus(scheduleId, status);
 }
 
 async function resolveFollowUpService() {
@@ -476,8 +473,6 @@ async function resolveFollowUpService() {
 }
 
 async function findFollowUpScheduleIfExists(doctorId, date, time) {
-  const slotEndTime = addMinutes(time, 30);
-
   const busyAppointments = await supabase
     .from("appointments")
     .select("id")
@@ -492,19 +487,7 @@ async function findFollowUpScheduleIfExists(doctorId, date, time) {
     throw new Error("Bác sĩ đã có lịch hẹn trong khung giờ tái khám này");
   }
 
-  const { data, error } = await supabase
-    .from("doctor_schedules")
-    .select("id, doctor_id, room_name")
-    .eq("doctor_id", doctorId)
-    .eq("work_date", date)
-    .lte("start_time", time)
-    .gte("end_time", slotEndTime)
-    .order("start_time", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  return data || null;
+  return ensureDoctorScheduleSlot(doctorId, date, time, { slotDuration: 30 });
 }
 
 async function createCustomerNotification(userId, payload) {
@@ -527,18 +510,9 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
 
   const schedule = await findFollowUpScheduleIfExists(originalAppointment.doctor_id, slot.date, slot.time);
 
-  // Reserve the schedule first to avoid duplicate doctor_schedule_id conflicts
+  // Reserve one concrete 30-minute slot to avoid duplicate doctor_schedule_slot_id conflicts.
   if (schedule?.id) {
-    const reserveResult = await supabase
-      .from("doctor_schedules")
-      .update({ status: "BOOKED", updated_at: new Date().toISOString() })
-      .eq("id", schedule.id)
-      .eq("status", "AVAILABLE")
-      .select("id")
-      .maybeSingle();
-
-    if (reserveResult.error) throw new Error(reserveResult.error.message);
-    if (!reserveResult.data) {
+    if (!await reserveDoctorScheduleSlot(schedule.id)) {
       const error = new Error("Ca làm việc của bác sĩ đã được đặt. Vui lòng chọn khung giờ khác.");
       error.statusCode = 409;
       throw error;
@@ -559,7 +533,7 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
       pet_id: originalAppointment.pet_id,
       doctor_id: originalAppointment.doctor_id,
       staff_id: null,
-      doctor_schedule_id: schedule?.id ?? null,
+      doctor_schedule_slot_id: schedule?.id ?? null,
       appointment_type: "MEDICAL",
       status: "PENDING",
       note,
@@ -572,7 +546,7 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
 
   if (error) {
     if (schedule?.id) {
-      await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: now }).eq("id", schedule.id);
+      await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
     }
     throw new Error(error.message);
   }
@@ -589,7 +563,7 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
     if (item.error) {
       await supabase.from("appointments").delete().eq("id", appointment.id);
       if (schedule?.id) {
-        await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: now }).eq("id", schedule.id);
+        await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
       }
       throw new Error(item.error.message);
     }
@@ -604,7 +578,7 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
   } catch (notificationError) {
     await supabase.from("appointments").delete().eq("id", appointment.id);
     if (schedule?.id) {
-      await supabase.from("doctor_schedules").update({ status: "AVAILABLE", updated_at: now }).eq("id", schedule.id);
+      await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
     }
     throw notificationError;
   }
@@ -746,17 +720,17 @@ async function getVisitHistory(petId, currentAppointmentId) {
     .select(`
       id,
       doctor_id,
-      doctor_schedule_id,
+      doctor_schedule_slot_id,
       appointment_type,
       status,
       created_at,
       doctors:doctor_id (
         full_name
       ),
-      doctor_schedules:doctor_schedule_id (
-        work_date,
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
+        slot_date,
         start_time,
-        room_name
+        schedule:doctor_schedules!doctor_schedule_slots_doctor_schedule_id_fkey (room_name)
       )
     `)
     .eq("pet_id", petId)
@@ -781,11 +755,11 @@ async function getVisitHistory(petId, currentAppointmentId) {
 
   return (appointments || []).map((appointment) => {
     const visit = visitMap.get(appointment.id);
-    const schedule = appointment.doctor_schedules;
+    const schedule = appointment.doctor_schedule_slots;
 
     return {
       id: appointment.id,
-      date: formatDate(schedule?.work_date || appointment.created_at),
+      date: formatDate(schedule?.slot_date || appointment.created_at),
       time: formatTime(schedule?.start_time),
       service: getServiceLabel(appointment.appointment_type),
       status: getStatusLabel(appointment.status),
@@ -799,7 +773,7 @@ async function getVisitHistory(petId, currentAppointmentId) {
 async function buildExamDetail({ appointment, vaccinations, history, visit }) {
   const pet = appointment.pets;
   const owner = pet?.customers;
-  const schedule = appointment.doctor_schedules;
+  const schedule = appointment.doctor_schedule_slots;
   const record = normalizeExamRecord(visit);
   const appointmentNote = cleanAppointmentNote(appointment.note);
 
@@ -824,11 +798,11 @@ async function buildExamDetail({ appointment, vaccinations, history, visit }) {
       statusLabel: getStatusLabel(appointment.status),
       serviceType: appointment.appointment_type,
       serviceLabel: getServiceLabel(appointment.appointment_type),
-      date: appointment.requested_date || schedule?.work_date || appointment.created_at,
-      dateLabel: formatDate(appointment.requested_date || schedule?.work_date || appointment.created_at),
+      date: appointment.requested_date || schedule?.slot_date || appointment.created_at,
+      dateLabel: formatDate(appointment.requested_date || schedule?.slot_date || appointment.created_at),
       time: formatTime(appointment.requested_time || schedule?.start_time),
       endTime: formatTime(schedule?.end_time),
-      roomName: schedule?.room_name || "",
+      roomName: schedule?.schedule?.room_name || "",
       note: appointmentNote || "",
     },
     patientCard: {
@@ -1093,7 +1067,7 @@ router.put("/:id/start", async function startExam(req, res) {
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
-    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "IN_PROGRESS");
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "IN_PROGRESS");
 
     res.json({ ok: true, message: "Bắt đầu khám thành công" });
   } catch (error) {
@@ -1147,7 +1121,7 @@ router.put("/:id/exam-draft", async function saveExamDraft(req, res) {
         .eq("id", appointmentId);
 
       if (error) throw new Error(error.message);
-      await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "IN_PROGRESS");
+      await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "IN_PROGRESS");
     }
 
     res.json({ ok: true, message: "Đã lưu nháp phiếu khám" });
@@ -1176,7 +1150,7 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
-    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "DONE");
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
     await sendAppointmentEventEmail("exam_result", appointmentId, {
       diagnosis: req.body?.record?.clinicalNote || "Kết quả khám đã được cập nhật trên hệ thống.",
     });
@@ -1216,7 +1190,7 @@ router.put("/:id/complete", async function completeExamOnly(req, res) {
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
-    await updateDoctorScheduleStatus(appointment.doctor_schedule_id, "DONE");
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
     await sendAppointmentEventEmail("exam_result", appointmentId, {
       diagnosis: "Kết quả khám đã được cập nhật trên hệ thống.",
     });

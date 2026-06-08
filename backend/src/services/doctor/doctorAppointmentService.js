@@ -102,6 +102,18 @@ function formatLongDate(value = new Date()) {
   });
 }
 
+function formatScheduleDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("vi-VN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 function getServiceLabel(type) {
   return SERVICE_LABELS[type] || type || "Chưa rõ";
 }
@@ -114,17 +126,23 @@ function getPortalStatusKey(status) {
 
 function getAppointmentDate(appointment) {
   return appointment.requested_date
-    || appointment.doctor_schedules?.work_date
+    || appointment.doctor_schedule_slots?.slot_date
     || appointment.created_at
     || "";
 }
 
 function getAppointmentTime(appointment) {
-  return appointment.requested_time || appointment.doctor_schedules?.start_time || "";
+  return appointment.requested_time || appointment.doctor_schedule_slots?.start_time || "";
 }
 
 function getRoomName(appointment) {
-  return appointment.doctor_schedules?.room_name || appointment.doctors?.room_name || "";
+  return appointment.doctor_schedule_slots?.schedule?.room_name || appointment.doctors?.room_name || "";
+}
+
+function getPortalSortPriority(statusKey) {
+  if (statusKey === "in_progress") return 0;
+  if (statusKey === "scheduled") return 1;
+  return 2;
 }
 
 function mapDoctorAppointment(appointment) {
@@ -134,7 +152,7 @@ function mapDoctorAppointment(appointment) {
   const roomName = getRoomName(appointment);
   const date = getAppointmentDate(appointment);
   const time = formatTime(getAppointmentTime(appointment));
-  const endTime = formatTime(appointment.doctor_schedules?.end_time);
+  const endTime = formatTime(appointment.doctor_schedule_slots?.end_time);
   const statusView = PORTAL_STATUS_VIEW[statusKey];
 
   return {
@@ -161,6 +179,8 @@ function mapDoctorAppointment(appointment) {
       id: displayId,
       appointmentId: appointment.id,
       time,
+      date,
+      dateLabel: formatScheduleDate(date),
       patient: appointment.pets?.name || "N/A",
       species: appointment.pets?.species?.name || "N/A",
       owner: appointment.pets?.customers?.full_name || "N/A",
@@ -206,7 +226,7 @@ async function listDoctorAppointmentsForPortal(doctorId) {
       id,
       pet_id,
       doctor_id,
-      doctor_schedule_id,
+      doctor_schedule_slot_id,
       appointment_type,
       status,
       note,
@@ -216,11 +236,11 @@ async function listDoctorAppointmentsForPortal(doctorId) {
       doctors:doctor_id (
         room_name
       ),
-      doctor_schedules:doctor_schedule_id (
-        work_date,
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
+        slot_date,
         start_time,
         end_time,
-        room_name
+        schedule:doctor_schedules!doctor_schedule_slots_doctor_schedule_id_fkey (room_name)
       ),
       pets:pet_id (
         id,
@@ -239,7 +259,16 @@ async function listDoctorAppointmentsForPortal(doctorId) {
 
   if (error) throw new Error(error.message);
 
-  const formattedAppointments = (appointments || []).map(mapDoctorAppointment);
+  const formattedAppointments = (appointments || [])
+    .map(mapDoctorAppointment)
+    .sort((a, b) => {
+      const priority = getPortalSortPriority(a.statusKey) - getPortalSortPriority(b.statusKey);
+      if (priority !== 0) return priority;
+      const dateA = new Date(a.date || 0).getTime() || 0;
+      const dateB = new Date(b.date || 0).getTime() || 0;
+      if (dateA !== dateB) return dateA - dateB;
+      return String(a.time).localeCompare(String(b.time));
+    });
   const roomLabel = formattedAppointments.find((appointment) => appointment.roomName)?.roomName
     || await getDoctorRoomLabel(doctorId);
 
@@ -248,7 +277,7 @@ async function listDoctorAppointmentsForPortal(doctorId) {
     summary: buildDoctorScheduleSummary(formattedAppointments),
     meta: {
       title: "Lịch khám của bác sĩ",
-      dateLabel: formatLongDate(new Date()),
+      dateLabel: "Tất cả lịch khám",
       roomLabel,
       activityLabel: `${roomLabel} · Đang hoạt động`,
     },
