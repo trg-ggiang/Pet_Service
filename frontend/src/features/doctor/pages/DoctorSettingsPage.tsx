@@ -21,10 +21,24 @@ export function DoctorSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  async function loadSettings() {
+    try {
+      setLoading(true);
+      const payload = await doctorDataService.getSettings();
+      setSettings(payload);
+      setError(null);
+    } catch (err) {
+      setSettings(null);
+      setError(err instanceof Error ? err.message : "Không thể tải cài đặt bác sĩ");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
-    async function loadSettings() {
+    async function init() {
       try {
         setLoading(true);
         const payload = await doctorDataService.getSettings();
@@ -40,7 +54,7 @@ export function DoctorSettingsPage() {
       }
     }
 
-    void loadSettings();
+    void init();
 
     return () => {
       active = false;

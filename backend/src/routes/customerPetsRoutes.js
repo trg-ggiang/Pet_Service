@@ -23,6 +23,7 @@ const {
   listCustomerAppointments,
   listCustomerAppointmentsView,
   createCustomerAppointment,
+  confirmCustomerAppointment,
   rescheduleCustomerAppointment,
   cancelCustomerAppointment,
 } = require("../services/customer/customerAppointmentsService");
@@ -110,6 +111,22 @@ router.post("/appointments", async (req, res) => {
     res.status(error.statusCode || 400).json({
       ok: false,
       message: error.message || "Failed to create customer appointment",
+    });
+  }
+});
+
+
+router.patch("/appointments/:appointmentId/confirm", async (req, res) => {
+  try {
+    const appointment = await confirmCustomerAppointment(
+      req.params.appointmentId,
+      req.auth.user.customerId,
+    );
+    res.json({ ok: true, appointment });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Failed to confirm customer appointment",
     });
   }
 });

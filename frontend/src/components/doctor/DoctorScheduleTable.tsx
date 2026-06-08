@@ -100,23 +100,27 @@ export function DoctorScheduleTable({
 
                 <div className="hidden md:block text-xs text-foreground font-medium w-44 truncate">{row.service}</div>
 
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ring-1 ring-inset ${row.statusView.cls}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${row.statusView.dot}`} />
-                  {row.statusView.label}
-                </span>
+                <div className="flex items-center justify-end gap-3 w-[236px] flex-shrink-0">
+                  <span className={`inline-flex w-24 justify-center items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ring-1 ring-inset ${row.statusView.cls}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${row.statusView.dot}`} />
+                    <span className="truncate">{row.statusView.label}</span>
+                  </span>
 
-                {row.statusKey !== "completed" && (
-                  <button
-                    onClick={() => onOpenExam(appointment)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex-shrink-0 ${
-                      isActive
-                        ? "bg-cyan-500 text-white hover:bg-cyan-600"
-                        : "border border-border text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {isActive ? "Tiếp tục khám" : "Bắt đầu"} <ChevronRight size={12} />
-                  </button>
-                )}
+                  <div className="w-28 flex justify-end">
+                    {row.statusKey !== "completed" && (
+                      <button
+                        onClick={() => onOpenExam(appointment)}
+                        className={`flex w-28 items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex-shrink-0 ${
+                          isActive
+                            ? "bg-cyan-500 text-white hover:bg-cyan-600"
+                            : "border border-border text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <span className="truncate">{isActive ? "Tiếp tục khám" : "Bắt đầu"}</span> <ChevronRight size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })}

@@ -10,6 +10,7 @@ import {
 } from "../../../services/customer/customerNotificationsApi";
 import {
   cancelCustomerAppointment,
+  confirmCustomerAppointment,
   createCustomerAppointment,
   fetchCustomerAppointmentOptions,
   fetchCustomerAppointmentProviders,
@@ -97,6 +98,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [viewingHistory, setViewingHistory] = useState<HistoryRecord | null>(null);
   const [reschedulingApt, setReschedulingApt] = useState<Apt | null>(null);
   const [cancellingAptId, setCancellingAptId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   const unreadCount = notificationsSummary.unreadCount;
   const appointmentsPageSize = 5;
@@ -575,9 +577,10 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         <RescheduleModal
           apt={reschedulingApt}
           onClose={() => setReschedulingApt(null)}
-          onSave={async (id, date, time) => {
-            await rescheduleCustomerAppointment(id, { date, time });
+          onSave={async (id, date, time, reason) => {
+            await rescheduleCustomerAppointment(id, { date, time, reason });
             await refreshAppointments();
+            await loadNotifications();
             setReschedulingApt(null);
           }}
         />
@@ -588,7 +591,13 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           apt={viewingApt}
           onClose={() => setViewingApt(null)}
           onReschedule={(appointment) => { setViewingApt(null); setReschedulingApt(appointment); }}
-          onCancel={(id) => { setViewingApt(null); setCancellingAptId(id); }}
+          onCancel={(id) => { setViewingApt(null); setCancelReason(""); setCancellingAptId(id); }}
+          onConfirm={async (id) => {
+            await confirmCustomerAppointment(id);
+            await refreshAppointments();
+            await loadNotifications();
+            setViewingApt(null);
+          }}
         />
       )}
 
@@ -600,7 +609,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       )}
 
       {cancellingAptId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => setCancellingAptId(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => { setCancellingAptId(null); setCancelReason(""); }}>
           <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
             <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
               <X size={24} className="text-red-500" />
@@ -623,6 +632,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                 onClick={async () => {
                   await cancelCustomerAppointment(cancellingAptId, { reason: cancelReason.trim() });
                   await refreshAppointments();
+                  await loadNotifications();
                   setCancellingAptId(null);
                   setCancelReason("");
                 }}

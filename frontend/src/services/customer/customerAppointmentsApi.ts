@@ -69,6 +69,14 @@ export async function createCustomerAppointment(input: CreateCustomerAppointment
   return payload.appointment;
 }
 
+export async function confirmCustomerAppointment(appointmentId: string): Promise<CustomerAppointment> {
+  const payload = await requestJson<{ ok: true; appointment: CustomerAppointment }>(
+    `/api/customer/appointments/${encodeURIComponent(appointmentId)}/confirm`,
+    { method: "PATCH", headers: getAuthHeaders() },
+  );
+  return payload.appointment;
+}
+
 export async function rescheduleCustomerAppointment(
   appointmentId: string,
   input: RescheduleCustomerAppointmentInput,

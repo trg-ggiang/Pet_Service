@@ -4,6 +4,7 @@ const {
   getStaffProfile,
   listStaffAppointments,
   checkInAppointment,
+  approveAppointmentRequest,
   listGroomingTasks,
   updateGroomingStatus,
   listBoardingGuests,
@@ -53,6 +54,16 @@ router.put("/appointments/:id/checkin", async function checkIn(req, res) {
   try {
     await checkInAppointment(req.params.id, req.auth?.user?.staffId);
     res.json({ ok: true, message: "Check-in thành công" });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+
+router.put("/appointments/:id/approve-request", async function approveRequest(req, res) {
+  try {
+    await approveAppointmentRequest(req.params.id, req.auth?.user?.staffId);
+    res.json({ ok: true, message: "Đã duyệt yêu cầu lịch hẹn" });
   } catch (error) {
     sendError(res, error);
   }

@@ -1,6 +1,28 @@
 import type { DoctorExamDetail, DoctorExamRecord, ExamSystemEntry } from "../../services/doctorAppointments";
 import { VitalInput } from "./VitalInput";
 import { SystemRow } from "./SystemRow";
+import { PrescriptionForm } from "./PrescriptionForm";
+
+function getTodayValue() {
+  const now = new Date();
+  return [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function getCurrentTimeValue() {
+  const now = new Date();
+  return String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+}
+
+const FOLLOW_UP_TIME_OPTIONS = Array.from({ length: 22 }, (_, index) => {
+  const totalMinutes = 8 * 60 + index * 30;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+});
 
 export function ClinicalExamForm({
   schema,
@@ -14,6 +36,8 @@ export function ClinicalExamForm({
   function patchRecord(patch: Partial<DoctorExamRecord>) {
     onChange({ ...record, ...patch });
   }
+
+  const prescriptions = record.prescriptions ?? [];
 
   function updateVital(key: keyof DoctorExamRecord["vitals"], value: string) {
     patchRecord({
@@ -32,6 +56,10 @@ export function ClinicalExamForm({
       },
     });
   }
+
+  const today = getTodayValue();
+  const minTime = record.nextVisitDate === today ? getCurrentTimeValue() : "";
+  const timeOptions = FOLLOW_UP_TIME_OPTIONS.filter((time) => !minTime || time > minTime);
 
   return (
     <div className="overflow-y-auto">
@@ -90,16 +118,41 @@ export function ClinicalExamForm({
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-            Ngày tái khám dự kiến
-          </label>
-          <input
-            type="date"
-            value={record.nextVisitDate ?? ""}
-            onChange={(event) => patchRecord({ nextVisitDate: event.target.value || null })}
-            className="h-10 px-3 bg-white border border-border rounded-xl text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 transition-all"
-          />
+        <PrescriptionForm
+          prescriptions={prescriptions}
+          onChange={(prescriptions) => patchRecord({ prescriptions })}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-2">
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+              Ngày tái khám dự kiến
+            </label>
+            <input
+              type="date"
+              min={today}
+              value={record.nextVisitDate ?? ""}
+              onChange={(event) => patchRecord({ nextVisitDate: event.target.value || null, nextVisitTime: "" })}
+              className="h-10 px-3 bg-white border border-border rounded-xl text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 transition-all"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+              Giờ tái khám dự kiến
+            </label>
+            <select
+              disabled={!record.nextVisitDate || timeOptions.length === 0}
+              value={record.nextVisitTime ?? ""}
+              onChange={(event) => patchRecord({ nextVisitTime: event.target.value })}
+              className="h-10 px-3 bg-white border border-border rounded-xl text-[13px] text-foreground disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 transition-all"
+            >
+              <option value="">Chọn giờ</option>
+              {timeOptions.map((time) => (
+                <option key={time} value={time}>{time}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </div>

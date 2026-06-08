@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Calendar, Download, Scissors, Star, Stethoscope, Syringe, X } from "lucide-react";
+import { Calendar, Download, Pill, Scissors, Star, Stethoscope, Syringe, X } from "lucide-react";
 import { downloadCustomerInvoicePdf } from "../../../services/customer/customerPetsApi";
 import type { HistoryRecord } from "../../../types/customer/portal";
 
@@ -104,6 +104,54 @@ export function HistoryDetailModal({ record, onClose }: { record: HistoryRecord;
                   </div>
                 </div>
               </div>
+
+              {record.prescriptions && record.prescriptions.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Pill size={12} />
+                    Đơn thuốc
+                    <span className="px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-700 text-[10px] font-bold">
+                      {record.prescriptions.length} thuốc
+                    </span>
+                  </h4>
+                  <div className="space-y-2">
+                    {record.prescriptions.map((rx, index) => (
+                      <div key={`${rx.medicineName}-${index}`} className="rounded-xl border border-cyan-200 bg-cyan-50/50 p-3">
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-md bg-cyan-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-[9px] font-bold text-cyan-700">{index + 1}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-slate-900">{rx.medicineName}</p>
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                              {rx.dosage && (
+                                <span className="text-[11px] text-slate-500">
+                                  Liều: <b className="text-slate-700">{rx.dosage}</b>
+                                </span>
+                              )}
+                              {rx.frequency && (
+                                <span className="text-[11px] text-slate-500">
+                                  Tần suất: <b className="text-slate-700">{rx.frequency}</b>
+                                </span>
+                              )}
+                              {rx.durationDays && (
+                                <span className="text-[11px] text-slate-500">
+                                  Thời gian: <b className="text-slate-700">{rx.durationDays} ngày</b>
+                                </span>
+                              )}
+                            </div>
+                            {rx.instructions && (
+                              <p className="text-[11px] text-slate-500 mt-1 italic">
+                                {rx.instructions}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-5">

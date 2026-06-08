@@ -392,6 +392,67 @@ export function DoctorScheduleSettings({
   );
 }
 
+function DoctorScheduleSettingsEditor({
+  schedule,
+  onSave,
+}: {
+  schedule: DoctorSettingsPayload["schedule"];
+  onSave: (rows: ScheduleRowInput[]) => Promise<void>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-6">
+      {!isEditing ? (
+        <>
+          <div className="flex items-center justify-between">
+            <SectionTitle>Ngày & giờ làm việc</SectionTitle>
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="h-9 px-4 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-[13px] font-semibold transition-colors flex items-center gap-2"
+            >
+              <Plus size={14} />
+              Chỉnh sửa lịch
+            </button>
+          </div>
+          <div className="flex flex-col gap-2">
+            {schedule.rows.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
+                Chưa có lịch làm việc trong database.
+              </div>
+            ) : schedule.rows.map((row) => (
+              <div key={row.id} className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-all ${row.on ? "bg-white border-border" : "bg-slate-50 border-border opacity-60"}`}>
+                <Toggle on={row.on} />
+                <span className="w-14 text-[13px] font-semibold text-foreground">{row.day}</span>
+                <span className="text-[12px] text-muted-foreground">{row.date}</span>
+                <span className="text-[12px] font-semibold text-foreground">{row.from} → {row.to}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground font-medium">{row.roomName} · {row.status}</span>
+              </div>
+            ))}
+          </div>
+          <div className="w-full h-px bg-border" />
+          <SectionTitle>Cấu hình ca khám</SectionTitle>
+          <div className="grid grid-cols-3 gap-4">
+            <Field label="Thời lượng mỗi ca"><ReadOnlyInput value={`${schedule.options.slotDuration} phút`} /></Field>
+            <Field label="Tối đa ca/ngày"><ReadOnlyInput value={schedule.options.maxAppointments} /></Field>
+            <Field label="Nghỉ giải lao"><ReadOnlyInput value={`${schedule.options.breakFrom} → ${schedule.options.breakTo}`} /></Field>
+          </div>
+        </>
+      ) : (
+        <DoctorScheduleForm
+          initialRows={schedule.rows}
+          onSave={async (rows) => {
+            await onSave(rows);
+            setIsEditing(false);
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 export function DoctorNotificationSettings({ notifications }: { notifications: DoctorSettingsPayload["notifications"] }) {
   const channels = [
     { icon: Mail, label: "Email" },
@@ -504,3 +565,4 @@ export function DoctorLogoutConfirm({
     </div>
   );
 }
+

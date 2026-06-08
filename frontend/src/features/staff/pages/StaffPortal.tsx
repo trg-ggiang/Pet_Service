@@ -61,6 +61,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [loading, setLoading] = useState<LoadingState>(INITIAL_LOADING);
   const [errors, setErrors] = useState<ErrorState>(INITIAL_ERRORS);
   const [viewingApt, setViewingApt] = useState<StaffAppointment | null>(null);
+  const [approvingAppointmentId, setApprovingAppointmentId] = useState<number | null>(null);
   const [viewingBoarding, setViewingBoarding] = useState<BoardingGuest | null>(null);
   const [processingPayment, setProcessingPayment] = useState<PaymentItem | null>(null);
 
@@ -158,6 +159,21 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 
   const { doneGrooming, totalGrooming, pendingCheckIn, needsFed, pendingPayments } = summary;
 
+  async function handleApproveAppointmentRequest(appointment: StaffAppointment) {
+    try {
+      setApprovingAppointmentId(appointment.appointmentId);
+      await staffAppointmentsService.approveAppointmentRequest(appointment.appointmentId);
+      setViewingApt(null);
+      await loadAppointments();
+      await loadSummary();
+    } catch (error) {
+      console.error("[FRONTEND] Approve appointment request failed:", error);
+      alert("Không thể duyệt yêu cầu: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+    } finally {
+      setApprovingAppointmentId(null);
+    }
+  }
+
   async function handleCheckIn(appointment: StaffAppointment) {
     try {
       await staffAppointmentsService.checkInAppointment(appointment.appointmentId);
@@ -242,6 +258,8 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
               error={errors.appointments}
               onViewDetails={setViewingApt}
               onCheckIn={(appointment) => void handleCheckIn(appointment)}
+              onApproveRequest={(appointment) => void handleApproveAppointmentRequest(appointment)}
+              approvingAppointmentId={approvingAppointmentId}
             />
           )}
           {activeNav === "grooming" && (
@@ -284,6 +302,8 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           apt={viewingApt}
           onClose={() => setViewingApt(null)}
           onCheckIn={() => void handleCheckIn(viewingApt)}
+          onApproveRequest={() => void handleApproveAppointmentRequest(viewingApt)}
+          approving={approvingAppointmentId === viewingApt.appointmentId}
         />
       )}
       {viewingBoarding && (
