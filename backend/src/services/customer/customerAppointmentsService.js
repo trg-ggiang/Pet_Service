@@ -24,6 +24,40 @@ const ICON_BY_UI_TYPE = {
   "Lưu trú": { iconKey: "boarding", iconColor: "#7C3AED", iconBg: "#F5F3FF" },
 };
 
+const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
+
+function buildRequestPayload(type, payload) {
+  return REQUEST_PREFIX + JSON.stringify({ type, ...payload });
+}
+
+function getRequestPayload(value) {
+  const text = String(value || "");
+  const index = text.indexOf(REQUEST_PREFIX);
+  if (index < 0) return null;
+  try { return JSON.parse(text.slice(index + REQUEST_PREFIX.length)); } catch { return null; }
+}
+
+function stripRequestPayload(value) {
+  const text = String(value || "");
+  const index = text.indexOf(REQUEST_PREFIX);
+  return (index < 0 ? text : text.slice(0, index)).trim();
+}
+
+async function createUserNotification(userId, title, content) {
+  if (!userId) return;
+  const { error } = await supabase.from("notifications").insert({ user_id: userId, title, content, type: "APPOINTMENT", is_read: false });
+  if (error) throw new Error(error.message);
+}
+
+async function getAppointmentActors(appointmentId) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(`id, doctor_id, pets:pet_id (name, customers:customer_id (user_id, full_name)), doctors:doctor_id (user_id, full_name)`)
+    .eq("id", appointmentId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data || null;
+}
 const ICON_KEY_BY_UI_TYPE = {
   "Khám bệnh": "medical",
   "Tiêm phòng": "vaccine",
@@ -186,7 +220,7 @@ function mapAppointment(appointment, maps) {
     serviceType,
     room: schedule?.room_name ?? undefined,
     queue: `A${String(appointment.id).padStart(3, "0")}`,
-    note: appointment.note,
+    note: stripRequestPayload(appointment.note),
     serviceFee,
     totalCost: serviceFee,
     createdAt: appointment.created_at,
@@ -776,135 +810,55 @@ async function getOneCustomerAppointment(appointmentId, customerId) {
   return all.find((appointment) => appointment.appointmentId === appointmentId) ?? null;
 }
 
+async function confirmCustomerAppointment(appointmentCode, customerId) {
+  const effectiveCustomerId = assertCustomerId(customerId);
+  const appointmentId = parseAppointmentId(appointmentCode);
+  const { data: appointment, error } = await supabase.from("appointments").select("id, pet_id, status, note").eq("id", appointmentId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
+  await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
+  if (appointment.status !== "PENDING") { const invalidStatus = new Error("Chỉ có thể xác nhận lịch hẹn đang chờ."); invalidStatus.statusCode = 409; throw invalidStatus; }
+  const actors = await getAppointmentActors(appointment.id);
+  const note = [stripRequestPayload(appointment.note), "Khách hàng đã xác nhận lịch hẹn"].filter(Boolean).join("\n");
+  const updated = await supabase.from("appointments").update({ note, updated_at: new Date().toISOString() }).eq("id", appointment.id);
+  if (updated.error) throw new Error(updated.error.message);
+  await createUserNotification(actors?.doctors?.user_id, "Khách hàng đã xác nhận lịch hẹn", `${actors?.pets?.customers?.full_name || "Khách hàng"} đã xác nhận lịch hẹn APT-${String(appointment.id).padStart(6, "0")}.`);
+  return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
+}
+
 async function rescheduleCustomerAppointment(appointmentCode, input, customerId) {
   const effectiveCustomerId = assertCustomerId(customerId);
   const appointmentId = parseAppointmentId(appointmentCode);
   const requestedDate = normalizeDate(input?.date);
   const requestedTime = normalizeTime(input?.time);
-
-  if (!requestedDate || !requestedTime) {
-    const error = new Error("Date and time are required");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const { data: appointment, error } = await supabase
-    .from("appointments")
-    .select("id, pet_id, doctor_id, staff_id, doctor_schedule_id, status")
-    .eq("id", appointmentId)
-    .maybeSingle();
-
+  const reason = String(input?.reason || "").trim();
+  if (!requestedDate || !requestedTime) { const error = new Error("Date and time are required"); error.statusCode = 400; throw error; }
+  if (!reason) { const error = new Error("Vui lòng nhập lý do đổi lịch."); error.statusCode = 400; throw error; }
+  const { data: appointment, error } = await supabase.from("appointments").select("id, pet_id, status, note").eq("id", appointmentId).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!appointment) {
-    const notFound = new Error("Appointment not found");
-    notFound.statusCode = 404;
-    throw notFound;
-  }
-
+  if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
-
-  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
-    const invalidStatus = new Error("Chỉ có thể đổi lịch hẹn đang chờ hoặc đã xác nhận.");
-    invalidStatus.statusCode = 409;
-    throw invalidStatus;
-  }
-
-  if (!(await hasRequestedSlotColumns())) {
-    const missingSlots = new Error("Database chưa có cột requested_date/requested_time để lưu ngày giờ hẹn.");
-    missingSlots.statusCode = 500;
-    throw missingSlots;
-  }
-
-  let newDoctorAssignment = null;
-  if (appointment.doctor_id) {
-    newDoctorAssignment = await findDoctorAssignment(requestedDate, requestedTime, {
-      doctorId: appointment.doctor_id,
-      excludeAppointmentId: appointment.id,
-    });
-  } else if (appointment.staff_id) {
-    await findStaffAssignment(requestedDate, requestedTime, {
-      staffId: appointment.staff_id,
-      excludeAppointmentId: appointment.id,
-    });
-  }
-
-  const updatePayload = {
-    updated_at: new Date().toISOString(),
-    requested_date: requestedDate,
-    requested_time: requestedTime,
-    ...(newDoctorAssignment ? { doctor_schedule_id: newDoctorAssignment.scheduleId } : {}),
-  };
-
-  const updatedAppointment = await supabase
-    .from("appointments")
-    .update(updatePayload)
-    .eq("id", appointment.id);
-
-  if (updatedAppointment.error) throw new Error(updatedAppointment.error.message);
-
-  if (newDoctorAssignment?.scheduleId && newDoctorAssignment.scheduleId !== appointment.doctor_schedule_id) {
-    const newScheduleUpdate = await supabase
-      .from("doctor_schedules")
-      .update({ status: "BOOKED", updated_at: new Date().toISOString() })
-      .eq("id", newDoctorAssignment.scheduleId);
-    if (newScheduleUpdate.error) throw new Error(newScheduleUpdate.error.message);
-
-    if (appointment.doctor_schedule_id) {
-      const oldScheduleUpdate = await supabase
-        .from("doctor_schedules")
-        .update({ status: "AVAILABLE", updated_at: new Date().toISOString() })
-        .eq("id", appointment.doctor_schedule_id);
-      if (oldScheduleUpdate.error) throw new Error(oldScheduleUpdate.error.message);
-    }
-  }
-
+  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) { const invalidStatus = new Error("Chỉ có thể gửi yêu cầu đổi lịch hẹn đang chờ hoặc đã xác nhận."); invalidStatus.statusCode = 409; throw invalidStatus; }
+  const request = buildRequestPayload("RESCHEDULE", { date: requestedDate, time: requestedTime, reason });
+  const updated = await supabase.from("appointments").update({ note: [stripRequestPayload(appointment.note), request].filter(Boolean).join("\n"), updated_at: new Date().toISOString() }).eq("id", appointment.id);
+  if (updated.error) throw new Error(updated.error.message);
   return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
 }
 
-async function cancelCustomerAppointment(appointmentCode, customerId) {
+async function cancelCustomerAppointment(appointmentCode, inputOrCustomerId, maybeCustomerId) {
+  const input = maybeCustomerId === undefined ? {} : (inputOrCustomerId || {});
+  const customerId = maybeCustomerId === undefined ? inputOrCustomerId : maybeCustomerId;
   const effectiveCustomerId = assertCustomerId(customerId);
   const appointmentId = parseAppointmentId(appointmentCode);
-
-  const { data: appointment, error } = await supabase
-    .from("appointments")
-    .select("id, pet_id, doctor_schedule_id, status")
-    .eq("id", appointmentId)
-    .maybeSingle();
-
+  const reason = String(input?.reason || "").trim();
+  if (!reason) { const error = new Error("Vui lòng nhập lý do hủy lịch."); error.statusCode = 400; throw error; }
+  const { data: appointment, error } = await supabase.from("appointments").select("id, pet_id, status").eq("id", appointmentId).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!appointment) {
-    const notFound = new Error("Appointment not found");
-    notFound.statusCode = 404;
-    throw notFound;
-  }
-
+  if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
-
-  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
-    const invalidStatus = new Error("Chỉ có thể hủy lịch hẹn đang chờ hoặc đã xác nhận.");
-    invalidStatus.statusCode = 409;
-    throw invalidStatus;
-  }
-
-  const updated = await supabase
-    .from("appointments")
-    .update({
-      status: "CANCELLED",
-      cancel_reason: "Customer cancelled from portal",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", appointmentId);
-
+  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) { const invalidStatus = new Error("Chỉ có thể gửi yêu cầu hủy lịch hẹn đang chờ hoặc đã xác nhận."); invalidStatus.statusCode = 409; throw invalidStatus; }
+  const updated = await supabase.from("appointments").update({ cancel_reason: buildRequestPayload("CANCEL", { reason }), updated_at: new Date().toISOString() }).eq("id", appointmentId);
   if (updated.error) throw new Error(updated.error.message);
-
-  if (appointment.doctor_schedule_id) {
-    const scheduleUpdate = await supabase
-      .from("doctor_schedules")
-      .update({ status: "AVAILABLE", updated_at: new Date().toISOString() })
-      .eq("id", appointment.doctor_schedule_id);
-    if (scheduleUpdate.error) throw new Error(scheduleUpdate.error.message);
-  }
-
   return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
 }
 
@@ -914,6 +868,7 @@ module.exports = {
   listCustomerAppointments,
   listCustomerAppointmentsView,
   createCustomerAppointment,
+  confirmCustomerAppointment,
   rescheduleCustomerAppointment,
   cancelCustomerAppointment,
 };

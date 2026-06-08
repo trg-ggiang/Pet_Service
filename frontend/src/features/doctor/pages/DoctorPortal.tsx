@@ -12,6 +12,7 @@ import { DoctorSettingsPage } from "./DoctorSettingsPage";
 import {
   doctorAppointmentsService,
   type DoctorAppointment,
+  type DoctorNotification,
   type DoctorScheduleMeta,
   type DoctorScheduleSummary,
 } from "../services/doctorAppointments";
@@ -40,7 +41,21 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(null);
+  const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const payload = await doctorAppointmentsService.fetchNotifications();
+      setNotifications(payload.notifications);
+      setNotificationUnreadCount(payload.summary.unreadCount);
+    } catch (error) {
+      console.error("[FRONTEND] Failed to load doctor notifications:", error);
+      setNotifications([]);
+      setNotificationUnreadCount(0);
+    }
+  }, []);
 
   const loadAppointments = useCallback(async () => {
     try {
@@ -62,18 +77,38 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   }, []);
 
   useEffect(() => {
+    void loadNotifications();
+
     doctorProfileService.fetchProfile()
       .then(setDoctorProfile)
       .catch((error) => {
         console.error("[FRONTEND] Failed to load doctor profile:", error);
       });
-  }, []);
+  }, [loadNotifications]);
 
   useEffect(() => {
     if (activeNav === "schedule") {
       void loadAppointments();
     }
   }, [activeNav, loadAppointments]);
+
+  async function handleMarkNotificationRead(notificationId: number) {
+    try {
+      await doctorAppointmentsService.markNotificationRead(notificationId);
+      await loadNotifications();
+    } catch (error) {
+      console.error("[FRONTEND] Failed to mark doctor notification read:", error);
+    }
+  }
+
+  async function handleMarkAllNotificationsRead() {
+    try {
+      await doctorAppointmentsService.markAllNotificationsRead();
+      await loadNotifications();
+    } catch (error) {
+      console.error("[FRONTEND] Failed to mark all doctor notifications read:", error);
+    }
+  }
 
   async function handleOpenExam(appointment: DoctorAppointment) {
     if (appointment.statusKey === "scheduled") {
@@ -143,7 +178,13 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
 
         {!examPatient && activeNav === "schedule" && (
           <>
-            <DoctorScheduleHeader meta={meta} />
+            <DoctorScheduleHeader
+              meta={meta}
+              notifications={notifications}
+              unreadCount={notificationUnreadCount}
+              onMarkNotificationRead={(id) => void handleMarkNotificationRead(id)}
+              onMarkAllNotificationsRead={() => void handleMarkAllNotificationsRead()}
+            />
             <main className="flex-1 overflow-y-auto p-6">
               <DoctorScheduleStats summary={summary} />
               <DoctorScheduleTable
