@@ -9,9 +9,10 @@ import type {
 } from "../../features/staff/services/staffAppointments";
 import { APT_STATUS_CONFIG, SERVICE_ICONS } from "./staffPortalConfig";
 
-export function AppointmentDetailModal({ apt, onClose, onCheckIn, onApproveRequest, approving }: {
+export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onApproveRequest, approving }: {
   apt: StaffAppointment;
   onClose: () => void;
+  onConfirm: () => void;
   onCheckIn: () => void;
   onApproveRequest: () => void;
   approving?: boolean;
@@ -71,17 +72,21 @@ export function AppointmentDetailModal({ apt, onClose, onCheckIn, onApproveReque
             </div>
           )}
         </div>
-        {apt.status === "scheduled" && (
+        {(apt.status === "scheduled" || apt.status === "confirmed") && (
           <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
-            {apt.pendingRequest ? (
+            {apt.status === "scheduled" && apt.pendingRequest ? (
               <button onClick={onApproveRequest} disabled={approving} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
                 <CheckCircle2 size={16} /> {approving ? "Đang duyệt..." : "Duyệt yêu cầu"}
               </button>
-            ) : (
-              <button onClick={onCheckIn} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-                <CheckCircle2 size={16} /> Check-in ngay
+            ) : apt.status === "scheduled" ? (
+              <button onClick={onConfirm} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+                <CheckCircle2 size={16} /> Xác nhận lịch hẹn
               </button>
-            )}
+            ) : apt.status === "confirmed" ? (
+              <button onClick={onCheckIn} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#7C3AED,#8B5CF6)" }}>
+                <CheckCircle2 size={16} /> Check-in · Bắt đầu khám
+              </button>
+            ) : null}
           </div>
         )}
       </div>

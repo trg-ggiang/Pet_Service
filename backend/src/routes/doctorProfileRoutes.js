@@ -1,7 +1,7 @@
 const express = require("express");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { supabase } = require("../lib/supabaseClient");
-const { getDoctorExamContext, getDoctorSettings, getDoctorStats, listDoctorRecords } = require("../services/doctor/doctorService");
+const { getDoctorExamContext, getDoctorSettings, getDoctorStats, listDoctorRecords, saveDoctorSettings } = require("../services/doctor/doctorService");
 
 const router = express.Router();
 
@@ -109,7 +109,7 @@ router.get("/settings", async function(req, res) {
       return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
     }
 
-    const settings = await getDoctorSettings(doctorId);
+    const settings = await getDoctorSettings(doctorId, req.headers["user-agent"]);
     res.json({ ok: true, settings });
   } catch (error) {
     console.error("[ROUTES] GET /doctor/settings ERROR:", error.message);
@@ -124,6 +124,19 @@ function parsePositiveId(value, fieldName = "id") {
   }
   return id;
 }
+
+router.put("/settings", async function(req, res) {
+  try {
+    const doctorId = req.auth?.user?.doctorId;
+    if (!doctorId) return res.status(403).json({ ok: false, message: "Không tìm thấy hồ sơ bác sĩ" });
+    const { notifications, security } = req.body || {};
+    await saveDoctorSettings(doctorId, { notifications, security });
+    res.json({ ok: true, message: "Đã lưu cài đặt" });
+  } catch (error) {
+    console.error("[ROUTES] PUT /doctor/settings ERROR:", error.message);
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
 
 router.put("/settings/schedule", async function(req, res) {
   res.status(403).json({ ok: false, message: "Lịch làm việc của bác sĩ do admin quản lý." });

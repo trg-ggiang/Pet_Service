@@ -96,6 +96,28 @@ async function hasRequestedSlotColumns() {
   return true;
 }
 
+let scheduleSlotIdAvailable = null;
+
+async function hasDoctorScheduleSlotIdColumn() {
+  if (scheduleSlotIdAvailable === true) return true;
+
+  const result = await supabase
+    .from("appointments")
+    .select("doctor_schedule_slot_id")
+    .limit(1);
+
+  if (result.error) {
+    if (result.error.code === "42703" || /doctor_schedule_slot_id.*does not exist/i.test(result.error.message ?? "")) {
+      scheduleSlotIdAvailable = false;
+      return false;
+    }
+    throw new Error(result.error.message);
+  }
+
+  scheduleSlotIdAvailable = true;
+  return true;
+}
+
 function assertCustomerId(customerId) {
   const effectiveCustomerId = Number(customerId);
   if (!Number.isFinite(effectiveCustomerId)) {
@@ -353,10 +375,17 @@ async function listCustomerAppointments(customerId) {
   const petIds = (pets ?? []).map((pet) => pet.id);
   if (petIds.length === 0) return [];
 
-  const hasRequestedSlots = await hasRequestedSlotColumns();
-  const appointmentSelect = hasRequestedSlots
-    ? "id, pet_id, doctor_id, staff_id, doctor_schedule_slot_id, appointment_type, status, note, cancel_reason, requested_date, requested_time, created_at, updated_at"
-    : "id, pet_id, doctor_id, staff_id, doctor_schedule_slot_id, appointment_type, status, note, cancel_reason, created_at, updated_at";
+  const [hasRequestedSlots, hasSlotId] = await Promise.all([
+    hasRequestedSlotColumns(),
+    hasDoctorScheduleSlotIdColumn(),
+  ]);
+  const appointmentSelect = [
+    "id, pet_id, doctor_id, staff_id",
+    hasSlotId ? "doctor_schedule_slot_id" : null,
+    "appointment_type, status, note, cancel_reason",
+    hasRequestedSlots ? "requested_date, requested_time" : null,
+    "created_at, updated_at",
+  ].filter(Boolean).join(", ");
 
   const { data: appointments, error } = await supabase
     .from("appointments")
@@ -841,13 +870,78 @@ async function rescheduleCustomerAppointment(appointmentCode, input, customerId)
   const requestedTime = normalizeTime(input?.time);
   const reason = String(input?.reason || "").trim() || "Khách hàng yêu cầu đổi lịch";
   if (!requestedDate || !requestedTime) { const error = new Error("Date and time are required"); error.statusCode = 400; throw error; }
-  const { data: appointment, error } = await supabase.from("appointments").select("id, pet_id, status, note").eq("id", appointmentId).maybeSingle();
+
+  const hasSlotId = await hasDoctorScheduleSlotIdColumn();
+  const selectFields = [
+    "id, pet_id, status, note, doctor_id, staff_id",
+    hasSlotId ? "doctor_schedule_slot_id" : null,
+  ].filter(Boolean).join(", ");
+
+  const { data: appointment, error } = await supabase.from("appointments").select(selectFields).eq("id", appointmentId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
   if (!["PENDING", "CONFIRMED"].includes(appointment.status)) { const invalidStatus = new Error("Chỉ có thể gửi yêu cầu đổi lịch hẹn đang chờ hoặc đã xác nhận."); invalidStatus.statusCode = 409; throw invalidStatus; }
+
+  // PENDING → đổi lịch trực tiếp, không cần staff duyệt
+  if (appointment.status === "PENDING") {
+    let newSlotId = null;
+
+    if (hasSlotId && appointment.doctor_id) {
+      const newSlot = await ensureDoctorScheduleSlot(appointment.doctor_id, requestedDate, requestedTime);
+      if (!newSlot) {
+        const slotError = new Error("Bác sĩ không có ca làm việc trống trong khung giờ này. Vui lòng chọn khung giờ khác.");
+        slotError.statusCode = 409;
+        throw slotError;
+      }
+      const reserved = await reserveDoctorScheduleSlot(newSlot.id);
+      if (!reserved) {
+        const slotError = new Error("Ca khám vừa được đặt bởi người khác. Vui lòng chọn khung giờ khác.");
+        slotError.statusCode = 409;
+        throw slotError;
+      }
+      newSlotId = newSlot.id;
+    }
+
+    const hasRequestedSlots = await hasRequestedSlotColumns();
+    const updatePayload = {
+      note: [stripRequestPayload(appointment.note), reason].filter(Boolean).join("\n"),
+      updated_at: new Date().toISOString(),
+      ...(hasSlotId ? { doctor_schedule_slot_id: newSlotId } : {}),
+      ...(hasRequestedSlots ? { requested_date: requestedDate, requested_time: requestedTime } : {}),
+    };
+
+    const updated = await supabase.from("appointments").update(updatePayload).eq("id", appointmentId);
+    if (updated.error) {
+      if (newSlotId) await setDoctorScheduleSlotStatus(newSlotId, "AVAILABLE");
+      throw new Error(updated.error.message);
+    }
+
+    // Giải phóng slot cũ sau khi cập nhật thành công
+    const oldSlotId = appointment.doctor_schedule_slot_id;
+    if (hasSlotId && oldSlotId && oldSlotId !== newSlotId) {
+      await setDoctorScheduleSlotStatus(oldSlotId, "AVAILABLE");
+    }
+
+    const actors = await getAppointmentActors(appointmentId);
+    const customerName = actors?.pets?.customers?.full_name || "Khách hàng";
+    const aptCode = `APT-${String(appointmentId).padStart(6, "0")}`;
+    if (actors?.doctors?.user_id) {
+      await createUserNotification(
+        actors.doctors.user_id,
+        "Khách hàng đã đổi lịch hẹn",
+        `${customerName} đã đổi lịch hẹn ${aptCode} sang ${requestedDate} lúc ${requestedTime.slice(0, 5)}.`,
+      );
+    }
+
+    return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
+  }
+
+  // CONFIRMED → gửi yêu cầu cho staff duyệt
   const request = buildRequestPayload("RESCHEDULE", { date: requestedDate, time: requestedTime, reason });
-  const updated = await supabase.from("appointments").update({ note: [stripRequestPayload(appointment.note), request].filter(Boolean).join("\n"), updated_at: new Date().toISOString() }).eq("id", appointment.id);
+  const updated = await supabase.from("appointments")
+    .update({ note: [stripRequestPayload(appointment.note), request].filter(Boolean).join("\n"), updated_at: new Date().toISOString() })
+    .eq("id", appointment.id);
   if (updated.error) throw new Error(updated.error.message);
   return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
 }
@@ -858,12 +952,45 @@ async function cancelCustomerAppointment(appointmentCode, inputOrCustomerId, may
   const effectiveCustomerId = assertCustomerId(customerId);
   const appointmentId = parseAppointmentId(appointmentCode);
   const reason = String(input?.reason || "").trim() || "Khách hàng yêu cầu hủy lịch";
-  const { data: appointment, error } = await supabase.from("appointments").select("id, pet_id, status").eq("id", appointmentId).maybeSingle();
+
+  const hasSlotId = await hasDoctorScheduleSlotIdColumn();
+  const selectFields = ["id, pet_id, status", hasSlotId ? "doctor_schedule_slot_id" : null].filter(Boolean).join(", ");
+
+  const { data: appointment, error } = await supabase.from("appointments").select(selectFields).eq("id", appointmentId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
-  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) { const invalidStatus = new Error("Chỉ có thể gửi yêu cầu hủy lịch hẹn đang chờ hoặc đã xác nhận."); invalidStatus.statusCode = 409; throw invalidStatus; }
-  const updated = await supabase.from("appointments").update({ cancel_reason: buildRequestPayload("CANCEL", { reason }), updated_at: new Date().toISOString() }).eq("id", appointmentId);
+  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) { const invalidStatus = new Error("Chỉ có thể hủy lịch hẹn đang chờ hoặc đã xác nhận."); invalidStatus.statusCode = 409; throw invalidStatus; }
+
+  // PENDING → hủy trực tiếp, không cần staff duyệt
+  if (appointment.status === "PENDING") {
+    const actors = await getAppointmentActors(appointmentId);
+    const updated = await supabase.from("appointments")
+      .update({ status: "CANCELLED", cancel_reason: reason, updated_at: new Date().toISOString() })
+      .eq("id", appointmentId);
+    if (updated.error) throw new Error(updated.error.message);
+
+    if (hasSlotId && appointment.doctor_schedule_slot_id) {
+      await setDoctorScheduleSlotStatus(appointment.doctor_schedule_slot_id, "AVAILABLE");
+    }
+
+    const customerName = actors?.pets?.customers?.full_name || "Khách hàng";
+    const aptCode = `APT-${String(appointmentId).padStart(6, "0")}`;
+    if (actors?.doctors?.user_id) {
+      await createUserNotification(
+        actors.doctors.user_id,
+        "Lịch hẹn đã bị hủy",
+        `${customerName} đã hủy lịch hẹn ${aptCode}. Lý do: ${reason}`,
+      );
+    }
+
+    return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
+  }
+
+  // CONFIRMED → gửi yêu cầu cho staff duyệt
+  const updated = await supabase.from("appointments")
+    .update({ cancel_reason: buildRequestPayload("CANCEL", { reason }), updated_at: new Date().toISOString() })
+    .eq("id", appointmentId);
   if (updated.error) throw new Error(updated.error.message);
   return getOneCustomerAppointment(appointmentId, effectiveCustomerId);
 }

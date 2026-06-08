@@ -706,6 +706,7 @@ function groupScheduleSlots(schedules, doctor) {
       day: weekdayLabel(dayIndex),
       dayIndex,
       date: formatDateShort(row.work_date),
+      rawDate: row.work_date || "",
       on: true,
       from: formatTime(row.start_time),
       to: formatTime(row.end_time),
@@ -716,7 +717,19 @@ function groupScheduleSlots(schedules, doctor) {
 }
 
 
-async function getDoctorSettings(doctorId) {
+function parseDeviceFromUserAgent(ua) {
+  if (!ua) return "Thiết bị hiện tại";
+  const s = String(ua);
+  if (/Mobile|Android|iPhone|iPad/i.test(s)) return "Thiết bị di động";
+  if (/Edg\//i.test(s)) return "Microsoft Edge";
+  if (/Firefox\//i.test(s)) return "Firefox";
+  if (/OPR\/|Opera/i.test(s)) return "Opera";
+  if (/Chrome\//i.test(s)) return "Chrome";
+  if (/Safari\//i.test(s)) return "Safari";
+  return "Trình duyệt web";
+}
+
+async function getDoctorSettings(doctorId, userAgent) {
   const [{ data: doctor, error: doctorError }, { data: schedules, error: scheduleError }] = await Promise.all([
     supabase
       .from("doctors")
@@ -781,7 +794,7 @@ async function getDoctorSettings(doctorId) {
     security: {
       twoFa: false,
       sessions: [
-        { device: "Chrome", location: "Thiết bị hiện tại", time: "Hiện tại", current: true },
+        { device: parseDeviceFromUserAgent(userAgent), location: "Thiết bị hiện tại", time: "Hiện tại", current: true },
       ],
     },
   };
@@ -933,9 +946,28 @@ async function getDoctorExamContext(doctorId, appointmentId) {
   });
 }
 
+async function saveDoctorSettings(doctorId, patch) {
+  const key = `doctor.settings.${doctorId}`;
+  const current = (await getStoredSetting(key)) || {};
+  const updated = {
+    schedule: current.schedule || {},
+    notifications: current.notifications || {},
+    security: current.security || {},
+    ...current,
+  };
+  if (patch.notifications !== undefined) {
+    updated.notifications = { ...updated.notifications, ...patch.notifications };
+  }
+  if (patch.security !== undefined) {
+    updated.security = { ...updated.security, twoFa: Boolean(patch.security.twoFa) };
+  }
+  await saveStoredSetting(key, updated);
+}
+
 module.exports = {
   getDoctorExamContext,
   getDoctorSettings,
   getDoctorStats,
   listDoctorRecords,
+  saveDoctorSettings,
 };

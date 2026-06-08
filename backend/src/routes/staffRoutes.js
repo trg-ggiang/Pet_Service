@@ -3,6 +3,7 @@ const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const {
   getStaffProfile,
   listStaffAppointments,
+  confirmAppointment,
   checkInAppointment,
   approveAppointmentRequest,
   listGroomingTasks,
@@ -45,6 +46,15 @@ router.get("/appointments", async function getAppointments(req, res) {
   try {
     const appointments = await listStaffAppointments(req.auth?.user?.staffId);
     res.json({ ok: true, appointments });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.put("/appointments/:id/confirm", async function confirmApt(req, res) {
+  try {
+    await confirmAppointment(req.params.id, req.auth?.user?.staffId);
+    res.json({ ok: true, message: "Đã xác nhận lịch hẹn" });
   } catch (error) {
     sendError(res, error);
   }

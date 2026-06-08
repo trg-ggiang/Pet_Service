@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
   Bell,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Globe,
   Loader2,
@@ -50,11 +52,16 @@ function ReadOnlyInput({ value }: { value: string }) {
   );
 }
 
-function Toggle({ on }: { on: boolean }) {
+function Toggle({ on, onClick }: { on: boolean; onClick?: () => void }) {
   return (
-    <span className={`relative w-10 rounded-full transition-colors flex-shrink-0 ${on ? "bg-cyan-500" : "bg-slate-200"}`} style={{ height: 22 }}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative w-10 rounded-full transition-colors flex-shrink-0 focus:outline-none ${on ? "bg-cyan-500" : "bg-slate-200"} ${onClick ? "cursor-pointer" : "cursor-default"}`}
+      style={{ height: 22 }}
+    >
       <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all" style={{ left: on ? "calc(100% - 18px)" : 2 }} />
-    </span>
+    </button>
   );
 }
 
@@ -203,15 +210,7 @@ export function DoctorScheduleForm({ initialRows, onSave, onDelete, onCancel }: 
           roomName: r.roomName,
           status: r.status,
         }))
-      : Array.from({ length: 7 }, (_, i) => ({
-          day: ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"][i],
-          date: generateDateFromDay(i === 0 ? 0 : i === 6 ? 6 : i),
-          on: i >= 1 && i <= 6,
-          from: "08:00",
-          to: "17:00",
-          roomName: "Phòng 1",
-          status: "AVAILABLE",
-        })),
+      : [],
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -354,39 +353,199 @@ export function DoctorScheduleForm({ initialRows, onSave, onDelete, onCancel }: 
   );
 }
 
+// ─── Weekly schedule helpers ──────────────────────────────────────────────────
+
+const WEEK_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
+function localYmd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function getMondayYmd(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const dow = d.getDay();
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+  return localYmd(d);
+}
+
+function getWeekDates(weekStart: string): string[] {
+  const d = new Date(weekStart + "T00:00:00");
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(d);
+    day.setDate(day.getDate() + i);
+    return localYmd(day);
+  });
+}
+
+function shiftWeekStart(weekStart: string, delta: number): string {
+  const d = new Date(weekStart + "T00:00:00");
+  d.setDate(d.getDate() + delta * 7);
+  return localYmd(d);
+}
+
+function fmtDayLabel(ymd: string): string {
+  const [, m, d] = ymd.split("-");
+  return `${d}/${m}`;
+}
+
 export function DoctorScheduleSettings({
   schedule,
 }: {
   schedule: DoctorSettingsPayload["schedule"];
 }) {
+  const [weekStart, setWeekStart] = useState(getMondayYmd);
+  const weekDates = getWeekDates(weekStart);
+  const today = localYmd(new Date());
+
+  // Build map rawDate → merged cell (handle morning+afternoon windows)
+  type DayCell = { from: string; to: string; roomName: string; slotCount: number; hasBreak: boolean };
+  const dayMap = new Map<string, DayCell>();
+  for (const row of schedule.rows) {
+    const key = row.rawDate || "";
+    if (!key) continue;
+    const existing = dayMap.get(key);
+    if (!existing) {
+      dayMap.set(key, { from: row.from, to: row.to, roomName: row.roomName, slotCount: row.slotCount ?? 0, hasBreak: false });
+    } else {
+      // merge: track earliest start, latest end, detect gap = has break
+      if (row.from < existing.from) { existing.hasBreak = true; existing.from = row.from; }
+      if (row.to > existing.to) { existing.hasBreak = true; existing.to = row.to; }
+      existing.slotCount += row.slotCount ?? 0;
+    }
+  }
+
+  // Does this doctor have any scheduled data at all?
+  const hasAnyData = schedule.rows.length > 0;
+
+  // Count days with schedule in current week
+  const weekScheduledCount = weekDates.filter((d) => dayMap.has(d)).length;
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
+      {/* Header row */}
       <div className="flex items-center justify-between">
-        <SectionTitle>Ngày và giờ làm việc từ admin</SectionTitle>
+        <div>
+          <SectionTitle>Lịch làm việc theo tuần</SectionTitle>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Lịch do quản trị viên phân · chỉ xem
+          </p>
+        </div>
+        {/* Week navigator */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setWeekStart((w) => shiftWeekStart(w, -1))}
+            className="w-7 h-7 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            <ChevronLeft size={13} />
+          </button>
+          <button
+            onClick={() => setWeekStart(getMondayYmd)}
+            className="h-7 px-2.5 text-[11px] font-semibold border border-border rounded-lg hover:bg-muted transition-colors text-foreground"
+          >
+            Tuần này
+          </button>
+          <button
+            onClick={() => setWeekStart((w) => shiftWeekStart(w, 1))}
+            className="w-7 h-7 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            <ChevronRight size={13} />
+          </button>
+        </div>
       </div>
-      <div className="flex flex-col gap-2">
-        {schedule.rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
-            Chưa có lịch làm việc trong database.
-          </div>
-        ) : schedule.rows.map((row) => (
-          <div key={row.id} className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-all ${row.on ? "bg-white border-border" : "bg-slate-50 border-border opacity-60"}`}>
-            <Toggle on={row.on} />
-            <span className="w-14 text-[13px] font-semibold text-foreground">{row.day}</span>
-            <span className="text-[12px] text-muted-foreground">{row.date}</span>
-            <span className="text-[12px] font-semibold text-foreground">{row.from} - {row.to}</span>
-            <span className="ml-auto text-[11px] text-muted-foreground font-medium">
-              {row.roomName} · {row.slotCount ?? 0} ca khám
-            </span>
-          </div>
-        ))}
+
+      {/* Week date range label */}
+      <div className="text-[12px] text-muted-foreground font-medium">
+        {fmtDayLabel(weekDates[0])} – {fmtDayLabel(weekDates[6])} · {weekDates[0].slice(0, 4)}
+        {weekScheduledCount > 0 && (
+          <span className="ml-2 text-cyan-600 font-semibold">{weekScheduledCount} ngày có lịch</span>
+        )}
       </div>
+
+      {/* Weekly grid */}
+      {!hasAnyData ? (
+        <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
+          Chưa có lịch làm việc nào được phân. Hãy liên hệ quản trị viên.
+        </div>
+      ) : (
+        <div className="grid grid-cols-7 gap-2">
+          {/* Day headers */}
+          {WEEK_LABELS.map((label, i) => {
+            const date = weekDates[i];
+            const isToday = date === today;
+            return (
+              <div key={label} className={`text-center py-2 rounded-xl ${isToday ? "bg-cyan-50" : ""}`}>
+                <div className={`text-[12px] font-bold ${isToday ? "text-cyan-600" : "text-foreground"}`}>{label}</div>
+                <div className={`text-[10px] mt-0.5 font-medium ${isToday ? "text-cyan-500" : "text-muted-foreground"}`}>
+                  {fmtDayLabel(date)}
+                  {isToday && <div className="text-[9px] bg-cyan-500 text-white rounded-full px-1 mt-0.5 inline-block">HN</div>}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Day cells */}
+          {weekDates.map((date) => {
+            const cell = dayMap.get(date);
+            const isToday = date === today;
+            return (
+              <div
+                key={date}
+                className={`rounded-xl border-2 min-h-[80px] p-2 flex flex-col justify-center transition-all ${
+                  cell
+                    ? isToday
+                      ? "border-cyan-300 bg-cyan-50"
+                      : "border-emerald-200 bg-emerald-50"
+                    : isToday
+                      ? "border-dashed border-cyan-200 bg-cyan-50/30"
+                      : "border-dashed border-slate-200 bg-white"
+                }`}
+              >
+                {cell ? (
+                  <div className="space-y-1">
+                    <div className={`text-[11px] font-bold leading-tight ${isToday ? "text-cyan-700" : "text-emerald-700"}`}>
+                      {cell.from}–{cell.to}
+                    </div>
+                    {cell.hasBreak && (
+                      <div className="text-[9px] text-orange-500 font-medium">nghỉ trưa</div>
+                    )}
+                    <div className={`text-[10px] truncate ${isToday ? "text-cyan-600" : "text-emerald-600"}`}>
+                      {cell.roomName}
+                    </div>
+                    <div className={`text-[10px] font-semibold ${isToday ? "text-cyan-500" : "text-emerald-500"}`}>
+                      {cell.slotCount} ca
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <span className="text-[10px] text-slate-300 font-medium">Nghỉ</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Options */}
       <div className="w-full h-px bg-border" />
       <SectionTitle>Cấu hình ca khám</SectionTitle>
-      <div className="grid grid-cols-3 gap-4">
-        <Field label="Thời lượng mỗi ca"><ReadOnlyInput value={`${schedule.options.slotDuration} phút`} /></Field>
-        <Field label="Tối đa ca/ngày"><ReadOnlyInput value={schedule.options.maxAppointments} /></Field>
-        <Field label="Nghỉ giải lao"><ReadOnlyInput value={`${schedule.options.breakFrom} - ${schedule.options.breakTo}`} /></Field>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white border border-border rounded-xl px-4 py-3">
+          <div className="text-[10px] font-bold uppercase text-muted-foreground">Thời lượng</div>
+          <div className="text-[15px] font-bold text-foreground mt-1">{schedule.options.slotDuration} phút</div>
+          <div className="text-[10px] text-muted-foreground">mỗi ca khám</div>
+        </div>
+        <div className="bg-white border border-border rounded-xl px-4 py-3">
+          <div className="text-[10px] font-bold uppercase text-muted-foreground">Tối đa / ngày</div>
+          <div className="text-[15px] font-bold text-foreground mt-1">{schedule.options.maxAppointments}</div>
+          <div className="text-[10px] text-muted-foreground">lịch hẹn</div>
+        </div>
+        <div className="bg-white border border-border rounded-xl px-4 py-3">
+          <div className="text-[10px] font-bold uppercase text-muted-foreground">Nghỉ trưa</div>
+          <div className="text-[15px] font-bold text-foreground mt-1">{schedule.options.breakFrom}</div>
+          <div className="text-[10px] text-muted-foreground">đến {schedule.options.breakTo}</div>
+        </div>
       </div>
     </div>
   );
@@ -453,7 +612,18 @@ function DoctorScheduleSettingsEditor({
   );
 }
 
-export function DoctorNotificationSettings({ notifications }: { notifications: DoctorSettingsPayload["notifications"] }) {
+export function DoctorNotificationSettings({
+  notifications,
+  onSave,
+}: {
+  notifications: DoctorSettingsPayload["notifications"];
+  onSave: (values: Record<string, boolean>) => Promise<void>;
+}) {
+  const [values, setValues] = useState<Record<string, boolean>>(() => ({ ...notifications }));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
   const channels = [
     { icon: Mail, label: "Email" },
     { icon: Smartphone, label: "SMS" },
@@ -464,6 +634,25 @@ export function DoctorNotificationSettings({ notifications }: { notifications: D
     { title: "Nhắc nhở ca khám", sub: "Nhắc trước 30 phút mỗi ca", keys: ["remEmail", "remSms", "remPush"] },
     { title: "Thông báo hệ thống", sub: "Cập nhật phần mềm, bảo trì", keys: ["sysEmail", "sysSms", "sysPush"] },
   ];
+
+  function toggle(key: string) {
+    setValues((prev) => ({ ...prev, [key]: !prev[key] }));
+    setSaved(false);
+    setError("");
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(values);
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể lưu cài đặt");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -487,19 +676,60 @@ export function DoctorNotificationSettings({ notifications }: { notifications: D
               <p className="text-[13px] font-semibold text-foreground">{group.title}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{group.sub}</p>
             </div>
-            {group.keys.map((key) => (
-              <div key={key} className="flex justify-center">
-                <Toggle on={Boolean(notifications[key])} />
+            {group.keys.map((k) => (
+              <div key={k} className="flex justify-center">
+                <Toggle on={Boolean(values[k])} onClick={() => toggle(k)} />
               </div>
             ))}
           </div>
         ))}
       </div>
+      {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="h-10 px-5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-[13px] font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          Lưu thay đổi
+        </button>
+        {saved && !saving && (
+          <span className="text-[12px] text-emerald-600 font-semibold flex items-center gap-1">
+            <CheckCircle2 size={13} /> Đã lưu
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
-export function DoctorSecuritySettings({ security }: { security: DoctorSettingsPayload["security"] }) {
+export function DoctorSecuritySettings({
+  security,
+  onSave,
+}: {
+  security: DoctorSettingsPayload["security"];
+  onSave: (values: { twoFa: boolean }) => Promise<void>;
+}) {
+  const [twoFa, setTwoFa] = useState(security.twoFa);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      await onSave({ twoFa });
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể lưu cài đặt");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <SectionTitle>Xác thực 2 bước</SectionTitle>
@@ -509,9 +739,26 @@ export function DoctorSecuritySettings({ security }: { security: DoctorSettingsP
           <p className="text-[11px] text-muted-foreground mt-0.5">Bảo vệ tài khoản với mã OTP qua email hoặc ứng dụng xác thực</p>
         </div>
         <div className="flex items-center gap-3">
-          {security.twoFa && <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Đã bật</span>}
-          <Toggle on={security.twoFa} />
+          {twoFa && <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Đã bật</span>}
+          <Toggle on={twoFa} onClick={() => { setTwoFa((v) => !v); setSaved(false); setError(""); }} />
         </div>
+      </div>
+      {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="h-10 px-5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-[13px] font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          Lưu thay đổi
+        </button>
+        {saved && !saving && (
+          <span className="text-[12px] text-emerald-600 font-semibold flex items-center gap-1">
+            <CheckCircle2 size={13} /> Đã lưu
+          </span>
+        )}
       </div>
       <div className="w-full h-px bg-border" />
       <SectionTitle>Phiên đăng nhập</SectionTitle>

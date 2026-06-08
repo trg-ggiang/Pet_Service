@@ -318,6 +318,22 @@ export type AdminDoctorScheduleRow = {
   on: boolean;
 };
 
+export type AdminDoctorBasic = {
+  id: number;
+  name: string;
+  room: string;
+};
+
+export type AdminWeekScheduleEntry = {
+  doctorId: number;
+  date: string;
+  from: string;
+  to: string;
+  roomName: string;
+  slotCount: number;
+  bookedCount: number;
+};
+
 export type AdminEmailTemplate = {
   subject: string;
   heading: string;
@@ -431,6 +447,12 @@ export const adminService = {
 
   updateStaffLock(id: string, locked: boolean) {
     return adminPatch<{ user: AdminUserLockResult }>(`/api/admin/staff/${encodeURIComponent(id)}/lock`, { locked });
+  },
+
+  getDoctorWeekSchedules(weekStart: string) {
+    return adminGet<{ doctors: AdminDoctorBasic[]; schedules: AdminWeekScheduleEntry[]; weekStart: string; weekEnd: string }>(
+      `/api/admin/doctors/schedules?weekStart=${encodeURIComponent(weekStart)}`,
+    );
   },
 
   saveDoctorSchedule(doctorId: string, rows: AdminDoctorScheduleRow[]) {

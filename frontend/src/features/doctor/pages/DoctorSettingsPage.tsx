@@ -67,8 +67,22 @@ export function DoctorSettingsPage() {
     if (!settings) return <DoctorSettingsError message="Không có dữ liệu cài đặt" />;
 
     if (tab === "schedule") return <DoctorScheduleSettings schedule={settings.schedule} />;
-    if (tab === "notifications") return <DoctorNotificationSettings notifications={settings.notifications} />;
-    if (tab === "security") return <DoctorSecuritySettings security={settings.security} />;
+    if (tab === "notifications") return (
+      <DoctorNotificationSettings
+        notifications={settings.notifications}
+        onSave={async (notifications) => {
+          await doctorDataService.updateSettings({ notifications });
+        }}
+      />
+    );
+    if (tab === "security") return (
+      <DoctorSecuritySettings
+        security={settings.security}
+        onSave={async (security) => {
+          await doctorDataService.updateSettings({ security });
+        }}
+      />
+    );
     return <DoctorProfileSettings profile={settings.profile} />;
   }
 

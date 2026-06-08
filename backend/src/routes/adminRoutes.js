@@ -179,6 +179,74 @@ router.put("/doctors/:doctorId/schedules", async function(req, res) {
   }
 });
 
+router.get("/doctors/schedules", async function(req, res) {
+  try {
+    const weekStart = String(req.query.weekStart || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+      return res.status(400).json({ ok: false, message: "weekStart phải có định dạng YYYY-MM-DD" });
+    }
+    // Parse and add 6 days using UTC noon to avoid timezone date-shift
+    const startUtc = new Date(weekStart + "T12:00:00Z");
+    const endUtc = new Date(startUtc);
+    endUtc.setUTCDate(endUtc.getUTCDate() + 6);
+    const weekEnd = endUtc.toISOString().split("T")[0];
+
+    const { data: doctors, error: doctorsErr } = await supabase
+      .from("doctors")
+      .select("id, full_name, room_name")
+      .order("full_name");
+    if (doctorsErr) throw new Error(doctorsErr.message);
+
+    if (!doctors || doctors.length === 0) {
+      return res.json({ ok: true, doctors: [], schedules: [], weekStart, weekEnd });
+    }
+
+    const doctorIds = doctors.map((d) => d.id);
+    const { data: scheduleRows, error: schedulesErr } = await supabase
+      .from("doctor_schedules")
+      .select(`id, doctor_id, work_date, start_time, end_time, room_name,
+        slots:doctor_schedule_slots!doctor_schedule_slots_doctor_schedule_id_fkey(id, status)`)
+      .in("doctor_id", doctorIds)
+      .gte("work_date", weekStart)
+      .lte("work_date", weekEnd);
+    if (schedulesErr) throw new Error(schedulesErr.message);
+
+    const cellMap = new Map();
+    for (const row of scheduleRows || []) {
+      const key = `${row.doctor_id}:${row.work_date}`;
+      const slots = row.slots || [];
+      const slotCount = slots.filter((s) => s.status !== "OFF").length;
+      const bookedCount = slots.filter((s) => ["BOOKED", "IN_PROGRESS", "DONE"].includes(s.status)).length;
+      const existing = cellMap.get(key);
+      if (!existing) {
+        cellMap.set(key, { from: row.start_time.slice(0, 5), to: row.end_time.slice(0, 5), roomName: row.room_name || "Phòng 1", slotCount, bookedCount });
+      } else {
+        if (row.start_time.slice(0, 5) < existing.from) existing.from = row.start_time.slice(0, 5);
+        if (row.end_time.slice(0, 5) > existing.to) existing.to = row.end_time.slice(0, 5);
+        existing.slotCount += slotCount;
+        existing.bookedCount += bookedCount;
+      }
+    }
+
+    const schedules = [];
+    for (const [key, data] of cellMap.entries()) {
+      const [doctorIdStr, date] = key.split(":");
+      schedules.push({ doctorId: Number(doctorIdStr), date, ...data });
+    }
+
+    res.json({
+      ok: true,
+      doctors: doctors.map((d) => ({ id: d.id, name: d.full_name, room: d.room_name || "Phòng 1" })),
+      schedules,
+      weekStart,
+      weekEnd,
+    });
+  } catch (error) {
+    console.error("[ADMIN] GET /doctors/schedules ERROR:", error.message);
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
 router.put("/settings", async function(req, res) {
   try {
     const settings = await updateAdminSettings(req.body || {}, req.auth?.user);

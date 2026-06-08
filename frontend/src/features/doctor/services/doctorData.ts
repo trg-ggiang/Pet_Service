@@ -111,6 +111,7 @@ export interface DoctorSettingsPayload {
       day: string;
       dayIndex?: number;
       date: string;
+      rawDate?: string;
       on: boolean;
       from: string;
       to: string;
@@ -273,6 +274,17 @@ export const doctorDataService = {
       authInit(),
     );
     return data.context;
+  },
+
+  async updateSettings(patch: { notifications?: Record<string, boolean>; security?: { twoFa: boolean } }): Promise<void> {
+    await requestJson<ApiOk<{ message: string }>>(
+      apiUrl("/api/doctor/settings"),
+      {
+        method: "PUT",
+        ...authInit(),
+        body: JSON.stringify(patch),
+      },
+    );
   },
 
   async saveSchedule(rows: DoctorSettingsPayload["schedule"]["rows"]): Promise<string> {

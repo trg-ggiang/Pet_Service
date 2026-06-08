@@ -1,11 +1,13 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Plus, Search, Download, Eye, Edit, X, Clock, ChevronDown,
   Calendar, Stethoscope,
   CheckCircle2, AlertTriangle, User,
-  Phone, Mail,
+  Phone, Mail, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { adminService, type AdminAppointmentSummary } from "../../features/admin/services/admin";
+
+const PAGE_SIZE = 15;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -373,6 +375,9 @@ export function AdminAppointmentsView() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => { setPage(1); }, [statusFilter, search]);
 
   useEffect(() => {
     let mounted = true;
@@ -400,6 +405,12 @@ export function AdminAppointmentsView() {
   }, [statusFilter, search]);
 
   const filtered = apts;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageData = useMemo(
+    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filtered, safePage],
+  );
 
   const serviceOptions = summary.serviceOptions;
   const staffOptions = summary.staffOptions;
@@ -501,7 +512,7 @@ export function AdminAppointmentsView() {
               {filtered.length === 0 && (
                 <tr><td colSpan={8} className="px-6 py-16 text-center text-muted-foreground text-sm">Không có lịch hẹn phù hợp</td></tr>
               )}
-              {filtered.map((apt) => (
+              {pageData.map((apt) => (
                 <tr
                   key={apt.id}
                   className="hover:bg-muted/25 group transition-colors cursor-pointer"
@@ -554,10 +565,33 @@ export function AdminAppointmentsView() {
           </table>
         </div>
 
-        {/* Summary footer */}
-        <div className="px-6 py-3 border-t border-border flex items-center justify-between bg-muted/20">
-          <span className="text-xs text-muted-foreground">Hiển thị {summary.filtered} / {summary.total} lịch hẹn</span>
-          <span className="text-xs font-semibold text-foreground">
+        {/* Pagination + Summary footer */}
+        <div className="px-6 py-3 border-t border-border flex items-center justify-between bg-muted/20 gap-4">
+          <span className="text-xs text-muted-foreground flex-shrink-0">
+            {filtered.length > 0
+              ? `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, filtered.length)} / ${filtered.length} lịch hẹn`
+              : `0 / ${summary.total} lịch hẹn`}
+          </span>
+          {pageCount > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-border bg-white hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={12} className="text-muted-foreground" />
+              </button>
+              <span className="text-xs font-semibold text-foreground min-w-[52px] text-center">{safePage}/{pageCount}</span>
+              <button
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                disabled={safePage >= pageCount}
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-border bg-white hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={12} className="text-muted-foreground" />
+              </button>
+            </div>
+          )}
+          <span className="text-xs font-semibold text-foreground flex-shrink-0">
             Tổng: {summary.totalAmountText}₫
           </span>
         </div>

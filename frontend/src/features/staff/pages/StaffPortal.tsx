@@ -159,6 +159,18 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 
   const { doneGrooming, totalGrooming, pendingCheckIn, needsFed, pendingPayments } = summary;
 
+  async function handleConfirmAppointment(appointment: StaffAppointment) {
+    try {
+      await staffAppointmentsService.confirmAppointment(appointment.appointmentId);
+      setViewingApt(null);
+      await loadAppointments();
+      await loadSummary();
+    } catch (error) {
+      console.error("[FRONTEND] Confirm appointment failed:", error);
+      alert("Không thể xác nhận lịch hẹn: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+    }
+  }
+
   async function handleApproveAppointmentRequest(appointment: StaffAppointment) {
     try {
       setApprovingAppointmentId(appointment.appointmentId);
@@ -257,6 +269,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
               loading={loading.appointments}
               error={errors.appointments}
               onViewDetails={setViewingApt}
+              onConfirm={(appointment) => void handleConfirmAppointment(appointment)}
               onCheckIn={(appointment) => void handleCheckIn(appointment)}
               onApproveRequest={(appointment) => void handleApproveAppointmentRequest(appointment)}
               approvingAppointmentId={approvingAppointmentId}
@@ -301,6 +314,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
         <AppointmentDetailModal
           apt={viewingApt}
           onClose={() => setViewingApt(null)}
+          onConfirm={() => void handleConfirmAppointment(viewingApt)}
           onCheckIn={() => void handleCheckIn(viewingApt)}
           onApproveRequest={() => void handleApproveAppointmentRequest(viewingApt)}
           approving={approvingAppointmentId === viewingApt.appointmentId}
