@@ -1,0 +1,152 @@
+================================================================================
+PET SERVICE - NHẬT KÝ KHẮC PHỤC SỰ CỐ (FIXES LOG)
+================================================================================
+
+Dưới đây là danh sách các vấn đề và giải pháp đã thực hiện trong Batch 1 và Batch 2:
+
+--------------------------------------------------------------------------------
+BATCH 1 - QUICK FIXES (ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+1. Vấn đề #3: Biểu đồ bác sĩ - Trục ngày bị đảo + Button "Ngày" bug
+   - Giải pháp:
+     * Trên Backend (backend/src/services/doctor/doctorService.js): Đảo ngược (reverse) mảng 'buckets' để trả về đúng thứ tự thời gian tăng dần (chronological ASC) cho Recharts.
+     * Thêm 'requested_time' vào câu truy vấn lấy thống kê của bác sĩ để khi chọn bộ lọc "Ngày" (period = day) thì sẽ tự động nhóm các ca khám theo khung giờ thực tế trong ngày thay vì gộp chung vào 1 ngày duy nhất gây lỗi hiển thị.
+     * Sửa logic sắp xếp (sort) của appointments trong ngày: ưu tiên theo ngày tăng dần, sau đó theo thời gian tăng dần.
+
+2. Vấn đề #9: Lê Bảo Nhi hiện "lễ tân" trong admin nhưng đăng nhập lại là "nhân viên chăm sóc"
+   - Giải pháp:
+     * Cập nhật Prisma Schema (backend/prisma/schema.prisma): Thêm 2 trường `department` và `position` vào model `Staff`.
+     * Tạo file migration SQL: backend/prisma/migrations/20260608235500_add_staff_department/migration.sql.
+     * Cập nhật Backend:
+       + Trong backend/src/services/adminService.js: Đọc `department` và `position` từ DB trong `listAdminUsers` và `listAdminStaff` thay vì gán cứng là "Vận hành" hay "reception".
+       + Trong backend/src/services/staff/staffPortalService.js: Lấy `department` và `position` từ bảng `staffs` và ánh xạ `roleLabel` động dựa vào chức vụ/phòng ban của nhân viên thay vì gán cứng "Nhân viên chăm sóc".
+
+3. Vấn đề #11: Hiển thị rõ tiêu chí VIP (Được nâng cấp khi >= 10 lịch hẹn)
+   - Giải pháp:
+     * Trên Backend (backend/src/services/customerPetsService.js): Thêm `totalVisits` (số lần hẹn đã đặt) và `tier` ("vip" hoặc "regular") vào dữ liệu trả về của customer dashboard.
+     * Trên Frontend:
+       + Cập nhật TypeScript Type (frontend/src/types/customerPets.ts): Bổ sung `tier` và `totalVisits` vào `CustomerInfo`.
+       + Tại header (frontend/src/features/customer/pages/CustomerPortal.tsx): Hiển thị Huy hiệu "⭐ VIP" cạnh tên người dùng nếu có hạng VIP.
+       + Tại trang chủ khách hàng (frontend/src/components/customer/home/CustomerHomeTab.tsx): Thiết kế thanh tiến trình (progress bar) hiển thị tiến độ thăng hạng VIP (X/10 lịch hẹn) kèm theo câu hướng dẫn cụ thể.
+
+--------------------------------------------------------------------------------
+BATCH 2 - DOCTOR IMPROVEMENTS (ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+4. Vấn đề #1: Lịch khám bác sĩ hôm nay bị xếp lung tung + Thiếu box "đã khám hôm nay"
+   - Giải pháp:
+     * Trên Backend (backend/src/services/doctor/doctorAppointmentService.js): Thay đổi logic sort của `listDoctorAppointmentsForPortal` sang sắp xếp chronologically (theo thứ tự ngày và giờ tăng dần của các ca khám) giúp hiển thị danh sách khám tuần tự, không bị lẫn lộn giữa các ngày.
+     * Trên Frontend (frontend/src/features/doctor/pages/DoctorPortal.tsx):
+       + Tách appointments thành `pendingAndInProgressAppointments` (ca chờ khám/đang khám) và `completedToday` (ca đã hoàn thành hôm nay).
+       + Thiết kế bố cục 2 cột (Two-Column Layout) cho tab lịch khám. Cột bên trái hiển thị danh sách ca cần khám. Cột bên phải hiển thị một panel riêng "Đã khám hôm nay" liệt kê các ca đã hoàn thành, cho phép bác sĩ xem lại nhanh thông tin bệnh án của thú cưng vừa khám xong.
+
+5. Vấn đề #2: Hồ sơ bệnh án - Tìm kiếm thú cưng theo SĐT + Xem chi tiết hồ sơ bệnh án đã khám
+    - Giải pháp:
+      * Trên Backend (backend/src/services/doctor/doctorService.js): Mở rộng logic lọc của hàm `filterDoctorRecords` để hỗ trợ tìm kiếm bằng trường `record.phone` (số điện thoại của chủ nuôi).
+      * Trên Frontend (frontend/src/components/doctor/DoctorRecordsView.tsx): Đổi placeholder của thanh tìm kiếm thành "Tìm thú cưng, chủ nhân, SĐT...". Cập nhật component `DoctorRecordsHistory`, bổ sung thêm sự kiện click chọn record (onSelectRecord) khi bác sĩ nhấn vào các thẻ lịch sử khám cũ.
+      * Trên Frontend (frontend/src/features/doctor/pages/DoctorRecordsPage.tsx): Tích hợp component `DoctorRecordDetail` hiển thị toàn bộ chi tiết thông tin lâm sàng, sinh hiệu, chẩn đoán và đơn thuốc đã khám khi bác sĩ click vào thẻ bệnh án, đồng thời hỗ trợ nút "Danh sách" (Quay lại) để quay về màn hình trước đó dễ dàng.
+
+--------------------------------------------------------------------------------
+BATCH 3 - PROFILE MANAGEMENT (ĐĂNG KÝ/SỬA HỒ SƠ & MẬT KHẨU - ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+6. Vấn đề #12: Khách hàng không đổi được thông tin + không đổi được mật khẩu
+   - Giải pháp:
+     * Trên Backend (backend/src/services/customerPetsService.js): Thêm 3 hàm `getCustomerProfile`, `updateCustomerProfile`, `updateCustomerPassword` để lấy thông tin chi tiết khách hàng, cập nhật thông tin cá nhân (họ tên, SĐT, địa chỉ) và kiểm tra mật khẩu cũ/mật khẩu mới sử dụng bcrypt.
+     * Cập nhật Router: backend/src/routes/customerPetsRoutes.js định nghĩa 3 path `GET /profile`, `PUT /profile`, và `PUT /password`.
+     * Trên Frontend:
+       + Bổ sung API calls trong frontend/src/services/customerPets.ts.
+       + Tạo mới component CustomerSettingsTab (frontend/src/components/customer/settings/CustomerSettingsTab.tsx) cho phép khách hàng sửa họ tên, SĐT, địa chỉ và đổi mật khẩu an toàn kèm hiển thị thông báo thành công/thất bại trực quan.
+       + Tích hợp tab "Cài đặt" mới vào thanh menu điều hướng trong CustomerPortal (frontend/src/features/customer/pages/CustomerPortal.tsx).
+
+7. Vấn đề #8: Staff Settings chỉ hiện thông tin cơ bản
+   - Giải pháp:
+     * Trên Backend (backend/src/services/staff/staffPortalService.js): Thêm hàm `updateStaffProfile` và `updateStaffPassword` tương tự như customer để cập nhật thông tin nhân viên và kiểm tra, đổi mật khẩu.
+     * Cập nhật Router: backend/src/routes/staffRoutes.js định nghĩa 2 path `PUT /profile` và `PUT /password`.
+     * Trên Frontend:
+       + Bổ sung API calls trong frontend/src/features/staff/services/staffAppointments.ts.
+       + Thiết kế lại component StaffSettingsTab (frontend/src/components/staff/StaffShell.tsx) thành dạng form chỉnh sửa thông tin cá nhân và đổi mật khẩu thay vì chỉ hiển thị text tĩnh như trước.
+       + Cập nhật StaffPortal (frontend/src/features/staff/pages/StaffPortal.tsx) để lắng nghe sự kiện cập nhật profile thành công và đồng bộ dữ liệu ngay lập tức lên giao diện (ví dụ initials của avatar).
+
+--------------------------------------------------------------------------------
+BATCH 4 - BOARDING (ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+8. Vấn đề #4: Khách hàng đặt lưu trú thiếu phần chọn phòng/chuồng
+   - Giải pháp:
+     * Trên Backend (backend/src/services/customer/customerAppointmentsService.js): Bổ sung hàm `listAvailableCages` để lọc ra danh sách phòng/chuồng trống (không bị trùng lịch với các booking lưu trú đang hoạt động khác).
+     * Khi tạo lịch hẹn lưu trú (BOARDING), kiểm tra tính khả dụng của chuồng và tự động tạo một bản ghi tương ứng trong bảng `boarding` với trạng thái ban đầu là `BOOKED`.
+     * Trên Frontend (frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx):
+       + Tích hợp bộ chọn ngày trả phòng (check-out date picker) và danh sách chuồng trống (cages dropdown) vào Bước 1 của modal đặt lịch khi người dùng chọn dịch vụ "Lưu trú".
+       + Ở Bước 2 (xem lại), hiển thị đầy đủ thông tin ngày nhận phòng, ngày trả phòng và mã chuồng đã chọn trước khi bấm xác nhận.
+
+9. Vấn đề #5: Bảng điều khiển admin hiển thị sai trạng thái phòng lưu trú
+   - Giải pháp:
+     * Trên Backend (backend/src/services/adminService.js): Mở rộng bộ lọc `activeBoardingByCage` trong hàm `getAdminDashboard` để kiểm tra trạng thái lưu trú hiện tại bao gồm cả `STAYING` (đang lưu trú thực tế) cùng với `BOOKED` và `CHECKED_IN`, đảm bảo hiển thị đúng số lượng phòng đang bận/trống khớp với thực tế.
+
+--------------------------------------------------------------------------------
+BATCH 5 - PAYMENT FLOW & ADMIN SETTINGS (ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+10. Vấn đề #6: Flow thanh toán - Hóa đơn chưa được tạo tự động sau khi hoàn thành khám
+    - Giải pháp:
+      * Trên Backend (backend/src/routes/doctorAppointmentRoutes.js): Viết hàm `createDraftInvoiceForAppointment` tự động tổng hợp tất cả các chi phí của ca khám:
+        + Dịch vụ chính đã đặt (phí dịch vụ).
+        + Đơn thuốc kê kèm theo (tính theo đơn giá thuốc mặc định 50,000 ₫).
+        + Tiêm chủng vắc-xin đi kèm (đơn giá mặc định 150,000 ₫).
+        + Dịch vụ lưu trú (tính theo số đêm ở thực tế nhân với đơn giá mặc định 200,000 ₫).
+      * Tự động gọi hàm tạo hóa đơn nháp (status = DRAFT, payment_status = UNPAID) ngay sau khi bác sĩ kết thúc khám trong cả hai endpoint `/exam-complete` và `/complete`.
+      * Staff khi mở mục thanh toán sẽ nhìn thấy hóa đơn nháp này ở dạng pending và có thể tiến hành thu tiền (markPaymentPaid) để chuyển trạng thái sang PAID.
+
+11. Vấn đề #7: Admin Settings chưa hoạt động/lưu trữ thực tế
+    - Giải pháp:
+      * Trên Backend (backend/src/services/adminService.js): Cập nhật hàm `updateAdminSettings` để đồng bộ hóa tài khoản admin:
+        + Nếu email thay đổi, kiểm tra tính duy nhất và cập nhật vào trường `email` của bảng `users`.
+        + Nếu có mật khẩu mới, kiểm tra mật khẩu hiện tại bằng `bcrypt` và cập nhật trường `password_hash` của bảng `users`, đồng thời tăng `auth_version` để làm mới các phiên đăng nhập.
+        + Xóa các trường mật khẩu rõ khỏi cấu hình JSON để tăng tính bảo mật trước khi lưu vào bảng `app_settings` dưới khóa `admin.settings`.
+      * Trên Backend (backend/src/services/authService.js): Sửa đổi hàm `getUserAuthContext` cho vai trò `admin` để lấy trực tiếp tên hiển thị (`fullName`) và số điện thoại từ cài đặt `admin.settings` trong DB thay vì trả về mặc định cứng "Quản trị viên".
+      * Trên Frontend (frontend/src/components/admin/AdminSettingsView.tsx): Cập nhật giao diện Tab Tài khoản, bổ sung thêm các trường nhập liệu mật khẩu mới và xác nhận mật khẩu mới, liên kết dữ liệu đầy đủ qua state và tự động xóa trắng trường mật khẩu sau khi lưu thành công. Kiểu dữ liệu `AdminSettings` cũng được cập nhật.
+
+--------------------------------------------------------------------------------
+BATCH 6 - CUSTOMER REVIEW SYSTEM (ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+12. Vấn đề #10: Khách hàng chưa có tính năng đánh giá dịch vụ
+    - Giải pháp:
+      * Trên Backend (backend/src/routes/customerPetsRoutes.js):
+        + Tạo API `POST /api/customer/reviews` nhận dữ liệu đánh giá (rating từ 1-5 sao, feedback) từ khách hàng, tự động xác minh quyền sở hữu lịch hẹn và ánh xạ đối tượng đánh giá tương ứng (bác sĩ/nhân viên/trung tâm).
+        + Tạo API `GET /api/customer/reviews/:appointmentId` để tải thông tin đánh giá cũ của lịch hẹn.
+      * Trên Frontend (frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx):
+        + Thêm state và logic kiểm tra đánh giá cũ khi mở chi tiết lịch hẹn đã hoàn thành.
+        + Nếu chưa đánh giá, hiển thị nút "Viết đánh giá". Nếu đã đánh giá, hiển thị trực quan số sao, lời nhắn, kèm theo phản hồi của trung tâm nếu có.
+        + Tạo mới component `ReviewModal` hỗ trợ hover/click chọn sao tương tác mượt mà và gửi nhận xét một cách dễ dàng, nâng cao trải nghiệm người dùng.
+
+--------------------------------------------------------------------------------
+BATCH 7 - MEDICAL RECORDS & PROFILE CRASH FIXES (ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+13. Vấn đề #2 (Bổ sung): Xem chi tiết hồ sơ bệnh án khi đã khám xong
+    - Giải pháp:
+      * Trên Backend (backend/src/routes/doctorProfileRoutes.js): Thêm API GET `/api/doctor/records/appointment/:appointmentId` lấy hồ sơ bệnh án theo appointmentId.
+      * Trên Frontend (frontend/src/features/doctor/services/doctorData.ts): Thêm client method `getRecordByAppointmentId`.
+      * Trên Frontend (frontend/src/components/doctor/DoctorScheduleTable.tsx): Thêm nút "Xem bệnh án" cho ca đã hoàn thành.
+      * Trên Frontend (frontend/src/features/doctor/pages/DoctorPortal.tsx): Fetch hồ sơ bệnh án của ca khám khi click "Xem bệnh án" và hiển thị qua component `DoctorRecordDetail` thay vì form khám trống.
+
+14. Vấn đề #12 (Bổ sung): Trắng màn hình khi khách hàng/nhân viên lưu thay đổi thông tin cá nhân
+    - Giải pháp:
+      * Trên Backend: Đồng bộ hóa cấu trúc dữ liệu trả về của `updateCustomerProfile` (trong customerPetsService.js) và `updateStaffProfile` (trong staffPortalService.js) để sử dụng camelCase (như fullName, phone, address, email) đồng bộ với API GET và mong đợi của Frontend.
+      * Trên Frontend (frontend/src/features/customer/pages/CustomerPortal.tsx): Thêm safe-guard `(currentUserName || "").split(...)` đề phòng trường hợp tên người dùng rỗng hoặc chưa tải kịp.
+
+--------------------------------------------------------------------------------
+BATCH 8 - BREEDS EXPANSION (ĐÃ XỬ LÝ)
+--------------------------------------------------------------------------------
+
+15. Yêu cầu: Bổ sung thêm nhiều giống chó, giống mèo và giống thỏ vào danh sách chọn giống của thú cưng
+    - Giải pháp:
+      * Cập nhật file database seed (backend/prisma/seed.js): Bổ sung các giống chó/mèo/thỏ phổ biến mới, sử dụng câu lệnh `upsert` để tránh trùng lặp bản ghi:
+        + Giống chó: Golden Retriever, Husky, Pug, Shiba Inu, Bulldog.
+        + Giống mèo: Maine Coon, Ragdoll, Sphynx, Siamese (Mèo Xiêm), Scottish Fold, Munchkin.
+        + Giống thỏ: Netherland Dwarf.
+      * Thực thi seeding trực tiếp vào cơ sở dữ liệu Supabase thông qua công cụ API để đồng bộ dữ liệu giống loài hoàn chỉnh.
+      * Do giao diện Frontend (như PetFormModal.tsx) đã hỗ trợ lọc tự động theo giống loài được tải động từ API, danh sách giống loài mới bổ sung ở database sẽ hiển thị chính xác trên giao diện khách hàng khi thêm/sửa thú cưng.
