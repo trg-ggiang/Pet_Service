@@ -1,0 +1,3102 @@
+---
+title: "Session Log"
+description: "Ongoing development session notes."
+---
+
+## 2026-06-09 - Pet Breeds Expansion (Giống thú cưng)
+
+### Goal
+
+Add more dog, cat, and rabbit breeds for selection under the customer pet profile.
+
+### Work Completed
+
+- **Database Seed Modification**:
+  - Modified `backend/prisma/seed.js` to define and register the new breeds:
+    - **Chó**: Golden Retriever, Husky, Pug, Shiba Inu, Bulldog.
+    - **Mèo**: Maine Coon, Ragdoll, Sphynx, Siamese (Mèo Xiêm), Scottish Fold, Munchkin.
+    - **Thỏ**: Netherland Dwarf.
+  - Removed the `@prisma/adapter-pg` requirement from `seed.js` for standalone PrismaClient setups.
+- **Dependency Resolution**:
+  - Installed `pg` and `@prisma/adapter-pg` in the `backend/` directory to resolve the missing Prisma 7 driver adapter package.
+- **Supabase Database Seeding**:
+  - Seeded the new breeds directly into the Supabase database using the Supabase client API, bypassing the local IPv6 connection limitations.
+- **Documentation**:
+  - Updated `FIXES_LOG.txt` to include details of the breeds expansion (Batch 8).
+
+### Files Changed
+
+- `backend/prisma/seed.js`
+- `backend/package.json`
+- `backend/package-lock.json`
+- `FIXES_LOG.txt`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Querying database shows the breed count increased to 17, and the new breeds are successfully inserted and linked to their respective animal species.
+
+### Result
+
+- Seeding completed successfully, database is fully populated, and no backend syntax errors.
+
+### Suggested Commit Message
+
+```text
+feat: add rich selection of dog, cat, and rabbit breeds to the database
+```
+
+## 2026-06-09 - Admin Settings Persistence and Password Update (Issue #7)
+
+### Goal
+
+Fix Issue #7: Admin Settings do not save changes to the database when edited.
+
+### Work Completed
+
+- **Frontend API & UI Validation**:
+  - Updated the `AdminSettings` type in `frontend/src/features/admin/services/admin.ts` to include optional `oldPassword` and `newPassword` fields.
+  - Modified the "Account" tab in `AdminSettingsView.tsx` by adding fields for current password, new password, and confirm password, along with validation checks and clear feedback.
+- **Backend Sync**:
+  - Upgraded `updateAdminSettings` in `backend/src/services/adminService.js` to synchronize email changes and hashed password changes directly to the `users` database table, incrementing `auth_version` to refresh login sessions.
+  - Cleaned plaintext credential fields from the input payload before storing the configuration in the `app_settings` table.
+- **Dynamic Profile Resolution**:
+  - Updated `getUserAuthContext` in `backend/src/services/authService.js` to resolve the admin's name and phone dynamically from `admin.settings` config in `app_settings` instead of falling back to the static "Quản trị viên" string.
+- **Detailed Medical Record Navigation**:
+  - Updated `DoctorRecordsHistory` inside `DoctorRecordsView.tsx` to pass `onSelectRecord` prop and trigger it when clicking individual checkup record cards.
+  - Integrated conditional rendering for `DoctorRecordDetail` inside `DoctorRecordsPage.tsx` using `selectedRecord` state, allowing doctors to view complete checkup clinical details and easily return to the list.
+- **Log Verification**:
+  - Documented the changes in `FIXES_LOG.txt` and verified the complete flow via automated browser testing.
+
+### Files Changed
+
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/AdminSettingsView.tsx`
+- `backend/src/services/adminService.js`
+- `backend/src/services/authService.js`
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `FIXES_LOG.txt`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Checked backend syntax with `node --check`.
+- Compiled frontend successfully with `npm --prefix frontend run build`.
+
+### Result
+
+- Both checks and browser verification passed.
+
+### Suggested Commit Message
+
+```text
+fix(admin): resolve admin settings database persistence and password update
+```
+
+## 2026-06-09 - Batches 4, 5, and 6 Implementation (Boarding, Billing, and Customer Reviews)
+
+### Goal
+
+Implement boarding date and cage selection, admin dashboard room status tracking, automatic invoicing upon exam completion, and a customer review modal with star rating feedback.
+
+### Work Completed
+
+- **Customer Boarding Selection**: Integrated check-out date picker and available cages dropdown into Step 1 of `NewAppointmentModal` in `CustomerAppointmentModals.tsx`, and updated Step 2 review details.
+- **Admin Boarding Check**: Updated `activeBoardingByCage` filtering in `adminService.js` to correctly capture `STAYING` status for room occupancy metrics.
+- **Payment flow**: Implemented `createDraftInvoiceForAppointment` inside `doctorAppointmentRoutes.js` to automatically generate invoice drafts with billing items (main service, medicines, vaccines, and nights of boarding) on `/exam-complete` or `/complete`.
+- **Customer Reviews**: Registered review API endpoints `POST /api/customer/reviews` and `GET /api/customer/reviews/:appointmentId` in `customerPetsRoutes.js` and built the frontend `ReviewModal` inside `CustomerAppointmentModals.tsx` with star hover effects and comments.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `FIXES_LOG.txt`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Checked backend syntax using `node --check`.
+- Built frontend using `npm --prefix frontend run build`.
+
+### Result
+
+- All checks passed successfully.
+
+### Suggested Commit Message
+
+```text
+feat: implement boarding cage selection, auto-invoicing, and customer reviews
+```
+
+## 2026-06-09 - Batch 3 Profile Management Implementation
+
+### Goal
+
+Implement interactive Profile Management (updating profile details and changing passwords) for both Customer and Staff roles.
+
+### Work Completed
+
+- **Backend Customer Profile Services**:
+  - Implemented `getCustomerProfile`, `updateCustomerProfile`, and `updateCustomerPassword` services inside `backend/src/services/customerPetsService.js`.
+  - Registered `GET /api/customer/profile`, `PUT /api/customer/profile`, and `PUT /api/customer/password` endpoints in `backend/src/routes/customerPetsRoutes.js`.
+- **Backend Staff Profile Services**:
+  - Implemented `updateStaffProfile` and `updateStaffPassword` services inside `backend/src/services/staff/staffPortalService.js`.
+  - Registered `PUT /api/staff/profile` and `PUT /api/staff/password` endpoints in `backend/src/routes/staffRoutes.js`.
+- **Frontend API Integration**:
+  - Added `fetchCustomerProfile`, `updateCustomerProfile`, and `updateCustomerPassword` in `frontend/src/services/customerPets.ts`.
+  - Added `updateProfile` and `updatePassword` methods to `staffAppointmentsService` in `frontend/src/features/staff/services/staffAppointments.ts`.
+- **Frontend UI & Forms**:
+  - Created a new `CustomerSettingsTab.tsx` component with interactive forms for profile editing (fullName, phone, address) and password changing.
+  - Wired the tab into the `CustomerPortal.tsx` tab switcher, added a "Cài đặt" nav item, and made sure user profile name updates reactively in the header.
+  - Restructured `StaffSettingsTab` in `frontend/src/components/staff/StaffShell.tsx` into interactive forms for profile details and password changing.
+  - Updated `StaffPortal.tsx` to handle the profile change callback and instantly refresh avatar initials.
+- **Verification Log**:
+  - Documented all implemented fixes for Batch 3 in the root `FIXES_LOG.txt` file.
+
+### Files Changed
+
+- `backend/src/services/customerPetsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `backend/src/routes/staffRoutes.js`
+- `frontend/src/services/customerPets.ts`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `frontend/src/components/customer/settings/CustomerSettingsTab.tsx`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/components/staff/StaffShell.tsx`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `FIXES_LOG.txt`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Ran `node --check` syntax check on all modified backend code files.
+- Ran `npm --prefix frontend run build` to verify type-safe compilation and asset generation.
+
+### Result
+
+- Both backend syntax check and frontend production build completed successfully with zero compile warnings or errors.
+
+### Suggested Commit Message
+
+```text
+feat: implement customer and staff profile management and password change
+```
+
+## 2026-06-04 - Admin Vietnamese Text Fix Step 1
+
+### Goal
+
+Fix mojibake text in the admin role before continuing backend-driven users and staff sessions.
+
+### Work Completed
+
+- Re-encoded corrupted Vietnamese strings in admin frontend pages, components, and service types.
+- Re-encoded corrupted Vietnamese strings in admin backend routes and service response labels.
+- Fixed the remaining `durationUnit` type text in `AdminServicesView`.
+- Verified no obvious mojibake markers remain in the admin frontend/backend scope.
+
+### Files Changed
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/AdminServicesView.tsx`
+- Admin frontend files under `frontend/src/features/admin/` and `frontend/src/components/admin/` that contained mojibake lines
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg "Ã|Ä|Æ|Â|áº|á»|â€|â€¢|â†|ðŸ" frontend/src/features/admin frontend/src/components/admin frontend/src/features/admin/services backend/src/routes/adminRoutes.js backend/src/services/adminService.js -n`
+- `node --check backend/src/routes/adminRoutes.js`
+- `node --check backend/src/services/adminService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: restore admin vietnamese text
+```
+
+## 2026-06-04 - Admin Users Backend Filtering Step 2
+
+### Goal
+
+Move admin user-management search, tab data filtering, and KPI summary out of `AdminUsersView` and into the backend admin users API.
+
+### Work Completed
+
+- Added `role` and `search` query handling to `GET /api/admin/users`.
+- Added backend user search/filter helpers and user-management summary totals in `adminService`.
+- Extended admin frontend API types with `AdminUsersSummary` and query params for `listUsers`.
+- Updated `AdminUsersView` to reload users by active tab/search and render backend-filtered rows.
+- Removed table-level search filtering and local KPI counting from `AdminUsersView`.
+- Updated backend/API docs for the admin users payload.
+
+### Files Changed
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/AdminUsersView.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: backend-drive admin user filters
+```
+
+## 2026-06-04 - Customer Vietnamese Text Fix
+
+### Goal
+
+Fix mojibake text in the customer portal after the component split.
+
+### Work Completed
+
+- Replaced corrupted Vietnamese display text in customer appointment, history, and notification tab components.
+- Fixed customer portal navigation, header, logout confirmation, cancel confirmation, and customer-facing error messages.
+- Fixed corrupted Vietnamese display text in the customer pet profiles module.
+- Rebuilt customer portal UI config labels for appointment statuses, service types, notification labels, and relative notification times.
+- Verified no obvious mojibake markers remain in customer frontend files.
+
+### Files Changed
+
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentsTab.tsx`
+- `frontend/src/components/customer/history/CustomerHistoryTab.tsx`
+- `frontend/src/components/customer/notifications/CustomerNotificationsTab.tsx`
+- `frontend/src/features/customer/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `rg "Ã|Ä|Æ|ðŸ|â‚¬|â€|Â" frontend/src/features/customer frontend/src/components/customer frontend/src/utils/customer frontend/src/types/customer -n`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: restore customer portal vietnamese text
+```
+
+## 2026-06-04 - Customer Portal Component Split Session 4
+
+### Goal
+
+Split the large customer portal page into smaller domain components while preserving the backend-backed customer data flow.
+
+### Work Completed
+
+- Added `CustomerAppointmentsTab` for appointment filters, rows, status counts, and pagination rendering.
+- Added `CustomerHistoryTab` for service-history type tabs, backend summary counts, and history row rendering.
+- Added `CustomerNotificationsTab` for notification list rendering and notification action callbacks.
+- Added a shared `CustomerPortalNotification` type and reused it across customer portal/home/notifications components.
+- Reduced `CustomerPortal.tsx` from 1052 lines to 621 lines by keeping it focused on state, API loading, navigation, header, and modals.
+- Updated frontend docs to describe the customer portal component ownership pattern.
+
+### Files Changed
+
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentsTab.tsx`
+- `frontend/src/components/customer/history/CustomerHistoryTab.tsx`
+- `frontend/src/components/customer/notifications/CustomerNotificationsTab.tsx`
+- `frontend/src/components/customer/home/CustomerHomeTab.tsx`
+- `frontend/src/types/customer/portal.ts`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: split customer portal tab components
+```
+
+## 2026-06-04 - Customer Service History API Session 3
+
+### Goal
+
+Move customer service-history type filtering and counts from frontend-only logic to backend-backed APIs.
+
+### Work Completed
+
+- Added a backend service-history view payload for `GET /api/customer/service-history`.
+- Added query filtering by `type` for `medical`, `vaccine`, `grooming`, and `boarding`.
+- Returned service-history `summary` with total count, filtered count, and per-type counts.
+- Extended frontend service-history API/types for the new payload contract.
+- Updated `CustomerPortal` to render backend-filtered history rows and summary counts instead of filtering records locally.
+- Updated backend and API docs for the customer service-history list payload.
+
+### Files Changed
+
+- `backend/src/services/customer/customerServiceHistoryService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `frontend/src/types/customer/serviceHistory.ts`
+- `frontend/src/services/customer/customerServiceHistoryApi.ts`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerServiceHistoryService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: backend-drive customer service history filters
+```
+
+## 2026-06-03 - Customer Appointments API Session 2
+
+### Goal
+
+Move customer appointment tab filtering, status counts, and pagination from frontend-only logic to backend-backed APIs.
+
+### Work Completed
+
+- Added a backend appointment view payload for `GET /api/customer/appointments`.
+- Added query filters for `status`, `pet`, `serviceType`, `page`, and `pageSize`.
+- Returned appointment `summary` with total, filtered count, status counts, pet options, and service type options.
+- Returned backend pagination metadata with page, page size, page count, total, from, and to.
+- Extended frontend appointment API/types for the new payload contract.
+- Updated `CustomerPortal` to render the appointments tab from backend-filtered/paginated rows while keeping a separate general appointment list for home/modals.
+- Rewired create, reschedule, and cancel flows to reload appointment data from backend instead of only mutating local appointment state.
+- Updated backend and API docs for the customer appointment list payload.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: backend-drive customer appointment filters
+```
+
+## 2026-06-03 - Customer Notifications API Session 1
+
+### Goal
+
+Move customer notification unread summary and dismiss actions from frontend-local state to backend-backed APIs.
+
+### Work Completed
+
+- Updated `GET /api/customer/notifications` to return `notifications` plus `summary.total` and `summary.unreadCount`.
+- Added `DELETE /api/customer/notifications/:notificationId` to dismiss one authenticated-user notification.
+- Added a frontend notification payload type and `dismissCustomerNotification` API client.
+- Updated `CustomerPortal` so unread count comes from backend summary.
+- Rewired mark-read, mark-all-read, and dismiss actions to call backend APIs and reload notifications from the database instead of mutating local notification state.
+- Updated backend and API docs for the notification payload and dismiss endpoint.
+
+### Files Changed
+
+- `backend/src/services/customerNotificationsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `frontend/src/services/customerNotifications.ts`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customerNotificationsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: backend-drive customer notifications
+```
+
+## 2026-06-03 - Admin Cleanup Session 4
+
+### Goal
+
+Clean up leftover admin frontend dead code after the appointment, service, user, and staff API sessions.
+
+### Work Completed
+
+- Removed the remaining fake `NV-${Date.now()}` staff ID generation from `AdminStaffView`.
+- Changed the staff add/edit modal save path so it no longer constructs a fake staff record before showing the backend-API-needed message.
+- Guarded staff KPI average calculations so empty staff data renders `0`/`0.0` instead of `NaN`.
+- Removed unused lucide icon imports from admin appointment, user, and staff components.
+- Verified the split admin page wrappers remain thin route entrypoints.
+
+### Files Changed
+
+- `frontend/src/components/admin/AdminAppointmentsView.tsx`
+- `frontend/src/components/admin/AdminUsersView.tsx`
+- `frontend/src/components/admin/AdminStaffView.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Remaining admin-local UI state is limited to view controls, form drafts, and backend-deferred workflows such as appointment create/edit and staff profile create/edit.
+
+### Suggested Commit Message
+
+```text
+chore: clean up admin frontend leftovers
+```
+
+## 2026-06-03 - Admin Users Staff Lock API Session 3
+
+### Goal
+
+Move admin user and staff account lock/unlock actions from frontend-only state to backend-backed APIs.
+
+### Work Completed
+
+- Added backend user-profile ID resolution for customer, doctor, staff, and staff-management display IDs.
+- Added `PATCH /api/admin/users/:role/:id/lock` to persist account lock/unlock from `UsersPage`.
+- Added `PATCH /api/admin/staff/:id/lock` to persist account lock/unlock from `StaffPage`.
+- Updated the admin API client with `updateUserLock` and `updateStaffLock`.
+- Removed local-only lock state in `AdminUsersView` customer/staff tables.
+- Rewired user and staff lock buttons/drawers to call backend APIs and reload data from the database.
+- Stopped fake add/edit state updates in `AdminStaffView`; the UI now reports that a dedicated backend profile API is needed.
+- Updated backend and API docs for the new account lock endpoints.
+
+### Files Changed
+
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/AdminUsersView.tsx`
+- `frontend/src/components/admin/AdminStaffView.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Staff add/edit profile persistence remains a follow-up because the current staff UI includes fields that are not stored by the existing `staffs`, `doctors`, and `users` tables.
+
+### Suggested Commit Message
+
+```text
+feat: persist admin user lock actions
+```
+
+## 2026-06-03 - Admin Services API Session 2
+
+### Goal
+
+Move the admin service list filtering, summary, create/update, and status toggle flows from frontend-only state to backend-backed APIs.
+
+### Work Completed
+
+- Extended `GET /api/admin/services` to accept `category`, `status`, and `search` query params.
+- Added backend service summary data for total counts, active counts, bookings, revenue, top service, and category stats.
+- Added `POST /api/admin/services`, `PATCH /api/admin/services/:id`, and `PATCH /api/admin/services/:id/status`.
+- Updated `AdminServicesView` to render API-filtered rows and API summary data instead of filtering and calculating KPI data locally.
+- Rewired service create, edit, and status toggle actions to call backend APIs, then reload the current filtered view.
+- Updated API and backend docs for the new admin service endpoints.
+
+### Files Changed
+
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/AdminServicesView.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Service `duration`, `variants`, and `tag` remain non-persistent UI fields because the current `services` table only stores `name`, `type`, `price`, `description`, and `is_active`.
+
+### Suggested Commit Message
+
+```text
+feat: backend-drive admin service management
+```
+
+## 2026-06-03 - Admin Appointments API Session 1
+
+### Goal
+
+Move the admin appointment list filtering, summary, and status update flow from frontend-only state to backend-backed APIs.
+
+### Work Completed
+
+- Extended `GET /api/admin/appointments` to accept `status` and `search` query params.
+- Added backend appointment summary data for tab counts, filtered count, total amount, service options, and staff options.
+- Added `PATCH /api/admin/appointments/:id/status` to persist admin status changes to the `appointments` table.
+- Updated the admin appointments component to render API-filtered rows and API summary data instead of computing them locally.
+- Removed the local-only create/edit save behavior from the admin appointment modal; it now reports that a dedicated backend create/edit API is still needed.
+- Updated backend and API docs for the new admin appointment status endpoint and list payload.
+
+### Files Changed
+
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/AdminAppointmentsView.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Appointment create/edit still needs a separate backend API session because the current modal does not have ID-backed customer, pet, service, and staff selections.
+
+### Suggested Commit Message
+
+```text
+feat: backend-drive admin appointment status flow
+```
+
+## 2026-06-03 - Admin Component Split Follow-up
+
+### Goal
+
+Move the remaining large admin role screens out of feature page files and keep them wired to the existing admin API client.
+
+### Work Completed
+
+- Added admin view components for appointments, users, services, and staff under `frontend/src/components/admin/`.
+- Reduced the corresponding `frontend/src/features/admin/pages/` files to route entry wrappers.
+- Kept the existing admin GET API wiring through `frontend/src/features/admin/services/admin.ts`.
+- Left local-only actions as local UI behavior because the backend currently exposes only read endpoints for these admin screens.
+- Updated frontend docs to reflect the broader admin component split.
+
+### Files Changed
+
+- `frontend/src/components/admin/AdminAppointmentsView.tsx`
+- `frontend/src/components/admin/AdminUsersView.tsx`
+- `frontend/src/components/admin/AdminServicesView.tsx`
+- `frontend/src/components/admin/AdminStaffView.tsx`
+- `frontend/src/features/admin/pages/AppointmentsPage.tsx`
+- `frontend/src/features/admin/pages/UsersPage.tsx`
+- `frontend/src/features/admin/pages/ServicesPage.tsx`
+- `frontend/src/features/admin/pages/StaffPage.tsx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: split remaining admin pages into components
+```
+
+## 2026-06-03 - Customer Pet Edit Blank Screen Fix
+
+### Goal
+
+Fix the customer pet profile edit action causing the frontend to render a blank screen.
+
+### Work Completed
+
+- Added the missing date display formatter in `PetFormModal` so edit mode no longer calls an undefined `formatDate` function when a pet has a birthday.
+- Kept the existing date parsing and form payload behavior unchanged.
+
+### Files Changed
+
+- `frontend/src/components/customer/pets/PetFormModal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: prevent blank screen when editing pet profile
+```
+
+## 2026-05-27 - AI Docs And Codex Setup
+
+### Goal
+
+Set up project documentation and AI coding configuration for Codex, Mintlify, and Understand Anything.
+
+### Work Completed
+
+- Added root onboarding docs and AI agent rules.
+- Added project-local Codex config and Codex-specific instructions.
+- Added Mintlify pages for quickstart, architecture, database, API, frontend, backend, AI workflow, developer setup, Git workflow, and reusable prompts.
+- Added root `.env.example` and scrubbed example env files so they do not contain project URLs, publishable keys, or secrets.
+- Updated `.gitignore` for Codex auth/session files, coverage, and safe VS Code exceptions.
+
+### Files Changed
+
+- `README.md`
+- `AGENTS.md`
+- `.codex/config.toml`
+- `.codex/AGENTS.md`
+- `.env.example`
+- `.gitignore`
+- `backend/.env.example`
+- `frontend/.env.local.example`
+- `docs/docs.json`
+- `docs/*.mdx`
+- `docs/dev/*.mdx`
+
+### Test
+
+- `npm run docs:check`
+
+### Result
+
+Pending final validation in this session.
+
+### Open Issues
+
+- Team must confirm production-safe migration and seed commands.
+- Team must fill real local env values outside Git.
+
+### Next Work
+
+- Add request/response examples to API docs once backend contracts stabilize.
+- Keep architecture docs updated after Understand Anything analysis.
+
+### Suggested Commit Message
+
+```text
+docs: setup codex and mintlify workflow
+```
+
+## 2026-05-27 - Frontend Structure Refactor
+
+### Goal
+
+Refactor the frontend source tree into clearer responsibility-based folders without changing existing behavior or UI.
+
+### Work Completed
+
+- Moved page and portal screens from `src/app/components` to `src/pages`.
+- Moved UI primitives to `src/components/ui`.
+- Moved Figma image fallback component to `src/components/figma`.
+- Moved API clients to `src/services`.
+- Moved shared types to `src/types`.
+- Moved reusable helpers to `src/utils`.
+- Moved responsive hook to `src/hooks`.
+- Added placeholder folders for `src/layouts`, `src/constants`, and `src/contexts`.
+- Updated imports after file moves.
+
+### Files Changed
+
+- `frontend/src/app/App.tsx`
+- `frontend/src/pages/*`
+- `frontend/src/components/*`
+- `frontend/src/services/*`
+- `frontend/src/types/*`
+- `frontend/src/utils/*`
+- `frontend/src/hooks/*`
+- `docs/frontend.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `npm --prefix frontend run lint`
+
+### Result
+
+Both checks passed. Vite reported a large chunk warning after build, but no build failure.
+
+### Open Issues
+
+- `frontend/src/app/App.tsx` is still large and should be split into smaller admin layout/dashboard components in a later scoped refactor.
+
+### Next Work
+
+- Extract admin dashboard data/constants and layout components from `App.tsx`.
+- Add code splitting for large portal/page chunks if bundle size becomes a performance issue.
+
+### Suggested Commit Message
+
+```text
+refactor: reorganize frontend source structure
+```
+
+## 2026-05-27 - Customer Dashboard Layout Fix
+
+### Goal
+
+Adjust the customer home dashboard layout so the quick action cards and upcoming appointments section fit the requested visual structure.
+
+### Work Completed
+
+- Stacked the booking, service history, and clinic finder action cards beside the welcome card on desktop.
+- Converted the booking action card to the same compact horizontal style as the other action cards.
+- Increased the upcoming appointments container height so appointment cards stay inside the parent panel.
+- Matched the bottom edge of upcoming appointments with the unread notification panel in the desktop grid.
+- Moved the new appointment button onto the appointment status filter row.
+- Restyled the pet and service filters as compact selection cards with clearer typography and icons.
+- Restored pet profile image frames and avatars to their original compact presentation.
+- Extended the home pet summary card and upcoming appointments panel so child appointment cards fit within the parent container.
+- Replaced appointment pet/service native select menus with custom dropdown option lists while keeping the selector bars full width.
+- Expanded the service history type filter bar to match the width of the history list cards.
+- Expanded the appointment status filter bar so it fills the space before the new appointment button.
+
+### Files Changed
+
+- `frontend/src/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Open Issues
+
+- Browser plugin verification was unavailable in this session, so final validation used build output and source layout review.
+
+### Suggested Commit Message
+
+```text
+fix: adjust customer dashboard layout
+```
+
+## 2026-05-27 - Understand Graph Refresh
+
+### Goal
+
+Generate an Understand Anything knowledge graph for the current repository state.
+
+### Work Completed
+
+- Ran deterministic Understand scan, import-map extraction, batch computation, and structure extraction.
+- Generated `.understand-anything/knowledge-graph.json`.
+- Generated `.understand-anything/fingerprints.json` and `.understand-anything/meta.json`.
+- Validated that graph edges, layers, and tour references do not point to missing nodes.
+
+### Files Changed
+
+- `.understand-anything/knowledge-graph.json`
+- `.understand-anything/fingerprints.json`
+- `.understand-anything/meta.json`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Deterministic graph validation: 609 nodes, 558 edges, 4 layers, 4 tour steps, 0 dangling references.
+
+### Result
+
+Graph generated in deterministic structure mode without LLM subagent descriptions.
+
+## 2026-05-27 - Customer Invoice PDF Export
+
+### Goal
+
+Make customer invoice downloads return a real PDF from the backend.
+
+### Work Completed
+
+- Added backend PDF generation with `pdfkit`.
+- Added authenticated customer route `GET /api/customer/invoices/:invoiceId/pdf`.
+- Added latest-invoice fallback route `GET /api/customer/invoices/latest/pdf` for the current mock customer history modal.
+- Added match route `GET /api/customer/invoices/match/pdf` so history rows download the invoice matching their pet, service type, service name, and date.
+- Updated customer service history to build rows from backend pet detail invoices instead of static mock history data.
+- Added invoice items to the pet detail response so the frontend can show the real billed service and use the real invoice id for downloads.
+- Validated invoice ownership through the invoice appointment pet customer before exporting.
+- Added PDF download actions to the customer pet invoice list and customer history modal.
+- Documented the new API endpoint.
+
+### Files Changed
+
+- `backend/package.json`
+- `backend/package-lock.json`
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/invoicePdfService.js`
+- `frontend/src/services/customerPets.ts`
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+
+### Test
+
+- `node --check backend/src/services/invoicePdfService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+
+### Result
+
+Backend route and frontend build checks passed. Frontend build still reports the existing large chunk warning.
+
+### Open Issues
+
+- Full authenticated PDF download was not exercised against a live Supabase database in this session.
+
+### Suggested Commit Message
+
+```text
+feat: export customer invoices as pdf
+```
+
+## 2026-05-27 - Add Pet Modal Input Enhancements
+
+### Goal
+
+Improve the add-pet profile modal so birthday and avatar inputs support both manual entry and picker-based selection.
+
+### Work Completed
+
+- Replaced the pet profile modal's native select controls with custom React dropdown menus.
+- Changed the birthday field to support manual typing plus calendar selection while preserving future-date validation.
+- Added local image file selection alongside the existing avatar URL input by converting the chosen file to a preview/data URL string.
+- Kept the existing create-pet payload shape unchanged.
+
+### Files Changed
+
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: improve add pet modal inputs
+```
+
+### Follow-up
+
+- Split birthday into separate year, month, and day inputs with per-field constraints.
+- Swapped the upload button text for an icon-only control.
+
+## 2026-05-27 - Pet Profile Edit And Required Fields
+
+### Goal
+
+Allow editing existing pet profiles and make the create flow require all fields.
+
+### Work Completed
+
+- Added a shared pet form modal that supports both create and edit modes.
+- Added a customer pet update endpoint in the backend and wired the frontend edit action to it.
+- Added an edit button to the pet detail modal so existing profiles can be edited from their detail view.
+- Made the create flow require all fields, including the health notes, and documented the "Không có" convention for empty allergy, disease, and special-note fields.
+
+### Files Changed
+
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/services/customerPets.ts`
+- `frontend/src/types/customerPets.ts`
+- `backend/src/services/customerPetsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: add pet profile edit flow
+```
+
+## 2026-05-27 - Customer Notifications By User
+
+### Goal
+
+Load customer notifications from the backend and scope them to the authenticated user.
+
+### Work Completed
+
+- Added customer notification service functions that query `notifications` by `user_id`.
+- Added customer notification routes for listing, marking one read, and marking all read.
+- Replaced customer portal mock notifications with data loaded from `/api/customer/notifications`.
+- Wired read-state actions to backend updates so customers only update their own notifications.
+
+### Files Changed
+
+- `backend/src/services/customerNotificationsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- `frontend/src/services/customerNotifications.ts`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customerNotificationsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Admin Pages Backend Data Refactor
+
+### Goal
+
+Stop admin pages from rendering Figma/sample arrays directly and load their primary data from backend APIs.
+
+### Work Completed
+
+- Added `backend/src/services/adminService.js` to map Supabase data for admin pages.
+- Added authenticated admin endpoints for dashboard totals, users, services, appointments, and staff.
+- Added `frontend/src/services/admin.ts` as the admin page API client.
+- Updated `UsersPage`, `ServicesPage`, `AppointmentsPage`, and `StaffPage` to initialize from backend data with loading and error states.
+- Kept page UI behavior intact while moving API access into service modules.
+- Updated frontend, backend, and API docs for the new admin data flow.
+
+### Files Changed
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/services/admin.ts`
+- `frontend/src/pages/UsersPage.tsx`
+- `frontend/src/pages/ServicesPage.tsx`
+- `frontend/src/pages/AppointmentsPage.tsx`
+- `frontend/src/pages/StaffPage.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Admin API responses still need runtime verification against the active Supabase data.
+
+### Suggested Commit Message
+
+```text
+feat: load admin pages from backend data
+```
+
+## 2026-06-01 - Frontend Role Folder Split
+
+### Goal
+
+Group frontend page implementations and role-scoped services by role while preserving existing router imports.
+
+### Work Completed
+
+- Moved admin, auth, customer, doctor, and staff page implementations under `frontend/src/features/<role>/pages`.
+- Moved admin, doctor, and staff role-scoped API clients under `frontend/src/features/<role>/services`.
+- Kept compatibility wrappers in `frontend/src/pages` and top-level role service files so existing app imports continue to work.
+- Updated moved customer page imports to account for the deeper feature folder path.
+- Updated frontend and architecture docs for the new role-based structure.
+
+### Files Changed
+
+- `frontend/src/features/admin/**`
+- `frontend/src/features/auth/**`
+- `frontend/src/features/customer/**`
+- `frontend/src/features/doctor/**`
+- `frontend/src/features/staff/**`
+- `frontend/src/pages/**`
+- `frontend/src/services/admin.ts`
+- `frontend/src/services/doctorAppointments.ts`
+- `frontend/src/services/doctorProfile.ts`
+- `frontend/src/services/staffAppointments.ts`
+- `docs/frontend.mdx`
+- `docs/architecture.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: group frontend pages by role
+```
+
+## 2026-06-01 - Doctor Pages Backend Data Refactor
+
+### Goal
+
+Stop doctor pages from rendering sample records/statistics directly and load doctor data from backend APIs.
+
+### Work Completed
+
+- Added doctor backend service functions for medical records and dashboard statistics.
+- Added `GET /api/doctor/records` and `GET /api/doctor/stats`.
+- Updated doctor appointment listing to use `requested_date` and `requested_time`.
+- Added `frontend/src/features/doctor/services/doctorData.ts`.
+- Updated doctor records and statistics pages to fetch backend data with loading/error states.
+- Removed hardcoded sample patient records, report arrays, pet-name image maps, vaccination rows, and visit-history rows from doctor role pages.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorStatsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctorService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning. Runtime API responses should be verified against the active Supabase data because nested medical visit, prescription, review, and appointment service rows depend on production data shape.
+
+### Suggested Commit Message
+
+```text
+feat: load doctor pages from backend data
+```
+
+## 2026-06-01 - Doctor Exam Screen Backend Context
+
+### Goal
+
+Move `DoctorExamScreen` pet detail, vaccination, and visit-history data out of the page file and load it from backend database APIs.
+
+### Work Completed
+
+- Added `GET /api/doctor/exam/:appointmentId` for current-doctor appointment exam context.
+- Added `doctorDataService.getExamContext()` and typed the response in the doctor feature service.
+- Updated `DoctorExamScreen` to fetch pet, owner, appointment, vaccination, visit-history, allergy, and initial form data from the backend with loading/error states.
+- Removed the remaining hardcoded visit-history placeholder from the exam screen.
+
+### Files Changed
+
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctorService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: load doctor exam screen from backend data
+```
+
+## 2026-06-01 - Remove Frontend Pages Wrappers
+
+### Goal
+
+Delete the large legacy `frontend/src/pages` wrapper folder and import page implementations directly from role feature folders.
+
+### Work Completed
+
+- Updated `frontend/src/app/App.tsx` imports to use `frontend/src/features/<role>/pages` directly.
+- Removed `frontend/src/pages`.
+- Updated frontend and architecture docs so new page work stays inside role feature folders.
+
+### Files Changed
+
+- `frontend/src/app/App.tsx`
+- `frontend/src/pages/**`
+- `docs/frontend.mdx`
+- `docs/architecture.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build and docs validation passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: remove frontend pages wrappers
+```
+
+### Suggested Commit Message
+
+```text
+feat: scope customer notifications by user
+```
+
+## 2026-05-27 - Customer Portal Polish And Data Corrections
+
+### Goal
+
+Keep the customer portal UI stable while using backend-backed data for notifications, invoices, and pet health state.
+
+### Work Completed
+
+- Updated customer service history cards and detail modals to show every invoice item from backend `invoice_items`.
+- Kept the customer homepage layout stable when backend notifications are empty or loading.
+- Fixed stacking order so homepage cards and pet avatars do not overlap the sticky header while scrolling.
+- Normalized "Không có" style pet health-note values in the backend so they do not force pets into "Cần theo dõi".
+- Adjusted notification read behavior so only the clicked unread notification is marked read; read notifications no longer trigger API updates.
+- Updated API/backend docs for notification and pet update endpoints.
+
+### Files Changed
+
+- `backend/src/services/customerPetsService.js`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customerPetsService.js`
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: polish customer portal data states
+```
+
+## 2026-05-30 - Customer Portal Backend API Refactor
+
+### Goal
+
+Move customer appointment and service-history data flow behind backend APIs and introduce customer-scoped frontend folders.
+
+### Work Completed
+
+- Added customer appointment backend service endpoints for list, create, reschedule, and cancel.
+- Added a customer appointment-options endpoint so booking services and doctors come from database-backed APIs.
+- Added customer service-history backend endpoint that builds invoice-backed history from database rows.
+- Added `frontend/src/pages/customer`, `frontend/src/services/customer`, `frontend/src/types/customer`, `frontend/src/utils/customer`, and `frontend/src/components/customer` namespaces.
+- Routed customer portal imports through the customer namespace and connected customer appointments/history to backend API clients.
+- Moved the active `CustomerPortal` and `CustomerPetProfilesModule` implementations under `frontend/src/pages/customer`; the old files now only re-export the customer pages for compatibility.
+- Split customer portal home, appointment/history modals, and customer pet profile modals into customer component folders.
+- Updated customer API, backend, and frontend documentation.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/customer/customerServiceHistoryService.js`
+- `frontend/src/app/App.tsx`
+- `frontend/src/pages/CustomerPortal.tsx`
+- `frontend/src/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/pages/customer/CustomerPortalPage.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/pages/customer/CustomerPetProfilesModule.tsx`
+- `frontend/src/pages/customer/CustomerPetsPage.tsx`
+- `frontend/src/components/customer/home/CustomerHomeTab.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/customer/history/HistoryDetailModal.tsx`
+- `frontend/src/components/customer/pets/PetDetailModal.tsx`
+- `frontend/src/components/customer/pets/PetFormModal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/services/customer/customerServiceHistoryApi.ts`
+- `frontend/src/services/customer/customerNotificationsApi.ts`
+- `frontend/src/services/customer/customerPetsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/types/customer/notifications.ts`
+- `frontend/src/types/customer/pets.ts`
+- `frontend/src/types/customer/portal.ts`
+- `frontend/src/types/customer/serviceHistory.ts`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/customer/customerServiceHistoryService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Appointment Slot Fallback and Pagination
+
+### Goal
+
+Fix customer booking showing `Appointments requested slot columns are required for doctor availability` when the database has not applied the requested slot migration, and make appointment pagination visible.
+
+### Work Completed
+
+- Doctor provider listing no longer throws when `appointments.requested_date` and `requested_time` are missing; it still lists doctors from matching `doctor_schedules` working windows.
+- Doctor booking validation only checks exact-slot conflicts when requested slot columns exist.
+- Customer appointment pagination footer now appears whenever the filtered appointment list has data, even when there is only one page.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Exact doctor-slot conflict blocking still requires the requested slot migration to be applied in the database.
+
+## 2026-05-31 - Customer Appointment Detail Data Fix
+
+### Goal
+
+Fix customer appointment detail showing fake cost, fake notes, fake timeline, and created-at fallback values as appointment date/time.
+
+### Work Completed
+
+- Backend appointment mapping now returns requested appointment date/time first, service fee totals from `appointment_services`, note, and created/updated labels.
+- Appointment creation and reschedule now require `requested_date` and `requested_time` columns so new records cannot be saved without the selected slot.
+- Customer appointment detail modal now displays real note, estimated cost, and status timeline data from API instead of hardcoded placeholders.
+- Customer appointment type/config files were normalized to UTF-8 Vietnamese labels.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/types/customer/portal.ts`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Existing appointments that were previously saved without `requested_date` and `requested_time` cannot recover the originally selected slot unless the database is backfilled.
+
+## 2026-05-31 - Apply Requested Slot Columns
+
+### Goal
+
+Add `appointments.requested_date` and `appointments.requested_time` to the active database so customer appointments can persist selected slots.
+
+### Work Completed
+
+- Applied `requested_date` and `requested_time` to the active database.
+- Verified both columns exist through `information_schema.columns`.
+- Made the requested slot migration idempotent with `IF NOT EXISTS`.
+
+### Files Changed
+
+- `backend/prisma/migrations/20260531101500_add_appointment_requested_slot/migration.sql`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Direct database column verification returned `requested_date:date` and `requested_time:time without time zone`.
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+
+### Result
+
+Requested appointment slots can now be saved for new customer bookings.
+
+## 2026-05-31 - Customer Doctor Slot Availability
+
+### Goal
+
+Use `doctor_schedules.start_time` and `end_time` as doctor working windows for customer booking, and hide a doctor only for the exact slot that is already booked.
+
+### Work Completed
+
+- Doctor provider options now require a schedule whose working window covers the selected slot.
+- Doctor provider options exclude doctors with an existing appointment for the same `requested_date` and `requested_time`.
+- Customer appointment creation validates the selected doctor against the working window and exact booked slot.
+- Staff-backed services now return the staff list directly.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/database.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Text Encoding Cleanup
+
+### Goal
+
+Fix mojibake text in the customer appointment backend strings after the customer flow changes.
+
+### Work Completed
+
+- Replaced corrupted Vietnamese service labels and fallback messages in `backend/src/services/customer/customerAppointmentsService.js`.
+- Re-ran customer/frontend encoding scans for common mojibake patterns.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Provider Manual Choice
+
+### Goal
+
+Adjust customer booking so the system lists available doctors or staff after a time slot is chosen, and the customer manually selects one provider.
+
+### Work Completed
+
+- Replaced provider preview with `POST /api/customer/appointment-provider-options`.
+- Backend now returns a provider list with role, name, title, specialty/address, phone, experience, room, and schedule metadata where available.
+- Appointment creation now requires `providerRole` and `providerId` and validates the provider role against the selected service type.
+- Booking modal now shows selectable provider cards instead of a single automatic assignment.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Booking Provider Fixes and Pagination
+
+### Goal
+
+Fix appointment creation failing on missing `updated_at`, ensure medical services list doctors instead of staff, add appointment pagination, and expand the customer appointment layout.
+
+### Work Completed
+
+- Added `updated_at` to customer appointment insert payloads.
+- Passed `serviceId` through the customer booking flow so backend classifies provider type from `services.type` instead of fragile UI text.
+- Kept provider role validation so medical/vaccine services require doctors and grooming/boarding require staff.
+- Added client-side pagination to the customer appointment list.
+- Expanded the customer appointment page to a wider full-screen layout with an appointment guide/sidebar and summary cards.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Requested Slot Migration Guard
+
+### Goal
+
+Fix customer role API errors when the database has not yet applied the `requested_date` and `requested_time` appointment migration.
+
+### Work Completed
+
+- Added runtime detection for `appointments.requested_date` and `appointments.requested_time`.
+- Customer appointment listing now omits those columns when the migration has not been applied.
+- Customer appointment create/reschedule writes requested slot columns only when they exist.
+- Staff assignment falls back to first available staff member before the migration is applied.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The app no longer depends on the new columns being present before booting customer pages, but the migration should still be applied to persist staff-backed requested slots correctly.
+
+## 2026-05-31 - Customer Provider Selection Flow
+
+### Goal
+
+Change customer booking from automatic provider assignment to showing available doctors or staff members after the user chooses a service slot, then requiring the customer to pick one provider.
+
+### Work Completed
+
+- Replaced the customer provider preview endpoint with provider options listing.
+- Customer booking now returns multiple available doctors or staff members with profile details.
+- Appointment creation now requires `providerRole` and `providerId`.
+- Customer booking modal now renders selectable provider cards and sends the selected provider to backend.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: move customer portal data behind backend APIs
+```
+
+## 2026-05-31 - Auth Blank Screen Guard
+
+### Goal
+
+Fix the frontend rendering a blank white screen after boot when a restored auth session has an invalid or missing role.
+
+### Work Completed
+
+- Added role validation before restoring a persisted session in `frontend/src/app/App.tsx`.
+- Cleared invalid persisted sessions and returned users to the welcome/login flow instead of rendering `null`.
+- Added a final auth fallback so unknown roles cannot leave the app blank.
+
+### Files Changed
+
+- `frontend/src/app/App.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Portal Runtime Blank Screen Fix
+
+### Goal
+
+Fix the customer portal rendering a blank screen after login or when restoring a customer session in a new tab.
+
+### Work Completed
+
+- Restored missing `viewingApt` and `viewingHistory` modal state in `frontend/src/pages/customer/CustomerPortal.tsx`.
+- Added safe customer UI config getters for unknown appointment status, service type, and notification type values from database-backed APIs.
+- Updated customer portal, appointment modal, and home tab rendering to use fallback-safe config helpers.
+
+### Files Changed
+
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/customer/home/CustomerHomeTab.tsx`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-05-31 - Customer Appointment Booking Flow
+
+### Goal
+
+Update customer appointment booking to follow the flow: choose service, choose pet, choose date/time slot, auto-detect an available doctor or staff member, add note, then submit as pending confirmation.
+
+### Work Completed
+
+- Added `requested_date` and `requested_time` to appointments so staff-backed bookings can persist requested slots without a doctor schedule.
+- Added a customer provider-preview API that detects an available doctor for medical/vaccine services or an available staff member for grooming/boarding.
+- Updated customer appointment creation to auto-assign the detected provider and create appointments with `PENDING` status.
+- Removed manual doctor selection from the customer booking modal and added an automatic assignment preview.
+
+### Files Changed
+
+- `backend/prisma/schema.prisma`
+- `backend/prisma/migrations/20260531101500_add_appointment_requested_slot/migration.sql`
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/pages/customer/CustomerPortal.tsx`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/database.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `npm --prefix frontend run build`
+- `npm --prefix backend run prisma:generate`
+
+### Result
+
+Checks passed. Frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Doctor Component Service Refactor Fix
+
+### Goal
+
+Fix the doctor portal/exam screen so the frontend builds and the doctor exam files follow the customer-style split between pages, components, and services.
+
+### Work Completed
+
+- Fixed `DoctorExamScreen` imports to use `features/doctor/services` for API calls and `components/doctor` for extracted UI.
+- Added shared doctor component UI helpers for icons, vital tones, and system status classes.
+- Fixed doctor exam launch in `DoctorPortal` to pass `appointmentId` into the refactored exam screen.
+- Start scheduled appointments before opening the exam screen, then update local appointment status after start/complete.
+- Removed the duplicate feature-level `VitalInput` copy so the reusable component lives only under `components/doctor`.
+
+### Files Changed
+
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/components/doctor/*`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: wire doctor exam components and services
+```
+
+## 2026-06-01 - Doctor Portal Component And Backend Data Refactor
+
+### Goal
+
+Split `DoctorPortal.tsx` into doctor components and move schedule display shaping from frontend into backend database-backed services.
+
+### Work Completed
+
+- Split doctor portal sidebar, schedule header, schedule stat cards, and schedule table into `frontend/src/components/doctor/`.
+- Reduced `DoctorPortal.tsx` to navigation state, data loading, and exam flow coordination.
+- Changed doctor appointment API payload to include backend-shaped `scheduleRow`, `statusKey`, `statusView`, `summary`, and `meta`.
+- Added `backend/src/services/doctor/doctorAppointmentService.js` to query doctor appointments from Supabase and prepare portal render data.
+- Updated frontend doctor appointment service types to match the backend payload.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/components/doctor/DoctorSidebar.tsx`
+- `frontend/src/components/doctor/DoctorScheduleHeader.tsx`
+- `frontend/src/components/doctor/DoctorScheduleStats.tsx`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: move doctor portal schedule shaping to backend
+```
+
+## 2026-06-01 - Doctor Records Stats Settings Refactor
+
+### Goal
+
+Apply the doctor portal component/service pattern to doctor records, stats, and settings pages, and move more data shaping from frontend pages into backend services.
+
+### Work Completed
+
+- Split doctor records list, toolbar, side list, detail view, loading, and error UI into `frontend/src/components/doctor/`.
+- Changed doctor records filtering to call `/api/doctor/records` with `search` and `species` query params instead of filtering locally in the page.
+- Split doctor stats toolbar/content/loading/error UI into `frontend/src/components/doctor/`.
+- Added backend-shaped `kpiCards` to doctor stats payload so the stats page renders KPI card data from the API.
+- Split doctor settings nav/header/profile/schedule/notification/security/logout UI into `frontend/src/components/doctor/`.
+- Added `GET /api/doctor/settings` backed by `doctorService.getDoctorSettings()` to load profile and schedule rows from the database.
+- Reduced `DoctorRecordsPage.tsx`, `DoctorStatsPage.tsx`, and `DoctorSettingsPage.tsx` to thin containers around service calls and selected UI state.
+
+### Files Changed
+
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorStatsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `frontend/src/components/doctor/DoctorRecordDetail.tsx`
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/components/doctor/DoctorStatsView.tsx`
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Frontend build still reports the existing Vite large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: split doctor pages and move shaping to backend
+```
+
+## 2026-06-01 - Auth Page Component Refactor
+
+### Goal
+
+Apply the same page/component split to the auth folder so auth pages stay smaller and UI is reusable.
+
+### Work Completed
+
+- Added shared auth UI primitives and page views under `frontend/src/components/auth/`.
+- Reduced login, register, forgot-password, splash, and welcome pages under `frontend/src/features/auth/pages/` to thin containers around local state, validation, and callbacks.
+- Kept login and register wired to the existing shared auth service flow through `frontend/src/services/auth.ts`.
+- Preserved the existing forgot-password mock flow in the page controller because the backend does not currently expose a reset-password endpoint.
+- Fixed mojibake Vietnamese text in the refactored auth and doctor UI files so labels render as normal UTF-8 text.
+
+### Files Changed
+
+- `frontend/src/features/auth/pages/LoginPage.tsx`
+- `frontend/src/features/auth/pages/RegisterPage.tsx`
+- `frontend/src/features/auth/pages/ForgotPasswordPage.tsx`
+- `frontend/src/features/auth/pages/SplashScreen.tsx`
+- `frontend/src/features/auth/pages/WelcomePage.tsx`
+- `frontend/src/components/auth/*`
+- `frontend/src/components/doctor/*`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: split auth pages into components
+```
+
+## 2026-06-01 - Doctor Backend Data Wiring Audit
+
+### Goal
+
+Verify why doctor pages looked empty after the refactor and make backend data failures visible in the UI.
+
+### Work Completed
+
+- Updated `backend/src/services/doctor/doctorAppointmentService.js` so doctor schedule data is shaped from `appointments.requested_date` and `requested_time`, with schedule/created-at fallback.
+- Included completed doctor appointments in the portal payload while still excluding cancelled/no-show records.
+- Added backend-shaped room/status/service metadata with clean UTF-8 Vietnamese labels.
+- Updated doctor exam detail route to use requested date/time when appointment rows are not linked to `doctor_schedule_id`.
+- Added a visible schedule error state in `DoctorScheduleTable` instead of silently swallowing backend/API failures as an empty list.
+- Re-checked doctor route and service syntax plus frontend build.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Live database contents were not queried in this session; the UI now shows backend errors directly if auth, doctor profile linking, or database columns are missing.
+
+## 2026-06-01 - Frontend API URL Normalization
+
+### Goal
+
+Fix frontend fetch URLs so `VITE_API_URL=http://localhost:5050/api` does not produce `/api/api/...`.
+
+### Work Completed
+
+- Added `frontend/src/utils/apiUrl.ts` to normalize `VITE_API_URL` by removing a trailing `/api` before appending route paths.
+- Updated doctor, staff, and legacy customer service fetch helpers to use `apiUrl()`.
+- Verified no frontend service still declares its own `API_BASE`.
+
+### Files Changed
+
+- `frontend/src/utils/apiUrl.ts`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/features/doctor/services/doctorProfile.ts`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `frontend/src/services/appointments.ts`
+- `frontend/src/services/services.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Frontend build passed. Vite still reports the existing large chunk warning.
+
+## 2026-06-01 - Staff Portal Backend Data Refactor
+
+### Goal
+
+Refactor staff role structure to match the doctor/customer feature layout and remove frontend sample data by wiring staff portal tabs to backend APIs.
+
+### Work Completed
+
+- Moved staff portal UI sections into `frontend/src/components/staff/StaffPortalView.tsx`.
+- Rebuilt `frontend/src/features/staff/pages/StaffPortal.tsx` as a thin data/loading/mutation container.
+- Removed sample arrays for staff appointments, grooming tasks, boarding guests, payments, and settings profile data.
+- Expanded the staff frontend API client to load profile, appointments, grooming, boarding, and payments from `/api/staff/*`.
+- Added `backend/src/services/staff/staffPortalService.js` for staff portal shaping and mutations.
+- Changed the staff route mount to `/api/staff` and added endpoints for profile, appointments, grooming, boarding, and payments.
+- Updated backend/API/frontend docs for the new staff API contract.
+
+### Files Changed
+
+- `backend/src/server.js`
+- `backend/src/routes/staffRoutes.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `frontend/src/components/staff/StaffPortalView.tsx`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/staffRoutes.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-06 - Full FE-BE-DB Consistency Remediation
+
+### Goal
+
+Fix the project-wide audit findings around frontend-only logic, sample data, runtime logic, and inconsistent FE/BE/DB structure.
+
+### Work Completed
+
+- Replaced the simulated forgot-password flow with persisted, expiring, hashed OTP records and backend reset APIs.
+- Blocked authenticated requests from locked or deleted users and invalidated existing JWT sessions after password reset.
+- Removed the duplicate legacy customer appointment route, service, and frontend client.
+- Added schedule release, provider collision checks, rollback handling, and staff ownership checks.
+- Persisted admin and doctor settings through `app_settings`.
+- Moved staff portal KPI summary calculation to the backend.
+- Removed the unused frontend Supabase client and browser Supabase configuration.
+- Rebuilt `App.tsx` without embedded mock dashboard datasets.
+- Removed the non-persisting admin exam screen from the admin workflow.
+- Added Prisma models and migration for settings and password reset tokens.
+- Upgraded React Router and Vite to patched releases after the dependency audit reported high-severity advisories.
+
+### Verification
+
+- `npm --prefix frontend run build`
+- `npm --prefix frontend run lint`
+- Backend JavaScript syntax checks
+- `npm --prefix backend run prisma:generate`
+- `npx prisma validate --schema prisma/schema.prisma`
+- `npm run docs:check`
+- `npm --prefix frontend audit --omit=dev --audit-level=high`
+- `npm --prefix backend run email:reminders`
+- Admin email-template GET/PUT API checks
+
+### Result
+
+The main role workflows now follow the FE service -> Express API -> database path. Apply the new migration before using settings and password-reset APIs.
+
+### Deployment Follow-up
+
+- Applied all pending Prisma migrations to the configured PostgreSQL database with `npx prisma migrate deploy`.
+- Verified `/api/auth/login` and authenticated `/api/auth/me` return successful responses with a newly issued JWT.
+- Removed the duplicate logout action from admin settings and added a collapsible admin sidebar with a hamburger toggle.
+- Replaced the password-reset email webhook requirement with Gmail SMTP delivery configured by `SMTP_USER` and `SMTP_APP_PASSWORD`.
+- Added shared transactional email templates, admin template editing/test APIs and UI, event-driven appointment/exam/payment/boarding emails, and a deduplicated reminder job for appointments, follow-ups, and vaccinations.
+
+## 2026-06-06 - Understand Anything Graph Refresh
+
+### Goal
+
+Refresh the repository knowledge graph after the role-based frontend and backend API expansion.
+
+### Work Completed
+
+- Re-scanned the full repository with Understand Anything.
+- Rebuilt deterministic file, function, class, and import relationships.
+- Split frontend architecture layers by admin, auth, customer, doctor, staff, and shared ownership.
+- Regenerated the guided tour, validation report, fingerprints, and graph metadata.
+
+### Files Changed
+
+- `.understand-anything/knowledge-graph.json`
+- `.understand-anything/fingerprints.json`
+- `.understand-anything/meta.json`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- Understand Anything deterministic graph validation
+
+### Result
+
+Knowledge graph validation passed with no dangling references.
+
+## 2026-06-04 - Customer Appointment Modal Text Fix
+
+### Goal
+
+Fix the remaining broken Vietnamese text in the customer appointment modal.
+
+### Work Completed
+
+- Corrected mojibake labels in the provider assignment section.
+- Corrected doctor/staff selection labels and selected-state text.
+- Corrected the appointment request success message and appointment code label.
+- Re-ran the customer mojibake scan across customer frontend/backend files.
+
+### Files Changed
+
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg "�|Ã|Ä|Æ|Â|áº|á»|â€|ðŸ|H\\?|Chua|dang|M�|B�c|Nh�n|��|Cannot load" frontend/src/features/customer frontend/src/components/customer frontend/src/utils/customer frontend/src/services/customer frontend/src/services/customerNotifications.ts backend/src/services/customer backend/src/services/customerNotificationsService.js backend/src/routes/customerPetsRoutes.js -n`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-04 - Customer Notification Text Fix
+
+### Goal
+
+Fix the broken Vietnamese text in the customer notification dropdown.
+
+### Work Completed
+
+- Corrected the dropdown action label from mojibake text to `Đánh dấu đã đọc`.
+- Updated two customer portal appointment fallback errors from English to Vietnamese.
+- Verified the customer notification/portal files no longer match the mojibake scan pattern.
+
+### Files Changed
+
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg "�|Ã|Ä|Æ|Â|áº|á»|â€|ðŸ|Cannot load" frontend/src/features/customer/pages/CustomerPortal.tsx frontend/src/components/customer/notifications frontend/src/utils/customer/portalConfig.ts frontend/src/services/customerNotifications.ts backend/src/services/customerNotificationsService.js -n`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-04 - Admin Staff Backend Filtering Step 3
+
+### Goal
+
+Finish the final admin step by moving staff-management filtering, search, and KPI summary out of `AdminStaffView` and into the backend API.
+
+### Work Completed
+
+- Updated `GET /api/admin/staff` to accept `department`, `status`, and `search` query parameters.
+- Added backend staff filtering and staff-management summary shaping in `adminService.js`.
+- Updated the admin frontend service contract to return `staff` plus `summary`.
+- Simplified `AdminStaffView` so it renders backend-filtered rows and backend KPI/count values instead of rebuilding them locally.
+- Updated backend/API docs for the new admin staff endpoint contract.
+
+### Files Changed
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/AdminStaffView.tsx`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Vercel Demo Preparation
+
+### Goal
+
+Prepare the frontend and backend for a Vercel demo deployment.
+
+### Work Completed
+
+- Added Vercel rewrite configuration for the Vite SPA and Express API.
+- Updated the backend server entrypoint to export the Express app for Vercel while preserving local `app.listen`.
+- Updated backend CORS handling to allow comma-separated frontend origins.
+- Routed shared frontend JSON requests and invoice PDF downloads through `VITE_API_URL`.
+- Kept absolute API URLs intact in the shared API URL helper.
+- Documented the two-project Vercel deployment settings and required environment variables.
+
+### Files Changed
+
+- `backend/src/server.js`
+- `backend/vercel.json`
+- `frontend/vercel.json`
+- `frontend/src/utils/apiUrl.ts`
+- `frontend/src/utils/requestJson.ts`
+- `frontend/src/services/customerPets.ts`
+- `.env.example`
+- `frontend/.env.local.example`
+- `docs/architecture.mdx`
+- `docs/deployment/overview.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/server.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Dropdown Polish
+
+### Goal
+
+Restyle doctor dropdown controls to match the customer portal dropdown treatment.
+
+### Work Completed
+
+- Rebuilt the doctor records species filter as a rounded custom dropdown with overlay close behavior, shadowed menu, rotating chevron, and selected check mark.
+- Removed the extra filter button from the doctor records toolbar.
+- Replaced the native duration select in the doctor exam symptom form with a matching custom dropdown.
+- Rebuilt `DoctorRecordsView.tsx` around the current grouped-pet records flow after cleaning up the older table/list exports.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/components/doctor/SymptomForm.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Records Grouped By Pet
+
+### Goal
+
+Show each pet only once in the doctor medical records screen, then display that pet's visit history after selection.
+
+### Work Completed
+
+- Added `petId` to doctor record rows returned by the backend.
+- Normalized known species filter values so pet grouping still filters correctly when older UI strings contain encoding noise.
+- Changed `DoctorRecordsPage` to group appointment-backed records by pet.
+- Replaced the records table flow with a pet list and per-pet history view.
+- Updated doctor records API docs to mention pet identity for grouping.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Stats Period Order
+
+### Goal
+
+Change the doctor statistics period controls to show month, week, and day in that order.
+
+### Work Completed
+
+- Added a day period to the doctor stats payload.
+- Reordered the doctor stats toolbar controls to `Tháng`, `Tuần`, `Ngày`.
+- Updated doctor stats API docs to mention the day view.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/components/doctor/DoctorStatsView.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Sidebar Logout Placement
+
+### Goal
+
+Move the doctor logout action to the bottom of the main sidebar.
+
+### Work Completed
+
+- Added a footer logout button to `DoctorSidebar`.
+- Moved logout confirmation handling to `DoctorPortal` so the sidebar button uses the existing confirm modal.
+- Removed the logout action from the doctor settings sub-navigation.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorSidebar.tsx`
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Admin Role API Refactor
+
+### Goal
+
+Refactor admin role structure to match the completed role pattern and replace rendered admin mock data with backend-backed data.
+
+### Work Completed
+
+- Added backend-shaped admin report and settings payloads in `adminService`.
+- Extended admin dashboard payload with revenue, appointment status, activity, and boarding data.
+- Added `GET /api/admin/reports` and `GET /api/admin/settings`.
+- Added `frontend/src/components/admin/` for admin dashboard, reports, and settings views.
+- Converted admin dashboard, reports, and settings pages into API-loading containers.
+- Switched admin appointment modal service/staff options to derive from loaded appointment API data instead of fixed frontend lists.
+
+### Files Changed
+
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `frontend/src/app/App.tsx`
+- `frontend/src/components/admin/AdminDashboardView.tsx`
+- `frontend/src/components/admin/AdminReportsView.tsx`
+- `frontend/src/components/admin/AdminSettingsView.tsx`
+- `frontend/src/features/admin/pages/AdminDashboardPage.tsx`
+- `frontend/src/features/admin/pages/ReportsPage.tsx`
+- `frontend/src/features/admin/pages/SettingsPage.tsx`
+- `frontend/src/features/admin/pages/AppointmentsPage.tsx`
+- `frontend/src/features/admin/services/admin.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/frontend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Admin Page Sample Data Cleanup
+
+### Goal
+
+Remove remaining raw/sample data from admin page files.
+
+### Work Completed
+
+- Removed unused sample arrays from `AppointmentsPage.tsx`, `UsersPage.tsx`, `ServicesPage.tsx`, and `StaffPage.tsx`.
+- Added `GET /api/admin/exam-context` for the admin exam screen.
+- Rewired `ExamPage.tsx` to load appointment, pet, history, symptom, body-system, and prescription option data from the admin API instead of local initial arrays.
+- Added the exam context client method and TypeScript contract to the admin frontend service.
+
+### Files Changed
+
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `frontend/src/features/admin/pages/AppointmentsPage.tsx`
+- `frontend/src/features/admin/pages/ExamPage.tsx`
+- `frontend/src/features/admin/pages/UsersPage.tsx`
+- `frontend/src/features/admin/pages/ServicesPage.tsx`
+- `frontend/src/features/admin/pages/StaffPage.tsx`
+- `frontend/src/features/admin/services/admin.ts`
+- `docs/backend.mdx`
+- `docs/api-reference.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Doctor Settings Text Fix
+
+### Goal
+
+Fix corrupted Vietnamese text in the doctor settings screen.
+
+### Work Completed
+
+- Rewrote `DoctorSettingsView.tsx` labels, headings, button text, and modal text with valid Vietnamese strings.
+- Updated doctor settings empty/error copy in `DoctorSettingsPage.tsx`.
+- Added normalization in `doctorData.ts` so known mojibake values returned by `/api/doctor/settings` render correctly in the settings UI.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-01 - Staff Portal Component Split Follow-up
+
+### Goal
+
+Split `StaffPortalView.tsx` into smaller staff component files and fix the backend `getInitials is not defined` response.
+
+### Work Completed
+
+- Added the missing `getInitials` helper in `backend/src/services/doctor/doctorService.js`.
+- Converted `frontend/src/components/staff/StaffPortalView.tsx` into a barrel export.
+- Split staff UI into shell, common helpers, tab views, modal views, and shared config files.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/components/staff/StaffPortalView.tsx`
+- `frontend/src/components/staff/StaffCommon.tsx`
+- `frontend/src/components/staff/StaffShell.tsx`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
+- `frontend/src/components/staff/StaffGroomingTab.tsx`
+- `frontend/src/components/staff/StaffBoardingTab.tsx`
+- `frontend/src/components/staff/StaffPaymentsTab.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
+- `frontend/src/components/staff/staffPortalConfig.ts`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/routes/staffRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-02 - Doctor Stats Data Fallback
+
+### Goal
+
+Fix the doctor statistics page showing no data when appointment rows are dated through doctor schedules or when the current calendar period has no rows.
+
+### Work Completed
+
+- Updated doctor stats shaping to use `doctor_schedules.work_date` when an appointment has no `requested_date`.
+- Added a latest-available-period fallback so week/month/quarter stats still render existing doctor data instead of empty charts when the current period has no appointments.
+- Kept the frontend stats page contract unchanged.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-06 - Doctor Records Clinical Exam JSON Fix
+
+### Goal
+
+Fix doctor medical records showing raw `clinical_exam` JSON after completing an exam.
+
+### Work Completed
+
+- Added parsing for `medical_visits.clinical_exam` in the doctor records backend payload.
+- Mapped exam JSON into readable complaint, symptoms, duration, onset, severity, vitals, body-system results, and clinical summary fields.
+- Stopped returning raw `clinical_exam` JSON as `clinicalNote` for the records UI.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Role Text Normalization Sweep
+
+### Goal
+
+Fix mojibake text across the doctor role after seeded/fallback data showed broken Vietnamese in records and schedule UI.
+
+### Work Completed
+
+- Added backend text normalization for doctor records, settings, exam context, and appointment schedule payloads so stale DB/seed mojibake is repaired before reaching the UI.
+- Cleaned mojibake string literals in doctor backend services and kept doctor record clinical exam fields readable instead of raw JSON.
+- Converted the frontend doctor encoding-noise detector to escaped Unicode regex and restored Vietnamese fallback labels.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` mojibake scan across doctor backend/frontend files (no matches)
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Schedule Row Alignment Fix
+
+### Goal
+
+Fix doctor schedule rows becoming misaligned after an appointment is completed.
+
+### Work Completed
+
+- Kept a fixed-width status/action area for every doctor schedule row.
+- Preserved the action column space when a row is completed, so status badges and service labels line up with pending/in-progress rows.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` mojibake scan on `DoctorScheduleTable.tsx` (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Follow-Up Appointment Flow
+
+### Goal
+
+Complete the doctor follow-up appointment flow so selected follow-up slots must be in the future and customers receive the new appointment.
+
+### Work Completed
+
+- Added follow-up date and time fields to the doctor clinical exam form with same-day time limiting.
+- Added frontend validation before completing an exam when a follow-up slot is selected.
+- Added backend validation for future follow-up slots on draft/save-complete.
+- When completing an exam with a follow-up slot, backend now creates a new pending medical appointment for the same pet and doctor, reserves the matching doctor schedule, creates the medical service item, sends customer notification, and sends appointment confirmation email through the existing safe email flow.
+- Added rollback for the new follow-up appointment and schedule reservation if customer notification creation fails.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `frontend/src/components/doctor/ClinicalExamForm.tsx`
+- `frontend/src/features/doctor/pages/DoctorExamScreen.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `rg` mojibake scan on follow-up files (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-06 - Doctor Follow-Up Time Picker Fix
+
+### Goal
+
+Fix the doctor follow-up time field not being selectable in the clinical exam form.
+
+### Work Completed
+
+- Replaced the native time input with a fixed 30-minute slot dropdown from 08:00 to 18:30.
+- Kept same-day filtering so past time slots are not offered.
+- Reset the selected follow-up time when the follow-up date changes.
+
+### Files Changed
+
+- `frontend/src/components/doctor/ClinicalExamForm.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` text/encoding scan on `ClinicalExamForm.tsx` (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-08 - Follow-Up Flow Without Doctor Schedule Dependency
+
+### Goal
+
+Keep doctor schedule setup out of unrelated features while the doctor schedule-setting feature is deferred.
+
+### Work Completed
+
+- Changed follow-up appointment creation so it no longer requires an available `doctor_schedules` row.
+- Kept duplicate protection by checking existing appointments for the same doctor, requested date, and requested time.
+- If a matching schedule row exists, the follow-up appointment links to it; otherwise it is created with `doctor_schedule_id: null` and still appears by `requested_date` / `requested_time`.
+- Removed schedule reservation/rollback from the follow-up flow.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `rg` text/encoding scan on follow-up files (no matches)
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-08 - Customer Appointment Request Approval And Doctor Notifications
+
+### Goal
+
+Complete the follow-up appointment flow after a doctor creates a follow-up: customers can confirm, reschedule/cancel requests require a reason and staff approval, and doctors receive backend-backed notifications.
+
+### Work Completed
+
+- Added customer appointment confirmation from the appointment detail modal.
+- Changed customer reschedule and cancel actions to submit a reasoned pending request instead of applying immediately.
+- Added staff pending request data, approval API client, and appointment list action to approve reschedule/cancel requests.
+- Staff approval now applies the requested date/time or cancellation and notifies both customer and doctor.
+- Added doctor notification APIs and connected the doctor header bell dropdown to backend notifications with read/read-all actions.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/staffRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/doctor/DoctorScheduleHeader.tsx`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `frontend/src/services/customer/customerAppointmentsApi.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `node --check backend/src/routes/staffRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+
+## 2026-06-08 - Appointment Request Approval Fixes
+
+### Goal
+
+Polish customer appointment notes, fix staff reschedule approval, and ensure doctors are notified only after staff approval succeeds.
+
+### Work Completed
+
+- Customer appointment detail now filters technical request payloads from notes and renders friendly note lines.
+- Customer appointment API now returns cleaned notes by stripping pending request markers.
+- Customer reschedule/cancel requests no longer notify doctors immediately.
+- Staff reschedule approval now fetches the doctor user separately, clears the stale schedule link, applies the requested date/time, then notifies customer and doctor after the update succeeds.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Staff Approval And Doctor Notification Repair
+
+### Goal
+
+Fix staff approval not completing reliably and repair doctor notification text for legacy corrupted appointment request notifications.
+
+### Work Completed
+
+- Made staff approval resilient: appointment update is the primary action, notification failures are logged without failing approval.
+- Added loading/disabled state to the staff approve request button.
+- Added doctor notification text repair for legacy mojibake/question-mark appointment request notifications returned by the backend.
+- Read-checked appointment `APT-000087`: it still has a valid pending reschedule request in `note`, `staff_id=2`, `doctor_id=5`, and no linked doctor schedule.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- Read-only Supabase query for appointment `87`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Did not mutate appointment `87` during verification. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Doctor Medical Record Note Cleanup
+
+### Goal
+
+Fix newly updated reschedule-request text leaking into doctor medical records.
+
+### Work Completed
+
+- Added appointment note cleanup for doctor medical record APIs.
+- Stripped `[CUSTOMER_REQUEST]` technical payload lines and raw JSON-like lines before using appointment notes as clinical note, chief complaint, owner note, or visit-history reason.
+- Applied the same cleanup to doctor exam detail notes.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Staff Approve Button Wiring Fix
+
+### Goal
+
+Fix staff approve request button doing nothing because the handler was not wired from the portal page into the appointment list.
+
+### Work Completed
+
+- Passed `onApproveRequest` and `approvingAppointmentId` from `StaffPortal` into `AppointmentsTab`.
+- Passed approve handler/loading state into staff appointment detail modal as well.
+- Confirmed the approve button now calls `handleApproveAppointmentRequest` instead of an undefined prop.
+
+### Files Changed
+
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/routes/staffRoutes.js`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Doctor Record Chief Complaint Cleanup
+
+### Goal
+
+Prevent follow-up system notes from being rendered as the chief complaint/reason in doctor medical records.
+
+### Work Completed
+
+- Added chief complaint mapping that treats follow-up system notes as `T?i kh?m` instead of copying the full appointment note.
+- Kept the full follow-up appointment note in the clinical note area only, where it belongs.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Doctor Record Note And Reason Separation
+
+### Goal
+
+Separate doctor record note text from chief complaint so follow-up system notes do not duplicate in the record cards.
+
+### Work Completed
+
+- Removed chief complaint from the small clinical note text under the record title.
+- Stopped using follow-up system notes as the clinical note fallback because date/time already appear in the calendar header.
+- Kept the reason box focused on chief complaint/symptoms; follow-up system notes map to `T?i kh?m` only.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. The frontend build still reports the existing large chunk warning.
+## 2026-06-08 - Appointment Slot Scheduling Recovery
+
+### Goal
+
+Restore the customer/doctor appointment fixes that were lost and fix doctor scheduling so one long work window does not block every appointment through the unique `doctor_schedule_id`.
+
+### Work Completed
+
+- Added a shared doctor schedule service that splits working windows into concrete 30-minute `doctor_schedules` slots.
+- Added an admin endpoint and admin staff drawer action for saving doctor working windows as 30-minute slots.
+- Locked doctor schedule write/delete endpoints; doctors now only view schedules because admin owns schedule creation.
+- Updated customer booking and doctor follow-up booking to reserve one concrete 30-minute slot, materializing a slot from legacy long windows when needed.
+- Updated staff-approved reschedules/cancellations and admin cancellations to reserve or release concrete doctor slots correctly.
+- Restored customer appointment confirmation status update, role normalization, friendly provider permission error, cancel reason modal, and pet-card booking shortcut.
+- Restored doctor schedule list wording, date display, ordering, and status dropdown filter.
+- Added prescription display to customer appointment cards and appointment detail modal.
+- Grouped 30-minute doctor schedule slots into readable windows on the doctor settings screen.
+
+### Files Changed
+
+- `backend/src/services/doctorScheduleService.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `backend/src/services/doctor/doctorService.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `backend/src/services/adminService.js`
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/middleware/authMiddleware.js`
+- `frontend/src/components/admin/AdminStaffView.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/components/customer/appointments/CustomerAppointmentsTab.tsx`
+- `frontend/src/components/doctor/DoctorScheduleStats.tsx`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `frontend/src/components/doctor/DoctorSettingsView.tsx`
+- `frontend/src/components/doctor/DoctorSidebar.tsx`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/features/customer/pages/CustomerPetProfilesModule.tsx`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorSettingsPage.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `frontend/src/types/customer/appointments.ts`
+- `frontend/src/utils/customer/portalConfig.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/database.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctorScheduleService.js`
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `node --check backend/src/services/doctor/doctorService.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/services/adminService.js`
+- `node --check backend/src/routes/doctorProfileRoutes.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/routes/adminRoutes.js`
+- `node --check backend/src/middleware/authMiddleware.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+- `buildScheduleSlots` smoke check with a local dummy Supabase env
+
+### Result
+
+Checks passed. The 08:00-16:00 smoke check creates 16 concrete 30-minute slots. The frontend build still reports the existing large chunk warning.
+
+## 2026-06-08 - Separate Doctor Work Windows And Appointment Slots
+
+### Goal
+
+Keep admin-managed doctor work windows separate from concrete appointment slots so the appointment unique constraint applies to one 30-minute slot instead of an entire work window.
+
+### Work Completed
+
+- Kept work windows in `doctor_schedules` and moved slot status into the new `doctor_schedule_slots` table.
+- Added a migration that creates 30-minute slots, backfills existing appointment links, replaces `appointments.doctor_schedule_id` with unique `appointments.doctor_schedule_slot_id`, and removes `doctor_schedules.status`.
+- Updated admin schedule saving to create work windows and their concrete slots.
+- Updated customer booking, staff rescheduling/cancellation, doctor follow-up booking, doctor exam status changes, admin cancellation, appointment displays, invoice dates, and seed data to use concrete slots.
+- Updated Prisma schema, database snapshot, API/database docs, and frontend appointment input naming.
+
+### Verification
+
+- `npm --prefix backend run prisma:generate`
+- `npx prisma validate` from `backend/`
+- Backend JavaScript syntax checks
+- Frontend production build
+- `npm run docs:check`
+- `git diff --check`
+
+### Result
+
+All listed checks passed. The frontend build retains the existing large chunk warning.
+
+The migration was then applied successfully to the configured Supabase database with `npx prisma migrate deploy`. PostgREST relationship embeds were updated to use explicit FK constraint names, and service-level smoke checks passed for doctor appointments/settings/stats/records, customer appointments/provider options, staff appointments/summary, and admin appointments.
+
+## 2026-06-08 - Portal Viewport Overflow Audit
+
+### Goal
+
+Prevent long appointment lists from stretching fixed dashboard portals beyond the browser viewport.
+
+### Work Completed
+
+- Changed the doctor portal shell to a fixed viewport layout.
+- Made the doctor appointment card fill remaining space and scroll only its appointment rows while keeping the stats and filter header visible.
+- Changed the staff portal shell to a fixed viewport layout with its main content scrolling internally.
+- Audited admin and customer layouts: admin already uses a fixed viewport with internal scrolling; customer intentionally remains a naturally scrolling page with sticky navigation.
+
+### Verification
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Browser visual verification was unavailable in the current session.
+
+## 2026-06-08 - Doctor Work Schedule Slot Count Display
+
+### Goal
+
+Fix the doctor settings schedule rows showing broken separators, a constant `1 ca`, and the internal `AVAILABLE` status.
+
+### Work Completed
+
+- Loaded concrete slot IDs with each admin-managed work window.
+- Calculated the displayed appointment-slot count from `doctor_schedule_slots`.
+- Replaced the broken technical text with `Phòng ... · N ca khám`.
+
+### Verification
+
+- Queried doctor settings against Supabase and confirmed `08:00-16:00` returns 16 slots, `08:00-08:30` returns 1 slot, and `08:00-10:00` returns 4 slots.
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+## 2026-06-08 - Customer Service History Prescription Query
+
+### Goal
+
+Fix customer service history failing because it queried the nonexistent `prescription_items.appointment_id` column.
+
+### Work Completed
+
+- Loaded medical visits for the customer's appointment IDs.
+- Loaded prescriptions by `medical_visit_id` and embedded their prescription items through the real foreign key.
+- Mapped prescription items back to appointments through the medical visit relation.
+
+### Verification
+
+- Ran service-history queries for every customer in the configured Supabase database.
+- Confirmed Nguyễn Văn Minh returns 2 history records and 2 prescription items.
+- Confirmed no `prescription_items.appointment_id` references remain.
+- `node --check backend/src/services/customer/customerServiceHistoryService.js`
+- `git diff --check`
+
+## 2026-06-08 - Appointment Slot Conflict Resolution
+
+### Goal
+
+Resolve merge/stash conflicts across appointment scheduling files without dropping the concrete slot model.
+
+### Work Completed
+
+- Resolved conflicts in doctor, customer, staff, and doctor settings files by keeping `doctor_schedule_slots` as the bookable unit.
+- Removed the obsolete `scheduleService` conflict path and kept `doctorScheduleService` for slot reservation/status updates.
+- Preserved customer reschedule/cancel request handling and passed cancel reasons from the customer modal to the backend.
+
+### Verification
+
+- No remaining Git unmerged paths or conflict markers.
+- `npx prisma validate --schema backend/prisma/schema.prisma`
+- `npm --prefix backend run prisma:generate`
+- Backend JavaScript syntax checks for touched route/service files.
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+- `npx prisma migrate status --schema prisma/schema.prisma` from `backend/`
+- Service smoke checks for doctor, customer, staff, and admin appointment flows.
+
+## 2026-06-09 - View Medical Record Detail & Settings Profile Update Fixes
+
+### Goal
+
+Fix the React white-screen/blank page crash when Customer or Staff updates profile details and completes saving changes. Enable Doctors to view completed checkups as detailed medical records (vitals, symptoms, diagnosis, prescriptions) instead of empty forms.
+
+### Work Completed
+
+- **Backend (Customer Profile)**: Mapped `updateCustomerProfile` response to select `users:user_id(email)` and return unified camelCase properties (`id`, `fullName`, `phone`, `address`, `email`) matching `getCustomerProfile`.
+- **Backend (Staff Profile)**: Mapped `updateStaffProfile` response to select `users:user_id(email)`, compute `initials`, map `roleLabel`, and return camelCase properties (`id`, `fullName`, `initials`, `roleLabel`, `department`, `email`, `phone`, `address`) matching `getStaffProfile`.
+- **Backend (Doctor Records)**: Added API endpoint `GET /api/doctor/records/appointment/:appointmentId` in `doctorProfileRoutes.js` to look up and return a medical record by appointment ID.
+- **Frontend (Doctor Records)**:
+  - Added service method `getRecordByAppointmentId` in `doctorData.ts`.
+  - Displayed a "Xem bệnh án" button for completed appointments in the schedule table (`DoctorScheduleTable.tsx`).
+  - Added state management and rendered `DoctorRecordDetail` overlay when clicking "Xem bệnh án" for completed appointments in `DoctorPortal.tsx`.
+- **Frontend (Customer Portal)**: Safeguarded user avatar name splitting `(currentUserName || "").split(...)` in `CustomerPortal.tsx` to prevent any runtime crash.
+
+### Verification
+
+- **Syntax & Compilation**: Verified backend file syntax using `node --check` and successfully built the frontend in production mode.
+- **End-to-End Verification**: Verified customer settings updates successfully save without any freeze/crash, and verified doctor portal successfully displays detailed medical records for completed appointments.
+
+### Files Changed
+
+- `backend/src/routes/doctorProfileRoutes.js`
+- `backend/src/services/customerPetsService.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `frontend/src/features/doctor/services/doctorData.ts`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `docs/dev/session-log.mdx`
+

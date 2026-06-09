@@ -1,0 +1,1384 @@
+const express = require("express");
+const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
+const { supabase } = require("../lib/supabaseClient");
+const { listDoctorAppointmentsForPortal } = require("../services/doctor/doctorAppointmentService");
+const { sendAppointmentEventEmail } = require("../services/emailService");
+const {
+  ensureDoctorScheduleSlot,
+  reserveDoctorScheduleSlot,
+  setDoctorScheduleSlotStatus,
+} = require("../services/doctorScheduleService");
+
+const router = express.Router();
+const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
+
+async function createDraftInvoiceForAppointment(appointmentId) {
+  try {
+    const { data: existingInvoice } = await supabase
+      .from("invoices")
+      .select("id")
+      .eq("appointment_id", appointmentId)
+      .maybeSingle();
+
+    if (existingInvoice) {
+      console.log(`[INVOICE] Invoice already exists for appointment ${appointmentId}`);
+      return;
+    }
+
+    const invoiceItems = [];
+
+    // Query Appointment Services
+    const { data: apptServices } = await supabase
+      .from("appointment_services")
+      .select("id, service_id, quantity, unit_price, services:service_id(name)")
+      .eq("appointment_id", appointmentId);
+
+    if (apptServices && apptServices.length > 0) {
+      apptServices.forEach(item => {
+        const qty = item.quantity || 1;
+        const price = Number(item.unit_price || 0);
+        invoiceItems.push({
+          service_id: item.service_id,
+          appointment_service_id: item.id,
+          source_type: "SERVICE",
+          description: item.services?.name || "Dịch vụ",
+          quantity: qty,
+          unit_price: price,
+          total_price: qty * price
+        });
+      });
+    }
+
+    // Query Medical Visit & Prescriptions
+    const { data: mv } = await supabase
+      .from("medical_visits")
+      .select("id")
+      .eq("appointment_id", appointmentId)
+      .maybeSingle();
+
+    if (mv?.id) {
+      const { data: rxList } = await supabase
+        .from("prescriptions")
+        .select("id")
+        .eq("medical_visit_id", mv.id);
+
+      if (rxList && rxList.length > 0) {
+        const rxIds = rxList.map(r => r.id);
+        const { data: rxItems } = await supabase
+          .from("prescription_items")
+          .select("id, medicine_name, dosage, frequency, duration_days")
+          .in("prescription_id", rxIds);
+
+        if (rxItems && rxItems.length > 0) {
+          rxItems.forEach(item => {
+            const qty = 1;
+            const price = 50000; // default 50k per medicine
+            invoiceItems.push({
+              medical_visit_id: mv.id,
+              source_type: "EXTRA",
+              description: `Thuốc: ${item.medicine_name} (${item.dosage}, ${item.duration_days ? item.duration_days + ' ngày' : 'liều'})`,
+              quantity: qty,
+              unit_price: price,
+              total_price: qty * price
+            });
+          });
+        }
+      }
+    }
+
+    // Query Vaccinations
+    const { data: vaccs } = await supabase
+      .from("vaccinations")
+      .select("id, vaccine_name")
+      .eq("appointment_id", appointmentId);
+
+    if (vaccs && vaccs.length > 0) {
+      vaccs.forEach(item => {
+        const qty = 1;
+        const price = 150000; // default vaccine price
+        invoiceItems.push({
+          vaccination_id: item.id,
+          source_type: "VACCINATION",
+          description: `Tiêm phòng: ${item.vaccine_name}`,
+          quantity: qty,
+          unit_price: price,
+          total_price: qty * price
+        });
+      });
+    }
+
+    // Query Boarding
+    const { data: boarding } = await supabase
+      .from("boarding")
+      .select("id, check_in, check_out, cages:cage_id(cage_number)")
+      .eq("appointment_id", appointmentId)
+      .maybeSingle();
+
+    if (boarding) {
+      const checkIn = new Date(boarding.check_in);
+      const checkOut = new Date(boarding.check_out);
+      const diffTime = Math.abs(checkOut - checkIn);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+      const qty = diffDays;
+      const price = 200000; // default boarding rate
+      invoiceItems.push({
+        boarding_id: boarding.id,
+        source_type: "BOARDING",
+        description: `Lưu trú phòng ${boarding.cages?.cage_number || ''} (${diffDays} ngày)`,
+        quantity: qty,
+        unit_price: price,
+        total_price: qty * price
+      });
+    }
+
+    if (invoiceItems.length === 0) {
+      invoiceItems.push({
+        source_type: "EXTRA",
+        description: "Phí dịch vụ chung",
+        quantity: 1,
+        unit_price: 100000,
+        total_price: 100000
+      });
+    }
+
+    const subtotal = invoiceItems.reduce((sum, item) => sum + item.total_price, 0);
+    const tax = 0;
+    const discount = 0;
+    const total = subtotal - discount + tax;
+
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("invoices")
+      .insert({
+        appointment_id: appointmentId,
+        subtotal_amount: subtotal,
+        discount_amount: discount,
+        tax_amount: tax,
+        total_amount: total,
+        payment_status: "UNPAID",
+        status: "DRAFT",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select("id")
+      .single();
+
+    if (invoiceError) throw new Error(invoiceError.message);
+
+    const itemsPayload = invoiceItems.map(item => ({
+      invoice_id: invoice.id,
+      service_id: item.service_id || null,
+      appointment_service_id: item.appointment_service_id || null,
+      medical_visit_id: item.medical_visit_id || null,
+      vaccination_id: item.vaccination_id || null,
+      boarding_id: item.boarding_id || null,
+      source_type: item.source_type,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total_price: item.total_price
+    }));
+
+    const { error: itemsError } = await supabase
+      .from("invoice_items")
+      .insert(itemsPayload);
+
+    if (itemsError) throw new Error(itemsError.message);
+
+    console.log(`[INVOICE] Created draft invoice INV-${invoice.id} for appointmentId ${appointmentId}`);
+  } catch (err) {
+    console.error("[INVOICE] Failed to create draft invoice:", err.message);
+  }
+}
+
+router.use(authMiddleware);
+router.use(requireRole("doctor"));
+
+const EXAM_SYMPTOM_OPTIONS = [
+  "Bỏ ăn",
+  "Nôn mửa",
+  "Tiêu chảy",
+  "Sốt",
+  "Ho",
+  "Hắt hơi",
+  "Ngứa da",
+  "Rụng lông",
+  "Mệt mỏi",
+  "Đi khập khiễng",
+  "Uống nhiều nước",
+  "Tiểu nhiều",
+  "Chảy nước mắt",
+  "Sưng hạch",
+  "Thở khó",
+  "Đau bụng",
+];
+
+const EXAM_BODY_SYSTEMS = [
+  { id: "general", label: "Tổng thể" },
+  { id: "skin", label: "Da & Lông" },
+  { id: "eyes_ears", label: "Mắt & Tai" },
+  { id: "lymph", label: "Hạch bạch huyết" },
+  { id: "cardiac", label: "Tim mạch" },
+  { id: "respiratory", label: "Hô hấp" },
+  { id: "gastro", label: "Tiêu hoá" },
+  { id: "musculo", label: "Cơ xương khớp" },
+  { id: "neuro", label: "Thần kinh" },
+];
+
+const EXAM_FORM_OPTIONS = {
+  durationOptions: [
+    { value: "<1d", label: "Dưới 1 ngày" },
+    { value: "1-3d", label: "1–3 ngày" },
+    { value: "3-7d", label: "3–7 ngày" },
+    { value: "1-2w", label: "1–2 tuần" },
+    { value: ">2w", label: "Hơn 2 tuần" },
+  ],
+  onsetOptions: [
+    { value: "sudden", label: "Đột ngột" },
+    { value: "gradual", label: "Từ từ" },
+  ],
+  severityOptions: [
+    { value: "1", label: "Rất nhẹ" },
+    { value: "2", label: "Nhẹ" },
+    { value: "3", label: "Trung bình" },
+    { value: "4", label: "Nặng" },
+    { value: "5", label: "Rất nặng" },
+  ],
+  systemStatusOptions: [
+    { value: "normal", label: "Bình thường" },
+    { value: "abnormal", label: "Bất thường" },
+    { value: "not_examined", label: "Chưa khám" },
+  ],
+};
+
+const SERVICE_LABELS = {
+  MEDICAL: "Khám bệnh",
+  GROOMING: "Grooming",
+  BOARDING: "Lưu trú",
+  VACCINE: "Tiêm phòng",
+  MIXED: "Khám & dịch vụ",
+  FOOD: "Thức ăn",
+  OTHER: "Khác",
+};
+
+const STATUS_LABELS = {
+  PENDING: "Chờ khám",
+  CONFIRMED: "Đã xác nhận",
+  IN_PROGRESS: "Đang khám",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  NO_SHOW: "Không đến",
+};
+
+const STATUS_VIEW = {
+  PENDING: { label: "Chờ khám", color: "#D97706", bg: "#FFFBEB" },
+  CONFIRMED: { label: "Đã xác nhận", color: "#2563EB", bg: "#EFF6FF" },
+  IN_PROGRESS: { label: "Đang khám", color: "#7C3AED", bg: "#F5F3FF" },
+  COMPLETED: { label: "Hoàn thành", color: "#059669", bg: "#ECFDF5" },
+  CANCELLED: { label: "Đã hủy", color: "#DC2626", bg: "#FEF2F2" },
+  NO_SHOW: { label: "Không đến", color: "#64748B", bg: "#F1F5F9" },
+};
+
+const PORTAL_STATUS_VIEW = {
+  completed: {
+    label: "Hoàn thành",
+    cls: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    dot: "bg-emerald-500",
+  },
+  in_progress: {
+    label: "Đang khám",
+    cls: "bg-amber-50 text-amber-700 ring-amber-200",
+    dot: "bg-amber-500",
+  },
+  scheduled: {
+    label: "Chờ khám",
+    cls: "bg-blue-50 text-blue-700 ring-blue-200",
+    dot: "bg-blue-500",
+  },
+};
+
+function getPortalStatusKey(status) {
+  if (status === "COMPLETED") return "completed";
+  if (status === "IN_PROGRESS") return "in_progress";
+  return "scheduled";
+}
+
+function formatLongDate(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleDateString("vi-VN", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function parsePositiveId(value, fieldName = "id") {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error(`${fieldName} không hợp lệ`);
+  }
+  return id;
+}
+
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("vi-VN");
+}
+
+function formatTime(value) {
+  if (!value) return "--:--";
+  return String(value).slice(0, 5);
+}
+
+function normalizeDateInput(value) {
+  const text = String(value ?? "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function normalizeTimeInput(value) {
+  const text = String(value ?? "").trim();
+  if (!/^\d{2}:\d{2}/.test(text)) return null;
+  return text.slice(0, 5) + ":00";
+}
+
+function addMinutes(time, minutes) {
+  const [hourText, minuteText] = String(time || "09:00").split(":");
+  const date = new Date(2000, 0, 1, Number(hourText), Number(minuteText));
+  date.setMinutes(date.getMinutes() + minutes);
+  return String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0") + ":00";
+}
+
+function assertFutureFollowUpSlot(record) {
+  if (!record.nextVisitDate) return null;
+
+  const date = normalizeDateInput(record.nextVisitDate);
+  const time = normalizeTimeInput(record.nextVisitTime);
+  if (!date) throw new Error("Ngày tái khám không hợp lệ");
+  if (!time) throw new Error("Vui lòng chọn giờ tái khám");
+
+  const slot = new Date(date + "T" + time.slice(0, 5) + ":00");
+  if (Number.isNaN(slot.getTime()) || slot.getTime() <= Date.now()) {
+    throw new Error("Lịch tái khám phải nằm trong tương lai");
+  }
+
+  return { date, time };
+}
+
+function formatAge(dob) {
+  if (!dob) return "Chưa rõ";
+
+  const birth = new Date(dob);
+  if (Number.isNaN(birth.getTime())) return "Chưa rõ";
+
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  const monthDelta = now.getMonth() - birth.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
+    years -= 1;
+  }
+
+  if (years <= 0) {
+    const months = Math.max(1, Math.floor((now.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    return `${months} tháng`;
+  }
+
+  return `${years} tuổi`;
+}
+
+function getInitials(name) {
+  return String(name || "?")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function getGenderLabel(gender) {
+  if (gender === "MALE") return "Đực";
+  if (gender === "FEMALE") return "Cái";
+  return "Chưa rõ";
+}
+
+function getServiceLabel(type) {
+  return SERVICE_LABELS[type] || type || "Chưa rõ";
+}
+
+function getStatusLabel(status) {
+  return STATUS_LABELS[status] || status || "Chưa rõ";
+}
+
+function cleanAppointmentNote(value) {
+  return String(value || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith(REQUEST_PREFIX))
+    .filter((line) => !(line.startsWith("{") && line.endsWith("}")))
+    .join("\n")
+    .trim();
+}
+
+function safeJsonParse(value, fallback) {
+  if (!value) return fallback;
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return parsed && typeof parsed === "object" ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function emptyExamRecord() {
+  return {
+    chiefComplaint: "",
+    selectedSymptoms: [],
+    duration: "",
+    onset: "",
+    severity: 0,
+    ownerNotes: "",
+    vitals: {
+      temp: "",
+      heart: "",
+      resp: "",
+      spo2: "",
+      weight: "",
+    },
+    systems: Object.fromEntries(
+      EXAM_BODY_SYSTEMS.map((system) => [
+        system.id,
+        {
+          status: "not_examined",
+          notes: "",
+        },
+      ]),
+    ),
+    clinicalNote: "",
+    prescriptions: [],
+    nextVisitDate: null,
+    nextVisitTime: "",
+  };
+}
+
+function normalizeExamRecord(rawVisit) {
+  const empty = emptyExamRecord();
+
+  if (!rawVisit) return empty;
+
+  const clinicalExam = safeJsonParse(rawVisit.clinical_exam, {});
+
+  return {
+    ...empty,
+    chiefComplaint: clinicalExam.chiefComplaint || "",
+    selectedSymptoms: Array.isArray(clinicalExam.selectedSymptoms)
+      ? clinicalExam.selectedSymptoms
+      : String(rawVisit.symptoms || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+    duration: clinicalExam.duration || "",
+    onset: clinicalExam.onset || "",
+    severity: Number(clinicalExam.severity || 0),
+    ownerNotes: clinicalExam.ownerNotes || "",
+    vitals: {
+      ...empty.vitals,
+      ...(clinicalExam.vitals || {}),
+    },
+    systems: {
+      ...empty.systems,
+      ...(clinicalExam.systems || {}),
+    },
+    clinicalNote: rawVisit.diagnosis_note || "",
+    prescriptions: Array.isArray(clinicalExam.prescriptions) ? clinicalExam.prescriptions : [],
+    nextVisitDate: rawVisit.next_visit_date || null,
+    nextVisitTime: clinicalExam.nextVisitTime || "",
+  };
+}
+
+function sanitizeExamRecord(input) {
+  const empty = emptyExamRecord();
+  const record = input && typeof input === "object" ? input : {};
+
+  const allowedSymptoms = new Set(EXAM_SYMPTOM_OPTIONS);
+  const allowedDurations = new Set(EXAM_FORM_OPTIONS.durationOptions.map((item) => item.value));
+  const allowedOnsets = new Set(EXAM_FORM_OPTIONS.onsetOptions.map((item) => item.value));
+  const allowedStatus = new Set(EXAM_FORM_OPTIONS.systemStatusOptions.map((item) => item.value));
+  const allowedSystemIds = new Set(EXAM_BODY_SYSTEMS.map((item) => item.id));
+
+  const systems = { ...empty.systems };
+  const rawSystems = record.systems && typeof record.systems === "object" ? record.systems : {};
+
+  for (const [systemId, entry] of Object.entries(rawSystems)) {
+    if (!allowedSystemIds.has(systemId)) continue;
+
+    systems[systemId] = {
+      status: allowedStatus.has(entry?.status) ? entry.status : "not_examined",
+      notes: String(entry?.notes || "").trim(),
+    };
+  }
+
+  const severity = Number(record.severity || 0);
+
+  // Sanitize prescriptions
+  const rawPrescriptions = Array.isArray(record.prescriptions) ? record.prescriptions : [];
+  const prescriptions = rawPrescriptions
+    .filter((rx) => rx && typeof rx === "object" && String(rx.medicineName || "").trim() !== "")
+    .map((rx) => ({
+      id: String(rx.id || Math.random().toString(36).substring(2, 9)),
+      medicineName: String(rx.medicineName || "").trim(),
+      dosage: String(rx.dosage || "").trim(),
+      frequency: String(rx.frequency || "2 lần/ngày").trim(),
+      route: String(rx.route || "Uống").trim(),
+      durationDays: rx.durationDays && Number.isInteger(rx.durationDays) ? rx.durationDays : null,
+      instructions: String(rx.instructions || "").trim(),
+    }));
+
+  return {
+    ...empty,
+    chiefComplaint: String(record.chiefComplaint || "").trim(),
+    selectedSymptoms: Array.isArray(record.selectedSymptoms)
+      ? record.selectedSymptoms
+          .map((item) => String(item).trim())
+          .filter((item) => allowedSymptoms.has(item))
+      : [],
+    duration: allowedDurations.has(record.duration) ? record.duration : "",
+    onset: allowedOnsets.has(record.onset) ? record.onset : "",
+    severity: Number.isInteger(severity) && severity >= 0 && severity <= 5 ? severity : 0,
+    ownerNotes: String(record.ownerNotes || "").trim(),
+    vitals: {
+      temp: String(record.vitals?.temp || "").trim(),
+      heart: String(record.vitals?.heart || "").trim(),
+      resp: String(record.vitals?.resp || "").trim(),
+      spo2: String(record.vitals?.spo2 || "").trim(),
+      weight: String(record.vitals?.weight || "").trim(),
+    },
+    systems,
+    clinicalNote: String(record.clinicalNote || "").trim(),
+    prescriptions,
+    nextVisitDate: normalizeDateInput(record.nextVisitDate) || null,
+    nextVisitTime: normalizeTimeInput(record.nextVisitTime)?.slice(0, 5) || "",
+  };
+}
+
+async function getOwnedAppointment(appointmentId, doctorId) {
+  if (!doctorId) {
+    throw new Error("Tài khoản bác sĩ chưa được liên kết hồ sơ bác sĩ");
+  }
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(`
+      id,
+      pet_id,
+      doctor_id,
+      doctor_schedule_slot_id,
+      appointment_type,
+      status,
+      note,
+      cancel_reason,
+      requested_date,
+      requested_time,
+      created_at,
+      updated_at,
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
+        id,
+        slot_date,
+        start_time,
+        end_time,
+        status,
+        schedule:doctor_schedules!doctor_schedule_slots_doctor_schedule_id_fkey (room_name)
+      ),
+      pets:pet_id (
+        id,
+        name,
+        gender,
+        dob,
+        weight,
+        color,
+        img_url,
+        allergies,
+        chronic_diseases,
+        special_note,
+        species:species_id (
+          id,
+          name
+        ),
+        breed:breed_id (
+          id,
+          name
+        ),
+        customers:customer_id (
+          id,
+          full_name,
+          phone,
+          address,
+          user_id
+        )
+      )
+    `)
+    .eq("id", appointmentId)
+    .eq("doctor_id", doctorId)
+    .single();
+
+  if (error || !data) {
+    throw new Error("Không tìm thấy lịch hẹn hoặc bạn không có quyền truy cập");
+  }
+
+  return data;
+}
+
+async function updateDoctorScheduleStatus(scheduleId, status) {
+  await setDoctorScheduleSlotStatus(scheduleId, status);
+}
+
+async function resolveFollowUpService() {
+  const { data, error } = await supabase
+    .from("services")
+    .select("id, name, type, price")
+    .eq("type", "MEDICAL")
+    .eq("is_active", true)
+    .order("id", { ascending: true })
+    .limit(1);
+
+  if (error) throw new Error(error.message);
+  return data?.[0] || null;
+}
+
+async function findFollowUpScheduleIfExists(doctorId, date, time) {
+  const busyAppointments = await supabase
+    .from("appointments")
+    .select("id")
+    .eq("doctor_id", doctorId)
+    .eq("requested_date", date)
+    .eq("requested_time", time)
+    .not("status", "in", "(CANCELLED,NO_SHOW)")
+    .limit(1);
+
+  if (busyAppointments.error) throw new Error(busyAppointments.error.message);
+  if ((busyAppointments.data || []).length > 0) {
+    throw new Error("Bác sĩ đã có lịch hẹn trong khung giờ tái khám này");
+  }
+
+  return ensureDoctorScheduleSlot(doctorId, date, time, { slotDuration: 30 });
+}
+
+async function createCustomerNotification(userId, payload) {
+  if (!userId) throw new Error("Không tìm thấy tài khoản khách hàng để gửi thông báo tái khám");
+
+  const { error } = await supabase.from("notifications").insert({
+    user_id: userId,
+    title: payload.title,
+    content: payload.content,
+    type: "APPOINTMENT",
+    is_read: false,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+async function createFollowUpAppointment(originalAppointment, cleanRecord) {
+  const slot = assertFutureFollowUpSlot(cleanRecord);
+  if (!slot) return null;
+
+  const schedule = await findFollowUpScheduleIfExists(originalAppointment.doctor_id, slot.date, slot.time);
+
+  // Reserve one concrete 30-minute slot to avoid duplicate doctor_schedule_slot_id conflicts.
+  if (schedule?.id) {
+    if (!await reserveDoctorScheduleSlot(schedule.id)) {
+      const error = new Error("Ca làm việc của bác sĩ đã được đặt. Vui lòng chọn khung giờ khác.");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  const customer = originalAppointment.pets?.customers;
+  const service = await resolveFollowUpService();
+  const now = new Date().toISOString();
+  const note = [
+    "Tái khám từ lịch " + String(originalAppointment.id).padStart(6, "0"),
+    cleanRecord.clinicalNote ? "Ghi chú: " + cleanRecord.clinicalNote : "",
+  ].filter(Boolean).join(". ");
+
+  const { data: appointment, error } = await supabase
+    .from("appointments")
+    .insert({
+      pet_id: originalAppointment.pet_id,
+      doctor_id: originalAppointment.doctor_id,
+      staff_id: null,
+      doctor_schedule_slot_id: schedule?.id ?? null,
+      appointment_type: "MEDICAL",
+      status: "PENDING",
+      note,
+      updated_at: now,
+      requested_date: slot.date,
+      requested_time: slot.time,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (schedule?.id) {
+      await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
+    }
+    throw new Error(error.message);
+  }
+
+  if (service?.id) {
+    const item = await supabase.from("appointment_services").insert({
+      appointment_id: appointment.id,
+      service_id: service.id,
+      quantity: 1,
+      unit_price: service.price ?? 0,
+      status: "PENDING",
+    });
+
+    if (item.error) {
+      await supabase.from("appointments").delete().eq("id", appointment.id);
+      if (schedule?.id) {
+        await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
+      }
+      throw new Error(item.error.message);
+    }
+  }
+
+  const petName = originalAppointment.pets?.name || "thú cưng";
+  try {
+    await createCustomerNotification(customer?.user_id, {
+      title: "Lịch tái khám mới",
+      content: petName + " có lịch tái khám vào " + formatDate(slot.date) + " lúc " + formatTime(slot.time) + ". Mã lịch hẹn: APT-" + String(appointment.id).padStart(6, "0") + ".",
+    });
+  } catch (notificationError) {
+    await supabase.from("appointments").delete().eq("id", appointment.id);
+    if (schedule?.id) {
+      await setDoctorScheduleSlotStatus(schedule.id, "AVAILABLE");
+    }
+    throw notificationError;
+  }
+
+  await sendAppointmentEventEmail("appointment_confirmation", appointment.id);
+
+  return {
+    id: appointment.id,
+    date: slot.date,
+    time: slot.time,
+  };
+}
+
+async function getCurrentMedicalVisit(appointmentId) {
+  const { data, error } = await supabase
+    .from("medical_visits")
+    .select("id, appointment_id, symptoms, clinical_exam, diagnosis_note, next_visit_date, created_at, updated_at")
+    .eq("appointment_id", appointmentId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data || null;
+}
+
+async function getPrescriptionsForVisit(medicalVisitId) {
+  const { data, error } = await supabase
+    .from("prescription_items")
+    .select(`
+      id,
+      medicine_name,
+      dosage,
+      frequency,
+      duration_days,
+      instructions,
+      prescriptions:prescription_id (
+        id
+      )
+    `)
+    .eq("prescription_id", medicalVisitId);
+
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((item) => ({
+    id: String(item.id),
+    medicineName: item.medicine_name || "",
+    dosage: item.dosage || "",
+    frequency: item.frequency || "",
+    route: "", // Route is not stored in DB, default to empty
+    durationDays: item.duration_days || null,
+    instructions: item.instructions || "",
+  }));
+}
+
+async function savePrescriptions(medicalVisitId, prescriptions) {
+  if (!prescriptions || prescriptions.length === 0) return;
+
+  // Get existing prescription IDs for this medical visit
+  const { data: existingPrescriptions, error: fetchError } = await supabase
+    .from("prescriptions")
+    .select("id")
+    .eq("medical_visit_id", medicalVisitId);
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  // Create prescription records
+  const prescriptionInserts = prescriptions.map((rx) => ({
+    medical_visit_id: medicalVisitId,
+    notes: rx.instructions || "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
+
+  const { data: createdPrescriptions, error: prescriptionError } = await supabase
+    .from("prescriptions")
+    .insert(prescriptionInserts)
+    .select("id");
+
+  if (prescriptionError) throw new Error(prescriptionError.message);
+
+  // Create prescription items
+  const prescriptionItemsInserts = [];
+  for (let i = 0; i < prescriptions.length; i++) {
+    const rx = prescriptions[i];
+    const prescriptionId = createdPrescriptions[i]?.id;
+
+    if (!prescriptionId) continue;
+
+    prescriptionItemsInserts.push({
+      prescription_id: prescriptionId,
+      medicine_name: String(rx.medicineName || "").trim(),
+      dosage: String(rx.dosage || "").trim(),
+      frequency: String(rx.frequency || "").trim(),
+      duration_days: rx.durationDays && Number.isInteger(rx.durationDays) ? rx.durationDays : null,
+      instructions: String(rx.instructions || "").trim(),
+    });
+  }
+
+  if (prescriptionItemsInserts.length > 0) {
+    const { error: itemsError } = await supabase
+      .from("prescription_items")
+      .insert(prescriptionItemsInserts);
+
+    if (itemsError) throw new Error(itemsError.message);
+  }
+}
+
+async function getVaccinations(petId) {
+  const { data, error } = await supabase
+    .from("vaccinations")
+    .select("id, vaccine_name, date_given, next_due_date, note")
+    .eq("pet_id", petId)
+    .order("date_given", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const today = new Date();
+
+  return (data || []).map((item) => {
+    const dueDate = item.next_due_date ? new Date(item.next_due_date) : null;
+
+    return {
+      id: item.id,
+      name: item.vaccine_name,
+      dateGiven: item.date_given,
+      nextDueDate: item.next_due_date,
+      dateGivenLabel: formatDate(item.date_given),
+      nextDueDateLabel: formatDate(item.next_due_date),
+      note: item.note || "",
+      isDue: dueDate ? dueDate.getTime() < today.getTime() : false,
+    };
+  });
+}
+
+async function getVisitHistory(petId, currentAppointmentId) {
+  const { data: appointments, error } = await supabase
+    .from("appointments")
+    .select(`
+      id,
+      doctor_id,
+      doctor_schedule_slot_id,
+      appointment_type,
+      status,
+      created_at,
+      doctors:doctor_id (
+        full_name
+      ),
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
+        slot_date,
+        start_time,
+        schedule:doctor_schedules!doctor_schedule_slots_doctor_schedule_id_fkey (room_name)
+      )
+    `)
+    .eq("pet_id", petId)
+    .neq("id", currentAppointmentId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error) throw new Error(error.message);
+
+  const appointmentIds = (appointments || []).map((item) => item.id);
+
+  const { data: visits, error: visitError } = appointmentIds.length
+    ? await supabase
+        .from("medical_visits")
+        .select("appointment_id, diagnosis_note, next_visit_date")
+        .in("appointment_id", appointmentIds)
+    : { data: [], error: null };
+
+  if (visitError) throw new Error(visitError.message);
+
+  const visitMap = new Map((visits || []).map((visit) => [visit.appointment_id, visit]));
+
+  return (appointments || []).map((appointment) => {
+    const visit = visitMap.get(appointment.id);
+    const schedule = appointment.doctor_schedule_slots;
+
+    return {
+      id: appointment.id,
+      date: formatDate(schedule?.slot_date || appointment.created_at),
+      time: formatTime(schedule?.start_time),
+      service: getServiceLabel(appointment.appointment_type),
+      status: getStatusLabel(appointment.status),
+      doctorName: appointment.doctors?.full_name || "Chưa rõ bác sĩ",
+      diagnosisNote: visit?.diagnosis_note || "",
+      nextVisitDate: visit?.next_visit_date || null,
+    };
+  });
+}
+
+async function buildExamDetail({ appointment, vaccinations, history, visit }) {
+  const pet = appointment.pets;
+  const owner = pet?.customers;
+  const schedule = appointment.doctor_schedule_slots;
+  const record = normalizeExamRecord(visit);
+  const appointmentNote = cleanAppointmentNote(appointment.note);
+
+  // Fetch prescriptions from database if visit exists
+  let prescriptions = record.prescriptions;
+  if (visit?.id) {
+    try {
+      const dbPrescriptions = await getPrescriptionsForVisit(visit.id);
+      if (dbPrescriptions && dbPrescriptions.length > 0) {
+        prescriptions = dbPrescriptions;
+      }
+    } catch (e) {
+      // Fall back to clinical_exam data
+    }
+  }
+
+  return {
+    appointment: {
+      id: appointment.id,
+      displayId: `APT-${String(appointment.id).padStart(5, "0")}`,
+      status: appointment.status,
+      statusLabel: getStatusLabel(appointment.status),
+      serviceType: appointment.appointment_type,
+      serviceLabel: getServiceLabel(appointment.appointment_type),
+      date: appointment.requested_date || schedule?.slot_date || appointment.created_at,
+      dateLabel: formatDate(appointment.requested_date || schedule?.slot_date || appointment.created_at),
+      time: formatTime(appointment.requested_time || schedule?.start_time),
+      endTime: formatTime(schedule?.end_time),
+      roomName: schedule?.schedule?.room_name || "",
+      note: appointmentNote || "",
+    },
+    patientCard: {
+      id: pet?.id || null,
+      name: pet?.name || "Chưa rõ",
+      initials: getInitials(pet?.name),
+      imageUrl: pet?.img_url || null,
+      subtitle: [
+        pet?.species?.name || "Chưa rõ loài",
+        getGenderLabel(pet?.gender),
+        pet?.color || "Chưa rõ màu",
+      ].join(" · "),
+      serviceBadge: getServiceLabel(appointment.appointment_type),
+    },
+    petInfoItems: [
+      { key: "age", icon: "CalendarDays", label: "Tuổi", value: formatAge(pet?.dob) },
+      { key: "weight", icon: "Weight", label: "Cân nặng", value: pet?.weight ? `${pet.weight} kg` : "Chưa rõ" },
+      { key: "breed", icon: "Stethoscope", label: "Giống", value: pet?.breed?.name || "Chưa rõ" },
+      { key: "time", icon: "Clock", label: "Giờ hẹn", value: formatTime(schedule?.start_time) },
+    ],
+    owner: {
+      id: owner?.id || null,
+      fullName: owner?.full_name || "Chưa rõ chủ nuôi",
+      phone: owner?.phone || "Chưa có SĐT",
+      address: owner?.address || "",
+    },
+    riskAlerts: [
+      pet?.allergies ? { key: "allergies", label: "Dị ứng", value: pet.allergies } : null,
+      pet?.chronic_diseases ? { key: "chronicDiseases", label: "Bệnh nền", value: pet.chronic_diseases } : null,
+      pet?.special_note ? { key: "specialNote", label: "Lưu ý", value: pet.special_note } : null,
+    ].filter(Boolean),
+    vaccinations,
+    history,
+    formSchema: {
+      symptomOptions: EXAM_SYMPTOM_OPTIONS.map((label, index) => ({ id: index + 1, label })),
+      bodySystems: EXAM_BODY_SYSTEMS,
+      ...EXAM_FORM_OPTIONS,
+      vitalFields: [
+        { key: "temp", icon: "Thermometer", label: "Nhiệt độ", unit: "°C", tone: "orange" },
+        { key: "heart", icon: "Heart", label: "Nhịp tim", unit: "lần/phút", tone: "red" },
+        { key: "resp", icon: "Wind", label: "Nhịp thở", unit: "lần/phút", tone: "cyan" },
+        { key: "spo2", icon: "Activity", label: "SpO₂", unit: "%", tone: "violet" },
+        { key: "weight", icon: "Weight", label: "Cân nặng thực tế", unit: "kg", tone: "emerald" },
+      ],
+    },
+    record: {
+      ...record,
+      prescriptions,
+    },
+  };
+}
+
+async function saveMedicalVisit(appointmentId, record) {
+  const cleanRecord = sanitizeExamRecord(record);
+  const now = new Date().toISOString();
+
+  const clinicalExamPayload = {
+    chiefComplaint: cleanRecord.chiefComplaint,
+    selectedSymptoms: cleanRecord.selectedSymptoms,
+    duration: cleanRecord.duration,
+    onset: cleanRecord.onset,
+    severity: cleanRecord.severity,
+    ownerNotes: cleanRecord.ownerNotes,
+    vitals: cleanRecord.vitals,
+    systems: cleanRecord.systems,
+    nextVisitTime: cleanRecord.nextVisitTime,
+  };
+
+  assertFutureFollowUpSlot(cleanRecord);
+
+  const existingVisit = await getCurrentMedicalVisit(appointmentId);
+
+  const payload = {
+    appointment_id: appointmentId,
+    symptoms: cleanRecord.selectedSymptoms.join(", "),
+    clinical_exam: JSON.stringify(clinicalExamPayload),
+    diagnosis_note: cleanRecord.clinicalNote || null,
+    next_visit_date: cleanRecord.nextVisitDate || null,
+    updated_at: now,
+  };
+
+  let medicalVisitId;
+
+  if (existingVisit?.id) {
+    const { data, error } = await supabase
+      .from("medical_visits")
+      .update(payload)
+      .eq("id", existingVisit.id)
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    medicalVisitId = data.id;
+  } else {
+    const { data, error } = await supabase
+      .from("medical_visits")
+      .insert({
+        ...payload,
+        created_at: now,
+      })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    medicalVisitId = data.id;
+  }
+
+  // Save prescriptions to database
+  if (cleanRecord.prescriptions && cleanRecord.prescriptions.length > 0) {
+    await savePrescriptions(medicalVisitId, cleanRecord.prescriptions);
+  }
+
+  return medicalVisitId;
+}
+
+function repairNotificationText(value) {
+  let text = String(value || "");
+
+  if (text.includes("?") || text.includes("?") || text.includes("?") || text.includes("?") || text.includes("??") || text.includes("??")) {
+    try {
+      const repaired = Buffer.from(text, "latin1").toString("utf8");
+      if (repaired && !repaired.includes("?")) text = repaired;
+    } catch {
+      // Keep original text if legacy repair fails.
+    }
+  }
+
+  const replacements = new Map([
+    ["Kh?ch h?ng", "Khách hàng"],
+    ["y?u c?u", "yêu cầu"],
+    ["??i l?ch", "đổi lịch"],
+    ["h?y l?ch", "hủy lịch"],
+    ["l?ch h?n", "lịch hẹn"],
+    ["L? do", "Lý do"],
+    ["?? x?c nh?n", "đã xác nhận"],
+    ["Kh?ng ghi r?", "Không ghi rõ"],
+  ]);
+
+  for (const [bad, good] of replacements) {
+    text = text.split(bad).join(good);
+  }
+
+  return text;
+}
+
+function mapDoctorNotification(notification) {
+  return {
+    id: notification.id,
+    title: repairNotificationText(notification.title || "Th?ng b?o"),
+    content: repairNotificationText(notification.content || ""),
+    type: notification.type || "APPOINTMENT",
+    isRead: Boolean(notification.is_read),
+    createdAt: notification.created_at,
+  };
+}
+
+// GET /api/doctor/appointments
+router.get("/", async function getDoctorAppointments(req, res) {
+  try {
+    const doctorId = req.auth?.user?.doctorId;
+
+    if (!doctorId) {
+      return res.status(403).json({
+        ok: false,
+        message: "Tài khoản này không phải là bác sĩ hoặc chưa được liên kết với hồ sơ bác sĩ",
+      });
+    }
+
+    const payload = await listDoctorAppointmentsForPortal(doctorId);
+    res.json({ ok: true, ...payload });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// GET /api/doctor/appointments/notifications
+router.get("/notifications", async function getDoctorNotifications(req, res) {
+  try {
+    const userId = req.auth?.rawUser?.id;
+    if (!userId) return res.status(403).json({ ok: false, message: "Không xác định được tài khoản bác sĩ" });
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("id, title, content, type, is_read, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) throw new Error(error.message);
+
+    const notifications = (data || []).map(mapDoctorNotification);
+    res.json({
+      ok: true,
+      notifications,
+      summary: {
+        total: notifications.length,
+        unreadCount: notifications.filter((notification) => !notification.isRead).length,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.patch("/notifications/read-all", async function markAllDoctorNotificationsRead(req, res) {
+  try {
+    const userId = req.auth?.rawUser?.id;
+    if (!userId) return res.status(403).json({ ok: false, message: "Không xác định được tài khoản bác sĩ" });
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+router.patch("/notifications/:notificationId/read", async function markDoctorNotificationRead(req, res) {
+  try {
+    const userId = req.auth?.rawUser?.id;
+    const notificationId = parsePositiveId(req.params.notificationId, "ID thông báo");
+    if (!userId) return res.status(403).json({ ok: false, message: "Không xác định được tài khoản bác sĩ" });
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", notificationId)
+      .eq("user_id", userId);
+
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// PUT /api/doctor/appointments/:id/start
+router.put("/:id/start", async function startExam(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
+
+    if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Chỉ có thể bắt đầu lịch hẹn ở trạng thái chờ khám hoặc đã xác nhận",
+      });
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        status: "IN_PROGRESS",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentId);
+
+    if (error) throw new Error(error.message);
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "IN_PROGRESS");
+
+    res.json({ ok: true, message: "Bắt đầu khám thành công" });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+// GET /api/doctor/appointments/:id/exam-detail
+router.get("/:id/exam-detail", async function getExamDetail(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
+    const [visit, vaccinations, history] = await Promise.all([
+      getCurrentMedicalVisit(appointmentId),
+      getVaccinations(appointment.pet_id),
+      getVisitHistory(appointment.pet_id, appointmentId),
+    ]);
+
+    res.json({
+      ok: true,
+      detail: await buildExamDetail({
+        appointment,
+        vaccinations,
+        history,
+        visit,
+      }),
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+// PUT /api/doctor/appointments/:id/exam-draft
+router.put("/:id/exam-draft", async function saveExamDraft(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
+
+    await saveMedicalVisit(appointmentId, req.body?.record);
+
+    if (["PENDING", "CONFIRMED"].includes(appointment.status)) {
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          status: "IN_PROGRESS",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", appointmentId);
+
+      if (error) throw new Error(error.message);
+      await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "IN_PROGRESS");
+    }
+
+    res.json({ ok: true, message: "Đã lưu nháp phiếu khám" });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+// PUT /api/doctor/appointments/:id/exam-complete
+router.put("/:id/exam-complete", async function completeExamWithRecord(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
+    const cleanRecord = sanitizeExamRecord(req.body?.record);
+    await saveMedicalVisit(appointmentId, cleanRecord);
+    const followUpAppointment = await createFollowUpAppointment(appointment, cleanRecord);
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        status: "COMPLETED",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentId);
+
+    if (error) throw new Error(error.message);
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
+    await createDraftInvoiceForAppointment(appointmentId);
+    await sendAppointmentEventEmail("exam_result", appointmentId, {
+      diagnosis: req.body?.record?.clinicalNote || "Kết quả khám đã được cập nhật trên hệ thống.",
+    });
+
+    res.json({
+      ok: true,
+      message: followUpAppointment
+        ? "Đã hoàn thành ca khám và tạo lịch tái khám cho khách hàng"
+        : "Đã hoàn thành ca khám",
+      followUpAppointment,
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+// Giữ endpoint cũ để không vỡ nơi khác nếu đang gọi /complete.
+router.put("/:id/complete", async function completeExamOnly(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
+
+    if (appointment.status !== "IN_PROGRESS") {
+      return res.status(400).json({
+        ok: false,
+        message: "Chỉ có thể hoàn thành lịch hẹn đang trong quá trình khám",
+      });
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        status: "COMPLETED",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentId);
+
+    if (error) throw new Error(error.message);
+    await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
+    await createDraftInvoiceForAppointment(appointmentId);
+    await sendAppointmentEventEmail("exam_result", appointmentId, {
+      diagnosis: "Kết quả khám đã được cập nhật trên hệ thống.",
+    });
+
+    res.json({ ok: true, message: "Hoàn thành khám thành công" });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+module.exports = router;
