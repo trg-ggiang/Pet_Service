@@ -15,6 +15,17 @@ const {
   markPaymentPaid,
   getStaffPortalSummary,
 } = require("../services/staff/staffPortalService");
+const {
+  listPendingBoardings,
+  listConfirmedBoardings,
+  approveBoardingBooking,
+  checkInBoarding,
+  checkOutBoarding,
+  listAllRoomsForStaff,
+  createCage,
+  updateCage,
+  deleteCage,
+} = require("../services/boardingService");
 
 const router = express.Router();
 
@@ -110,6 +121,87 @@ router.get("/boarding", async function getBoarding(req, res) {
   try {
     const guests = await listBoardingGuests();
     res.json({ ok: true, guests });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get("/boarding/pending", async function getPendingBoardings(req, res) {
+  try {
+    const bookings = await listPendingBoardings();
+    res.json({ ok: true, bookings });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get("/boarding/confirmed", async function getConfirmedBoardings(req, res) {
+  try {
+    const bookings = await listConfirmedBoardings();
+    res.json({ ok: true, bookings });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.get("/boarding/rooms", async function getBoardingRooms(req, res) {
+  try {
+    const rooms = await listAllRoomsForStaff();
+    res.json({ ok: true, rooms });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post("/boarding/rooms", async function createCageRoute(req, res) {
+  try {
+    const cage = await createCage(req.body ?? {});
+    res.json({ ok: true, message: "Đã tạo phòng mới", cage });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.patch("/boarding/rooms/:id", async function updateCageRoute(req, res) {
+  try {
+    await updateCage(req.params.id, req.body ?? {});
+    res.json({ ok: true, message: "Đã cập nhật phòng" });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.delete("/boarding/rooms/:id", async function deleteCageRoute(req, res) {
+  try {
+    await deleteCage(req.params.id);
+    res.json({ ok: true, message: "Đã xóa phòng" });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.put("/boarding/:id/approve", async function approveBoardingRoute(req, res) {
+  try {
+    await approveBoardingBooking(req.params.id, req.auth?.user?.staffId);
+    res.json({ ok: true, message: "Đã duyệt phòng lưu trú" });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.put("/boarding/:id/check-in", async function checkInBoardingRoute(req, res) {
+  try {
+    await checkInBoarding(req.params.id, req.auth?.user?.staffId);
+    res.json({ ok: true, message: "Check-in thành công" });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+router.post("/boarding/:id/checkout", async function checkOutBoardingRoute(req, res) {
+  try {
+    const result = await checkOutBoarding(req.params.id, req.auth?.user?.staffId, req.body ?? {});
+    res.json({ ok: true, message: "Checkout thành công", ...result });
   } catch (error) {
     sendError(res, error);
   }

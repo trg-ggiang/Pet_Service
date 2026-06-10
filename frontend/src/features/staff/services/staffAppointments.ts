@@ -107,6 +107,59 @@ export interface BoardingGuest {
   todayStatus: BoardingDailyStatus;
 }
 
+export interface PendingBoarding {
+  id: number;
+  appointmentId: number;
+  room: string;
+  sizeType: string;
+  sizeLabel: string;
+  pricePerDay: number;
+  checkIn: string;
+  checkOut: string;
+  rawCheckIn: string;
+  rawCheckOut: string;
+  nights: number;
+  petName: string;
+  species: string;
+  breed: string;
+  owner: string;
+  phone: string;
+  feedingInstruction: string;
+  specialNote: string;
+  habitNote: string;
+  bookedAt: string;
+}
+
+export interface StaffBoardingRoom {
+  id: number;
+  cageNumber: string;
+  status: string;
+  pricePerDay: number;
+  sizeType: string;
+  sizeLabel: string;
+  description: string;
+  note: string;
+  currentBoarding: {
+    boardingId: number;
+    boardingStatus: string;
+    checkIn: string;
+    checkOut: string;
+    petName: string;
+    species: string;
+    owner: string;
+    phone: string;
+  } | null;
+}
+
+export interface BoardingCheckoutResult {
+  invoiceId: number;
+  nights: number;
+  roomFee: number;
+  foodFee: number;
+  serviceFee: number;
+  total: number;
+}
+
 export interface PaymentItem {
   id: string;
   invoiceId: number;
@@ -144,6 +197,27 @@ interface GroomingResponse {
 interface BoardingResponse {
   ok: boolean;
   guests: BoardingGuest[];
+}
+
+interface PendingBoardingsResponse {
+  ok: boolean;
+  bookings: PendingBoarding[];
+}
+
+interface BoardingRoomsResponse {
+  ok: boolean;
+  rooms: StaffBoardingRoom[];
+}
+
+interface CheckoutResponse {
+  ok: boolean;
+  message: string;
+  invoiceId: number;
+  nights: number;
+  roomFee: number;
+  foodFee: number;
+  serviceFee: number;
+  total: number;
 }
 
 interface PaymentsResponse {
@@ -216,6 +290,71 @@ export const staffAppointmentsService = {
   async fetchBoardingGuests(): Promise<BoardingGuest[]> {
     const data = await fetchWithAuth<BoardingResponse>("/api/staff/boarding");
     return data.guests || [];
+  },
+
+  async fetchPendingBoardings(): Promise<PendingBoarding[]> {
+    const data = await fetchWithAuth<PendingBoardingsResponse>("/api/staff/boarding/pending");
+    return data.bookings || [];
+  },
+
+  async fetchConfirmedBoardings(): Promise<PendingBoarding[]> {
+    const data = await fetchWithAuth<PendingBoardingsResponse>("/api/staff/boarding/confirmed");
+    return data.bookings || [];
+  },
+
+  async fetchBoardingRooms(): Promise<StaffBoardingRoom[]> {
+    const data = await fetchWithAuth<BoardingRoomsResponse>("/api/staff/boarding/rooms");
+    return data.rooms || [];
+  },
+
+  async createBoardingRoom(input: { cageNumber: string; sizeType: string; pricePerDay: number; description?: string; note?: string }): Promise<void> {
+    await fetchWithAuth<MutationResponse>("/api/staff/boarding/rooms", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+
+  async updateBoardingRoom(cageId: number, updates: { status?: string; description?: string; note?: string; sizeType?: string; pricePerDay?: number }): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/boarding/rooms/${cageId}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  async deleteBoardingRoom(cageId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/boarding/rooms/${cageId}`, {
+      method: "DELETE",
+    });
+  },
+
+  async approveBoardingBooking(boardingId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/boarding/${boardingId}/approve`, {
+      method: "PUT",
+    });
+  },
+
+  async checkInBoarding(boardingId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/boarding/${boardingId}/check-in`, {
+      method: "PUT",
+    });
+  },
+
+  async checkOutBoarding(
+    boardingId: number,
+    fees: { foodFeePerDay?: number; extraServiceFee?: number; paymentMethod?: string },
+  ): Promise<BoardingCheckoutResult> {
+    const data = await fetchWithAuth<CheckoutResponse>(`/api/staff/boarding/${boardingId}/checkout`, {
+      method: "POST",
+      body: JSON.stringify(fees),
+    });
+    return {
+      invoiceId: data.invoiceId,
+      nights: data.nights,
+      roomFee: data.roomFee,
+      foodFee: data.foodFee,
+      serviceFee: data.serviceFee,
+      total: data.total,
+    };
   },
 
   async updateBoardingDailyStatus(guestId: number, todayStatus: BoardingDailyStatus): Promise<void> {

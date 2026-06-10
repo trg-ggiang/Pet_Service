@@ -113,10 +113,12 @@ export function StaffHeader({
   activeNav,
   pendingCheckIn,
   needsFed,
+  onBellClick,
 }: {
   activeNav: StaffNavId;
   pendingCheckIn: number;
   needsFed: number;
+  onBellClick?: () => void;
 }) {
   const titles: Record<StaffNavId, string> = {
     appointments: "Quản lý lịch hẹn",
@@ -134,7 +136,10 @@ export function StaffHeader({
           {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
         </p>
       </div>
-      <button className="w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors relative">
+      <button
+        onClick={onBellClick}
+        className="w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors relative"
+      >
         <Bell size={16} />
         {(pendingCheckIn > 0 || needsFed > 0) && (
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white" />

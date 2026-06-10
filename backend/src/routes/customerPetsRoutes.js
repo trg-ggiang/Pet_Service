@@ -30,6 +30,11 @@ const {
 const {
   listCustomerServiceHistoryView,
 } = require("../services/customer/customerServiceHistoryService");
+const {
+  listRoomsWithAvailability,
+  createBoardingBooking,
+  rescheduleBoardingBooking,
+} = require("../services/boardingService");
 
 const router = express.Router();
 
@@ -303,6 +308,39 @@ router.get("/invoices/:invoiceId/pdf", async (req, res) => {
       ok: false,
       message: error.message || "Không thể xuất hóa đơn PDF",
     });
+  }
+});
+
+// ─── Boarding ───────────────────────────────────────────────────────────────
+
+router.get("/boarding/rooms", async (req, res) => {
+  try {
+    const { checkIn, checkOut } = req.query;
+    if (!checkIn || !checkOut) {
+      return res.status(400).json({ ok: false, message: "Vui lòng cung cấp ngày check-in và check-out" });
+    }
+    const rooms = await listRoomsWithAvailability(checkIn, checkOut);
+    res.json({ ok: true, rooms });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message });
+  }
+});
+
+router.post("/boarding/book", async (req, res) => {
+  try {
+    const result = await createBoardingBooking(req.body ?? {}, req.auth.user.customerId);
+    res.status(201).json({ ok: true, ...result });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ ok: false, message: error.message });
+  }
+});
+
+router.patch("/boarding/:appointmentId/reschedule", async (req, res) => {
+  try {
+    await rescheduleBoardingBooking(req.params.appointmentId, req.auth.user.customerId, req.body ?? {});
+    res.json({ ok: true, message: "Đã cập nhật ngày lưu trú" });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ ok: false, message: error.message });
   }
 });
 

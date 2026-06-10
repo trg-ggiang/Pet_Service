@@ -34,7 +34,8 @@ export function PaymentsTab({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return payments.filter((p) => {
-      if (!matchesDateFilter(p.date, dateFilter)) return false;
+      // Pending invoices always show; only apply date filter to paid invoices
+      if (p.status !== "pending" && !matchesDateFilter(p.date, dateFilter)) return false;
       if (q && !p.petName.toLowerCase().includes(q) && !p.owner.toLowerCase().includes(q) && !p.service.toLowerCase().includes(q)) return false;
       return true;
     });

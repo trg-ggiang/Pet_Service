@@ -1,4 +1,4 @@
-﻿import { Calendar, ChevronRight, Clock, Heart, MapPin, Plus } from "lucide-react";
+﻿import { BedDouble, Calendar, ChevronRight, Clock, Heart, MapPin, Plus } from "lucide-react";
 import type { Apt, CustomerPortalNotification, Pet } from "../../../types/customer/portal";
 import { getNotifConfig, getPetColorById } from "../../../utils/customer/portalConfig";
 
@@ -23,6 +23,7 @@ export function CustomerHomeTab({
   notificationsError,
   unreadCount,
   onBookAppointment,
+  onBookBoarding,
   onOpenAppointments,
   onOpenPets,
   onOpenHistory,
@@ -37,6 +38,7 @@ export function CustomerHomeTab({
   notificationsError: string;
   unreadCount: number;
   onBookAppointment: () => void;
+  onBookBoarding?: () => void;
   onOpenAppointments: () => void;
   onOpenPets: () => void;
   onOpenHistory: () => void;
@@ -146,14 +148,15 @@ export function CustomerHomeTab({
                 </button>
     
                 <button
-                  className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-3 row-span-1 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:shadow-md hover:border-cyan-200 transition-all active:scale-[0.98] group flex items-center gap-3"
+                  onClick={onBookBoarding}
+                  className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-3 row-span-1 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:shadow-md hover:border-violet-200 transition-all active:scale-[0.98] group flex items-center gap-3"
                 >
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0" style={{ background: "#ECFDF5" }}>
-                    <MapPin size={20} style={{ color: "#059669" }} />
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0" style={{ background: "#F5F3FF" }}>
+                    <BedDouble size={20} style={{ color: "#7C3AED" }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[15px] font-bold text-slate-900 leading-tight">Tìm phòng khám</div>
-                    <div className="text-xs font-medium text-slate-500 mt-0.5">Địa chỉ & giờ mở cửa</div>
+                    <div className="text-[15px] font-bold text-slate-900 leading-tight">Đặt phòng lưu trú</div>
+                    <div className="text-xs font-medium text-slate-500 mt-0.5">Chọn phòng & ngày lưu trú</div>
                   </div>
                 </button>
     
