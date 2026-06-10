@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from "react";
-import { Calendar, Check, CheckCircle2, ChevronDown, Heart, Pill, Star, Stethoscope, Syringe, X } from "lucide-react";
+import { BedDouble, Calendar, Check, CheckCircle2, ChevronDown, Heart, Pill, Star, Stethoscope, Syringe, X } from "lucide-react";
+import { rescheduleBoardingBooking } from "../../../services/customer/customerBoardingApi";
 import type { CustomerAppointmentOptions, CustomerAppointmentProvider } from "../../../types/customer/appointments";
 import type { Apt, Pet, ServiceType } from "../../../types/customer/portal";
 import { getServiceTypeConfig, getStatusConfig } from "../../../utils/customer/portalConfig";
@@ -577,7 +578,7 @@ export function NewAppointmentModal({
 // Appointment Detail Modal
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, onConfirm }: { apt: Apt; onClose: () => void; onReschedule: (apt: Apt) => void; onCancel: (id: string) => void; onConfirm: (id: string) => void }) {
+export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, onConfirm, onRescheduleBoardingDates }: { apt: Apt; onClose: () => void; onReschedule: (apt: Apt) => void; onCancel: (id: string) => void; onConfirm: (id: string) => void; onRescheduleBoardingDates?: (apt: Apt) => void }) {
   const Icon = apt.icon;
   const statusCfg = getStatusConfig(apt.status);
   const serviceTypeCfg = getServiceTypeConfig(apt.serviceType);
@@ -729,41 +730,162 @@ export function AppointmentDetailModal({ apt, onClose, onReschedule, onCancel, o
         </div>
 
         {/* Actions */}
-        {(apt.status === "PENDING" || apt.status === "CONFIRMED") && (
-          <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-3">
-            {apt.status === "PENDING" && (
+        {(apt.status === "PENDING" || apt.status === "CONFIRMED") && (() => {
+          const isBoarding = apt.serviceType === "Lưu trú";
+          return (
+            <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-3">
+              {apt.status === "PENDING" && !isBoarding && (
+                <button
+                  onClick={async () => {
+                    if (confirming) return;
+                    setConfirming(true);
+                    try { await onConfirm(apt.id); } catch { setConfirming(false); }
+                  }}
+                  disabled={confirming}
+                  className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {confirming && (
+                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                  )}
+                  {confirming ? "Đang xử lý..." : "Xác nhận lịch"}
+                </button>
+              )}
+              {!isBoarding && (
+                <button
+                  onClick={() => onReschedule(apt)}
+                  className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors"
+                >
+                  Đổi lịch
+                </button>
+              )}
+              {isBoarding && onRescheduleBoardingDates && (
+                <button
+                  onClick={() => onRescheduleBoardingDates(apt)}
+                  className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-colors"
+                  style={{ background: "linear-gradient(135deg,#1D4ED8,#3B82F6)" }}
+                >
+                  Đổi ngày
+                </button>
+              )}
               <button
-                onClick={async () => {
-                  if (confirming) return;
-                  setConfirming(true);
-                  try { await onConfirm(apt.id); } catch { setConfirming(false); }
-                }}
-                disabled={confirming}
-                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={() => onCancel(apt.id)}
+                className="flex-1 h-11 border border-red-100 text-red-600 bg-red-50 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors"
               >
-                {confirming && (
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                )}
-                {confirming ? "Đang xử lý..." : "Xác nhận lịch"}
+                {isBoarding ? "Hủy đặt phòng" : "Hủy lịch"}
               </button>
-            )}
-            <button
-              onClick={() => onReschedule(apt)}
-              className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors"
-            >
-              Đổi lịch
-            </button>
-            <button
-              onClick={() => onCancel(apt.id)}
-              className="flex-1 h-11 border border-red-100 text-red-600 bg-red-50 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors"
-            >
-              Hủy lịch
-            </button>
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boarding Reschedule Modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function BoardingRescheduleModal({ apt, onClose, onSuccess }: { apt: Apt; onClose: () => void; onSuccess: () => void }) {
+  const today = getLocalDateInputValue();
+  const tomorrow = getLocalDateInputValue(new Date(Date.now() + 86400000));
+  const [checkIn, setCheckIn] = useState(today);
+  const [checkOut, setCheckOut] = useState(tomorrow);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const nights = checkIn && checkOut ? Math.max(0, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)) : 0;
+  const canSave = !!checkIn && !!checkOut && nights > 0 && !saving;
+
+  function formatVN(iso: string) {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  async function handleSave() {
+    if (!canSave) return;
+    setSaving(true); setError("");
+    try {
+      await rescheduleBoardingBooking(apt.appointmentId.toString(), checkIn, checkOut);
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể đổi ngày");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#EFF6FF" }}>
+              <BedDouble size={16} style={{ color: "#2563EB" }} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Đổi ngày lưu trú</h3>
+              <p className="text-xs text-slate-400">{apt.service} · {apt.pet}</p>
+            </div>
           </div>
-        )}
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={LABEL_CLS}>Ngày check-in</label>
+              <input
+                type="date"
+                value={checkIn}
+                min={today}
+                onChange={(e) => { setCheckIn(e.target.value); if (checkOut && e.target.value >= checkOut) setCheckOut(""); }}
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLS}>Ngày check-out</label>
+              <input
+                type="date"
+                value={checkOut}
+                min={checkIn || today}
+                disabled={!checkIn}
+                onChange={(e) => setCheckOut(e.target.value)}
+                className={INPUT_CLS + " disabled:opacity-50"}
+              />
+            </div>
+          </div>
+
+          {nights > 0 && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-blue-700">{formatVN(checkIn)} → {formatVN(checkOut)}</span>
+                <span className="font-bold text-blue-600">{nights} đêm</span>
+              </div>
+            </div>
+          )}
+
+          {error && <p className="text-xs font-semibold text-red-600 bg-red-50 rounded-xl px-4 py-2.5">{error}</p>}
+        </div>
+
+        <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-3">
+          <button onClick={onClose} className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+            Hủy
+          </button>
+          <button
+            onClick={() => void handleSave()}
+            disabled={!canSave}
+            className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{ background: "linear-gradient(135deg,#1D4ED8,#3B82F6)" }}
+          >
+            {saving && <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>}
+            {saving ? "Đang lưu..." : "Xác nhận đổi ngày"}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -270,11 +270,25 @@ function mapAppointment(appointment, maps) {
   const service = pickService(appointmentServices);
   const serviceType = getUiServiceType(appointment, service);
   const icon = ICON_BY_UI_TYPE[serviceType] ?? ICON_BY_UI_TYPE["Khám bệnh"];
-  const serviceFee = appointmentServices.reduce((total, item) => {
+  let serviceFee = appointmentServices.reduce((total, item) => {
     const quantity = Number(item.quantity ?? 1);
     const unitPrice = Number(item.unit_price ?? item.service?.price ?? 0);
     return total + (Number.isFinite(quantity) ? quantity : 1) * (Number.isFinite(unitPrice) ? unitPrice : 0);
   }, 0);
+
+  if (appointment.appointment_type === "BOARDING") {
+    const boardingInfo = maps.boardingByAppointmentId?.get(appointment.id);
+    if (boardingInfo) {
+      const checkIn = boardingInfo.check_in;
+      const checkOut = boardingInfo.pickup_reminder_at;
+      const pricePerDay = Number(boardingInfo.cages?.price_per_day || 0);
+      if (checkIn && checkOut && pricePerDay > 0) {
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / msPerDay));
+        serviceFee = nights * pricePerDay;
+      }
+    }
+  }
   const appointmentDate = appointment.requested_date ?? schedule?.slot_date ?? null;
   const appointmentTime = appointment.requested_time ?? schedule?.start_time ?? null;
 
@@ -310,6 +324,7 @@ async function loadAppointmentMaps(appointments) {
   const staffIds = [...new Set(appointments.map((row) => row.staff_id).filter(Boolean))];
   const scheduleIds = [...new Set(appointments.map((row) => row.doctor_schedule_slot_id).filter(Boolean))];
   const appointmentIds = appointments.map((row) => row.id);
+  const boardingAptIds = appointments.filter((row) => row.appointment_type === "BOARDING").map((row) => row.id);
 
   const [petsResult, doctorsResult, staffsResult, schedulesResult, servicesResult, medicalVisitsResult] = await Promise.all([
     petIds.length
@@ -340,6 +355,32 @@ async function loadAppointmentMaps(appointments) {
 
   for (const result of [petsResult, doctorsResult, staffsResult, schedulesResult, servicesResult, medicalVisitsResult]) {
     if (result.error) throw new Error(result.error.message);
+  }
+
+  // Fetch boarding pricing info (with price_per_day, fallback if column doesn't exist)
+  let boardingData = [];
+  if (boardingAptIds.length > 0) {
+    const boardingWithPrice = await supabase
+      .from("boarding")
+      .select("id, appointment_id, check_in, pickup_reminder_at, cages:cage_id(cage_number, price_per_day)")
+      .in("appointment_id", boardingAptIds)
+      .order("id", { ascending: false });
+    if (boardingWithPrice.error && /column.*does not exist|price_per_day/i.test(boardingWithPrice.error.message)) {
+      const boardingBasic = await supabase
+        .from("boarding")
+        .select("id, appointment_id, check_in, pickup_reminder_at, cages:cage_id(cage_number)")
+        .in("appointment_id", boardingAptIds)
+        .order("id", { ascending: false });
+      boardingData = boardingBasic.data || [];
+    } else if (!boardingWithPrice.error) {
+      boardingData = boardingWithPrice.data || [];
+    }
+  }
+  const boardingByAppointmentId = new Map();
+  for (const row of boardingData) {
+    if (!boardingByAppointmentId.has(row.appointment_id)) {
+      boardingByAppointmentId.set(row.appointment_id, row);
+    }
   }
 
   const prescriptionAppointmentIds = new Set();
@@ -403,6 +444,7 @@ async function loadAppointmentMaps(appointments) {
     servicesByAppointmentId,
     prescriptionAppointmentIds,
     prescriptionsByAppointmentId,
+    boardingByAppointmentId,
   };
 }
 

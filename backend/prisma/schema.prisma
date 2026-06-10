@@ -608,9 +608,12 @@ model GroomingRecord {
 model Cage {
   id Int @id @default(autoincrement())
 
-  cageNumber String     @unique @map("cage_number") @db.VarChar(50)
-  status     CageStatus @default(AVAILABLE)
-  note       String?    @db.Text
+  cageNumber  String     @unique @map("cage_number") @db.VarChar(50)
+  status      CageStatus @default(AVAILABLE)
+  note        String?    @db.Text
+  pricePerDay Decimal    @default(150000) @map("price_per_day") @db.Decimal(12, 2)
+  sizeType    String     @default("MEDIUM") @map("size_type") @db.VarChar(20)
+  description String?    @db.Text
 
   boardings Boarding[]
 
@@ -630,6 +633,9 @@ model Boarding {
   habitNote          String?   @map("habit_note") @db.Text
   specialNote        String?   @map("special_note") @db.Text
   pickupReminderAt   DateTime? @map("pickup_reminder_at") @db.Timestamptz(6)
+
+  requestedCheckIn  DateTime? @map("requested_check_in") @db.Date
+  requestedCheckOut DateTime? @map("requested_check_out") @db.Date
 
   currentStatus BoardingStatus @default(BOOKED) @map("current_status")
 

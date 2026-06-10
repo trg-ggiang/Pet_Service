@@ -27,7 +27,8 @@ import type {
 import type { CustomerServiceHistoryListPayload, CustomerServiceHistoryTypeFilter } from "../../../types/customer/serviceHistory";
 import type { Apt, CustomerPortalNotification, HistoryRecord, Pet, ServiceType } from "../../../types/customer/portal";
 import { CustomerAppointmentsTab } from "../../../components/customer/appointments/CustomerAppointmentsTab";
-import { NewAppointmentModal, AppointmentDetailModal, RescheduleModal } from "../../../components/customer/appointments/CustomerAppointmentModals";
+import { NewAppointmentModal, AppointmentDetailModal, RescheduleModal, BoardingRescheduleModal } from "../../../components/customer/appointments/CustomerAppointmentModals";
+import { BoardingBookingModal } from "../../../components/customer/boarding/BoardingBookingModal";
 import { CustomerHistoryTab } from "../../../components/customer/history/CustomerHistoryTab";
 import { HistoryDetailModal } from "../../../components/customer/history/HistoryDetailModal";
 import { CustomerHomeTab } from "../../../components/customer/home/CustomerHomeTab";
@@ -94,10 +95,12 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [historyTypeFilter, setHistoryTypeFilter] = useState<CustomerServiceHistoryTypeFilter>("all");
 
   const [isNewAptOpen, setIsNewAptOpen] = useState(false);
+  const [isBoardingOpen, setIsBoardingOpen] = useState(false);
   const [bookingPetName, setBookingPetName] = useState<string | null>(null);
   const [viewingApt, setViewingApt] = useState<Apt | null>(null);
   const [viewingHistory, setViewingHistory] = useState<HistoryRecord | null>(null);
   const [reschedulingApt, setReschedulingApt] = useState<Apt | null>(null);
+  const [reschedulingBoardingApt, setReschedulingBoardingApt] = useState<Apt | null>(null);
   const [cancellingAptId, setCancellingAptId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -327,12 +330,12 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <header className="bg-white px-5 py-4 flex items-center justify-between sticky top-0 z-50 border-b border-slate-200/80">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-            <PawSVG className="w-5 h-5 text-white" />
+      <header className="bg-white px-5 py-2.5 flex items-center justify-between sticky top-0 z-50 border-b border-slate-200/80">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+            <PawSVG className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-foreground text-[15px] tracking-tight">PetCare Center</span>
+          <span className="font-bold text-foreground text-[14px] tracking-tight">PetCare Center</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -392,14 +395,11 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             )}
           </div>
 
-          <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-              <span className="text-sm font-bold text-white">{userName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
+          <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+              <span className="text-xs font-bold text-white">{userName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
             </div>
-            <div className="hidden sm:block">
-              <div className="text-sm font-semibold text-foreground">{userName}</div>
-              <div className="text-[11px] font-medium text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full inline-flex mt-0.5">Khách hàng</div>
-            </div>
+            <span className="hidden sm:block text-sm font-semibold text-foreground">{userName}</span>
           </div>
           <button
             onClick={() => setConfirmLogout(true)}
@@ -411,7 +411,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         </div>
       </header>
 
-      <div className="bg-slate-50 border-b border-slate-200/80 sticky top-[73px] z-40">
+      <div className="bg-slate-50 border-b border-slate-200/80 sticky top-[53px] z-40">
         <div className="flex justify-center max-w-4xl mx-auto w-full px-5">
           <div className="flex gap-1">
             {navItems.map((item) => {
@@ -464,6 +464,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             notificationsError={notificationsError}
             unreadCount={unreadCount}
             onBookAppointment={() => setIsNewAptOpen(true)}
+            onBookBoarding={() => setIsBoardingOpen(true)}
             onOpenAppointments={() => setTab("apts")}
             onOpenPets={() => setTab("pets")}
             onOpenHistory={() => setTab("history")}
@@ -489,6 +490,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             selectedPetLabel={selectedPetLabel}
             selectedServiceLabel={selectedServiceLabel}
             onBookAppointment={() => setIsNewAptOpen(true)}
+            onBookBoarding={() => setIsBoardingOpen(true)}
             onViewAppointment={setViewingApt}
             onRescheduleAppointment={setReschedulingApt}
             onCancelAppointment={setCancellingAptId}
@@ -534,6 +536,18 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           />
         )}
       </main>
+
+      {isBoardingOpen && (
+        <BoardingBookingModal
+          pets={pets}
+          onClose={() => setIsBoardingOpen(false)}
+          onSuccess={async () => {
+            await refreshAppointments(1);
+            setAppointmentsPage(1);
+            setTab("apts");
+          }}
+        />
+      )}
 
       {isNewAptOpen && (
         <NewAppointmentModal
@@ -588,12 +602,24 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           apt={viewingApt}
           onClose={() => setViewingApt(null)}
           onReschedule={(appointment) => { setViewingApt(null); setReschedulingApt(appointment); }}
+          onRescheduleBoardingDates={(apt) => { setViewingApt(null); setReschedulingBoardingApt(apt); }}
           onCancel={(id) => { setViewingApt(null); setCancelReason(""); setCancellingAptId(id); }}
           onConfirm={async (id) => {
             await confirmCustomerAppointment(id);
             await refreshAppointments();
             await loadNotifications();
             setViewingApt(null);
+          }}
+        />
+      )}
+
+      {reschedulingBoardingApt && (
+        <BoardingRescheduleModal
+          apt={reschedulingBoardingApt}
+          onClose={() => setReschedulingBoardingApt(null)}
+          onSuccess={async () => {
+            setReschedulingBoardingApt(null);
+            await refreshAppointments();
           }}
         />
       )}

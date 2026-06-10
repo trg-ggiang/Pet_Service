@@ -292,7 +292,12 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
       />
 
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-        <StaffHeader activeNav={activeNav} pendingCheckIn={pendingCheckIn} needsFed={needsFed} />
+        <StaffHeader
+          activeNav={activeNav}
+          pendingCheckIn={pendingCheckIn}
+          needsFed={needsFed}
+          onBellClick={() => setActiveNav(needsFed > 0 ? "boarding" : "appointments")}
+        />
         <main className="flex-1 min-h-0 overflow-y-auto p-6">
           {activeNav === "appointments" && (
             <AppointmentsTab
@@ -323,6 +328,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
               error={errors.boarding}
               onViewDetails={setViewingBoarding}
               onToggleStatus={(guest, field) => void handleToggleBoardingStatus(guest, field)}
+              onRefresh={loadBoarding}
             />
           )}
           {activeNav === "payments" && (

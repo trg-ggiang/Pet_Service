@@ -30,7 +30,7 @@ export const SERVICE_TYPE_CONFIG: Record<ServiceType, { bg: string; color: strin
   "Khám bệnh": { bg: "#ECFEFF", color: "#0891B2" },
   "Tiêm phòng": { bg: "#ECFDF5", color: "#059669" },
   Grooming: { bg: "#FFFBEB", color: "#D97706" },
-  "Lưu trú": { bg: "#F5F3FF", color: "#7C3AED" },
+  "Lưu trú": { bg: "#EFF6FF", color: "#2563EB" },
 };
 
 export const NOTIF_CONFIG = {

@@ -554,8 +554,8 @@ async function main() {
   const cages = await Promise.all([
     prisma.cage.upsert({
       where: { cageNumber: "CAGE-01" },
-      update: { status: "OCCUPIED", note: "Phòng nhỏ, phù hợp cho mèo và chó nhỏ." },
-      create: { cageNumber: "CAGE-01", status: "OCCUPIED", note: "Phòng nhỏ, phù hợp cho mèo và chó nhỏ." },
+      update: { status: "AVAILABLE", note: "Phòng nhỏ, phù hợp cho mèo và chó nhỏ." },
+      create: { cageNumber: "CAGE-01", status: "AVAILABLE", note: "Phòng nhỏ, phù hợp cho mèo và chó nhỏ." },
     }),
     prisma.cage.upsert({
       where: { cageNumber: "CAGE-02" },
@@ -1092,7 +1092,7 @@ async function main() {
       habitNote: "Thích đi dạo buổi chiều.",
       specialNote: "Kiểm soát khẩu phần vì dễ tăng cân.",
       pickupReminderAt: new Date("2026-05-27T02:00:00.000Z"),
-      currentStatus: "STAYING",
+      currentStatus: "CHECKED_OUT",
     },
   });
 
@@ -1115,7 +1115,7 @@ async function main() {
       habitNote: "Hơi nhát khi ở môi trường mới.",
       specialNote: "Theo dõi mắt và lông dài.",
       pickupReminderAt: new Date("2026-05-30T01:00:00.000Z"),
-      currentStatus: "BOOKED",
+      currentStatus: "CHECKED_OUT",
     },
   });
 

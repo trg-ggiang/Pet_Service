@@ -883,7 +883,7 @@ async function listBoardingGuests() {
         )
       )
     `)
-    .in("current_status", ["BOOKED", "CHECKED_IN", "STAYING"])
+    .in("current_status", ["CHECKED_IN", "STAYING"])
     .order("check_in", { ascending: true, nullsFirst: false });
 
   if (error) throw new Error(error.message);
