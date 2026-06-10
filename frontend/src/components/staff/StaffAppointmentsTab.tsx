@@ -168,8 +168,10 @@ export function AppointmentsTab({
   onViewDetails,
   onConfirm,
   onCheckIn,
+  onCompleteGrooming,
   onApproveRequest,
   approvingAppointmentId,
+  completingGroomingAppointmentId,
 }: {
   appointments: StaffAppointment[];
   loading: boolean;
@@ -177,8 +179,10 @@ export function AppointmentsTab({
   onViewDetails: (apt: StaffAppointment) => void;
   onConfirm: (apt: StaffAppointment) => void;
   onCheckIn: (apt: StaffAppointment) => void;
+  onCompleteGrooming: (apt: StaffAppointment) => void;
   onApproveRequest: (apt: StaffAppointment) => void;
   approvingAppointmentId?: number | null;
+  completingGroomingAppointmentId?: number | null;
 }) {
   const [dateFilter, setDateFilter] = useState<DateFilterState>(getDefaultDateFilter);
   const [search, setSearch] = useState("");
@@ -296,6 +300,7 @@ export function AppointmentsTab({
                   const statusCfg = APT_STATUS_CONFIG[apt.status];
                   const svcIcon = SERVICE_ICONS[apt.serviceType] || SERVICE_ICONS.exam;
                   const Icon = svcIcon.icon;
+                  const isCompletingGrooming = completingGroomingAppointmentId === apt.appointmentId;
 
                   return (
                     <div key={apt.id} className="flex items-start gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
@@ -352,6 +357,14 @@ export function AppointmentsTab({
                             className="h-9 px-4 rounded-lg text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
                           >
                             <Send size={14} /> {approvingAppointmentId === apt.appointmentId ? "Đang duyệt..." : "Duyệt yêu cầu"}
+                          </button>
+                        ) : apt.status === "in_progress" && apt.serviceType === "grooming" ? (
+                          <button
+                            onClick={() => onCompleteGrooming(apt)}
+                            disabled={isCompletingGrooming}
+                            className="h-9 px-4 rounded-lg bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
+                          >
+                            <CheckCircle2 size={14} /> {isCompletingGrooming ? "Đang hoàn thành..." : "Hoàn thành"}
                           </button>
                         ) : apt.status === "confirmed" && (
                           <button

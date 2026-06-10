@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ChevronRight, Clock, Scissors, Search } from "lucide-react";
+import { CheckCircle2, Clock, Scissors, Search } from "lucide-react";
 import type { GroomingTask } from "../../features/staff/services/staffAppointments";
 import { EmptyState, LoadingState, Pagination } from "./StaffCommon";
 
@@ -117,11 +117,9 @@ export function GroomingTab({
                     {!isDone && (
                       <button
                         onClick={() => onUpdateStatus(task)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex-shrink-0 ${
-                          isActive ? "bg-emerald-500 text-white hover:bg-emerald-600" : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                        }`}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 text-sm font-bold text-white transition-colors flex-shrink-0 hover:bg-emerald-600"
                       >
-                        {isActive ? <><CheckCircle2 size={14} /> Hoàn thành</> : <>Bắt đầu <ChevronRight size={14} /></>}
+                        <><CheckCircle2 size={14} /> Ho�n th�nh</>
                       </button>
                     )}
                   </div>

@@ -3,7 +3,7 @@ const { supabase } = require("../../lib/supabaseClient");
 function assertCustomerId(customerId) {
   const effectiveCustomerId = Number(customerId);
   if (!Number.isFinite(effectiveCustomerId)) {
-    const error = new Error("Missing customer id");
+    const error = new Error("Không xác định được khách hàng");
     error.statusCode = 401;
     throw error;
   }

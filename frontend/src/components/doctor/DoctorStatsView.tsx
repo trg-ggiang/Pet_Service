@@ -89,7 +89,7 @@ export function DoctorStatsLoading() {
   return (
     <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
       <Loader2 size={22} className="animate-spin text-cyan-500 mr-2" />
-      Dang tai thong ke...
+      Đang tải thống kê...
     </div>
   );
 }

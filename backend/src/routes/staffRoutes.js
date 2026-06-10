@@ -6,6 +6,7 @@ const {
   confirmAppointment,
   checkInAppointment,
   approveAppointmentRequest,
+  completeGroomingAppointment,
   listGroomingTasks,
   updateGroomingStatus,
   listBoardingGuests,
@@ -69,6 +70,14 @@ router.put("/appointments/:id/checkin", async function checkIn(req, res) {
   }
 });
 
+router.put("/appointments/:id/complete-grooming", async function completeGrooming(req, res) {
+  try {
+    await completeGroomingAppointment(req.params.id, req.auth?.user?.staffId);
+    res.json({ ok: true, message: "Đã hoàn thành grooming và tạo hóa đơn" });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
 
 router.put("/appointments/:id/approve-request", async function approveRequest(req, res) {
   try {

@@ -36,7 +36,13 @@ function getPetCoverImage(species?: string) {
   return (species && PET_COVER_IMAGES[species]) || PET_COVER_IMAGES.default;
 }
 
-export function CustomerPetProfilesModule({ onBookAppointment }: { onBookAppointment?: (petName: string) => void }) {
+export function CustomerPetProfilesModule({
+  onBookAppointment,
+  onPetsChange,
+}: {
+  onBookAppointment?: (petName: string) => void;
+  onPetsChange?: () => Promise<void> | void;
+}) {
   const [dashboard, setDashboard] = useState<CustomerPetDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -101,6 +107,7 @@ export function CustomerPetProfilesModule({ onBookAppointment }: { onBookAppoint
     });
     setIsAddOpen(false);
     await loadDashboard(false);
+    await onPetsChange?.();
   };
 
   const handleUpdatePet = async (petId: number, payload: {
@@ -119,6 +126,7 @@ export function CustomerPetProfilesModule({ onBookAppointment }: { onBookAppoint
     await updateCustomerPet(petId, payload);
     setEditingPet(null);
     await loadDashboard(false);
+    await onPetsChange?.();
   };
 
   return (
@@ -161,62 +169,85 @@ export function CustomerPetProfilesModule({ onBookAppointment }: { onBookAppoint
 
       {!loading && dashboard && (
         <>
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {dashboard.pets.map((pet) => {
               const clr = getPetColorById(pet.colorId);
               const coverImage = pet.image || getPetCoverImage(pet.species);
               return (
-                <div key={pet.id} className="relative z-0 bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
-                  <div className="h-36 relative overflow-hidden">
-                    <img
-                      src={coverImage}
-                      alt={`${pet.species} ${pet.name}`}
-                      className="w-full h-full object-cover"
-                      onError={(event) => {
-                        const target = event.currentTarget as HTMLImageElement;
-                        const fallback = getPetCoverImage(pet.species);
-                        if (target.src !== fallback) {
-                          target.src = fallback;
-                        }
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/15 to-transparent" />
-                    <div className="absolute left-5 bottom-4 flex items-center gap-2">
-                      <span className="px-2.5 py-1 rounded-full bg-white/90 text-slate-800 text-[11px] font-bold shadow-sm backdrop-blur-sm">{pet.species}</span>
-                      <span className="px-2.5 py-1 rounded-full bg-cyan-500/90 text-white text-[11px] font-bold shadow-sm backdrop-blur-sm">{pet.breed}</span>
+                <div key={pet.id} className="relative z-0 bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:-translate-y-0.5 hover:shadow-lg transition-all">
+                  <div className="relative h-60 overflow-hidden bg-slate-100">
+                    {pet.image ? (
+                      <>
+                        <img
+                          src={pet.image}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl opacity-45"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/75 via-cyan-50/50 to-slate-900/15" />
+                        <img
+                          src={pet.image}
+                          alt={`${pet.species} ${pet.name}`}
+                          className="relative z-10 h-full w-full object-contain p-5 drop-shadow-xl"
+                          onError={(event) => {
+                            const target = event.currentTarget as HTMLImageElement;
+                            const fallback = getPetCoverImage(pet.species);
+                            target.src = fallback;
+                            target.className = "relative z-10 h-full w-full object-cover p-0";
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <img
+                        src={coverImage}
+                        alt={`${pet.species} ${pet.name}`}
+                        className="w-full h-full object-cover"
+                        onError={(event) => {
+                          const target = event.currentTarget as HTMLImageElement;
+                          const fallback = getPetCoverImage(pet.species);
+                          if (target.src !== fallback) {
+                            target.src = fallback;
+                          }
+                        }}
+                      />
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 z-20 h-24 bg-gradient-to-t from-slate-950/55 via-slate-950/10 to-transparent" />
+                    <div className="absolute left-5 right-5 bottom-8 z-30 flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-full bg-white/90 text-slate-800 text-[11px] font-bold shadow-sm backdrop-blur-sm">{pet.species}</span>
+                        <span className="truncate px-2.5 py-1 rounded-full bg-cyan-500/90 text-white text-[11px] font-bold shadow-sm backdrop-blur-sm">{pet.breed}</span>
+                      </div>
+                      <span className={`flex-shrink-0 px-2.5 py-1 text-[11px] font-bold rounded-full shadow-sm backdrop-blur-sm ${pet.healthy ? "bg-emerald-50/95 text-emerald-700" : "bg-amber-50/95 text-amber-700"}`}>
+                        {pet.healthy ? "Khoẻ mạnh" : "Cần theo dõi"}
+                      </span>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-4">
+                  <div className="p-5 pt-0">
+                    <div className="-mt-7 relative z-30 flex items-end gap-4">
                       {pet.image ? (
-                        <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 shadow-md" style={{ border: `3px solid ${clr.ring}` }}>
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-white shadow-lg ring-4 ring-white" style={{ border: `2px solid ${clr.ring}` }}>
                           <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" />
                         </div>
                       ) : (
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 shadow-md" style={{ background: `linear-gradient(135deg, ${clr.from}, ${clr.to})`, border: "3px solid white" }}>
-                          <span className="text-2xl font-bold text-white">{pet.initials}</span>
+                        <div className="w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ring-4 ring-white" style={{ background: `linear-gradient(135deg, ${clr.from}, ${clr.to})`, border: "2px solid white" }}>
+                          <span className="text-3xl font-bold text-white">{pet.initials}</span>
                         </div>
                       )}
-                      <div>
+                      <div className="min-w-0 pb-1">
                         <div className="font-bold text-slate-900 text-xl tracking-tight">{pet.name}</div>
-                        <div className="text-sm font-medium text-slate-500 mt-0.5">{pet.species} • {pet.breed}</div>
-                        <div className="flex items-center gap-1.5 mt-2">
-                          <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ring-1 ring-inset ${pet.healthy ? "bg-emerald-50 text-emerald-700 ring-emerald-200/50" : "bg-amber-50 text-amber-700 ring-amber-200/50"}`}>
-                            {pet.healthy ? "Khoẻ mạnh" : "Cần theo dõi"}
-                          </span>
-                        </div>
+                        <div className="text-sm font-medium text-slate-500 mt-0.5 truncate">{pet.species} • {pet.breed}</div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 mt-6 pt-5 border-t border-slate-100">
+                    <div className="grid grid-cols-3 gap-2.5 mt-5 pt-5 border-t border-slate-100">
                       {[
                         { label: "Tuổi", value: pet.age },
                         { label: "Cân nặng", value: pet.weight },
                         { label: "Tiêm nhắc", value: pet.nextVaccine },
                       ].map((info) => (
-                        <div key={info.label} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div key={info.label} className="min-h-[76px] bg-slate-50 p-3 rounded-xl border border-slate-100">
                           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{info.label}</div>
-                          <div className="text-sm font-bold text-slate-800 mt-1">{info.value}</div>
+                          <div className="text-sm font-bold text-slate-800 mt-1 leading-tight">{info.value}</div>
                         </div>
                       ))}
                     </div>

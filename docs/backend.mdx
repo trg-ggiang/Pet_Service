@@ -81,8 +81,9 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `GET /api/staff/profile` returns the authenticated staff profile for the staff portal shell.
   - `GET /api/staff/appointments` lists active appointments for staff check-in and service intake.
   - `PUT /api/staff/appointments/:appointmentId/checkin` marks a pending appointment as checked in.
+  - `PUT /api/staff/appointments/:appointmentId/complete-grooming` completes an in-progress grooming appointment from the appointment list and creates or updates its unpaid invoice.
   - `GET /api/staff/grooming` lists grooming work items assigned to the current staff member or unassigned work.
-  - `PATCH /api/staff/grooming/:groomingId/status` starts or completes one grooming work item.
+  - `PATCH /api/staff/grooming/:groomingId/status` starts or completes one grooming work item. Completing grooming marks the appointment and appointment service complete, then creates or updates an unpaid invoice for the payment tab.
   - `GET /api/staff/boarding` lists current boarding guests with today's care status.
   - `PATCH /api/staff/boarding/:boardingId/daily-status` updates today's boarding care checklist for one guest.
   - `GET /api/staff/payments` lists invoice rows for staff payment collection.
@@ -97,17 +98,18 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `GET /api/doctor/appointments` lists active appointments for the authenticated doctor.
     - The response includes render-ready portal data: appointment rows, status keys, status view classes, schedule summary counts, and header metadata.
   - `PUT /api/doctor/appointments/:appointmentId/start` starts an appointment exam.
-  - `PUT /api/doctor/appointments/:appointmentId/complete` completes an appointment exam.
+  - `PUT /api/doctor/appointments/:appointmentId/exam-complete` saves the exam record, completes the appointment, and creates or updates an unpaid medical-visit invoice for the staff payment tab.
+  - `PUT /api/doctor/appointments/:appointmentId/complete` completes an appointment exam and creates or updates an unpaid invoice when a medical visit already exists.
 - `/api/customer`
   - `GET /api/customer/pets` lists the current customer's pets.
   - `POST /api/customer/pets` creates a current-customer pet.
   - `PUT /api/customer/pets/:petId` updates a current-customer pet.
   - `GET /api/customer/appointment-options` lists service options for customer booking.
-  - `POST /api/customer/appointment-provider-options` lists doctors with an `AVAILABLE` row in `doctor_schedule_slots` for the requested date/time, or lists staff for staff-backed services.
+  - `POST /api/customer/appointment-provider-options` lists doctors with an `AVAILABLE` row in `doctor_schedule_slots` for the requested future date/time, or lists staff for staff-backed services. Past slots are rejected server-side.
   - `GET /api/customer/appointments` lists the current customer's appointments with backend filtering, status counts, and pagination summary.
     - Completed appointment rows include prescription items when available.
-  - `POST /api/customer/appointments` creates a pending appointment for a current-customer pet and selected doctor or staff member.
-  - `PATCH /api/customer/appointments/:appointmentId/reschedule` updates a customer-owned appointment's schedule.
+  - `POST /api/customer/appointments` creates a pending appointment for a current-customer pet and selected doctor or staff member when the requested date/time is in the future.
+  - `PATCH /api/customer/appointments/:appointmentId/reschedule` updates or requests a customer-owned appointment schedule change for a future date/time.
   - `PATCH /api/customer/appointments/:appointmentId/cancel` cancels a customer-owned appointment.
   - `GET /api/customer/service-history` lists invoice-backed service history for the current customer with backend type filtering and summary counts.
   - `GET /api/customer/invoices/:invoiceId/pdf` exports a customer-owned invoice as a PDF.

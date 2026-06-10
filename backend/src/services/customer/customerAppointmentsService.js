@@ -14,6 +14,7 @@ const SERVICE_TYPE_UI = {
   FOOD: "Khám bệnh",
   OTHER: "Khám bệnh",
 };
+const CUSTOMER_BOOKING_SERVICE_TYPES = new Set(["MEDICAL", "VACCINE", "GROOMING", "BOARDING"]);
 
 const APPOINTMENT_TYPE_BY_UI = {
   "Khám bệnh": "MEDICAL",
@@ -30,6 +31,7 @@ const ICON_BY_UI_TYPE = {
 };
 
 const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
+const BUSINESS_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 function buildRequestPayload(type, payload) {
   return REQUEST_PREFIX + JSON.stringify({ type, ...payload });
@@ -121,7 +123,7 @@ async function hasDoctorScheduleSlotIdColumn() {
 function assertCustomerId(customerId) {
   const effectiveCustomerId = Number(customerId);
   if (!Number.isFinite(effectiveCustomerId)) {
-    const error = new Error("Missing customer id");
+    const error = new Error("Không xác định được khách hàng");
     error.statusCode = 401;
     throw error;
   }
@@ -134,7 +136,7 @@ function parseAppointmentId(value) {
   const appointmentId = Number(normalized);
 
   if (!Number.isFinite(appointmentId)) {
-    const error = new Error("Invalid appointment id");
+    const error = new Error("Mã lịch hẹn không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -155,6 +157,48 @@ function normalizeTime(value) {
   const text = String(value ?? "").trim();
   if (!/^\d{2}:\d{2}/.test(text)) return null;
   return `${text.slice(0, 5)}:00`;
+}
+
+function timeToMinutes(value) {
+  const [hourText = "0", minuteText = "0"] = String(value || "00:00").split(":");
+  return Number(hourText) * 60 + Number(minuteText);
+}
+
+function getBusinessNowParts() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const hour = Number(byType.hour) % 24;
+  return {
+    date: `${byType.year}-${byType.month}-${byType.day}`,
+    minutes: hour * 60 + Number(byType.minute),
+  };
+}
+
+function assertFutureAppointmentSlot(date, time) {
+  const normalizedDate = normalizeDate(date);
+  const normalizedTime = normalizeTime(time);
+  if (!normalizedDate || !normalizedTime) {
+    const error = new Error("Vui lòng chọn ngày và giờ hẹn");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const now = getBusinessNowParts();
+  if (normalizedDate < now.date || (normalizedDate === now.date && timeToMinutes(normalizedTime) <= now.minutes)) {
+    const error = new Error("Khung giờ đã qua. Vui lòng chọn thời gian trong tương lai.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return { date: normalizedDate, time: normalizedTime };
 }
 
 function formatDate(value) {
@@ -475,7 +519,7 @@ async function listCustomerAppointmentOptions(customerId) {
   if (servicesResult.error) throw new Error(servicesResult.error.message);
 
   return {
-    services: (servicesResult.data ?? []).map((service) => {
+    services: (servicesResult.data ?? []).filter((service) => CUSTOMER_BOOKING_SERVICE_TYPES.has(service.type)).map((service) => {
       const serviceType = SERVICE_TYPE_UI[service.type] ?? "Khám bệnh";
       const icon = ICON_BY_UI_TYPE[serviceType] ?? ICON_BY_UI_TYPE["Khám bệnh"];
       return {
@@ -500,7 +544,7 @@ async function assertOwnedPet(petId, customerId) {
 
   if (error) throw new Error(error.message);
   if (!data) {
-    const notFound = new Error("Pet not found");
+    const notFound = new Error("Không tìm thấy thú cưng");
     notFound.statusCode = 404;
     throw notFound;
   }
@@ -551,17 +595,11 @@ async function resolveServiceById(serviceId) {
 }
 
 async function findDoctorAssignment(date, time, { doctorId = null, excludeAppointmentId = null } = {}) {
-  const normalizedDate = normalizeDate(date);
-  const normalizedTime = normalizeTime(time);
-  if (!normalizedDate || !normalizedTime) {
-    const error = new Error("Date and time are required");
-    error.statusCode = 400;
-    throw error;
-  }
+  const { date: normalizedDate, time: normalizedTime } = assertFutureAppointmentSlot(date, time);
 
   const selectedDoctorId = Number(doctorId);
   if (!Number.isFinite(selectedDoctorId)) {
-    const error = new Error("Doctor is required");
+    const error = new Error("Vui lòng chọn bác sĩ phụ trách");
     error.statusCode = 400;
     throw error;
   }
@@ -584,17 +622,11 @@ async function findDoctorAssignment(date, time, { doctorId = null, excludeAppoin
 }
 
 async function findStaffAssignment(date, time, { staffId = null, excludeAppointmentId = null } = {}) {
-  const normalizedDate = normalizeDate(date);
-  const normalizedTime = normalizeTime(time);
-  if (!normalizedDate || !normalizedTime) {
-    const error = new Error("Date and time are required");
-    error.statusCode = 400;
-    throw error;
-  }
+  const { date: normalizedDate, time: normalizedTime } = assertFutureAppointmentSlot(date, time);
 
   const selectedStaffId = Number(staffId);
   if (!Number.isFinite(selectedStaffId)) {
-    const error = new Error("Staff is required");
+    const error = new Error("Vui lòng chọn nhân viên phụ trách");
     error.statusCode = 400;
     throw error;
   }
@@ -643,13 +675,7 @@ async function findStaffAssignment(date, time, { staffId = null, excludeAppointm
 }
 
 async function listDoctorProviderOptions(date, time, serviceType) {
-  const normalizedDate = normalizeDate(date);
-  const normalizedTime = normalizeTime(time);
-  if (!normalizedDate || !normalizedTime) {
-    const error = new Error("Date and time are required");
-    error.statusCode = 400;
-    throw error;
-  }
+  const { date: normalizedDate, time: normalizedTime } = assertFutureAppointmentSlot(date, time);
 
   const [schedulesResult, doctorsResult] = await Promise.all([
     supabase
@@ -695,13 +721,7 @@ async function listDoctorProviderOptions(date, time, serviceType) {
 }
 
 async function listStaffProviderOptions(date, time, serviceType) {
-  const normalizedDate = normalizeDate(date);
-  const normalizedTime = normalizeTime(time);
-  if (!normalizedDate || !normalizedTime) {
-    const error = new Error("Date and time are required");
-    error.statusCode = 400;
-    throw error;
-  }
+  const { date: normalizedDate, time: normalizedTime } = assertFutureAppointmentSlot(date, time);
 
   const staffResult = await supabase
     .from("staffs")
@@ -737,7 +757,7 @@ async function createCustomerAppointment(input, customerId) {
   const petId = Number(input?.petId);
 
   if (!Number.isFinite(petId)) {
-    const error = new Error("Pet is required");
+    const error = new Error("Vui lòng chọn thú cưng");
     error.statusCode = 400;
     throw error;
   }
@@ -746,26 +766,19 @@ async function createCustomerAppointment(input, customerId) {
 
   const service = await resolveServiceById(input?.serviceId) ?? await resolveService(input?.serviceName, input?.serviceType);
   const serviceType = service ? (SERVICE_TYPE_UI[service.type] ?? input?.serviceType) : (input?.serviceType ?? "Khám bệnh");
-  const requestedDate = normalizeDate(input?.date);
-  const requestedTime = normalizeTime(input?.time);
-
-  if (!requestedDate || !requestedTime) {
-    const error = new Error("Date and time are required");
-    error.statusCode = 400;
-    throw error;
-  }
+  const { date: requestedDate, time: requestedTime } = assertFutureAppointmentSlot(input?.date, input?.time);
 
   const providerRole = input?.providerRole;
   const providerId = Number(input?.providerId);
   if (!["doctor", "staff"].includes(providerRole) || !Number.isFinite(providerId)) {
-    const error = new Error("Provider is required");
+    const error = new Error("Vui lòng chọn người phụ trách");
     error.statusCode = 400;
     throw error;
   }
 
   const expectedRole = requiresDoctorService(service ?? { serviceType }) ? "doctor" : "staff";
   if (providerRole !== expectedRole) {
-    const error = new Error("Provider role does not match service type");
+    const error = new Error("Người phụ trách không phù hợp với loại dịch vụ");
     error.statusCode = 400;
     throw error;
   }
@@ -852,7 +865,7 @@ async function confirmCustomerAppointment(appointmentCode, customerId) {
   const appointmentId = parseAppointmentId(appointmentCode);
   const { data: appointment, error } = await supabase.from("appointments").select("id, pet_id, status, note").eq("id", appointmentId).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
+  if (!appointment) { const notFound = new Error("Không tìm thấy lịch hẹn"); notFound.statusCode = 404; throw notFound; }
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
   if (appointment.status !== "PENDING") { const invalidStatus = new Error("Chỉ có thể xác nhận lịch hẹn đang chờ."); invalidStatus.statusCode = 409; throw invalidStatus; }
   const actors = await getAppointmentActors(appointment.id);
@@ -866,10 +879,8 @@ async function confirmCustomerAppointment(appointmentCode, customerId) {
 async function rescheduleCustomerAppointment(appointmentCode, input, customerId) {
   const effectiveCustomerId = assertCustomerId(customerId);
   const appointmentId = parseAppointmentId(appointmentCode);
-  const requestedDate = normalizeDate(input?.date);
-  const requestedTime = normalizeTime(input?.time);
+  const { date: requestedDate, time: requestedTime } = assertFutureAppointmentSlot(input?.date, input?.time);
   const reason = String(input?.reason || "").trim() || "Khách hàng yêu cầu đổi lịch";
-  if (!requestedDate || !requestedTime) { const error = new Error("Date and time are required"); error.statusCode = 400; throw error; }
 
   const hasSlotId = await hasDoctorScheduleSlotIdColumn();
   const selectFields = [
@@ -879,7 +890,7 @@ async function rescheduleCustomerAppointment(appointmentCode, input, customerId)
 
   const { data: appointment, error } = await supabase.from("appointments").select(selectFields).eq("id", appointmentId).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
+  if (!appointment) { const notFound = new Error("Không tìm thấy lịch hẹn"); notFound.statusCode = 404; throw notFound; }
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
   if (!["PENDING", "CONFIRMED"].includes(appointment.status)) { const invalidStatus = new Error("Chỉ có thể gửi yêu cầu đổi lịch hẹn đang chờ hoặc đã xác nhận."); invalidStatus.statusCode = 409; throw invalidStatus; }
 
@@ -958,7 +969,7 @@ async function cancelCustomerAppointment(appointmentCode, inputOrCustomerId, may
 
   const { data: appointment, error } = await supabase.from("appointments").select(selectFields).eq("id", appointmentId).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!appointment) { const notFound = new Error("Appointment not found"); notFound.statusCode = 404; throw notFound; }
+  if (!appointment) { const notFound = new Error("Không tìm thấy lịch hẹn"); notFound.statusCode = 404; throw notFound; }
   await assertOwnedPet(appointment.pet_id, effectiveCustomerId);
   if (!["PENDING", "CONFIRMED"].includes(appointment.status)) { const invalidStatus = new Error("Chỉ có thể hủy lịch hẹn đang chờ hoặc đã xác nhận."); invalidStatus.statusCode = 409; throw invalidStatus; }
 

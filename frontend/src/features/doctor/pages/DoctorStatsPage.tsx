@@ -18,7 +18,7 @@ export function DoctorStatsPage({ profile }: { profile?: DoctorProfile | null })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const data = stats?.[period];
-  const subtitle = profile ? `${profile.fullName} - ${profile.specialization} - ${profile.roomName}` : "Bac si";
+  const subtitle = profile ? `${profile.fullName} - ${profile.specialization} - ${profile.roomName}` : "Bác sĩ";
 
   useEffect(() => {
     let active = true;
@@ -32,7 +32,7 @@ export function DoctorStatsPage({ profile }: { profile?: DoctorProfile | null })
         setError(null);
       } catch (err) {
         if (!active) return;
-        setError(err instanceof Error ? err.message : "Khong the tai thong ke bac si");
+        setError(err instanceof Error ? err.message : "Không thể tải thống kê bác sĩ");
       } finally {
         if (active) setLoading(false);
       }

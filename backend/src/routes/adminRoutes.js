@@ -33,7 +33,7 @@ router.get("/dashboard", async function(req, res) {
     const dashboard = await getAdminDashboard();
     res.json({ ok: true, dashboard });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load dashboard" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải dashboard" });
   }
 });
 
@@ -45,7 +45,7 @@ router.get("/users", async function(req, res) {
     });
     res.json({ ok: true, ...users });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load users" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải danh sách người dùng" });
   }
 });
 
@@ -54,7 +54,7 @@ router.patch("/users/:role/:id/lock", async function(req, res) {
     const user = await updateAdminUserLock(req.params.role, req.params.id, Boolean(req.body?.locked));
     res.json({ ok: true, user });
   } catch (error) {
-    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update user lock" });
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái khóa tài khoản" });
   }
 });
 
@@ -67,7 +67,7 @@ router.get("/services", async function(req, res) {
     });
     res.json({ ok: true, ...result });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load services" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải danh sách dịch vụ" });
   }
 });
 
@@ -76,7 +76,7 @@ router.post("/services", async function(req, res) {
     const service = await createAdminService(req.body);
     res.status(201).json({ ok: true, service });
   } catch (error) {
-    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to create service" });
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể tạo dịch vụ" });
   }
 });
 
@@ -85,7 +85,7 @@ router.patch("/services/:id", async function(req, res) {
     const service = await updateAdminService(req.params.id, req.body);
     res.json({ ok: true, service });
   } catch (error) {
-    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update service" });
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật dịch vụ" });
   }
 });
 
@@ -94,7 +94,7 @@ router.patch("/services/:id/status", async function(req, res) {
     const service = await updateAdminServiceStatus(req.params.id, req.body?.status);
     res.json({ ok: true, service });
   } catch (error) {
-    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update service status" });
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái dịch vụ" });
   }
 });
 
@@ -106,7 +106,7 @@ router.get("/appointments", async function(req, res) {
     });
     res.json({ ok: true, ...result });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load appointments" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải danh sách lịch hẹn" });
   }
 });
 
@@ -115,7 +115,7 @@ router.patch("/appointments/:id/status", async function(req, res) {
     const appointment = await updateAdminAppointmentStatus(req.params.id, req.body?.status);
     res.json({ ok: true, appointment });
   } catch (error) {
-    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update appointment status" });
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái lịch hẹn" });
   }
 });
 
@@ -128,7 +128,7 @@ router.get("/staff", async function(req, res) {
     });
     res.json({ ok: true, ...result });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load staff" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải danh sách nhân viên" });
   }
 });
 
@@ -138,7 +138,7 @@ router.patch("/staff/:id/lock", async function(req, res) {
     const user = await updateAdminUserLock(role, req.params.id, Boolean(req.body?.locked));
     res.json({ ok: true, user });
   } catch (error) {
-    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Failed to update staff lock" });
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái khóa nhân viên" });
   }
 });
 
@@ -147,7 +147,7 @@ router.get("/reports", async function(req, res) {
     const reports = await getAdminReports();
     res.json({ ok: true, reports });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load reports" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải báo cáo" });
   }
 });
 
@@ -156,7 +156,7 @@ router.get("/settings", async function(req, res) {
     const settings = await getAdminSettings(req.auth?.user);
     res.json({ ok: true, settings });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load settings" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải cài đặt" });
   }
 });
 
@@ -164,7 +164,7 @@ router.put("/doctors/:doctorId/schedules", async function(req, res) {
   try {
     const doctorId = Number(String(req.params.doctorId || "").replace(/\D/g, ""));
     if (!Number.isFinite(doctorId)) {
-      return res.status(400).json({ ok: false, message: "Doctor id không hợp lệ" });
+      return res.status(400).json({ ok: false, message: "ID bác sĩ không hợp lệ" });
     }
 
     const rows = req.body?.rows;
@@ -175,7 +175,7 @@ router.put("/doctors/:doctorId/schedules", async function(req, res) {
     const result = await saveDoctorScheduleSlots(doctorId, rows, { slotDuration: req.body?.slotDuration || 30 });
     res.json({ ok: true, message: `Đã lưu ${result.slotCount} ca khám 30 phút`, ...result });
   } catch (error) {
-    res.status(error.statusCode || 400).json({ ok: false, message: error.message || "Failed to save doctor schedule" });
+    res.status(error.statusCode || 400).json({ ok: false, message: error.message || "Không thể lưu lịch bác sĩ" });
   }
 });
 
@@ -252,7 +252,7 @@ router.put("/settings", async function(req, res) {
     const settings = await updateAdminSettings(req.body || {}, req.auth?.user);
     res.json({ ok: true, settings });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to update settings" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể cập nhật cài đặt" });
   }
 });
 
@@ -261,7 +261,7 @@ router.get("/email-templates", async function(req, res) {
     const templates = await getEmailTemplates();
     res.json({ ok: true, templates });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load email templates" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải mẫu email" });
   }
 });
 
@@ -270,7 +270,7 @@ router.put("/email-templates", async function(req, res) {
     const templates = await updateEmailTemplates(req.body?.templates || {});
     res.json({ ok: true, templates });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to update email templates" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể cập nhật mẫu email" });
   }
 });
 
@@ -284,11 +284,11 @@ router.post("/email-templates/test", async function(req, res) {
     });
     res.json({ ok: true, ...result });
   } catch (error) {
-    res.status(400).json({ ok: false, message: error.message || "Failed to send test email" });
+    res.status(400).json({ ok: false, message: error.message || "Không thể gửi email thử" });
   }
 });
 
-// GET /api/admin/doctors - Lấy danh sách doctors chưa có hồ sơ
+// GET /api/admin/doctors - Lấy danh sách bác sĩ chưa có hồ sơ
 router.get("/doctors", async function(req, res) {
   try {
     // Lấy tất cả users có role DOCTOR
@@ -302,7 +302,7 @@ router.get("/doctors", async function(req, res) {
       throw new Error(usersError.message);
     }
 
-    // Lấy tất cả hồ sơ doctors
+    // Lấy tất cả hồ sơ bác sĩ
     const { data: doctorProfiles, error: profilesError } = await supabase
       .from("doctors")
       .select("user_id");
@@ -314,7 +314,7 @@ router.get("/doctors", async function(req, res) {
 
     const linkedUserIds = doctorProfiles.map(d => d.user_id);
 
-    // Tìm users DOCTOR chưa có hồ sơ
+    // Tìm tài khoản DOCTOR chưa có hồ sơ
     const unlinkedDoctors = doctorUsers.filter(u => !linkedUserIds.includes(u.id));
 
     console.log("[ADMIN] Found", unlinkedDoctors.length, "doctors without profile");
@@ -326,7 +326,7 @@ router.get("/doctors", async function(req, res) {
   }
 });
 
-// POST /api/admin/doctors/create-profile - Tạo hồ sơ cho doctor
+// POST /api/admin/doctors/create-profile - Tạo hồ sơ cho bác sĩ
 router.post("/doctors/create-profile", async function(req, res) {
   try {
     const { userId, fullName, specialization, roomName } = req.body;
@@ -374,7 +374,7 @@ router.post("/doctors/create-profile", async function(req, res) {
   }
 });
 
-// POST /api/admin/doctors/init-all - Tạo hồ sơ cho tất cả doctors chưa có
+// POST /api/admin/doctors/init-all - Tạo hồ sơ cho tất cả bác sĩ chưa có
 router.post("/doctors/init-all", async function(req, res) {
   try {
     console.log("[ADMIN] Initializing all doctor profiles...");
@@ -387,18 +387,18 @@ router.post("/doctors/init-all", async function(req, res) {
 
     if (usersError) throw new Error(usersError.message);
 
-    // Lấy tất cả hồ sơ doctors
+    // Lấy tất cả hồ sơ bác sĩ
     const { data: doctorProfiles } = await supabase
       .from("doctors")
       .select("user_id");
 
     const linkedUserIds = (doctorProfiles || []).map(d => d.user_id);
 
-    // Tạo hồ sơ cho doctors chưa có
+    // Tạo hồ sơ cho bác sĩ chưa có
     const doctorsToCreate = doctorUsers.filter(u => !linkedUserIds.includes(u.id));
 
     if (doctorsToCreate.length === 0) {
-      return res.json({ ok: true, message: "Tất cả doctors đã có hồ sơ", created: 0 });
+      return res.json({ ok: true, message: "Tất cả bác sĩ đã có hồ sơ", created: 0 });
     }
 
     const insertData = doctorsToCreate.map((u, index) => ({

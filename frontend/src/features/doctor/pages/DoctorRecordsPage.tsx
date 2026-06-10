@@ -6,17 +6,19 @@ import {
   DoctorRecordsPetList,
   DoctorRecordsToolbar,
 } from "../../../components/doctor/DoctorRecordsView";
+import { DoctorRecordDetail } from "../../../components/doctor/DoctorRecordDetail";
 import { doctorDataService, type DoctorMedicalRecord } from "../services/doctorData";
 
 function patientKey(record: DoctorMedicalRecord) {
   return String(record.petId || `${record.pet}-${record.owner}`);
 }
 
-export function DoctorRecordsPage() {
+export function DoctorRecordsPage({ target }: { target?: { petId?: number | null; appointmentId?: number | null } | null }) {
   const [search, setSearch] = useState("");
   const [speciesFilter, setSpeciesFilter] = useState("all");
   const [records, setRecords] = useState<DoctorMedicalRecord[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<DoctorMedicalRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,8 +67,20 @@ export function DoctorRecordsPage() {
         });
         if (!active) return;
         setRecords(data);
+        setSelectedRecord((current) => {
+          const targetRecord = target?.appointmentId
+            ? data.find((record) => record.appointmentId === target.appointmentId)
+            : null;
+          if (targetRecord) return targetRecord;
+          if (!current) return null;
+          return data.some((record) => record.id === current.id) ? current : null;
+        });
         setSelectedPetId((current) => {
           const keys = new Set(data.map(patientKey));
+          if (target?.petId) {
+            const targetPatient = data.find((record) => record.petId === target.petId);
+            if (targetPatient) return patientKey(targetPatient);
+          }
           return current && keys.has(current) ? current : data[0] ? patientKey(data[0]) : null;
         });
         setError(null);
@@ -74,7 +88,8 @@ export function DoctorRecordsPage() {
         if (!active) return;
         setRecords([]);
         setSelectedPetId(null);
-        setError(err instanceof Error ? err.message : "Khong the tai ho so benh an");
+        setSelectedRecord(null);
+        setError(err instanceof Error ? err.message : "Không thể tải hồ sơ bệnh án");
       } finally {
         if (active) setLoading(false);
       }
@@ -88,7 +103,7 @@ export function DoctorRecordsPage() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [search, speciesFilter]);
+  }, [search, speciesFilter, target?.appointmentId, target?.petId]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -100,16 +115,22 @@ export function DoctorRecordsPage() {
         onSpeciesFilterChange={setSpeciesFilter}
       />
 
-      {loading && <DoctorRecordsLoading text="Dang tai ho so benh an..." />}
+      {loading && <DoctorRecordsLoading text="Đang tải hồ sơ bệnh án..." />}
       {!loading && error && <DoctorRecordsError message={error} />}
-      {!loading && !error && (
+      {!loading && !error && selectedRecord && (
+        <DoctorRecordDetail record={selectedRecord} onClose={() => setSelectedRecord(null)} />
+      )}
+      {!loading && !error && !selectedRecord && (
         <div className="flex-1 overflow-hidden flex min-h-0">
           <DoctorRecordsPetList
             patients={patients}
             selectedId={selectedPatient?.id || ""}
-            onSelect={(patient) => setSelectedPetId(patient.id)}
+            onSelect={(patient) => {
+              setSelectedPetId(patient.id);
+              setSelectedRecord(null);
+            }}
           />
-          <DoctorRecordsHistory patient={selectedPatient} />
+          <DoctorRecordsHistory patient={selectedPatient} onOpenRecord={setSelectedRecord} />
         </div>
       )}
     </div>
