@@ -255,7 +255,7 @@ async function getCustomerPetDashboard(customerId) {
 async function getPetDetail(petId, customerId) {
   const petIdNumber = Number(petId);
   if (!Number.isFinite(petIdNumber)) {
-    throw new Error("Invalid petId");
+    throw new Error("Mã thú cưng không hợp lệ");
   }
 
   const effectiveCustomerId = Number(customerId);
@@ -483,7 +483,7 @@ async function createCustomerPet(input, customerId) {
   };
 
   if (!payload.name) {
-    throw new Error("name is required");
+    throw new Error("Vui lòng nhập tên thú cưng");
   }
 
   const { data, error } = await supabase
@@ -513,7 +513,7 @@ async function updateCustomerPet(petId, input, customerId) {
   }
 
   if (!Number.isFinite(petIdNumber)) {
-    throw new Error("Invalid petId");
+    throw new Error("Mã thú cưng không hợp lệ");
   }
 
   if (!Number.isFinite(effectiveCustomerId)) {
@@ -606,7 +606,7 @@ async function updateCustomerPet(petId, input, customerId) {
   };
 
   if (!payload.name) {
-    throw new Error("name is required");
+    throw new Error("Vui lòng nhập tên thú cưng");
   }
 
   const { data, error } = await supabase

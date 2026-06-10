@@ -3,6 +3,830 @@ title: "Session Log"
 description: "Ongoing development session notes."
 ---
 
+## 2026-06-10 - Customer Role Text Cleanup
+
+### Goal
+
+Review customer role frontend/backend text for mojibake, no-accent Vietnamese, and rough English fallback messages.
+
+### Work Completed
+
+- Scanned customer frontend pages/components/services and customer backend routes/services for encoding artifacts, no-accent Vietnamese, and English fallback messages.
+- Replaced customer route fallback messages for pets, appointments, notifications, service history, and invoice PDF export with Vietnamese text.
+- Replaced customer appointment service validation/not-found errors with Vietnamese text.
+- Replaced customer pet and notification service validation/not-found errors with Vietnamese text.
+- Fixed customer pet detail invoice download fallback text from no-accent Vietnamese.
+- Replaced the customer pet API PDF fallback `Request failed` message with Vietnamese text.
+
+### Files Changed
+
+- `backend/src/routes/customerPetsRoutes.js`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/services/customer/customerServiceHistoryService.js`
+- `backend/src/services/customerNotificationsService.js`
+- `backend/src/services/customerPetsService.js`
+- `frontend/src/components/customer/pets/PetDetailModal.tsx`
+- `frontend/src/services/customerPets.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` text scans for customer frontend/backend mojibake, no-accent, and English fallback patterns
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/customer/customerServiceHistoryService.js`
+- `node --check backend/src/services/customerNotificationsService.js`
+- `node --check backend/src/services/customerPetsService.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+fix: clean customer role fallback text
+```
+
+## 2026-06-10 - Staff Role Text Cleanup
+
+### Goal
+
+Review staff role frontend/backend text for mojibake, no-accent Vietnamese, and rough mixed-language fallback messages.
+
+### Work Completed
+
+- Scanned staff frontend components, staff portal page/service, backend staff route, and staff portal service for encoding artifacts and common no-accent text.
+- Verified backend staff strings and staff UI labels are stored as clean Vietnamese UTF-8 in source.
+- Replaced the staff API fallback error `Request thất bại` with `Yêu cầu thất bại`.
+
+### Files Changed
+
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `rg` text scans for staff frontend/backend mojibake and no-accent patterns
+- `node --check backend/src/routes/staffRoutes.js`
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+fix: clean staff role fallback text
+```
+
+## 2026-06-10 - Admin Settings Email Text Cleanup
+
+### Goal
+
+Fix broken text in the admin settings email-template section.
+
+### Work Completed
+
+- Rebuilt the backend default email templates with clean Vietnamese UTF-8 text.
+- Fixed email HTML footer and SMTP/email-recipient error messages.
+- Added normalization for stored email templates so previously saved mojibake text is repaired before being returned to the admin settings UI.
+- Kept the admin settings component behavior unchanged.
+
+### Files Changed
+
+- `backend/src/services/emailService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/emailService.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+fix: clean admin settings email template text
+```
+
+## 2026-06-10 - Admin Role Text Cleanup
+
+### Goal
+
+Review admin role frontend/backend text for mojibake, no-accent Vietnamese, and English fallback messages.
+
+### Work Completed
+
+- Scanned admin frontend pages/components/services and admin backend route/service files for encoding artifacts and common no-accent text.
+- Fixed the admin exam-context body-system label from `Da & lông` to `Da & Lông`.
+- Replaced admin API fallback error messages in `adminRoutes` with Vietnamese text.
+- Replaced admin service validation/not-found errors with Vietnamese text.
+- Cleaned user-facing mixed English/Vietnamese doctor-profile messages.
+
+### Files Changed
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/adminRoutes.js`
+- `node --check backend/src/services/adminService.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+fix: clean up admin role vietnamese text
+```
+
+## 2026-06-10 - Doctor Exam Save Schema Cache Fix
+
+### Goal
+
+Fix medical record save/complete failures caused by updating a non-existent `appointment_services.updated_at` column and avoid false doctor schedule conflicts when follow-up data matches the current appointment.
+
+### Work Completed
+
+- Removed `updated_at` from the doctor exam invoice update against `appointment_services`, matching the current Prisma/Supabase schema.
+- Excluded the current appointment when checking whether a doctor is busy for a follow-up slot.
+- Skipped creating a follow-up appointment when the selected follow-up date/time is the same as the appointment being completed.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+fix: avoid doctor exam save schema and follow-up conflicts
+```
+
+## 2026-06-10 - Customer Appointment Time Dropdown Polish
+
+### Goal
+
+Replace the rough native time selector in the customer pet appointment flow with a custom dropdown matching the existing polished selectors.
+
+### Work Completed
+
+- Added a reusable custom appointment-time dropdown with popover, selected state, check mark, and outside-click close behavior.
+- Replaced the new-appointment `Giờ khám` native select.
+- Replaced the reschedule `Giờ mới` native select for consistent customer appointment UX.
+- Kept the existing real-time available-slot filtering unchanged.
+
+### Files Changed
+
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+style: polish customer appointment time dropdown
+```
+
+## 2026-06-10 - Doctor Exam Payment Invoice Link
+
+### Goal
+
+Make completed medical exams appear in the staff payment module so staff can confirm payment.
+
+### Work Completed
+
+- Loaded appointment service and service pricing data in the doctor-owned appointment query.
+- Added idempotent medical-visit invoice creation/update when doctors complete an exam.
+- Linked the invoice item to `medical_visit_id` and `appointment_service_id` with source type `MEDICAL_VISIT`.
+- Recalculated unpaid invoice totals and kept invoice status as `UNPAID` / `PENDING` for staff collection.
+- Marked the billed appointment service as completed after the exam is completed.
+- Covered the legacy doctor complete endpoint when a medical visit already exists.
+- Updated backend/API docs for the completed-exam payment behavior.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+fix: create payment invoice after doctor exam completion
+```
+
+## 2026-06-10 - Doctor Role Text Cleanup
+
+### Goal
+
+Remove remaining mojibake, no-accent labels, and broken fallback text from the doctor role.
+
+### Work Completed
+
+- Rebuilt the doctor medical records list view with clean Vietnamese text.
+- Rebuilt the doctor exam pet summary panel text for owner, vaccination, and visit-history sections.
+- Fixed doctor exam option/status/service labels returned by the appointment route.
+- Fixed backend doctor stats KPI labels and subtitles.
+- Updated notification and legacy text-repair fallbacks to return readable Vietnamese.
+- Re-scanned doctor frontend/backend files for mojibake and no-accent UI strings.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `backend/src/services/doctor/doctorService.js`
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `frontend/src/components/doctor/PetSummaryPanel.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning, and `git diff --check` only reports existing LF-to-CRLF normalization warnings.
+
+### Suggested Commit Message
+
+```text
+fix: clean up doctor role Vietnamese text
+```
+
+## 2026-06-10 - Doctor Schedule Navigation Split
+
+### Goal
+
+Refactor the doctor schedule UI so today's schedule and all appointment history are separate pages instead of two modules shown together.
+
+### Work Completed
+
+- Renamed the doctor schedule nav item to `Lịch hôm nay`.
+- Added a new `Lịch sử khám` nav item for all appointments.
+- Changed the schedule table to support `today` and `history` views while keeping the existing date/status filtering logic.
+- Rendered only the date-focused module on the current schedule page.
+- Rendered only the all-appointments module on the new history page.
+- Aligned the schedule row status/action column so status badges stay in one vertical line and the full continue-exam action remains visible.
+- Added a detail action from schedule history rows to open the matching medical record in the doctor records page.
+- Cleared the targeted medical-record state on normal sidebar navigation so opening `Hồ sơ bệnh án` no longer auto-opens the previous detail modal.
+
+### Files Changed
+
+- `backend/src/services/doctor/doctorAppointmentService.js`
+- `frontend/src/components/doctor/DoctorSidebar.tsx`
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/services/doctorAppointments.ts`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/doctor/doctorAppointmentService.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+refactor: split doctor schedule navigation
+```
+
+## 2026-06-10 - Doctor Schedule Two Panel View
+
+### Goal
+
+Keep the doctor's all-appointment schedule logic while adding a staff-like date-focused view for today's appointments, weekly ranges, and specific dates.
+
+### Work Completed
+
+- Split the doctor schedule into two panels: all appointments with the existing status filter, and date-filtered appointments.
+- Reused the staff date filter controls for today, week navigation, and custom date selection.
+- Kept backend-provided appointment ordering intact so status/date sorting remains unchanged.
+- Moved status filtering into the schedule table so the date panel always has access to the full appointment list.
+- Shared appointment row rendering between the all-appointments and date-filtered panels.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: split doctor schedule by date focus
+```
+
+## 2026-06-10 - Customer Booking Pet Dropdown Refresh
+
+### Goal
+
+Polish the pet selector in the customer booking modal and keep it updated after customers add or edit pets.
+
+### Work Completed
+
+- Replaced the native pet `<select>` in the new appointment modal with a custom dropdown showing pet avatar, name, species, and breed.
+- Added selected-option styling, check mark, chevron rotation, and outside-click close behavior.
+- Synced the selected pet when the pets list changes.
+- Added a parent refresh callback so customer pet create/update refreshes the portal-level pet list used by booking.
+- Passed `petId` through appointment submission to avoid ambiguity when pet names overlap.
+
+### Files Changed
+
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `frontend/src/features/customer/pages/CustomerPortal.tsx`
+- `frontend/src/features/customer/pages/CustomerPetProfilesModule.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: refresh booking pet selector
+```
+
+## 2026-06-10 - Customer Pet Profile Card Layout Refresh
+
+### Goal
+
+Improve the customer pet profile card layout so pet photos are not cropped too aggressively and the profile grid feels more balanced.
+
+### Work Completed
+
+- Changed the pet profile grid to use more responsive columns on wide screens.
+- Increased the pet card media height and changed uploaded pet photos to a blurred-backdrop plus `object-contain` foreground image.
+- Moved the health badge into the image area and enlarged the overlapping avatar block for a cleaner profile-card composition.
+- Tightened card spacing and stat tile sizing to keep the denser layout readable.
+
+### Files Changed
+
+- `frontend/src/features/customer/pages/CustomerPetProfilesModule.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+style: refresh customer pet profile cards
+```
+
+## 2026-06-10 - Doctor Role Text Encoding Cleanup
+
+### Goal
+
+Fix broken Vietnamese text displayed in the doctor exam session and review doctor-role screens for remaining visible text issues.
+
+### Work Completed
+
+- Added deep text normalization for the doctor exam-detail response, including mojibake and replacement-character fallbacks.
+- Normalized appointment notes before sending them to the doctor exam UI.
+- Fixed no-accent fallback/loading text in doctor records and statistics screens.
+- Verified doctor frontend source no longer has obvious `Khong`/`Dang tai` fallback text.
+
+### Files Changed
+
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/features/doctor/pages/DoctorStatsPage.tsx`
+- `frontend/src/components/doctor/DoctorStatsView.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: normalize doctor role vietnamese text
+```
+
+## 2026-06-10 - Doctor Schedule Filter Dropdown Polish
+
+### Goal
+
+Replace the rough native status filter dropdown on the doctor schedule page with a polished custom dropdown matching the medical records species filter.
+
+### Work Completed
+
+- Replaced the native appointment status `<select>` with a custom popover dropdown.
+- Added active border/ring, chevron rotation, outside-click close behavior, and selected-option check mark.
+- Kept the existing filter values and appointment filtering behavior unchanged.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+style: polish doctor schedule filter dropdown
+```
+
+## 2026-06-10 - Staff Grooming Completion Alert Fix
+
+### Goal
+
+Prevent the staff portal from showing a false failure alert after a grooming appointment is completed successfully.
+
+### Work Completed
+
+- Separated the complete-grooming API failure path from post-success staff data reload failures.
+- Logged post-success reload failures instead of showing the complete-grooming failure alert.
+- Added a completing state to disable grooming completion buttons while the request is in progress.
+- Updated both the appointment list action and appointment detail modal action.
+
+### Files Changed
+
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: avoid false grooming completion failure alert
+```
+
+## 2026-06-10 - Customer Midnight Booking Slot Fix
+
+### Goal
+
+Fix same-day morning booking slots being rejected around midnight because backend time formatting treated `00:xx` as `24:xx`.
+
+### Work Completed
+
+- Removed the conflicting `hour12: false` option from the Vietnam business-time formatter.
+- Normalized formatted hours with `% 24` before comparing appointment slot minutes.
+- Verified a simulated `2026-06-10 00:49` Vietnam time no longer marks `08:00` as past.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- Node formatter simulation for `2026-06-10 00:49` Vietnam time
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: handle midnight booking slot comparison
+```
+
+## 2026-06-10 - Staff Grooming Completion Payment Link
+
+### Goal
+
+Complete the staff grooming workflow so checked-in grooming appointments can be finished and then appear in the staff payment module.
+
+### Work Completed
+
+- Created grooming records automatically when staff check in a confirmed grooming appointment.
+- Set auto-created grooming records to in progress after check-in so staff can complete them directly.
+- Changed the grooming row action to show a direct complete button instead of a start button.
+- Added a complete-grooming action directly on in-progress grooming appointments and the appointment detail modal.
+- Added a staff appointment endpoint to complete grooming by appointment ID without requiring the frontend to know the grooming record ID.
+- Updated grooming completion to mark the grooming record, appointment service, and appointment as completed.
+- Added idempotent unpaid invoice creation/update for completed grooming records, with invoice items linked to the grooming record and appointment service.
+- Reloaded staff payments after completing a grooming task so the payment tab receives the new pending invoice.
+- Updated backend/API docs for the grooming completion payment behavior.
+
+### Files Changed
+
+- `backend/src/services/staff/staffPortalService.js`
+- `backend/src/routes/staffRoutes.js`
+- `frontend/src/components/staff/StaffGroomingTab.tsx`
+- `frontend/src/components/staff/StaffAppointmentsTab.tsx`
+- `frontend/src/components/staff/StaffModals.tsx`
+- `frontend/src/features/staff/pages/StaffPortal.tsx`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: link completed grooming to staff payments
+```
+
+## 2026-06-10 - Customer Booking Food Service Filter
+
+### Goal
+
+Remove the `Pate bổ sung` food service card from the customer appointment booking grid.
+
+### Work Completed
+
+- Filtered customer booking options to medical, vaccine, grooming, and boarding service types only.
+- Kept `FOOD` services available in the service catalog data for non-booking flows.
+
+### Files Changed
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: hide food services from customer booking
+```
+
+## 2026-06-10 - Customer Booking Service Label Cleanup
+
+### Goal
+
+Show concise service labels in the customer booking service grid instead of package-specific names like vaccine type or boarding duration.
+
+### Work Completed
+
+- Added a booking-display label helper for customer appointment services.
+- Rendered boarding as `Lưu trú` and vaccine services as `Tiêm vaccine` in the booking grid and confirmation step.
+- Kept the original service ID/name payload intact for backend appointment creation.
+
+### Files Changed
+
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: simplify customer booking service labels
+```
+
+## 2026-06-10 - Doctor Prescription Name Input Focus Fix
+
+### Goal
+
+Fix the doctor exam prescription medicine-name input losing focus while typing.
+
+### Work Completed
+
+- Removed the row-level button wrapper around the medicine-name input in `PrescriptionForm`.
+- Added a dedicated expand/collapse icon button so the text input is no longer nested inside an interactive button.
+- Removed unused prescription form state/imports left from the old wrapper behavior.
+
+### Files Changed
+
+- `frontend/src/components/doctor/PrescriptionForm.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: keep doctor prescription input focused
+```
+
+## 2026-06-09 - Customer Real-Time Slot Guard And Prescription Deduplication
+
+### Goal
+
+Prevent customers from booking past same-day appointment slots and stop doctor prescriptions from duplicating when drafts or completed exam records are saved repeatedly.
+
+### Work Completed
+
+- Filtered customer appointment and reschedule time options against the current local date/time.
+- Added backend future-slot validation for provider lookup, appointment create, and customer reschedule APIs using the Vietnam business timezone.
+- Changed doctor prescription saving to replace the existing prescription set for a medical visit instead of appending on every save.
+- Fixed exam prescription loading to read prescription items through prescriptions by `medical_visit_id`.
+- Updated backend/API docs for future-slot validation.
+
+### Files Changed
+
+- `frontend/src/components/customer/appointments/CustomerAppointmentModals.tsx`
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `docs/api-reference.mdx`
+- `docs/backend.mdx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+
+### Result
+
+Checks passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: enforce future booking slots and dedupe prescriptions
+```
+
+## 2026-06-09 - Doctor Scheduled Appointment Start Button Removal
+
+### Goal
+
+Align the doctor appointment flow so doctors only continue an exam after staff check-in moves the appointment to `IN_PROGRESS`.
+
+### Work Completed
+
+- Removed the doctor-side start action from scheduled appointment rows.
+- Kept the continue-exam action only for rows already marked as in progress.
+- Guarded the doctor portal open-exam handler so scheduled rows cannot trigger the start-exam API path.
+
+### Files Changed
+
+- `frontend/src/components/doctor/DoctorScheduleTable.tsx`
+- `frontend/src/features/doctor/pages/DoctorPortal.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+fix: hide doctor start action until check-in
+```
+
+## 2026-06-09 - Doctor Medical Record Detail View
+
+### Goal
+
+Allow doctors to open and review the full medical record details for pets they have examined.
+
+### Work Completed
+
+- Wired the existing doctor record detail component into the doctor records page.
+- Added a per-visit detail action from the medical record history cards.
+- Preserved the current backend record payload and list grouping flow.
+
+### Files Changed
+
+- `frontend/src/features/doctor/pages/DoctorRecordsPage.tsx`
+- `frontend/src/components/doctor/DoctorRecordsView.tsx`
+- `docs/dev/session-log.mdx`
+
+### Test
+
+- `npm --prefix frontend run build`
+
+### Result
+
+Build passed. Vite still reports the existing large chunk warning.
+
+### Suggested Commit Message
+
+```text
+feat: add doctor record detail view
+```
+
 ## 2026-06-04 - Admin Vietnamese Text Fix Step 1
 
 ### Goal

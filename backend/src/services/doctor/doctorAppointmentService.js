@@ -158,6 +158,7 @@ function mapDoctorAppointment(appointment) {
   return {
     id: displayId,
     appointmentId: appointment.id,
+    petId: appointment.pets?.id || null,
     date,
     time,
     endTime,

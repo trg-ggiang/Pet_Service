@@ -18,7 +18,7 @@ async function fetchWithAuth<T>(url: string, options: RequestInit = {}): Promise
   const data = await response.json().catch(() => null);
 
   if (!response.ok || data?.ok === false) {
-    throw new Error(data?.message || "Request thất bại");
+    throw new Error(data?.message || "Yêu cầu thất bại");
   }
 
   return data as T;
@@ -185,6 +185,12 @@ export const staffAppointmentsService = {
 
   async checkInAppointment(appointmentId: number): Promise<void> {
     await fetchWithAuth<MutationResponse>(`/api/staff/appointments/${appointmentId}/checkin`, {
+      method: "PUT",
+    });
+  },
+
+  async completeGroomingAppointment(appointmentId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/appointments/${appointmentId}/complete-grooming`, {
       method: "PUT",
     });
   },

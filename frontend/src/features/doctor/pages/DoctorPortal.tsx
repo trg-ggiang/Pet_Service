@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { DoctorSidebar, type DoctorPortalNavId } from "../../../components/doctor/DoctorSidebar";
 import { DoctorScheduleHeader } from "../../../components/doctor/DoctorScheduleHeader";
@@ -41,6 +41,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   const [meta, setMeta] = useState<DoctorScheduleMeta>(EMPTY_META);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
+  const [recordsTarget, setRecordsTarget] = useState<{ petId?: number | null; appointmentId?: number | null } | null>(null);
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(null);
   const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
@@ -88,7 +89,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   }, [loadNotifications]);
 
   useEffect(() => {
-    if (activeNav === "schedule") {
+    if (activeNav === "schedule" || activeNav === "scheduleHistory") {
       void loadAppointments();
     }
   }, [activeNav, loadAppointments]);
@@ -111,18 +112,23 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
     }
   }
 
-  async function handleOpenExam(appointment: DoctorAppointment) {
-    if (appointment.statusKey === "scheduled") {
-      try {
-        await doctorAppointmentsService.startExam(appointment.appointmentId);
-        await loadAppointments();
-      } catch (error) {
-        console.error("[FRONTEND] Failed to start exam:", error);
-        return;
-      }
-    }
+  function handleOpenExam(appointment: DoctorAppointment) {
+    if (appointment.statusKey !== "in_progress") return;
 
     setExamPatient(appointment);
+  }
+
+  function handleOpenRecordDetail(appointment: DoctorAppointment) {
+    setRecordsTarget({
+      petId: appointment.petId,
+      appointmentId: appointment.appointmentId,
+    });
+    setActiveNav("records");
+  }
+
+  function handleNavigate(navId: DoctorPortalNavId) {
+    setRecordsTarget(null);
+    setActiveNav(navId);
   }
 
   async function handleFinishExam() {
@@ -130,11 +136,6 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
     setActiveNav("schedule");
     await loadAppointments();
   }
-
-  const filteredAppointments = useMemo(() => {
-    if (appointmentFilter === "all") return appointments;
-    return appointments.filter((appointment) => appointment.statusKey === appointmentFilter);
-  }, [appointments, appointmentFilter]);
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ background: "#F8FAFC" }}>
@@ -151,7 +152,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
       <DoctorSidebar
         activeNav={activeNav}
         profile={doctorProfile}
-        onNavigate={setActiveNav}
+        onNavigate={handleNavigate}
         onLogoutClick={() => setLogoutConfirmOpen(true)}
       />
 
@@ -166,7 +167,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
 
         {!examPatient && activeNav === "records" && (
           <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-            <DoctorRecordsPage />
+            <DoctorRecordsPage target={recordsTarget} />
           </div>
         )}
 
@@ -194,13 +195,40 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
             <main className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
               <DoctorScheduleStats summary={summary} />
               <DoctorScheduleTable
-                appointments={filteredAppointments}
+                appointments={appointments}
                 loading={appointmentsLoading}
                 error={appointmentsError}
                 meta={meta}
                 filter={appointmentFilter}
+                view="today"
                 onFilterChange={setAppointmentFilter}
-                onOpenExam={(appointment) => void handleOpenExam(appointment)}
+                onOpenExam={handleOpenExam}
+              />
+            </main>
+          </div>
+        )}
+
+        {!examPatient && activeNav === "scheduleHistory" && (
+          <div className="flex-1 flex flex-col min-h-0">
+            <DoctorScheduleHeader
+              meta={meta}
+              notifications={notifications}
+              unreadCount={notificationUnreadCount}
+              onMarkNotificationRead={(id) => void handleMarkNotificationRead(id)}
+              onMarkAllNotificationsRead={() => void handleMarkAllNotificationsRead()}
+            />
+            <main className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
+              <DoctorScheduleStats summary={summary} />
+              <DoctorScheduleTable
+                appointments={appointments}
+                loading={appointmentsLoading}
+                error={appointmentsError}
+                meta={meta}
+                filter={appointmentFilter}
+                view="history"
+                onFilterChange={setAppointmentFilter}
+                onOpenExam={handleOpenExam}
+                onOpenRecordDetail={handleOpenRecordDetail}
               />
             </main>
           </div>

@@ -62,6 +62,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [errors, setErrors] = useState<ErrorState>(INITIAL_ERRORS);
   const [viewingApt, setViewingApt] = useState<StaffAppointment | null>(null);
   const [approvingAppointmentId, setApprovingAppointmentId] = useState<number | null>(null);
+  const [completingGroomingAppointmentId, setCompletingGroomingAppointmentId] = useState<number | null>(null);
   const [viewingBoarding, setViewingBoarding] = useState<BoardingGuest | null>(null);
   const [processingPayment, setProcessingPayment] = useState<PaymentItem | null>(null);
 
@@ -198,13 +199,43 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
     }
   }
 
+  async function handleCompleteGroomingAppointment(appointment: StaffAppointment) {
+    if (completingGroomingAppointmentId === appointment.appointmentId) return;
+
+    try {
+      setCompletingGroomingAppointmentId(appointment.appointmentId);
+      await staffAppointmentsService.completeGroomingAppointment(appointment.appointmentId);
+      setViewingApt(null);
+    } catch (error) {
+      console.error("[FRONTEND] Complete grooming appointment failed:", error);
+      alert("Không thể hoàn thành grooming: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+      return;
+    } finally {
+      setCompletingGroomingAppointmentId(null);
+    }
+
+    const reloadResults = await Promise.allSettled([
+      loadAppointments(),
+      loadGrooming(),
+      loadPayments(),
+      loadSummary(),
+    ]);
+
+    const failedReloads = reloadResults.filter((result) => result.status === "rejected");
+    if (failedReloads.length > 0) {
+      console.warn("[FRONTEND] Complete grooming succeeded, but some staff data reloads failed:", failedReloads);
+    }
+  }
+
   async function handleUpdateGrooming(task: GroomingTask) {
     try {
+      const nextStatus = "COMPLETED";
       await staffAppointmentsService.updateGroomingStatus(
         task.id,
-        task.status === "in_progress" ? "COMPLETED" : "IN_PROGRESS",
+        nextStatus,
       );
       await loadGrooming();
+      if (nextStatus === "COMPLETED") await loadPayments();
       await loadSummary();
     } catch (error) {
       console.error("[FRONTEND] Update grooming failed:", error);
@@ -271,8 +302,10 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
               onViewDetails={setViewingApt}
               onConfirm={(appointment) => void handleConfirmAppointment(appointment)}
               onCheckIn={(appointment) => void handleCheckIn(appointment)}
+              onCompleteGrooming={(appointment) => void handleCompleteGroomingAppointment(appointment)}
               onApproveRequest={(appointment) => void handleApproveAppointmentRequest(appointment)}
               approvingAppointmentId={approvingAppointmentId}
+              completingGroomingAppointmentId={completingGroomingAppointmentId}
             />
           )}
           {activeNav === "grooming" && (
@@ -316,8 +349,10 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           onClose={() => setViewingApt(null)}
           onConfirm={() => void handleConfirmAppointment(viewingApt)}
           onCheckIn={() => void handleCheckIn(viewingApt)}
+          onCompleteGrooming={() => void handleCompleteGroomingAppointment(viewingApt)}
           onApproveRequest={() => void handleApproveAppointmentRequest(viewingApt)}
           approving={approvingAppointmentId === viewingApt.appointmentId}
+          completingGrooming={completingGroomingAppointmentId === viewingApt.appointmentId}
         />
       )}
       {viewingBoarding && (

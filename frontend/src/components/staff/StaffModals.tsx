@@ -9,13 +9,15 @@ import type {
 } from "../../features/staff/services/staffAppointments";
 import { APT_STATUS_CONFIG, SERVICE_ICONS } from "./staffPortalConfig";
 
-export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onApproveRequest, approving }: {
+export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onCompleteGrooming, onApproveRequest, approving, completingGrooming }: {
   apt: StaffAppointment;
   onClose: () => void;
   onConfirm: () => void;
   onCheckIn: () => void;
+  onCompleteGrooming: () => void;
   onApproveRequest: () => void;
   approving?: boolean;
+  completingGrooming?: boolean;
 }) {
   const statusCfg = APT_STATUS_CONFIG[apt.status];
   const svcIcon = SERVICE_ICONS[apt.serviceType] || SERVICE_ICONS.exam;
@@ -72,7 +74,7 @@ export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onA
             </div>
           )}
         </div>
-        {(apt.status === "scheduled" || apt.status === "confirmed") && (
+        {(apt.status === "scheduled" || apt.status === "confirmed" || (apt.status === "in_progress" && apt.serviceType === "grooming")) && (
           <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
             {apt.status === "scheduled" && apt.pendingRequest ? (
               <button onClick={onApproveRequest} disabled={approving} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
@@ -85,6 +87,10 @@ export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onA
             ) : apt.status === "confirmed" ? (
               <button onClick={onCheckIn} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#7C3AED,#8B5CF6)" }}>
                 <CheckCircle2 size={16} /> Check-in · Bắt đầu khám
+              </button>
+            ) : apt.status === "in_progress" && apt.serviceType === "grooming" ? (
+              <button onClick={onCompleteGrooming} disabled={completingGrooming} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
+                <CheckCircle2 size={16} /> {completingGrooming ? "Đang hoàn thành..." : "Hoàn thành grooming"}
               </button>
             ) : null}
           </div>

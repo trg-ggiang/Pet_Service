@@ -21,11 +21,7 @@ export function PetSummaryPanel({
     <div className="border-r border-border bg-white overflow-y-auto flex flex-col">
       <div className="relative flex-shrink-0 h-52 bg-slate-100">
         {patientCard.imageUrl ? (
-          <img
-            src={patientCard.imageUrl}
-            alt={patientCard.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={patientCard.imageUrl} alt={patientCard.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
             <span className="text-4xl font-bold text-slate-400">{patientCard.initials}</span>

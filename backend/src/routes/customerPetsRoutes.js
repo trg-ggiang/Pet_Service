@@ -42,7 +42,7 @@ router.get("/pets", async (req, res) => {
     const data = await getCustomerPetDashboard(customerId);
     res.json({ ok: true, ...data });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load customer pets" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải danh sách thú cưng" });
   }
 });
 
@@ -51,7 +51,7 @@ router.get("/pets/:petId", async (req, res) => {
     const data = await getPetDetail(req.params.petId, req.auth.user.customerId);
     res.json({ ok: true, ...data });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message || "Failed to load pet detail" });
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải chi tiết thú cưng" });
   }
 });
 
@@ -62,7 +62,7 @@ router.get("/appointment-options", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
-      message: error.message || "Failed to load customer appointment options",
+      message: error.message || "Không thể tải tùy chọn đặt lịch",
     });
   }
 });
@@ -77,7 +77,7 @@ router.post("/appointment-provider-options", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message || "Failed to list customer appointment providers",
+      message: error.message || "Không thể tải danh sách người phụ trách",
     });
   }
 });
@@ -95,7 +95,7 @@ router.get("/appointments", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
-      message: error.message || "Failed to load customer appointments",
+      message: error.message || "Không thể tải lịch hẹn",
     });
   }
 });
@@ -110,7 +110,7 @@ router.post("/appointments", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message || "Failed to create customer appointment",
+      message: error.message || "Không thể tạo lịch hẹn",
     });
   }
 });
@@ -126,7 +126,7 @@ router.patch("/appointments/:appointmentId/confirm", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message || "Failed to confirm customer appointment",
+      message: error.message || "Không thể xác nhận lịch hẹn",
     });
   }
 });
@@ -142,7 +142,7 @@ router.patch("/appointments/:appointmentId/reschedule", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message || "Failed to reschedule customer appointment",
+      message: error.message || "Không thể đổi lịch hẹn",
     });
   }
 });
@@ -158,7 +158,7 @@ router.patch("/appointments/:appointmentId/cancel", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message || "Failed to cancel customer appointment",
+      message: error.message || "Không thể hủy lịch hẹn",
     });
   }
 });
@@ -172,7 +172,7 @@ router.get("/service-history", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
-      message: error.message || "Failed to load customer service history",
+      message: error.message || "Không thể tải lịch sử dịch vụ",
     });
   }
 });
@@ -184,7 +184,7 @@ router.post("/pets", async (req, res) => {
     const data = await createCustomerPet(req.body ?? {}, req.auth.user.customerId);
     res.status(201).json({ ok: true, pet: data });
   } catch (error) {
-    res.status(400).json({ ok: false, message: error.message || "Failed to create pet" });
+    res.status(400).json({ ok: false, message: error.message || "Không thể tạo hồ sơ thú cưng" });
   }
 });
 
@@ -195,7 +195,7 @@ router.get("/notifications", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
-      message: error.message || "Failed to load notifications",
+      message: error.message || "Không thể tải thông báo",
     });
   }
 });
@@ -210,7 +210,7 @@ router.delete("/notifications/:notificationId", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
-      message: error.message || "Failed to dismiss notification",
+      message: error.message || "Không thể xóa thông báo",
     });
   }
 });
@@ -222,7 +222,7 @@ router.patch("/notifications/read-all", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
-      message: error.message || "Failed to update notifications",
+      message: error.message || "Không thể cập nhật thông báo",
     });
   }
 });
@@ -237,7 +237,7 @@ router.patch("/notifications/:notificationId/read", async (req, res) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       ok: false,
-      message: error.message || "Failed to update notification",
+      message: error.message || "Không thể cập nhật thông báo",
     });
   }
 });
@@ -256,7 +256,7 @@ router.get("/invoices/latest/pdf", async (req, res) => {
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       ok: false,
-      message: error.message || "Failed to export invoice PDF",
+      message: error.message || "Không thể xuất hóa đơn PDF",
     });
   }
 });
@@ -281,7 +281,7 @@ router.get("/invoices/match/pdf", async (req, res) => {
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       ok: false,
-      message: error.message || "Failed to export invoice PDF",
+      message: error.message || "Không thể xuất hóa đơn PDF",
     });
   }
 });
@@ -301,7 +301,7 @@ router.get("/invoices/:invoiceId/pdf", async (req, res) => {
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       ok: false,
-      message: error.message || "Failed to export invoice PDF",
+      message: error.message || "Không thể xuất hóa đơn PDF",
     });
   }
 });
@@ -312,7 +312,7 @@ router.put("/pets/:petId", async (req, res) => {
     const data = await updateCustomerPet(req.params.petId, req.body ?? {}, req.auth.user.customerId);
     res.json({ ok: true, pet: data });
   } catch (error) {
-    res.status(400).json({ ok: false, message: error.message || "Failed to update pet" });
+    res.status(400).json({ ok: false, message: error.message || "Không thể cập nhật hồ sơ thú cưng" });
   }
 });
 

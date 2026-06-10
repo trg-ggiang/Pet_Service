@@ -15,8 +15,111 @@ function getServiceIcon(iconKey: string) {
   return Stethoscope;
 }
 
+function getBookingServiceDisplayName(service: CustomerAppointmentOptions["services"][number]) {
+  if (service.serviceType === "Lưu trú") return "Lưu trú";
+  if (service.serviceType === "Tiêm phòng") return "Tiêm vaccine";
+  return service.name;
+}
+
 const INPUT_CLS = "w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all";
 const LABEL_CLS = "block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide";
+const APPOINTMENT_TIME_OPTIONS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","13:30","14:00","14:30","15:00","15:30","16:00"];
+
+function getLocalDateInputValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function timeToMinutes(value: string) {
+  const [hour = "0", minute = "0"] = value.split(":");
+  return Number(hour) * 60 + Number(minute);
+}
+
+function isPastAppointmentTime(date: string, time: string) {
+  const today = getLocalDateInputValue();
+  if (!date || date > today) return false;
+  if (date < today) return true;
+  const now = new Date();
+  return timeToMinutes(time) <= now.getHours() * 60 + now.getMinutes();
+}
+
+function getAvailableAppointmentTimes(date: string) {
+  return APPOINTMENT_TIME_OPTIONS.filter((time) => !isPastAppointmentTime(date, time));
+}
+
+function AppointmentTimeDropdown({
+  value,
+  options,
+  onChange,
+  disabled = false,
+  placeholder = "Chọn giờ",
+}: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.includes(value) ? value : "";
+  const unavailable = disabled || options.length === 0;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (!unavailable) setOpen((current) => !current);
+        }}
+        disabled={unavailable}
+        className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-slate-50 px-4 text-left text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+          open ? "border-cyan-400 ring-2 ring-cyan-500/20" : "border-slate-200 hover:border-slate-300"
+        }`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className={selected ? "text-slate-900" : "text-slate-400"}>
+          {selected || placeholder}
+        </span>
+        <ChevronDown size={16} className={`flex-shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10"
+            role="listbox"
+          >
+            {options.map((time) => {
+              const isSelected = time === value;
+              return (
+                <button
+                  key={time}
+                  type="button"
+                  onClick={() => {
+                    onChange(time);
+                    setOpen(false);
+                  }}
+                  className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-bold transition-colors ${
+                    isSelected ? "bg-cyan-50 text-cyan-700" : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  <span>{time}</span>
+                  {isSelected && <Check size={16} strokeWidth={3} />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function getFriendlyAppointmentNoteLines(note?: string) {
   const raw = String(note || "").trim();
@@ -65,8 +168,12 @@ export function NewAppointmentModal({
   const [providerError, setProviderError] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [petDropdownOpen, setPetDropdownOpen] = useState(false);
 
   const svc = services[form.serviceIdx] ?? services[0];
+  const selectedPet = pets.find((pet) => pet.name === form.pet) ?? pets[0] ?? null;
+  const minDate = getLocalDateInputValue();
+  const availableTimes = getAvailableAppointmentTimes(form.date);
   
   // Điều kiện để bấm "Tiếp theo" ở Bước 1
   const selectedProvider = providers.find((provider) => `${provider.role}:${provider.id}` === selectedProviderKey) ?? null;
@@ -122,6 +229,22 @@ export function NewAppointmentModal({
     };
   }, [form.date, form.time, form.serviceIdx, onLoadProviders, svc]);
 
+  useEffect(() => {
+    const nextPet = pets.find((pet) => pet.name === form.pet)
+      ?? (defaultPet ? pets.find((pet) => pet.name === defaultPet) : undefined)
+      ?? pets[0];
+
+    if (nextPet && nextPet.name !== form.pet) {
+      setForm((current) => ({ ...current, pet: nextPet.name }));
+    }
+  }, [defaultPet, form.pet, pets]);
+
+  useEffect(() => {
+    if (form.time && isPastAppointmentTime(form.date, form.time)) {
+      setForm((current) => ({ ...current, time: "" }));
+    }
+  }, [form.date, form.time]);
+
   const handleConfirm = async () => {
     if (!svc) {
       setError("Không có dịch vụ khả dụng.");
@@ -141,6 +264,7 @@ export function NewAppointmentModal({
         time: form.time,
         serviceId: svc.id,
         service: svc.name,
+        petId: selectedPet?.id,
         pet: form.pet,
         serviceType,
         providerRole: selectedProvider.role,
@@ -186,6 +310,7 @@ export function NewAppointmentModal({
                   {services.map((s, i) => {
                     const Icon = getServiceIcon(s.iconKey);
                     const active = form.serviceIdx === i;
+                    const serviceDisplayName = getBookingServiceDisplayName(s);
                     return (
                       <button
                         key={s.id}
@@ -198,7 +323,7 @@ export function NewAppointmentModal({
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: s.iconBg }}>
                           <Icon size={16} style={{ color: s.iconColor }} />
                         </div>
-                        <span className={`text-[11px] font-bold leading-tight ${active ? "text-cyan-700" : "text-slate-600"}`}>{s.name}</span>
+                        <span className={`text-[11px] font-bold leading-tight ${active ? "text-cyan-700" : "text-slate-600"}`}>{serviceDisplayName}</span>
                       </button>
                     );
                   })}
@@ -208,10 +333,76 @@ export function NewAppointmentModal({
               <div>
                 <label className={LABEL_CLS}>Thú cưng</label>
                 <div className="relative">
-                  <select value={form.pet} onChange={(e) => setForm({ ...form, pet: e.target.value })} className={INPUT_CLS + " appearance-none"}>
-                    {pets.map((p) => <option key={p.id} value={p.name}>{p.name} ({p.species})</option>)}
-                  </select>
-                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setPetDropdownOpen((current) => !current)}
+                    disabled={pets.length === 0}
+                    className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-slate-50 px-4 text-left text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      petDropdownOpen ? "border-cyan-400 ring-2 ring-cyan-500/20" : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    aria-expanded={petDropdownOpen}
+                    aria-haspopup="listbox"
+                  >
+                    {selectedPet ? (
+                      <span className="flex min-w-0 items-center gap-3">
+                        {selectedPet.image ? (
+                          <img src={selectedPet.image} alt="" className="h-7 w-7 flex-shrink-0 rounded-full object-cover ring-2 ring-white" />
+                        ) : (
+                          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs font-bold text-cyan-700">
+                            {selectedPet.initials}
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="block truncate text-slate-900">{selectedPet.name}</span>
+                          <span className="block truncate text-[11px] font-semibold text-slate-500">{selectedPet.species} · {selectedPet.breed}</span>
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Chưa có thú cưng</span>
+                    )}
+                    <ChevronDown size={16} className={`flex-shrink-0 text-slate-400 transition-transform ${petDropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {petDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setPetDropdownOpen(false)} />
+                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10" role="listbox">
+                        {pets.map((pet) => {
+                          const selected = pet.name === form.pet;
+                          return (
+                            <button
+                              key={pet.id}
+                              type="button"
+                              onClick={() => {
+                                setForm((current) => ({ ...current, pet: pet.name }));
+                                setPetDropdownOpen(false);
+                              }}
+                              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                                selected ? "bg-cyan-50 text-cyan-700" : "text-slate-700 hover:bg-slate-50"
+                              }`}
+                              role="option"
+                              aria-selected={selected}
+                            >
+                              <span className="flex min-w-0 items-center gap-3">
+                                {pet.image ? (
+                                  <img src={pet.image} alt="" className="h-9 w-9 flex-shrink-0 rounded-xl object-cover" />
+                                ) : (
+                                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-600">
+                                    {pet.initials}
+                                  </span>
+                                )}
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-bold">{pet.name}</span>
+                                  <span className="block truncate text-[11px] font-semibold opacity-75">{pet.species} · {pet.breed}</span>
+                                </span>
+                              </span>
+                              {selected && <Check size={16} strokeWidth={3} className="flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -221,22 +412,22 @@ export function NewAppointmentModal({
                   <input
                     type="date"
                     value={form.date}
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => setForm({ ...form, date: e.target.value })}
+                    min={minDate}
+                    onChange={(e) => setForm({ ...form, date: e.target.value, time: "" })}
                     className={INPUT_CLS}
                   />
                 </div>
                 <div>
                   <label className={LABEL_CLS}>Giờ khám</label>
-                  <div className="relative">
-                    <select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className={INPUT_CLS + " appearance-none"}>
-                      <option value="">Chọn giờ</option>
-                      {["08:00","08:30","09:00","09:30","10:00","10:30","11:00","13:30","14:00","14:30","15:00","15:30","16:00"].map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  </div>
+                  <AppointmentTimeDropdown
+                    value={form.time}
+                    options={availableTimes}
+                    onChange={(time) => setForm({ ...form, time })}
+                    disabled={!form.date}
+                  />
+                  {form.date && availableTimes.length === 0 && (
+                    <p className="mt-1.5 text-xs font-semibold text-red-600">Hôm nay không còn khung giờ phù hợp.</p>
+                  )}
                 </div>
               </div>
 
@@ -309,7 +500,7 @@ export function NewAppointmentModal({
             <div className="space-y-1">
               <p className="text-sm text-slate-500 mb-4">Vui lòng kiểm tra thông tin trước khi xác nhận.</p>
               {[
-                { label: "Dịch vụ",   value: svc?.name ?? "" },
+                { label: "Dịch vụ",   value: svc ? getBookingServiceDisplayName(svc) : "" },
                 { label: "Thú cưng",  value: form.pet },
                 { label: selectedProvider?.role === "staff" ? "Nhân viên" : "Bác sĩ", value: selectedProvider?.name ?? "Chưa chọn" },
                 { label: "Ngày khám", value: form.date },
@@ -588,6 +779,14 @@ export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: (
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const minDate = getLocalDateInputValue();
+  const availableTimes = getAvailableAppointmentTimes(date);
+
+  useEffect(() => {
+    if (time && isPastAppointmentTime(date, time)) {
+      setTime("");
+    }
+  }, [date, time]);
 
   const handleSave = async () => {
     if (!date || !time || !reason.trim() || saving) return;
@@ -631,8 +830,11 @@ export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: (
             <input
               type="date"
               value={date}
-              min={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setDate(e.target.value)}
+              min={minDate}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setTime("");
+              }}
               disabled={saving}
               className={INPUT_CLS + " disabled:opacity-50"}
             />
@@ -640,14 +842,15 @@ export function RescheduleModal({ apt, onClose, onSave }: { apt: any; onClose: (
 
           <div>
             <label className={LABEL_CLS}>Giờ mới</label>
-            <div className="relative">
-              <select value={time} onChange={(e) => setTime(e.target.value)} disabled={saving} className={INPUT_CLS + " appearance-none disabled:opacity-50"}>
-                {["08:00","08:30","09:00","09:30","10:00","10:30","11:00","13:30","14:00","14:30","15:00","15:30","16:00"].map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
+            <AppointmentTimeDropdown
+              value={time}
+              options={availableTimes}
+              onChange={setTime}
+              disabled={saving || !date}
+            />
+            {date && availableTimes.length === 0 && (
+              <p className="mt-1.5 text-xs font-semibold text-red-600">Hôm nay không còn khung giờ phù hợp.</p>
+            )}
           </div>
 
           <div>

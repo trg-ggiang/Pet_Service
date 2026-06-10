@@ -106,7 +106,7 @@ async function downloadInvoicePdfFromUrl(url: string, fallbackFilename: string):
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.message || `Request failed (${response.status})`);
+    throw new Error(payload?.message || `Yêu cầu thất bại (${response.status})`);
   }
 
   const blob = await response.blob();

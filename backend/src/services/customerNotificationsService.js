@@ -3,7 +3,7 @@ const { supabase } = require("../lib/supabaseClient");
 function assertUserId(userId) {
   const effectiveUserId = Number(userId);
   if (!Number.isFinite(effectiveUserId)) {
-    const error = new Error("Thieu thong tin nguoi dung");
+    const error = new Error("Thiếu thông tin người dùng");
     error.statusCode = 401;
     throw error;
   }
@@ -36,7 +36,7 @@ async function markCustomerNotificationRead(userId, notificationId) {
   const effectiveNotificationId = Number(notificationId);
 
   if (!Number.isFinite(effectiveNotificationId)) {
-    const error = new Error("Ma thong bao khong hop le");
+    const error = new Error("Mã thông báo không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -51,7 +51,7 @@ async function markCustomerNotificationRead(userId, notificationId) {
 
   if (error) throw new Error(error.message);
   if (!data) {
-    const errorNotFound = new Error("Khong tim thay thong bao");
+    const errorNotFound = new Error("Không tìm thấy thông báo");
     errorNotFound.statusCode = 404;
     throw errorNotFound;
   }
@@ -76,7 +76,7 @@ async function dismissCustomerNotification(userId, notificationId) {
   const effectiveNotificationId = Number(notificationId);
 
   if (!Number.isFinite(effectiveNotificationId)) {
-    const error = new Error("Ma thong bao khong hop le");
+    const error = new Error("Mã thông báo không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -91,7 +91,7 @@ async function dismissCustomerNotification(userId, notificationId) {
 
   if (error) throw new Error(error.message);
   if (!data) {
-    const errorNotFound = new Error("Khong tim thay thong bao");
+    const errorNotFound = new Error("Không tìm thấy thông báo");
     errorNotFound.statusCode = 404;
     throw errorNotFound;
   }

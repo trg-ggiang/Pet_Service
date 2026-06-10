@@ -31,6 +31,162 @@ async function createUserNotification(userId, title, content) {
   if (error) throw new Error(error.message);
 }
 
+async function ensureGroomingRecordForAppointment(appointmentId, appointmentServiceId, staffId) {
+  const now = new Date().toISOString();
+  const { data: existing, error: existingError } = await supabase
+    .from("grooming_records")
+    .select("id, staff_id, status")
+    .eq("appointment_id", appointmentId)
+    .eq("appointment_service_id", appointmentServiceId)
+    .neq("status", "CANCELLED")
+    .maybeSingle();
+
+  if (existingError) throw new Error(existingError.message);
+
+  if (existing?.id) {
+    if (!existing.staff_id || existing.status === "PENDING") {
+      const { error } = await supabase
+        .from("grooming_records")
+        .update({
+          staff_id: staffId,
+          status: "IN_PROGRESS",
+          started_at: now,
+        })
+        .eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    }
+    return existing.id;
+  }
+
+  const { data, error } = await supabase
+    .from("grooming_records")
+    .insert({
+      appointment_id: appointmentId,
+      appointment_service_id: appointmentServiceId,
+      staff_id: staffId,
+      status: "IN_PROGRESS",
+      started_at: now,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data.id;
+}
+
+async function ensurePendingInvoiceForGrooming(groomingId) {
+  const { data: record, error: recordError } = await supabase
+    .from("grooming_records")
+    .select(`
+      id,
+      appointment_id,
+      appointment_service_id,
+      appointment_services:appointment_service_id (
+        id,
+        service_id,
+        quantity,
+        unit_price,
+        services:service_id (id, name, type, price)
+      )
+    `)
+    .eq("id", groomingId)
+    .single();
+
+  if (recordError) throw new Error(recordError.message);
+  if (!record?.appointment_id || !record?.appointment_service_id) {
+    throw new Error("Thiếu thông tin dịch vụ grooming để tạo hóa đơn");
+  }
+
+  const appointmentService = record.appointment_services;
+  const service = appointmentService?.services;
+  const quantity = Math.max(1, Number(appointmentService?.quantity || 1));
+  const unitPrice = moneyNumber(appointmentService?.unit_price || service?.price);
+  const totalPrice = quantity * unitPrice;
+  const now = new Date().toISOString();
+
+  const existingInvoiceResult = await supabase
+    .from("invoices")
+    .select("id, payment_status, status")
+    .eq("appointment_id", record.appointment_id)
+    .maybeSingle();
+
+  if (existingInvoiceResult.error) throw new Error(existingInvoiceResult.error.message);
+
+  let invoice = existingInvoiceResult.data;
+  if (!invoice?.id) {
+    const created = await supabase
+      .from("invoices")
+      .insert({
+        appointment_id: record.appointment_id,
+        subtotal_amount: totalPrice,
+        discount_amount: 0,
+        tax_amount: 0,
+        total_amount: totalPrice,
+        payment_status: "UNPAID",
+        status: "PENDING",
+        created_at: now,
+        updated_at: now,
+      })
+      .select("id, payment_status, status")
+      .single();
+
+    if (created.error) throw new Error(created.error.message);
+    invoice = created.data;
+  }
+
+  const itemPayload = {
+    invoice_id: invoice.id,
+    service_id: appointmentService.service_id || service?.id || null,
+    appointment_service_id: appointmentService.id,
+    grooming_record_id: record.id,
+    source_type: "GROOMING",
+    description: service?.name || "Grooming",
+    quantity,
+    unit_price: unitPrice,
+    total_price: totalPrice,
+  };
+
+  const existingItem = await supabase
+    .from("invoice_items")
+    .select("id")
+    .eq("invoice_id", invoice.id)
+    .eq("grooming_record_id", record.id)
+    .maybeSingle();
+
+  if (existingItem.error) throw new Error(existingItem.error.message);
+
+  const itemResult = existingItem.data?.id
+    ? await supabase.from("invoice_items").update(itemPayload).eq("id", existingItem.data.id)
+    : await supabase.from("invoice_items").insert(itemPayload);
+
+  if (itemResult.error) throw new Error(itemResult.error.message);
+
+  if (invoice.payment_status !== "PAID") {
+    const totals = await supabase
+      .from("invoice_items")
+      .select("total_price")
+      .eq("invoice_id", invoice.id);
+
+    if (totals.error) throw new Error(totals.error.message);
+    const subtotal = (totals.data || []).reduce((sum, item) => sum + moneyNumber(item.total_price), 0);
+
+    const updatedInvoice = await supabase
+      .from("invoices")
+      .update({
+        subtotal_amount: subtotal,
+        total_amount: subtotal,
+        payment_status: "UNPAID",
+        status: "PENDING",
+        updated_at: now,
+      })
+      .eq("id", invoice.id);
+
+    if (updatedInvoice.error) throw new Error(updatedInvoice.error.message);
+  }
+
+  return invoice.id;
+}
+
 async function notifyAppointmentActor(userId, title, content) {
   try {
     await createUserNotification(userId, title, content);
@@ -257,6 +413,19 @@ function mapPayment(invoice) {
   };
 }
 
+function moneyNumber(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function isGroomingService(service) {
+  return service?.services?.type === "GROOMING";
+}
+
+function getPrimaryGroomingService(appointment) {
+  return (appointment?.appointment_services || []).find(isGroomingService) || null;
+}
+
 async function getStaffProfile(staffId) {
   const effectiveStaffId = assertStaffId(staffId);
   const { data, error } = await supabase
@@ -326,7 +495,16 @@ async function confirmAppointment(appointmentId, staffId) {
   const id = parsePositiveId(appointmentId, "ID lịch hẹn");
   const { data: appointment, error: fetchError } = await supabase
     .from("appointments")
-    .select("id, status, staff_id")
+    .select(`
+      id,
+      status,
+      staff_id,
+      appointment_services (
+        id,
+        service_id,
+        services:service_id (id, name, type)
+      )
+    `)
     .eq("id", id)
     .single();
 
@@ -355,7 +533,16 @@ async function checkInAppointment(appointmentId, staffId) {
   const id = parsePositiveId(appointmentId, "ID lịch hẹn");
   const { data: appointment, error: fetchError } = await supabase
     .from("appointments")
-    .select("id, status, staff_id")
+    .select(`
+      id,
+      status,
+      staff_id,
+      appointment_services (
+        id,
+        service_id,
+        services:service_id (id, name, type)
+      )
+    `)
     .eq("id", id)
     .single();
 
@@ -377,6 +564,11 @@ async function checkInAppointment(appointmentId, staffId) {
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+
+  const groomingService = getPrimaryGroomingService(appointment);
+  if (groomingService) {
+    await ensureGroomingRecordForAppointment(id, groomingService.id, effectiveStaffId);
+  }
 }
 
 async function approveAppointmentRequest(appointmentId, staffId) {
@@ -563,7 +755,7 @@ async function updateGroomingStatus(groomingId, status, staffId) {
   const now = new Date().toISOString();
   const { data: record, error: recordError } = await supabase
     .from("grooming_records")
-    .select("id, staff_id")
+    .select("id, staff_id, appointment_id, appointment_service_id")
     .eq("id", id)
     .maybeSingle();
   if (recordError) throw new Error(recordError.message);
@@ -585,6 +777,77 @@ async function updateGroomingStatus(groomingId, status, staffId) {
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+
+  if (record.appointment_service_id) {
+    const serviceUpdate = await supabase
+      .from("appointment_services")
+      .update({
+        status: status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS",
+      })
+      .eq("id", record.appointment_service_id);
+
+    if (serviceUpdate.error) throw new Error(serviceUpdate.error.message);
+  }
+
+  if (record.appointment_id) {
+    const appointmentUpdate = await supabase
+      .from("appointments")
+      .update({
+        status: status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS",
+        staff_id: effectiveStaffId,
+        updated_at: now,
+      })
+      .eq("id", record.appointment_id);
+
+    if (appointmentUpdate.error) throw new Error(appointmentUpdate.error.message);
+  }
+
+  if (status === "COMPLETED") {
+    await ensurePendingInvoiceForGrooming(id);
+  }
+}
+
+async function completeGroomingAppointment(appointmentId, staffId) {
+  const id = parsePositiveId(appointmentId, "ID lịch hẹn");
+  const effectiveStaffId = assertStaffId(staffId);
+
+  const { data: appointment, error: appointmentError } = await supabase
+    .from("appointments")
+    .select(`
+      id,
+      status,
+      staff_id,
+      appointment_services (
+        id,
+        service_id,
+        services:service_id (id, name, type)
+      )
+    `)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (appointmentError) throw new Error(appointmentError.message);
+  if (!appointment) throw new Error("Không tìm thấy lịch hẹn");
+  if (appointment.staff_id && appointment.staff_id !== effectiveStaffId) {
+    const error = new Error("Bạn không có quyền hoàn thành lịch grooming này");
+    error.statusCode = 403;
+    throw error;
+  }
+  if (appointment.status !== "IN_PROGRESS") {
+    const error = new Error("Chỉ có thể hoàn thành lịch grooming đang thực hiện");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const groomingService = getPrimaryGroomingService(appointment);
+  if (!groomingService) {
+    const error = new Error("Lịch hẹn này không phải dịch vụ grooming");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const groomingId = await ensureGroomingRecordForAppointment(id, groomingService.id, effectiveStaffId);
+  await updateGroomingStatus(groomingId, "COMPLETED", effectiveStaffId);
 }
 
 async function listBoardingGuests() {
@@ -768,6 +1031,7 @@ module.exports = {
   approveAppointmentRequest,
   listGroomingTasks,
   updateGroomingStatus,
+  completeGroomingAppointment,
   listBoardingGuests,
   updateBoardingDailyStatus,
   listPayments,

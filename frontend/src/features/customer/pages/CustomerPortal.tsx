@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { Bell, Calendar, CheckCircle2, Clock, Heart, LogOut, Star, X } from "lucide-react";
+import { useCallback } from "react";
 import { CustomerPetProfilesModule } from "./CustomerPetsPage";
 import { fetchCustomerPetDashboard } from "../../../services/customer/customerPetsApi";
 import {
@@ -114,40 +115,34 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const selectedPetLabel = petFilter === "all" ? "Tất cả" : petFilter;
   const selectedServiceLabel = serviceFilterOptions.find((option) => option.value === serviceTypeFilter)?.label ?? "Tất cả";
 
-  useEffect(() => {
-    let mounted = true;
-
-    void (async () => {
-      try {
-        const dash = await fetchCustomerPetDashboard();
-        if (!mounted) return;
-
-        setPets(
-          (dash.pets ?? []).map((pet) => ({
-            id: pet.id,
-            name: pet.name,
-            species: pet.species,
-            breed: pet.breed,
-            age: pet.age,
-            weight: pet.weight,
-            colorId: pet.colorId,
-            initials: pet.initials,
-            lastVisit: pet.lastVisit,
-            nextVaccine: pet.nextVaccine,
-            healthy: pet.healthy,
-            image: pet.image ?? "",
-          })),
-        );
-      } catch (error) {
-        console.error("Failed to load customer pets dashboard", error);
-        if (mounted) setPets([]);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
+  const loadPetsDashboard = useCallback(async () => {
+    try {
+      const dash = await fetchCustomerPetDashboard();
+      setPets(
+        (dash.pets ?? []).map((pet) => ({
+          id: pet.id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight,
+          colorId: pet.colorId,
+          initials: pet.initials,
+          lastVisit: pet.lastVisit,
+          nextVaccine: pet.nextVaccine,
+          healthy: pet.healthy,
+          image: pet.image ?? "",
+        })),
+      );
+    } catch (error) {
+      console.error("Failed to load customer pets dashboard", error);
+      setPets([]);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadPetsDashboard();
+  }, [loadPetsDashboard]);
 
   useEffect(() => {
     setAppointmentsPage(1);
@@ -507,6 +502,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
         {tab === "pets" && (
           <CustomerPetProfilesModule
+            onPetsChange={loadPetsDashboard}
             onBookAppointment={(petName) => {
               setBookingPetName(petName);
               setIsNewAptOpen(true);

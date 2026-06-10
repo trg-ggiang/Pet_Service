@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pill, Plus, Trash2, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { Pill, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import type { PrescriptionEntry } from "../../services/doctorAppointments";
 
 interface PrescriptionFormProps {
@@ -69,11 +69,7 @@ function PrescriptionRow({
 
   return (
     <div className={`rounded-xl border transition-all ${isValid ? "border-cyan-200 bg-white" : "border-amber-200 bg-amber-50/30"}`}>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left"
-      >
+      <div className="w-full flex items-center gap-3 px-4 py-3 text-left">
         <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-bold ${isValid ? "bg-cyan-100 text-cyan-700" : "bg-amber-100 text-amber-700"}`}>
           {index + 1}
         </div>
@@ -84,7 +80,6 @@ function PrescriptionRow({
               type="text"
               value={prescription.medicineName}
               onChange={(e) => update("medicineName", e.target.value)}
-              onClick={(e) => e.stopPropagation()}
               placeholder="Tên thuốc (bắt buộc)"
               className="w-full px-2 py-1 text-[13px] font-semibold border-b border-cyan-300 bg-transparent focus:outline-none focus:border-cyan-500"
             />
@@ -101,13 +96,16 @@ function PrescriptionRow({
               {prescription.dosage} · {prescription.route}
             </span>
           )}
-          {isExpanded ? (
-            <ChevronUp size={14} className="text-muted-foreground" />
-          ) : (
-            <ChevronDown size={14} className="text-muted-foreground" />
-          )}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground"
+            aria-label={isExpanded ? "Thu gọn thuốc" : "Mở rộng thuốc"}
+          >
+            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
         </div>
-      </button>
+      </div>
 
       {isExpanded && (
         <div className="px-4 pb-4 flex flex-col gap-3">
@@ -206,7 +204,6 @@ function PrescriptionRow({
 }
 
 export function PrescriptionForm({ prescriptions, onChange }: PrescriptionFormProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   function addPrescription() {
@@ -214,7 +211,6 @@ export function PrescriptionForm({ prescriptions, onChange }: PrescriptionFormPr
     const updated = [...prescriptions, newRx];
     onChange(updated);
     setExpandedRows((prev) => new Set([...prev, newRx.id]));
-    setIsExpanded(true);
   }
 
   function updatePrescription(updated: PrescriptionEntry) {

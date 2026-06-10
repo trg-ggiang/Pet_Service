@@ -137,7 +137,7 @@ export function PetDetailModal({
       setDownloadError("");
       await downloadCustomerInvoicePdf(invoiceId);
     } catch (err) {
-      setDownloadError(err instanceof Error ? err.message : "Khong the tai hoa don PDF.");
+      setDownloadError(err instanceof Error ? err.message : "Không thể tải hóa đơn PDF.");
     } finally {
       setDownloadingInvoiceId(null);
     }

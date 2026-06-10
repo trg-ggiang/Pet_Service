@@ -29,6 +29,7 @@ async function fetchWithAuth<T>(url: string, options: RequestInit = {}): Promise
 export interface DoctorAppointment {
   id: string;
   appointmentId: number;
+  petId: number | null;
   date: string;
   time: string;
   endTime: string;

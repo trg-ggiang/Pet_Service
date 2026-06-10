@@ -11,6 +11,22 @@ const {
 
 const router = express.Router();
 const REQUEST_PREFIX = "[CUSTOMER_REQUEST]";
+const MOJIBAKE_PATTERN = /\u00c3|\u00c4|\u00c6|\u00c2|\u00e1\u00ba|\u00e1\u00bb|\u00e2\u20ac|\u00f0\u0178|\ufffd/;
+const CP1252_REVERSE = {
+  "\u20ac": 0x80, "\u201a": 0x82, "\u0192": 0x83, "\u201e": 0x84, "\u2026": 0x85, "\u2020": 0x86, "\u2021": 0x87,
+  "\u02c6": 0x88, "\u2030": 0x89, "\u0160": 0x8A, "\u2039": 0x8B, "\u0152": 0x8C, "\u017d": 0x8E,
+  "\u2018": 0x91, "\u2019": 0x92, "\u201c": 0x93, "\u201d": 0x94, "\u2022": 0x95, "\u2013": 0x96, "\u2014": 0x97,
+  "\u02dc": 0x98, "\u2122": 0x99, "\u0161": 0x9A, "\u203a": 0x9B, "\u0153": 0x9C, "\u017e": 0x9E, "\u0178": 0x9F,
+};
+const REPLACEMENT_TEXT_FIXES = [
+  [/Kh[\ufffd?]ng c[\ufffd?]/gi, "Không có"],
+  [/Kh[\ufffd?]ng ghi nh[\ufffd?]n/gi, "Không ghi nhận"],
+  [/Ch[\ufffd?]a r[\ufffd?]/gi, "Chưa rõ"],
+  [/Ch[\ufffd?]a c[\ufffd?]/gi, "Chưa có"],
+  [/D[\ufffd?] [\ufffd?]ng/gi, "Dị ứng"],
+  [/B[\ufffd?]nh n[\ufffd?]n/gi, "Bệnh nền"],
+  [/L[\ufffd?]u [\ufffd?]/gi, "Lưu ý"],
+];
 
 router.use(authMiddleware);
 router.use(requireRole("doctor"));
@@ -49,9 +65,9 @@ const EXAM_BODY_SYSTEMS = [
 const EXAM_FORM_OPTIONS = {
   durationOptions: [
     { value: "<1d", label: "Dưới 1 ngày" },
-    { value: "1-3d", label: "1–3 ngày" },
-    { value: "3-7d", label: "3–7 ngày" },
-    { value: "1-2w", label: "1–2 tuần" },
+    { value: "1-3d", label: "1-3 ngày" },
+    { value: "3-7d", label: "3-7 ngày" },
+    { value: "1-2w", label: "1-2 tuần" },
     { value: ">2w", label: "Hơn 2 tuần" },
   ],
   onsetOptions: [
@@ -142,6 +158,63 @@ function parsePositiveId(value, fieldName = "id") {
     throw new Error(`${fieldName} không hợp lệ`);
   }
   return id;
+}
+
+function decodeWindows1252AsUtf8(text) {
+  const bytes = [];
+  for (const char of String(text)) {
+    const code = char.codePointAt(0);
+    if (code <= 0xff) {
+      bytes.push(code);
+      continue;
+    }
+
+    const mapped = CP1252_REVERSE[char];
+    if (mapped == null) return text;
+    bytes.push(mapped);
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
+function decodeMojibakeToken(value) {
+  let text = String(value ?? "");
+  for (let index = 0; index < 3 && MOJIBAKE_PATTERN.test(text); index += 1) {
+    const decoded = decodeWindows1252AsUtf8(text);
+    if (!decoded || decoded === text) break;
+    text = decoded;
+  }
+  return text;
+}
+
+function normalizeText(value) {
+  let text = String(value ?? "");
+
+  if (MOJIBAKE_PATTERN.test(text)) {
+    const decoded = decodeMojibakeToken(text);
+    if (decoded !== text && !MOJIBAKE_PATTERN.test(decoded)) {
+      text = decoded;
+    } else {
+      text = text
+        .split(/(\s+)/)
+        .map((part) => (MOJIBAKE_PATTERN.test(part) ? decodeMojibakeToken(part) : part))
+        .join("");
+    }
+  }
+
+  for (const [pattern, replacement] of REPLACEMENT_TEXT_FIXES) {
+    text = text.replace(pattern, replacement);
+  }
+
+  return text;
+}
+
+function normalizeTextDeep(value) {
+  if (typeof value === "string") return normalizeText(value);
+  if (Array.isArray(value)) return value.map(normalizeTextDeep);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, normalizeTextDeep(item)]),
+  );
 }
 
 function formatDate(value) {
@@ -237,7 +310,7 @@ function getStatusLabel(status) {
 }
 
 function cleanAppointmentNote(value) {
-  return String(value || "")
+  return normalizeText(value)
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean)
@@ -258,7 +331,7 @@ function safeJsonParse(value, fallback) {
 }
 
 function emptyExamRecord() {
-  return {
+  return normalizeTextDeep({
     chiefComplaint: "",
     selectedSymptoms: [],
     duration: "",
@@ -285,7 +358,7 @@ function emptyExamRecord() {
     prescriptions: [],
     nextVisitDate: null,
     nextVisitTime: "",
-  };
+  });
 }
 
 function normalizeExamRecord(rawVisit) {
@@ -408,6 +481,19 @@ async function getOwnedAppointment(appointmentId, doctorId) {
       requested_time,
       created_at,
       updated_at,
+      appointment_services (
+        id,
+        service_id,
+        quantity,
+        unit_price,
+        status,
+        services:service_id (
+          id,
+          name,
+          type,
+          price
+        )
+      ),
       doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey (
         id,
         slot_date,
@@ -459,6 +545,123 @@ async function updateDoctorScheduleStatus(scheduleId, status) {
   await setDoctorScheduleSlotStatus(scheduleId, status);
 }
 
+function moneyNumber(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function getBillableMedicalAppointmentService(appointment) {
+  const appointmentServices = appointment?.appointment_services || [];
+  return (
+    appointmentServices.find((item) => item?.services?.type === "MEDICAL")
+    || appointmentServices.find((item) => item?.services?.type === "VACCINE")
+    || appointmentServices[0]
+    || null
+  );
+}
+
+async function createOrUpdateMedicalVisitInvoice(appointment, medicalVisitId) {
+  if (!appointment?.id || !medicalVisitId) return null;
+
+  const appointmentService = getBillableMedicalAppointmentService(appointment);
+  const service = appointmentService?.services;
+  const quantity = Math.max(1, Number(appointmentService?.quantity || 1));
+  const unitPrice = moneyNumber(appointmentService?.unit_price || service?.price);
+  const totalPrice = quantity * unitPrice;
+  const now = new Date().toISOString();
+
+  const existingInvoiceResult = await supabase
+    .from("invoices")
+    .select("id, payment_status, status")
+    .eq("appointment_id", appointment.id)
+    .maybeSingle();
+
+  if (existingInvoiceResult.error) throw new Error(existingInvoiceResult.error.message);
+
+  let invoice = existingInvoiceResult.data;
+  if (!invoice?.id) {
+    const createdInvoice = await supabase
+      .from("invoices")
+      .insert({
+        appointment_id: appointment.id,
+        subtotal_amount: totalPrice,
+        discount_amount: 0,
+        tax_amount: 0,
+        total_amount: totalPrice,
+        payment_status: "UNPAID",
+        status: "PENDING",
+        created_at: now,
+        updated_at: now,
+      })
+      .select("id, payment_status, status")
+      .single();
+
+    if (createdInvoice.error) throw new Error(createdInvoice.error.message);
+    invoice = createdInvoice.data;
+  }
+
+  const itemPayload = {
+    invoice_id: invoice.id,
+    service_id: appointmentService?.service_id || service?.id || null,
+    appointment_service_id: appointmentService?.id || null,
+    medical_visit_id: medicalVisitId,
+    source_type: "MEDICAL_VISIT",
+    description: service?.name || getServiceLabel(appointment.appointment_type) || "Khám bệnh",
+    quantity,
+    unit_price: unitPrice,
+    total_price: totalPrice,
+  };
+
+  const existingItem = await supabase
+    .from("invoice_items")
+    .select("id")
+    .eq("invoice_id", invoice.id)
+    .eq("medical_visit_id", medicalVisitId)
+    .maybeSingle();
+
+  if (existingItem.error) throw new Error(existingItem.error.message);
+
+  const itemResult = existingItem.data?.id
+    ? await supabase.from("invoice_items").update(itemPayload).eq("id", existingItem.data.id)
+    : await supabase.from("invoice_items").insert(itemPayload);
+
+  if (itemResult.error) throw new Error(itemResult.error.message);
+
+  if (appointmentService?.id) {
+    const serviceStatusResult = await supabase
+      .from("appointment_services")
+      .update({ status: "COMPLETED" })
+      .eq("id", appointmentService.id);
+
+    if (serviceStatusResult.error) throw new Error(serviceStatusResult.error.message);
+  }
+
+  if (invoice.payment_status !== "PAID") {
+    const totals = await supabase
+      .from("invoice_items")
+      .select("total_price")
+      .eq("invoice_id", invoice.id);
+
+    if (totals.error) throw new Error(totals.error.message);
+    const subtotal = (totals.data || []).reduce((sum, item) => sum + moneyNumber(item.total_price), 0);
+
+    const updatedInvoice = await supabase
+      .from("invoices")
+      .update({
+        subtotal_amount: subtotal,
+        total_amount: subtotal,
+        payment_status: "UNPAID",
+        status: "PENDING",
+        updated_at: now,
+      })
+      .eq("id", invoice.id);
+
+    if (updatedInvoice.error) throw new Error(updatedInvoice.error.message);
+  }
+
+  return invoice.id;
+}
+
 async function resolveFollowUpService() {
   const { data, error } = await supabase
     .from("services")
@@ -472,15 +675,20 @@ async function resolveFollowUpService() {
   return data?.[0] || null;
 }
 
-async function findFollowUpScheduleIfExists(doctorId, date, time) {
-  const busyAppointments = await supabase
+async function findFollowUpScheduleIfExists(doctorId, date, time, excludeAppointmentId = null) {
+  let busyAppointmentsQuery = supabase
     .from("appointments")
     .select("id")
     .eq("doctor_id", doctorId)
     .eq("requested_date", date)
     .eq("requested_time", time)
-    .not("status", "in", "(CANCELLED,NO_SHOW)")
-    .limit(1);
+    .not("status", "in", "(CANCELLED,NO_SHOW)");
+
+  if (excludeAppointmentId) {
+    busyAppointmentsQuery = busyAppointmentsQuery.neq("id", excludeAppointmentId);
+  }
+
+  const busyAppointments = await busyAppointmentsQuery.limit(1);
 
   if (busyAppointments.error) throw new Error(busyAppointments.error.message);
   if ((busyAppointments.data || []).length > 0) {
@@ -508,7 +716,13 @@ async function createFollowUpAppointment(originalAppointment, cleanRecord) {
   const slot = assertFutureFollowUpSlot(cleanRecord);
   if (!slot) return null;
 
-  const schedule = await findFollowUpScheduleIfExists(originalAppointment.doctor_id, slot.date, slot.time);
+  const currentDate = normalizeDateInput(originalAppointment.requested_date);
+  const currentTime = normalizeTimeInput(originalAppointment.requested_time);
+  if (slot.date === currentDate && slot.time === currentTime) {
+    return null;
+  }
+
+  const schedule = await findFollowUpScheduleIfExists(originalAppointment.doctor_id, slot.date, slot.time, originalAppointment.id);
 
   // Reserve one concrete 30-minute slot to avoid duplicate doctor_schedule_slot_id conflicts.
   if (schedule?.id) {
@@ -607,23 +821,24 @@ async function getCurrentMedicalVisit(appointmentId) {
 
 async function getPrescriptionsForVisit(medicalVisitId) {
   const { data, error } = await supabase
-    .from("prescription_items")
+    .from("prescriptions")
     .select(`
       id,
-      medicine_name,
-      dosage,
-      frequency,
-      duration_days,
-      instructions,
-      prescriptions:prescription_id (
-        id
+      items:prescription_items!prescription_items_prescription_id_fkey (
+        id,
+        medicine_name,
+        dosage,
+        frequency,
+        duration_days,
+        instructions
       )
     `)
-    .eq("prescription_id", medicalVisitId);
+    .eq("medical_visit_id", medicalVisitId)
+    .order("id", { ascending: true });
 
   if (error) throw new Error(error.message);
 
-  return (data || []).map((item) => ({
+  return (data || []).flatMap((prescription) => prescription.items || []).map((item) => ({
     id: String(item.id),
     medicineName: item.medicine_name || "",
     dosage: item.dosage || "",
@@ -635,8 +850,6 @@ async function getPrescriptionsForVisit(medicalVisitId) {
 }
 
 async function savePrescriptions(medicalVisitId, prescriptions) {
-  if (!prescriptions || prescriptions.length === 0) return;
-
   // Get existing prescription IDs for this medical visit
   const { data: existingPrescriptions, error: fetchError } = await supabase
     .from("prescriptions")
@@ -644,6 +857,25 @@ async function savePrescriptions(medicalVisitId, prescriptions) {
     .eq("medical_visit_id", medicalVisitId);
 
   if (fetchError) throw new Error(fetchError.message);
+  const existingPrescriptionIds = (existingPrescriptions || []).map((row) => row.id);
+
+  if (existingPrescriptionIds.length > 0) {
+    const { error: deleteItemsError } = await supabase
+      .from("prescription_items")
+      .delete()
+      .in("prescription_id", existingPrescriptionIds);
+
+    if (deleteItemsError) throw new Error(deleteItemsError.message);
+
+    const { error: deletePrescriptionsError } = await supabase
+      .from("prescriptions")
+      .delete()
+      .eq("medical_visit_id", medicalVisitId);
+
+    if (deletePrescriptionsError) throw new Error(deletePrescriptionsError.message);
+  }
+
+  if (!prescriptions || prescriptions.length === 0) return;
 
   // Create prescription records
   const prescriptionInserts = prescriptions.map((rx) => ({
@@ -790,7 +1022,7 @@ async function buildExamDetail({ appointment, vaccinations, history, visit }) {
     }
   }
 
-  return {
+  return normalizeTextDeep({
     appointment: {
       id: appointment.id,
       displayId: `APT-${String(appointment.id).padStart(5, "0")}`,
@@ -852,7 +1084,7 @@ async function buildExamDetail({ appointment, vaccinations, history, visit }) {
       ...record,
       prescriptions,
     },
-  };
+  });
 }
 
 async function saveMedicalVisit(appointmentId, record) {
@@ -911,9 +1143,7 @@ async function saveMedicalVisit(appointmentId, record) {
   }
 
   // Save prescriptions to database
-  if (cleanRecord.prescriptions && cleanRecord.prescriptions.length > 0) {
-    await savePrescriptions(medicalVisitId, cleanRecord.prescriptions);
-  }
+  await savePrescriptions(medicalVisitId, cleanRecord.prescriptions);
 
   return medicalVisitId;
 }
@@ -930,19 +1160,19 @@ function repairNotificationText(value) {
     }
   }
 
-  const replacements = new Map([
-    ["Kh?ch h?ng", "Khách hàng"],
-    ["y?u c?u", "yêu cầu"],
-    ["??i l?ch", "đổi lịch"],
-    ["h?y l?ch", "hủy lịch"],
-    ["l?ch h?n", "lịch hẹn"],
-    ["L? do", "Lý do"],
-    ["?? x?c nh?n", "đã xác nhận"],
-    ["Kh?ng ghi r?", "Không ghi rõ"],
-  ]);
+  const replacements = [
+    [/Kh.ch h.ng/g, "Khách hàng"],
+    [/y.u c.u/g, "yêu cầu"],
+    [/.{2}i l.ch/g, "đổi lịch"],
+    [/h.y l.ch/g, "hủy lịch"],
+    [/l.ch h.n/g, "lịch hẹn"],
+    [/L. do/g, "Lý do"],
+    [/.{2} x.c nh.n/g, "đã xác nhận"],
+    [/Kh.ng ghi r./g, "Không ghi rõ"],
+  ];
 
   for (const [bad, good] of replacements) {
-    text = text.split(bad).join(good);
+    text = text.replace(bad, good);
   }
 
   return text;
@@ -951,7 +1181,7 @@ function repairNotificationText(value) {
 function mapDoctorNotification(notification) {
   return {
     id: notification.id,
-    title: repairNotificationText(notification.title || "Th?ng b?o"),
+    title: repairNotificationText(notification.title || "Thông báo"),
     content: repairNotificationText(notification.content || ""),
     type: notification.type || "APPOINTMENT",
     isRead: Boolean(notification.is_read),
@@ -1138,7 +1368,7 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
 
     const appointment = await getOwnedAppointment(appointmentId, doctorId);
     const cleanRecord = sanitizeExamRecord(req.body?.record);
-    await saveMedicalVisit(appointmentId, cleanRecord);
+    const medicalVisitId = await saveMedicalVisit(appointmentId, cleanRecord);
     const followUpAppointment = await createFollowUpAppointment(appointment, cleanRecord);
 
     const { error } = await supabase
@@ -1150,6 +1380,7 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
+    await createOrUpdateMedicalVisitInvoice(appointment, medicalVisitId);
     await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
     await sendAppointmentEventEmail("exam_result", appointmentId, {
       diagnosis: req.body?.record?.clinicalNote || "Kết quả khám đã được cập nhật trên hệ thống.",
@@ -1190,6 +1421,10 @@ router.put("/:id/complete", async function completeExamOnly(req, res) {
       .eq("id", appointmentId);
 
     if (error) throw new Error(error.message);
+    const currentVisit = await getCurrentMedicalVisit(appointmentId);
+    if (currentVisit?.id) {
+      await createOrUpdateMedicalVisitInvoice(appointment, currentVisit.id);
+    }
     await updateDoctorScheduleStatus(appointment.doctor_schedule_slot_id, "DONE");
     await sendAppointmentEventEmail("exam_result", appointmentId, {
       diagnosis: "Kết quả khám đã được cập nhật trên hệ thống.",

@@ -3,6 +3,13 @@ const { supabase } = require("../lib/supabaseClient");
 const { getStoredSetting, saveStoredSetting } = require("./settingsService");
 
 const TEMPLATE_SETTING_KEY = "email.templates";
+const MOJIBAKE_PATTERN = /\u00c3|\u00c4|\u00c6|\u00c2|\u00e1\u00ba|\u00e1\u00bb|\u00e2\u20ac|\u00f0\u0178|\ufffd/;
+const CP1252_REVERSE = {
+  "\u20ac": 0x80, "\u201a": 0x82, "\u0192": 0x83, "\u201e": 0x84, "\u2026": 0x85, "\u2020": 0x86, "\u2021": 0x87,
+  "\u02c6": 0x88, "\u2030": 0x89, "\u0160": 0x8A, "\u2039": 0x8B, "\u0152": 0x8C, "\u017d": 0x8E,
+  "\u2018": 0x91, "\u2019": 0x92, "\u201c": 0x93, "\u201d": 0x94, "\u2022": 0x95, "\u2013": 0x96, "\u2014": 0x97,
+  "\u02dc": 0x98, "\u2122": 0x99, "\u0161": 0x9A, "\u203a": 0x9B, "\u0153": 0x9C, "\u017e": 0x9E, "\u0178": 0x9F,
+};
 const EMAIL_PREFERENCE_KEYS = {
   appointment_confirmation: "emailNewAppt",
   appointment_reminder: "emailReminder",
@@ -61,6 +68,45 @@ const DEFAULT_TEMPLATES = {
   },
 };
 
+function decodeWindows1252AsUtf8(text) {
+  const bytes = [];
+  for (const char of String(text)) {
+    const code = char.codePointAt(0);
+    if (code <= 0xff) {
+      bytes.push(code);
+      continue;
+    }
+
+    const mapped = CP1252_REVERSE[char];
+    if (mapped == null) return text;
+    bytes.push(mapped);
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
+function normalizeText(value) {
+  let text = String(value ?? "");
+  for (let index = 0; index < 3 && MOJIBAKE_PATTERN.test(text); index += 1) {
+    const decoded = decodeWindows1252AsUtf8(text);
+    if (!decoded || decoded === text) break;
+    text = decoded;
+  }
+  return text;
+}
+
+function normalizeEmailTemplates(templates) {
+  const next = {};
+  Object.entries(templates || {}).forEach(([key, value]) => {
+    if (!value || typeof value !== "object") return;
+    next[key] = {
+      subject: normalizeText(value.subject),
+      heading: normalizeText(value.heading),
+      message: normalizeText(value.message),
+    };
+  });
+  return next;
+}
+
 function getSmtpConfig() {
   const user = process.env.SMTP_USER;
   const password = process.env.SMTP_APP_PASSWORD;
@@ -103,13 +149,14 @@ function buildHtml(heading, message) {
 
 async function getEmailTemplates() {
   const stored = await getStoredSetting(TEMPLATE_SETTING_KEY);
-  return { ...DEFAULT_TEMPLATES, ...(stored || {}) };
+  return normalizeEmailTemplates({ ...DEFAULT_TEMPLATES, ...(stored || {}) });
 }
 
 async function updateEmailTemplates(input) {
   const current = await getEmailTemplates();
   const next = { ...current };
-  Object.entries(input || {}).forEach(([key, value]) => {
+  const cleanInput = normalizeEmailTemplates(input);
+  Object.entries(cleanInput).forEach(([key, value]) => {
     if (!DEFAULT_TEMPLATES[key] || !value || typeof value !== "object") return;
     next[key] = { ...current[key], ...value };
   });
@@ -133,7 +180,7 @@ async function sendTemplateEmail(type, to, variables = {}) {
 
   const templates = await getEmailTemplates();
   const template = templates[type];
-  if (!template) throw new Error(`Email template không tồn tại: ${type}`);
+  if (!template) throw new Error(`Mẫu email không tồn tại: ${type}`);
 
   const subject = renderText(template.subject, variables);
   const heading = renderText(template.heading, variables);

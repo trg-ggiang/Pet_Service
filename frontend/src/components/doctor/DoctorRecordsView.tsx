@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Check, ChevronDown, Loader2, Search } from "lucide-react";
+import { Calendar, Check, ChevronDown, Eye, Loader2, Search } from "lucide-react";
 import type { DoctorMedicalRecord } from "../../features/doctor/services/doctorData";
 
 const DEFAULT_PET_PHOTO = "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&q=80";
@@ -38,8 +38,8 @@ export function DoctorRecordsToolbar({
   onSpeciesFilterChange: (value: string) => void;
 }) {
   const [speciesOpen, setSpeciesOpen] = useState(false);
-  const selectedSpecies = SPECIES_FILTER_OPTIONS.find((option) => option.value === speciesFilter)
-    || SPECIES_FILTER_OPTIONS[0];
+  const selectedSpecies =
+    SPECIES_FILTER_OPTIONS.find((option) => option.value === speciesFilter) || SPECIES_FILTER_OPTIONS[0];
 
   return (
     <div className="flex-shrink-0 flex items-center justify-between gap-4 px-6 py-4 bg-white border-b border-border">
@@ -58,7 +58,10 @@ export function DoctorRecordsToolbar({
             }`}
           >
             <span className="truncate text-foreground">{selectedSpecies.label}</span>
-            <ChevronDown size={15} className={`flex-shrink-0 text-slate-500 transition-transform ${speciesOpen ? "rotate-180" : ""}`} />
+            <ChevronDown
+              size={15}
+              className={`flex-shrink-0 text-slate-500 transition-transform ${speciesOpen ? "rotate-180" : ""}`}
+            />
           </button>
 
           {speciesOpen && (
@@ -153,7 +156,9 @@ export function DoctorRecordsPetList({
                   </span>
                   <span className="text-[10px] text-muted-foreground flex-shrink-0">{patient.latestDate}</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground truncate">{patient.species} · {patient.breed}</p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {patient.species} · {patient.breed}
+                </p>
                 <p className="text-[11px] text-muted-foreground truncate">Chủ: {patient.owner}</p>
                 <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">
                   {patient.recordCount} lần khám
@@ -172,7 +177,13 @@ export function DoctorRecordsPetList({
   );
 }
 
-export function DoctorRecordsHistory({ patient }: { patient: DoctorPatientRecords | null }) {
+export function DoctorRecordsHistory({
+  patient,
+  onOpenRecord,
+}: {
+  patient: DoctorPatientRecords | null;
+  onOpenRecord: (record: DoctorMedicalRecord) => void;
+}) {
   if (!patient) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
@@ -217,15 +228,27 @@ export function DoctorRecordsHistory({ patient }: { patient: DoctorPatientRecord
                   <h4 className="text-[15px] font-bold text-foreground mt-2">{record.diagnosis}</h4>
                   <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{record.clinicalNote}</p>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex-shrink-0 ${record.serviceColor}`}>
-                  {record.service}
-                </span>
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${record.serviceColor}`}>
+                    {record.service}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenRecord(record)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-white px-3 text-[12px] font-bold text-cyan-700 transition-colors hover:border-cyan-300 hover:bg-cyan-50"
+                  >
+                    <Eye size={13} />
+                    Xem chi tiết
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-xl bg-slate-50 border border-border px-3 py-2">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lý do khám</div>
-                  <div className="text-[12px] font-semibold text-foreground mt-0.5 line-clamp-2">{record.chiefComplaint}</div>
+                  <div className="text-[12px] font-semibold text-foreground mt-0.5 line-clamp-2">
+                    {record.chiefComplaint}
+                  </div>
                 </div>
                 <div className="rounded-xl bg-slate-50 border border-border px-3 py-2">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Bác sĩ</div>
@@ -233,14 +256,19 @@ export function DoctorRecordsHistory({ patient }: { patient: DoctorPatientRecord
                 </div>
                 <div className="rounded-xl bg-slate-50 border border-border px-3 py-2">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Đơn thuốc</div>
-                  <div className="text-[12px] font-semibold text-foreground mt-0.5">{record.prescriptions.length} thuốc</div>
+                  <div className="text-[12px] font-semibold text-foreground mt-0.5">
+                    {record.prescriptions.length} thuốc
+                  </div>
                 </div>
               </div>
 
               {record.symptoms.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {record.symptoms.map((symptom) => (
-                    <span key={symptom} className="px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[12px] font-semibold text-cyan-700">
+                    <span
+                      key={symptom}
+                      className="px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[12px] font-semibold text-cyan-700"
+                    >
                       {symptom}
                     </span>
                   ))}

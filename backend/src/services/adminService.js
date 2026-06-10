@@ -93,14 +93,14 @@ async function resolveUserIdByProfile(role, displayId) {
   }[normalizedRole];
 
   if (!config) {
-    const error = new Error("Invalid user role");
+    const error = new Error("Vai trò người dùng không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
 
   const id = parseProfileDisplayId(displayId, config.prefixes);
   if (!id) {
-    const error = new Error("Invalid user id");
+    const error = new Error("ID người dùng không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -112,7 +112,7 @@ async function resolveUserIdByProfile(role, displayId) {
     .single();
 
   if (error || !data?.user_id) {
-    const notFound = new Error(error?.message || "User profile not found");
+    const notFound = new Error(error?.message || "Không tìm thấy hồ sơ người dùng");
     notFound.statusCode = 404;
     throw notFound;
   }
@@ -439,13 +439,13 @@ function servicePayload(input, existingType) {
   }
 
   if (!type) {
-    const error = new Error("Invalid service category");
+    const error = new Error("Danh mục dịch vụ không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
 
   if (!Number.isFinite(price) || price < 0) {
-    const error = new Error("Invalid service price");
+    const error = new Error("Giá dịch vụ không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -512,7 +512,7 @@ async function createAdminService(input) {
 async function updateAdminService(displayId, input) {
   const id = parseServiceId(displayId);
   if (!id) {
-    const error = new Error("Invalid service id");
+    const error = new Error("ID dịch vụ không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -546,13 +546,13 @@ async function updateAdminService(displayId, input) {
 async function updateAdminServiceStatus(displayId, status) {
   const id = parseServiceId(displayId);
   if (!id) {
-    const error = new Error("Invalid service id");
+    const error = new Error("ID dịch vụ không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
 
   if (!["active", "inactive"].includes(status)) {
-    const error = new Error("Invalid service status");
+    const error = new Error("Trạng thái dịch vụ không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -710,13 +710,13 @@ async function updateAdminAppointmentStatus(displayId, status) {
   const dbStatus = appointmentDbStatus(status);
 
   if (!id) {
-    const error = new Error("Invalid appointment id");
+    const error = new Error("ID lịch hẹn không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
 
   if (!dbStatus) {
-    const error = new Error("Invalid appointment status");
+    const error = new Error("Trạng thái lịch hẹn không hợp lệ");
     error.statusCode = 400;
     throw error;
   }
@@ -745,7 +745,7 @@ async function updateAdminAppointmentStatus(displayId, status) {
   const result = await listAdminAppointments();
   const appointment = result.appointments.find((item) => item.id === `APT-${String(id).padStart(3, "0")}`);
   if (!appointment) {
-    const notFound = new Error("Appointment not found");
+    const notFound = new Error("Không tìm thấy lịch hẹn");
     notFound.statusCode = 404;
     throw notFound;
   }
@@ -1230,7 +1230,7 @@ async function getAdminExamContext() {
   const provider = appointment?.doctor?.full_name || appointment?.staff?.full_name || "";
 
   const bodySystems = [
-    "Da & lông",
+    "Da & Lông",
     "Mắt & tai",
     "Hô hấp",
     "Tim mạch",
