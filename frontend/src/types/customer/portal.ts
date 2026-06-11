@@ -54,6 +54,8 @@ export interface Apt {
 export interface HistoryRecord {
   id: string;
   invoiceId?: number;
+  appointmentId?: number | null;
+  isRated?: boolean;
   sortAt?: string;
   date: string;
   service: string;

@@ -381,6 +381,13 @@ function adminPut<T>(url: string, body: unknown) {
   });
 }
 
+function adminDelete<T>(url: string) {
+  return requestJson<ApiOk<T>>(url, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+}
+
 export const adminService = {
   getDashboard() {
     return adminGet<{ dashboard: AdminDashboard }>("/api/admin/dashboard");
@@ -424,6 +431,10 @@ export const adminService = {
     return adminPatch<{ service: AdminService }>(`/api/admin/services/${encodeURIComponent(id)}/status`, { status });
   },
 
+  deleteService(id: string) {
+    return adminDelete<{ id: string }>(`/api/admin/services/${encodeURIComponent(id)}`);
+  },
+
   listAppointments(params?: { status?: AdminAppointmentStatus | "all"; search?: string }) {
     const query = new URLSearchParams();
     if (params?.status && params.status !== "all") query.set("status", params.status);
@@ -447,6 +458,18 @@ export const adminService = {
 
   updateStaffLock(id: string, locked: boolean) {
     return adminPatch<{ user: AdminUserLockResult }>(`/api/admin/staff/${encodeURIComponent(id)}/lock`, { locked });
+  },
+
+  updateUserProfile(role: AdminUserRole, id: string, data: { name?: string; phone?: string; address?: string; specialty?: string; room?: string }) {
+    return adminPatch<{ id: string; role: string }>(`/api/admin/users/${role}/${encodeURIComponent(id)}/profile`, data);
+  },
+
+  updateStaffProfile(id: string, data: { name?: string; phone?: string; address?: string; specialty?: string; room?: string; position?: string }) {
+    return adminPatch<{ id: string; role: string }>(`/api/admin/staff/${encodeURIComponent(id)}/profile`, data);
+  },
+
+  createStaff(data: { name: string; email: string; password: string; phone?: string; address?: string; role?: string; specialty?: string; room?: string }) {
+    return adminPost<{ member: { userId: string; name: string; email: string; role: string } }>("/api/admin/staff", data);
   },
 
   getDoctorWeekSchedules(weekStart: string) {

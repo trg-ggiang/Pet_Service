@@ -19,6 +19,7 @@ import {
   rescheduleCustomerAppointment,
 } from "../../../services/customer/customerAppointmentsApi";
 import { fetchCustomerServiceHistory } from "../../../services/customer/customerServiceHistoryApi";
+import { submitCustomerRating } from "../../../services/customer/customerRatingsApi";
 import type {
   CustomerAppointmentListPayload,
   CustomerAppointmentOptions,
@@ -521,6 +522,13 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             historyError={historyError}
             onChangeTypeFilter={setHistoryTypeFilter}
             onViewHistory={setViewingHistory}
+            onRate={async (record, score, comment) => {
+              if (!record.appointmentId) return;
+              await submitCustomerRating(record.appointmentId, score, comment);
+              const payload = await fetchCustomerServiceHistory({ type: historyTypeFilter });
+              setHistoryRecords(payload.history);
+              setHistorySummary(payload.summary);
+            }}
           />
         )}
 

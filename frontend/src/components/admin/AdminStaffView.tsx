@@ -3,7 +3,7 @@ import {
   Search, Plus, Edit, Lock, Unlock, Eye, X, Phone, Mail,
   Calendar, Star, Stethoscope, Scissors, BedDouble, Users,
   ShieldAlert, CheckCircle2, Clock, Activity, ToggleLeft,
-  ToggleRight, Briefcase, Filter,
+  ToggleRight, Briefcase,
   BarChart3, Award, TrendingUp, CalendarRange,
 } from "lucide-react";
 import { adminService, type AdminStaffSummary } from "../../features/admin/services/admin";
@@ -288,19 +288,34 @@ const EMPTY: Omit<StaffMember, "id"> = {
 function StaffModal({
   editing, onClose, onSave,
 }: {
-  editing: StaffMember | null; onClose: () => void; onSave: () => void;
+  editing: StaffMember | null; onClose: () => void; onSave: (form: Omit<StaffMember, "id">, password?: string) => Promise<void>;
 }) {
   const isEdit = !!editing;
   const [form, setForm] = useState<Omit<StaffMember, "id">>(
     editing ? { ...editing } : { ...EMPTY }
   );
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState("");
 
   const set = <K extends keyof typeof form>(k: K, v: typeof form[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim() || !form.position.trim()) return;
-    onSave();
+    if (!isEdit && password.length < 6) {
+      setModalError("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+    setSubmitting(true);
+    setModalError("");
+    try {
+      await onSave(form, isEdit ? undefined : password);
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : "Không thể lưu nhân viên");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isDoctor = form.department === "clinic" && form.position.toLowerCase().startsWith("bác sĩ");
@@ -431,6 +446,16 @@ function StaffModal({
             </div>
           )}
 
+          {/* Password — only for new staff */}
+          {!isEdit && (
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-2">Mật khẩu</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="Tối thiểu 6 ký tự"
+                className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+            </div>
+          )}
+
           {/* Notes */}
           <div>
             <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-2">Ghi chú nội bộ</label>
@@ -459,12 +484,19 @@ function StaffModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border flex items-center gap-3 flex-shrink-0 bg-muted/20">
-          <button onClick={onClose} className="flex-1 h-10 border border-border bg-white rounded-xl text-[13px] font-semibold text-foreground hover:bg-muted transition-colors">Huỷ bỏ</button>
-          <button onClick={handleSave} disabled={!form.name.trim() || !form.position.trim()}
-            className="flex-1 h-10 bg-primary text-primary-foreground rounded-xl text-[13px] font-bold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-cyan-500/20">
-            {isEdit ? "Lưu thay đổi" : "Thêm nhân viên"}
-          </button>
+        <div className="px-6 py-4 border-t border-border flex-shrink-0 bg-muted/20 space-y-3">
+          {modalError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12.5px] font-medium text-red-700">
+              {modalError}
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} disabled={submitting} className="flex-1 h-10 border border-border bg-white rounded-xl text-[13px] font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-40">Huỷ bỏ</button>
+            <button onClick={() => void handleSave()} disabled={submitting || !form.name.trim() || !form.position.trim()}
+              className="flex-1 h-10 bg-primary text-primary-foreground rounded-xl text-[13px] font-bold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-cyan-500/20">
+              {submitting ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Thêm nhân viên"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -697,8 +729,30 @@ export function AdminStaffView() {
   const openEdit = (m: StaffMember) => { setEditingStaff(m); setShowModal(true); };
   const openAdd  = () => { setEditingStaff(null); setShowModal(true); };
 
-  const handleSave = () => {
-    setActionError("Chức năng thêm/sửa hồ sơ nhân viên cần API backend riêng, nên frontend không cập nhật giả lập trên màn hình.");
+  const handleSave = async (form: Omit<StaffMember, "id">, password?: string) => {
+    if (editingStaff) {
+      await adminService.updateStaffProfile(editingStaff.id, {
+        name: form.name,
+        phone: form.phone,
+        address: undefined,
+        specialty: form.specialty,
+        room: form.room,
+      });
+    } else {
+      const isDoctor = form.department === "clinic";
+      await adminService.createStaff({
+        name: form.name,
+        email: form.email,
+        password: password!,
+        phone: form.phone,
+        role: isDoctor ? "doctor" : "staff",
+        specialty: form.specialty,
+        room: form.room,
+      });
+    }
+    setShowModal(false);
+    setEditingStaff(null);
+    await reloadStaff();
   };
 
   const totalStaff = summary?.total ?? staff.length;
@@ -724,9 +778,6 @@ export function AdminStaffView() {
             className="flex items-center gap-1.5 h-9 px-4 border border-cyan-200 bg-cyan-50 text-cyan-700 text-[13px] font-semibold rounded-lg hover:bg-cyan-100 transition-colors"
           >
             <CalendarRange size={14} /> Phân lịch tuần
-          </button>
-          <button className="flex items-center gap-1.5 h-9 px-4 border border-border bg-white text-[13px] font-medium text-foreground rounded-lg hover:bg-muted transition-colors">
-            <Filter size={13} /> Bộ lọc
           </button>
           <button onClick={openAdd}
             className="flex items-center gap-1.5 h-9 px-4 bg-primary text-primary-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">

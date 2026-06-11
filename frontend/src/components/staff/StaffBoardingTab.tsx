@@ -22,7 +22,7 @@ import type {
   PendingBoarding,
   StaffBoardingRoom,
 } from "../../features/staff/services/staffAppointments";
-import { EmptyState, LoadingState, Pagination } from "./StaffCommon";
+import { EmptyState, LoadingState, Pagination, parseAnyDateToYmd } from "./StaffCommon";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -994,6 +994,13 @@ export function BoardingTab({
 
   function openCheckoutFromRoom(room: StaffBoardingRoom) {
     if (!room.currentBoarding) return;
+    const checkInYmd = parseAnyDateToYmd(room.currentBoarding.checkIn);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nights = checkInYmd
+      ? Math.max(1, Math.ceil((today.getTime() - new Date(checkInYmd).getTime()) / 86400000))
+      : 1;
+    const todayFormatted = today.toLocaleDateString("vi-VN");
     const fakeGuest: BoardingGuest = {
       id: room.currentBoarding.boardingId,
       room: room.cageNumber,
@@ -1003,8 +1010,8 @@ export function BoardingTab({
       owner: room.currentBoarding.owner,
       phone: room.currentBoarding.phone,
       checkIn: room.currentBoarding.checkIn,
-      checkOut: room.currentBoarding.checkOut,
-      nights: 1,
+      checkOut: todayFormatted,
+      nights,
       foodType: "",
       mealsPerDay: 2,
       specialNotes: "",

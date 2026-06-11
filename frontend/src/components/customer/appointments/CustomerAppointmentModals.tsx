@@ -161,7 +161,7 @@ export function NewAppointmentModal({
     time: "",
     note: "",
   });
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 3>(1);
   const [newAptId, setNewAptId] = useState("");
   const [providers, setProviders] = useState<CustomerAppointmentProvider[]>([]);
   const [selectedProviderKey, setSelectedProviderKey] = useState("");
@@ -294,7 +294,6 @@ export function NewAppointmentModal({
           <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <div>
               <h3 className="text-lg font-bold text-slate-900">Đặt lịch mới</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Bước {step}/2</p>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
               <X size={20} />
@@ -497,31 +496,6 @@ export function NewAppointmentModal({
             </div>
           )}
 
-          {step === 2 && (
-            <div className="space-y-1">
-              <p className="text-sm text-slate-500 mb-4">Vui lòng kiểm tra thông tin trước khi xác nhận.</p>
-              {[
-                { label: "Dịch vụ",   value: svc ? getBookingServiceDisplayName(svc) : "" },
-                { label: "Thú cưng",  value: form.pet },
-                { label: selectedProvider?.role === "staff" ? "Nhân viên" : "Bác sĩ", value: selectedProvider?.name ?? "Chưa chọn" },
-                { label: "Ngày khám", value: form.date },
-                { label: "Giờ khám",  value: form.time },
-                { label: "Trạng thái", value: "Chờ xác nhận" },
-              ].map((r) => (
-                <div key={r.label} className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-sm text-slate-500 font-medium">{r.label}</span>
-                  <span className="text-sm font-bold text-slate-900">{r.value}</span>
-                </div>
-              ))}
-              {form.note && (
-                <div className="flex justify-between items-start pt-3">
-                  <span className="text-sm text-slate-500 font-medium">Ghi chú</span>
-                  <span className="text-sm font-semibold text-slate-700 max-w-[200px] text-right">{form.note}</span>
-                </div>
-              )}
-            </div>
-          )}
-
           {step === 3 && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mb-5 border-4 border-emerald-100">
@@ -554,18 +528,13 @@ export function NewAppointmentModal({
 
         {step !== 3 && (
           <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-3">
-            {step === 2 && (
-              <button onClick={() => setStep(1)} className="h-12 px-5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors">
-                Quay lại
-              </button>
-            )}
             <button
-              onClick={step === 1 ? () => setStep(2) : handleConfirm}
-              disabled={step === 1 ? !canStep2 : !canNext || saving}
+              onClick={handleConfirm}
+              disabled={!canStep2 || saving}
               className="flex-1 h-12 rounded-xl text-sm font-bold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
             >
-              {saving ? "Đang đặt lịch..." : step === 1 ? "Tiếp theo →" : "Xác nhận đặt lịch"}
+              {saving ? "Đang đặt lịch..." : "Xác nhận đặt lịch"}
             </button>
           </div>
         )}

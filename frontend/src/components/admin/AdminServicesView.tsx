@@ -2,7 +2,7 @@
 import {
   Plus, Search, Edit, X, Check, ChevronDown, ToggleLeft, ToggleRight,
   Stethoscope, Syringe, Scissors, BedDouble, Clock, TrendingUp,
-  Star, BarChart3, Trash2, AlertTriangle, Copy, Filter,
+  Star, BarChart3, Trash2, AlertTriangle, Copy,
 } from "lucide-react";
 import { adminService, type AdminServicePayload, type AdminServiceSummary } from "../../features/admin/services/admin";
 
@@ -246,9 +246,11 @@ function ServiceModal({
 }: {
   editing: Service | null;
   onClose: () => void;
-  onSave: (svc: AdminServicePayload) => void;
+  onSave: (svc: AdminServicePayload) => Promise<void>;
 }) {
   const isEdit = !!editing;
+  const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState("");
   const [form, setForm] = useState<Omit<Service, "id" | "bookingsMonth" | "revenueMonth">>(
     editing
       ? { category: editing.category, name: editing.name, description: editing.description, duration: editing.duration, durationUnit: editing.durationUnit, pricingType: editing.pricingType, basePrice: editing.basePrice, variants: editing.variants ?? EMPTY_SERVICE.variants, status: editing.status, tag: editing.tag }
@@ -271,9 +273,17 @@ function ServiceModal({
   const removeVariant = (i: number) =>
     setForm((f) => ({ ...f, variants: (f.variants ?? []).filter((_, j) => j !== i) }));
 
-  const handleSave = () => {
-    if (!form.name.trim()) return;
-    onSave(form);
+  const handleSave = async () => {
+    if (!form.name.trim() || submitting) return;
+    setSubmitting(true);
+    setModalError("");
+    try {
+      await onSave(form);
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : "Không thể lưu dịch vụ.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const catOptions: { v: Category; label: string; icon: React.ElementType }[] = [
@@ -448,12 +458,19 @@ function ServiceModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border flex items-center gap-3 flex-shrink-0 bg-muted/20">
-          <button onClick={onClose} className="flex-1 h-10 border border-border bg-white rounded-xl text-[13px] font-semibold text-foreground hover:bg-muted transition-colors">Huỷ bỏ</button>
-          <button onClick={handleSave} disabled={!form.name.trim()}
-            className="flex-1 h-10 bg-primary text-primary-foreground rounded-xl text-[13px] font-bold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-cyan-500/20">
-            {isEdit ? "Lưu thay đổi" : "Tạo dịch vụ"}
-          </button>
+        <div className="px-6 py-4 border-t border-border flex flex-col gap-2 flex-shrink-0 bg-muted/20">
+          {modalError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-600">
+              {modalError}
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} disabled={submitting} className="flex-1 h-10 border border-border bg-white rounded-xl text-[13px] font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-40">Huỷ bỏ</button>
+            <button onClick={() => void handleSave()} disabled={!form.name.trim() || submitting}
+              className="flex-1 h-10 bg-primary text-primary-foreground rounded-xl text-[13px] font-bold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-cyan-500/20">
+              {submitting ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo dịch vụ"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -463,10 +480,10 @@ function ServiceModal({
 // ─── Service Row ──────────────────────────────────────────────────────────────
 
 function ServiceRow({
-  service, selected, onSelect, onEdit, onToggleStatus,
+  service, selected, onSelect, onEdit, onToggleStatus, onDelete,
 }: {
   service: Service; selected: boolean;
-  onSelect: () => void; onEdit: () => void; onToggleStatus: () => void;
+  onSelect: () => void; onEdit: () => void; onToggleStatus: () => void; onDelete: () => void;
 }) {
   const cfg = CATEGORY_CONFIG[service.category];
 
@@ -532,7 +549,7 @@ function ServiceRow({
           <button onClick={onEdit} className="p-1.5 hover:bg-muted rounded-md transition-colors">
             <Edit size={13} className="text-muted-foreground" />
           </button>
-          <button className="p-1.5 hover:bg-red-50 rounded-md transition-colors">
+          <button onClick={onDelete} className="p-1.5 hover:bg-red-50 rounded-md transition-colors">
             <Trash2 size={13} className="text-muted-foreground hover:text-red-500" />
           </button>
         </div>
@@ -602,18 +619,26 @@ export function AdminServicesView() {
   };
 
   const handleSave = async (svc: AdminServicePayload) => {
+    setActionError("");
+    if (editingService) {
+      await adminService.updateService(editingService.id, svc);
+    } else {
+      await adminService.createService(svc);
+    }
+    await reloadServices();
+    setShowModal(false);
+    setEditingService(null);
+  };
+
+  const handleDelete = async (service: Service) => {
+    if (!window.confirm(`Xóa dịch vụ "${service.name}"? Hành động này không thể hoàn tác.`)) return;
     try {
       setActionError("");
-      if (editingService) {
-        await adminService.updateService(editingService.id, svc);
-      } else {
-        await adminService.createService(svc);
-      }
+      await adminService.deleteService(service.id);
       await reloadServices();
-      setShowModal(false);
-      setEditingService(null);
+      if (selectedId === service.id) setSelectedId(null);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Không thể lưu dịch vụ.");
+      setActionError(error instanceof Error ? error.message : "Không thể xóa dịch vụ.");
     }
   };
 
@@ -638,9 +663,6 @@ export function AdminServicesView() {
           <p className="text-sm text-muted-foreground mt-0.5">Danh mục dịch vụ và bảng giá của trung tâm</p>
         </div>
         <div className="flex items-center gap-2.5">
-          <button className="flex items-center gap-1.5 h-9 px-4 border border-border bg-white text-[13px] font-medium text-foreground rounded-lg hover:bg-muted transition-colors">
-            <Filter size={13} /> Lọc
-          </button>
           <button onClick={openAdd}
             className="flex items-center gap-1.5 h-9 px-4 bg-primary text-primary-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">
             <Plus size={14} /> Thêm dịch vụ
@@ -765,7 +787,8 @@ export function AdminServicesView() {
                   selected={svc.id === selectedId}
                   onSelect={() => setSelectedId(selectedId === svc.id ? null : svc.id)}
                   onEdit={() => openEdit(svc)}
-                  onToggleStatus={() => toggleStatus(svc)}
+                  onToggleStatus={() => void toggleStatus(svc)}
+                  onDelete={() => void handleDelete(svc)}
                 />
               ))}
             </tbody>
