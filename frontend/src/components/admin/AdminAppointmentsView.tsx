@@ -433,6 +433,33 @@ export function AdminAppointmentsView() {
     setActionError("Chức năng tạo/sửa lịch hẹn cần API backend riêng, nên frontend không cập nhật giả lập trên màn hình.");
   }
 
+  function handleExportCsv() {
+    const STATUS_LABELS: Record<string, string> = {
+      scheduled: "Chờ khám",
+      in_progress: "Đang khám",
+      completed: "Hoàn thành",
+      cancelled: "Đã huỷ",
+    };
+    const headers = ["Mã", "Giờ", "Khách hàng", "Thú cưng", "Loài", "Dịch vụ", "Nhân viên", "Trạng thái", "Số tiền"];
+    const rows = filtered.map((a) => [
+      a.id, a.time, a.customer, a.pet, a.species, a.service, a.staff,
+      STATUS_LABELS[a.status] || a.status,
+      a.amount,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `lich-hen-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -442,7 +469,7 @@ export function AdminAppointmentsView() {
           <p className="text-sm text-muted-foreground mt-0.5">Quản lý toàn bộ lịch hẹn của trung tâm</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 h-9 px-4 text-sm font-medium text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors">
+          <button onClick={handleExportCsv} className="flex items-center gap-1.5 h-9 px-4 text-sm font-medium text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors">
             <Download size={14} /> Xuất Excel
           </button>
           <button

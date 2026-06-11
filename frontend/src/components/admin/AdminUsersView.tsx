@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import {
-  Search, Filter, Edit, Lock, Unlock,
+  Search, Edit, Lock, Unlock, Plus,
   Eye, X, Phone, Mail, MapPin, Calendar, Star,
   Stethoscope, Scissors, Users,
   ShieldAlert, CheckCircle2, Clock, Activity,
@@ -85,7 +85,172 @@ function StatusBadge({ active, label }: { active: boolean; label: string }) {
 
 // ─── User Drawer ──────────────────────────────────────────────────────────────
 
-function CustomerDetail({ user, onToggleLock }: { user: Customer; onToggleLock: () => void }) {
+function UserEditModal({ user, onClose, onSaved }: { user: AnyUser; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(user.name);
+  const [phone, setPhone] = useState(user.phone || "");
+  const [address, setAddress] = useState(user.role === "customer" ? (user as Customer).address || "" : "");
+  const [specialty, setSpecialty] = useState(user.role === "doctor" ? (user as Doctor).specialty || "" : "");
+  const [room, setRoom] = useState(user.role === "doctor" ? (user as Doctor).room || "" : "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await adminService.updateUserProfile(user.role, user.id, { name, phone, address, specialty, room });
+      onSaved();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể cập nhật thông tin");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-border">
+          <div>
+            <h3 className="text-base font-bold text-foreground">Chỉnh sửa thông tin</h3>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">{user.name} · {user.id}</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={15} /></button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Họ và tên</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+          </div>
+          {user.role !== "doctor" && (
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Số điện thoại</label>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+            </div>
+          )}
+          {user.role === "customer" && (
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Địa chỉ</label>
+              <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+            </div>
+          )}
+          {user.role === "doctor" && (
+            <>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Chuyên khoa</label>
+                <input value={specialty} onChange={(e) => setSpecialty(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Phòng khám</label>
+                <input value={room} onChange={(e) => setRoom(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+              </div>
+            </>
+          )}
+          {error && <p className="text-[12.5px] font-medium text-red-600">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border">
+          <button onClick={onClose} disabled={submitting} className="h-10 px-5 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-muted disabled:opacity-40">Hủy</button>
+          <button onClick={() => void handleSave()} disabled={submitting || !name.trim()} className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-[13px] font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
+            {submitting ? "Đang lưu..." : "Lưu thay đổi"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddUserModal({ defaultTab, onClose, onSaved }: { defaultTab: Tab; onClose: () => void; onSaved: () => void }) {
+  const [role, setRole] = useState<"customer" | "doctor" | "staff">(defaultTab === "customers" ? "customer" : defaultTab === "doctors" ? "doctor" : "staff");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [room, setRoom] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    if (!name.trim() || !email.trim() || password.length < 6) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await adminService.createStaff({ name, email, password, phone, role, specialty, room });
+      onSaved();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tạo tài khoản");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-border">
+          <div>
+            <h3 className="text-base font-bold text-foreground">Thêm người dùng mới</h3>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">Tạo tài khoản cho khách hàng, bác sĩ hoặc nhân viên</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X size={15} /></button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Vai trò</label>
+            <div className="flex gap-2">
+              {(["customer", "doctor", "staff"] as const).map((r) => (
+                <button key={r} onClick={() => setRole(r)}
+                  className={`flex-1 h-9 rounded-xl border text-[12.5px] font-semibold transition-all ${role === r ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"}`}>
+                  {r === "customer" ? "Khách hàng" : r === "doctor" ? "Bác sĩ" : "Nhân viên"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Họ và tên</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Mật khẩu</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ít nhất 6 ký tự" className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Số điện thoại</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+          </div>
+          {role === "doctor" && (
+            <>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Chuyên khoa</label>
+                <input value={specialty} onChange={(e) => setSpecialty(e.target.value)} placeholder="Nội khoa tổng quát" className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Phòng khám</label>
+                <input value={room} onChange={(e) => setRoom(e.target.value)} placeholder="Phòng khám 1" className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+              </div>
+            </>
+          )}
+          {error && <p className="text-[12.5px] font-medium text-red-600">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border">
+          <button onClick={onClose} disabled={submitting} className="h-10 px-5 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-muted disabled:opacity-40">Hủy</button>
+          <button onClick={() => void handleSave()} disabled={submitting || !name.trim() || !email.trim() || password.length < 6} className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-[13px] font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
+            {submitting ? "Đang tạo..." : "Tạo tài khoản"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomerDetail({ user, onToggleLock, onEdit }: { user: Customer; onToggleLock: () => void; onEdit: () => void }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2.5">
@@ -136,7 +301,7 @@ function CustomerDetail({ user, onToggleLock }: { user: Customer; onToggleLock: 
       </div>
 
       <div className="pt-2 border-t border-border space-y-2">
-        <button className="w-full flex items-center gap-2.5 h-10 px-4 border border-border bg-white rounded-xl text-[13px] font-medium text-foreground hover:bg-muted transition-colors">
+        <button onClick={onEdit} className="w-full flex items-center gap-2.5 h-10 px-4 border border-border bg-white rounded-xl text-[13px] font-medium text-foreground hover:bg-muted transition-colors">
           <Edit size={13} /> Chỉnh sửa thông tin
         </button>
         <button onClick={onToggleLock}
@@ -148,7 +313,7 @@ function CustomerDetail({ user, onToggleLock }: { user: Customer; onToggleLock: 
   );
 }
 
-function DoctorDetail({ user, onToggleLock }: { user: Doctor; onToggleLock: () => void }) {
+function DoctorDetail({ user, onToggleLock, onEdit }: { user: Doctor; onToggleLock: () => void; onEdit: () => void }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2.5">
@@ -199,7 +364,7 @@ function DoctorDetail({ user, onToggleLock }: { user: Doctor; onToggleLock: () =
       </div>
 
       <div className="pt-2 border-t border-border space-y-2">
-        <button className="w-full flex items-center gap-2.5 h-10 px-4 border border-border bg-white rounded-xl text-[13px] font-medium text-foreground hover:bg-muted transition-colors">
+        <button onClick={onEdit} className="w-full flex items-center gap-2.5 h-10 px-4 border border-border bg-white rounded-xl text-[13px] font-medium text-foreground hover:bg-muted transition-colors">
           <Edit size={13} /> Chỉnh sửa thông tin
         </button>
         <button onClick={onToggleLock}
@@ -211,7 +376,7 @@ function DoctorDetail({ user, onToggleLock }: { user: Doctor; onToggleLock: () =
   );
 }
 
-function StaffDetail({ user, onToggleLock }: { user: StaffMember; onToggleLock: () => void }) {
+function StaffDetail({ user, onToggleLock, onEdit }: { user: StaffMember; onToggleLock: () => void; onEdit: () => void }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2.5">
@@ -259,7 +424,7 @@ function StaffDetail({ user, onToggleLock }: { user: StaffMember; onToggleLock: 
       </div>
 
       <div className="pt-2 border-t border-border space-y-2">
-        <button className="w-full flex items-center gap-2.5 h-10 px-4 border border-border bg-white rounded-xl text-[13px] font-medium text-foreground hover:bg-muted transition-colors">
+        <button onClick={onEdit} className="w-full flex items-center gap-2.5 h-10 px-4 border border-border bg-white rounded-xl text-[13px] font-medium text-foreground hover:bg-muted transition-colors">
           <Edit size={13} /> Chỉnh sửa thông tin
         </button>
         <button onClick={onToggleLock}
@@ -271,7 +436,7 @@ function StaffDetail({ user, onToggleLock }: { user: StaffMember; onToggleLock: 
   );
 }
 
-function UserDrawer({ user, onClose, onToggleLock }: { user: AnyUser; onClose: () => void; onToggleLock: () => void }) {
+function UserDrawer({ user, onClose, onToggleLock, onEdit }: { user: AnyUser; onClose: () => void; onToggleLock: () => void; onEdit: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
@@ -298,9 +463,9 @@ function UserDrawer({ user, onClose, onToggleLock }: { user: AnyUser; onClose: (
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          {user.role === "customer" && <CustomerDetail user={user as Customer} onToggleLock={onToggleLock} />}
-          {user.role === "doctor"   && <DoctorDetail   user={user as Doctor}   onToggleLock={onToggleLock} />}
-          {user.role === "staff"    && <StaffDetail    user={user as StaffMember} onToggleLock={onToggleLock} />}
+          {user.role === "customer" && <CustomerDetail user={user as Customer} onToggleLock={onToggleLock} onEdit={onEdit} />}
+          {user.role === "doctor"   && <DoctorDetail   user={user as Doctor}   onToggleLock={onToggleLock} onEdit={onEdit} />}
+          {user.role === "staff"    && <StaffDetail    user={user as StaffMember} onToggleLock={onToggleLock} onEdit={onEdit} />}
         </div>
       </div>
     </div>
@@ -513,6 +678,8 @@ export function AdminUsersView() {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<AnyUser | null>(null);
   const [lockedDrawerUser, setLockedDrawerUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<AnyUser | null>(null);
+  const [showAddUser, setShowAddUser] = useState(false);
   const [customersData, setCustomersData] = useState<Customer[]>([]);
   const [doctorsData, setDoctorsData] = useState<Doctor[]>([]);
   const [staffData, setStaffData] = useState<StaffMember[]>([]);
@@ -605,11 +772,8 @@ export function AdminUsersView() {
           <p className="text-sm text-muted-foreground mt-0.5">Khách hàng, bác sĩ và nhân viên của trung tâm</p>
         </div>
         <div className="flex items-center gap-2.5">
-          <button className="flex items-center gap-1.5 h-9 px-4 border border-border bg-white text-[13px] font-medium text-foreground rounded-lg hover:bg-muted transition-colors">
-            <Filter size={13} /> Bộ lọc
-          </button>
-          <button className="flex items-center gap-1.5 h-9 px-4 bg-primary text-primary-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">
-            <Users size={13} /> Thêm người dùng
+          <button onClick={() => setShowAddUser(true)} className="flex items-center gap-1.5 h-9 px-4 bg-primary text-primary-foreground text-[13px] font-semibold rounded-lg hover:opacity-90 transition-opacity">
+            <Plus size={13} /> Thêm người dùng
           </button>
         </div>
       </div>
@@ -688,6 +852,25 @@ export function AdminUsersView() {
           user={{ ...selectedUser, locked: lockedDrawerUser }}
           onClose={() => setSelectedUser(null)}
           onToggleLock={toggleDrawerLock}
+          onEdit={() => setEditingUser({ ...selectedUser, locked: lockedDrawerUser })}
+        />
+      )}
+
+      {/* Edit modal */}
+      {editingUser && (
+        <UserEditModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSaved={() => void reloadUsers()}
+        />
+      )}
+
+      {/* Add user modal */}
+      {showAddUser && (
+        <AddUserModal
+          defaultTab={tab}
+          onClose={() => setShowAddUser(false)}
+          onSaved={() => void reloadUsers()}
         />
       )}
     </div>

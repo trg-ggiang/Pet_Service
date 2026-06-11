@@ -43,17 +43,21 @@ export function PaymentsTab({
 
   const pending = filtered.filter((p) => p.status === "pending");
   const paid = filtered.filter((p) => p.status === "paid");
-  const totalPending = pending.reduce((sum, p) => sum + p.amount, 0);
-  const totalPaid = paid.reduce((sum, p) => sum + p.amount, 0);
+
+  // All-time stats (not affected by date filter)
+  const allPending = useMemo(() => payments.filter((p) => p.status === "pending"), [payments]);
+  const allPaid = useMemo(() => payments.filter((p) => p.status === "paid"), [payments]);
+  const allTotalPending = useMemo(() => allPending.reduce((sum, p) => sum + p.amount, 0), [allPending]);
+  const allTotalPaid = useMemo(() => allPaid.reduce((sum, p) => sum + p.amount, 0), [allPaid]);
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Tổng hóa đơn", value: filtered.length.toString(), sub: "Đã lọc", color: "#0891B2" },
-          { label: "Chờ thanh toán", value: pending.length.toString(), sub: `${(totalPending / 1000).toFixed(0)}K VND`, color: "#D97706" },
-          { label: "Đã thanh toán", value: paid.length.toString(), sub: `${(totalPaid / 1000).toFixed(0)}K VND`, color: "#059669" },
-          { label: "Tổng doanh thu", value: `${((totalPaid + totalPending) / 1000000).toFixed(1)}M`, sub: "VND", color: "#7C3AED" },
+          { label: "Tổng hóa đơn", value: payments.length.toString(), sub: "Tất cả hóa đơn", color: "#0891B2" },
+          { label: "Chờ thanh toán", value: allPending.length.toString(), sub: `${(allTotalPending / 1000).toFixed(0)}K VND`, color: "#D97706" },
+          { label: "Đã thanh toán", value: allPaid.length.toString(), sub: `${(allTotalPaid / 1000).toFixed(0)}K VND`, color: "#059669" },
+          { label: "Tổng doanh thu", value: `${(allTotalPaid / 1000000).toFixed(1)}M`, sub: "VND", color: "#7C3AED" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm">
             <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>

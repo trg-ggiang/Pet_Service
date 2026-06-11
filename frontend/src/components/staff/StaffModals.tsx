@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, BedDouble, CheckCircle2, Coffee, Stethoscope, Star, X } from "lucide-react";
+import { Activity, BedDouble, CheckCircle2, Coffee, Loader2, Stethoscope, Star, X } from "lucide-react";
 import type {
   BoardingDailyStatus,
   BoardingGuest,
@@ -190,9 +190,11 @@ export function BoardingDetailModal({ guest, onClose, onToggleStatus }: {
 export function PaymentProcessModal({ payment, onClose, onComplete }: {
   payment: PaymentItem;
   onClose: () => void;
-  onComplete: (method: PaymentMethod) => void;
+  onComplete: (method: PaymentMethod) => Promise<void>;
 }) {
   const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -239,12 +241,23 @@ export function PaymentProcessModal({ payment, onClose, onComplete }: {
             </div>
           </div>
         </div>
+        {error && <div className="px-6 pb-2"><div className="bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-xl px-4 py-3">{error}</div></div>}
         <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-3">
-          <button onClick={onClose} className="flex-1 h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-white transition-colors">
+          <button onClick={onClose} disabled={submitting} className="flex-1 h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-white transition-colors disabled:opacity-50">
             Hủy
           </button>
-          <button onClick={() => onComplete(method)} className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-colors" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-            Xác nhận thanh toán
+          <button
+            onClick={async () => {
+              setSubmitting(true);
+              setError("");
+              try { await onComplete(method); }
+              catch (err) { setError(err instanceof Error ? err.message : "Thanh toán thất bại"); setSubmitting(false); }
+            }}
+            disabled={submitting}
+            className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
+          >
+            {submitting ? <><Loader2 size={15} className="animate-spin" /> Đang xử lý...</> : "Xác nhận thanh toán"}
           </button>
         </div>
       </div>

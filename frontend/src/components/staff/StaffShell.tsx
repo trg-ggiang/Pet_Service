@@ -1,4 +1,5 @@
-import { Bell, LogOut } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bell, BedDouble, CalendarCheck, DollarSign, LogOut } from "lucide-react";
 import type { StaffProfile } from "../../features/staff/services/staffAppointments";
 import { PawSVG } from "./StaffCommon";
 import { NAV_ITEMS, type StaffNavId } from "./staffPortalConfig";
@@ -113,12 +114,14 @@ export function StaffHeader({
   activeNav,
   pendingCheckIn,
   needsFed,
-  onBellClick,
+  pendingPayments,
+  onNavigate,
 }: {
   activeNav: StaffNavId;
   pendingCheckIn: number;
   needsFed: number;
-  onBellClick?: () => void;
+  pendingPayments: number;
+  onNavigate: (id: StaffNavId) => void;
 }) {
   const titles: Record<StaffNavId, string> = {
     appointments: "Quản lý lịch hẹn",
@@ -128,6 +131,28 @@ export function StaffHeader({
     settings: "Cài đặt",
   };
 
+  const [showNotif, setShowNotif] = useState(false);
+  const bellRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (!bellRef.current?.contains(e.target as Node) && !dropdownRef.current?.contains(e.target as Node)) {
+        setShowNotif(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const totalAlerts = pendingCheckIn + needsFed + pendingPayments;
+
+  const notifItems = [
+    pendingCheckIn > 0 ? { label: `${pendingCheckIn} lịch hẹn chờ check-in`, navId: "appointments" as StaffNavId, icon: CalendarCheck, color: "#D97706" } : null,
+    needsFed > 0 ? { label: `${needsFed} thú cưng cần cho ăn`, navId: "boarding" as StaffNavId, icon: BedDouble, color: "#7C3AED" } : null,
+    pendingPayments > 0 ? { label: `${pendingPayments} hóa đơn chờ thanh toán`, navId: "payments" as StaffNavId, icon: DollarSign, color: "#059669" } : null,
+  ].filter(Boolean) as { label: string; navId: StaffNavId; icon: typeof BedDouble; color: string }[];
+
   return (
     <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between flex-shrink-0">
       <div>
@@ -136,15 +161,51 @@ export function StaffHeader({
           {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
         </p>
       </div>
-      <button
-        onClick={onBellClick}
-        className="w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors relative"
-      >
-        <Bell size={16} />
-        {(pendingCheckIn > 0 || needsFed > 0) && (
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white" />
+      <div className="relative">
+        <button
+          ref={bellRef}
+          onClick={() => setShowNotif((v) => !v)}
+          className="w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors relative"
+        >
+          <Bell size={16} />
+          {totalAlerts > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 border-2 border-white text-white text-[9px] font-bold flex items-center justify-center leading-none">
+              {totalAlerts}
+            </span>
+          )}
+        </button>
+        {showNotif && (
+          <div ref={dropdownRef} className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <span className="text-sm font-bold text-slate-900">Thông báo</span>
+              {totalAlerts > 0 && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">{totalAlerts} cần xử lý</span>
+              )}
+            </div>
+            {notifItems.length === 0 ? (
+              <div className="px-4 py-5 text-sm text-slate-400 text-center">Không có thông báo mới</div>
+            ) : (
+              <div className="py-1">
+                {notifItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.navId}
+                      onClick={() => { onNavigate(item.navId); setShowNotif(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: item.color + "20" }}>
+                        <Icon size={15} style={{ color: item.color }} />
+                      </div>
+                      <span className="font-medium text-slate-800">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
-      </button>
+      </div>
     </header>
   );
 }

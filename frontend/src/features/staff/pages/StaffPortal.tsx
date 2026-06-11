@@ -296,7 +296,8 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           activeNav={activeNav}
           pendingCheckIn={pendingCheckIn}
           needsFed={needsFed}
-          onBellClick={() => setActiveNav(needsFed > 0 ? "boarding" : "appointments")}
+          pendingPayments={pendingPayments}
+          onNavigate={setActiveNav}
         />
         <main className="flex-1 min-h-0 overflow-y-auto p-6">
           {activeNav === "appointments" && (
@@ -372,7 +373,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
         <PaymentProcessModal
           payment={processingPayment}
           onClose={() => setProcessingPayment(null)}
-          onComplete={(method) => void handleCompletePayment(processingPayment, method)}
+          onComplete={(method) => handleCompletePayment(processingPayment, method)}
         />
       )}
     </div>

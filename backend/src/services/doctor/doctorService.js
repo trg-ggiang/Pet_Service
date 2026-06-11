@@ -592,6 +592,14 @@ function buildStatsForPeriod(period, appointments, reviews) {
     completionRate,
   };
 
+  const WEEKDAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  const weekdayCounts = new Array(7).fill(0);
+  rows.forEach((appointment) => {
+    const date = getValidAppointmentDate(appointment);
+    if (date) weekdayCounts[date.getDay()] += 1;
+  });
+  const byDay = WEEKDAY_LABELS.map((label, index) => ({ label, value: weekdayCounts[index] }));
+
   return {
     kpis: {
       ...kpis,
@@ -603,7 +611,7 @@ function buildStatsForPeriod(period, appointments, reviews) {
       { key: "completionRate", label: "Tỷ lệ hoàn thành", sub: "trong kỳ", value: kpis.completionRate, icon: "Clock", bg: "bg-amber-50", color: "text-amber-600", unit: "%" },
     ],
     trend: [...buckets.values()],
-    byDay: [...buckets.values()].map((row) => ({ label: row.label, value: row.total })),
+    byDay,
     speciesPie: [...speciesCounts.entries()].map(([name, count], index) => ({
       name,
       value: total > 0 ? Math.round((count / total) * 100) : 0,

@@ -240,10 +240,12 @@ export function DoctorScheduleTable({
                 </>
               )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs text-muted-foreground font-medium">{meta.activityLabel}</span>
-            </div>
+            {meta.activityLabel && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs text-muted-foreground font-medium">{meta.activityLabel}</span>
+              </div>
+            )}
           </div>
         </div>
 

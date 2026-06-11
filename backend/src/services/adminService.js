@@ -201,8 +201,26 @@ function buildAdminUsersSummary(allGroups, filteredGroups, filters = {}) {
   };
 }
 
+function appointmentIsCurrentMonth(apt) {
+  if (!apt.created_at) return false;
+  const now = new Date();
+  const d = new Date(apt.created_at);
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+function computeMonthlyPerf(appointments) {
+  const monthly = appointments.filter(appointmentIsCurrentMonth);
+  const total = monthly.filter((a) => a.status !== "CANCELLED").length;
+  const completed = monthly.filter((a) => a.status === "COMPLETED").length;
+  return {
+    completedMonthly: completed,
+    totalMonthly: total,
+    monthlyPerf: total > 0 ? Math.round((completed / total) * 100) : 0,
+  };
+}
+
 async function listAdminUsers(filters = {}) {
-  const [users, customers, doctors, staffs, pets, appointments] = await Promise.all([
+  const [users, customers, doctors, staffs, pets, appointments, invoices] = await Promise.all([
     readTable("users", "id, email, role, status, created_at", {
       order: { column: "created_at", ascending: false },
     }),
@@ -211,7 +229,36 @@ async function listAdminUsers(filters = {}) {
     readTable("staffs", "id, user_id, full_name, phone, address"),
     readTable("pets", "id, customer_id, name, animal_species:species_id(name)"),
     readTable("appointments", "id, pet_id, doctor_id, staff_id, status, created_at"),
+    readTable("invoices", "total_amount, status, appointment:appointment_id(pet:pet_id(customer_id))"),
   ]);
+
+  let avgRatingByDoctorId = new Map();
+  try {
+    const { data: ratingRows } = await supabase.from("ratings").select("doctor_id, score").not("doctor_id", "is", null);
+    if (ratingRows && ratingRows.length > 0) {
+      const grouped = {};
+      ratingRows.forEach((r) => {
+        if (!grouped[r.doctor_id]) grouped[r.doctor_id] = [];
+        grouped[r.doctor_id].push(r.score);
+      });
+      Object.entries(grouped).forEach(([doctorId, scores]) => {
+        const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+        avgRatingByDoctorId.set(Number(doctorId), Math.round(avg * 10) / 10);
+      });
+    }
+  } catch (_) {
+    // ratings table may not exist yet — fallback to 0
+  }
+
+  const spendByCustomerId = new Map();
+  invoices.forEach((invoice) => {
+    if (invoice.status === "PAID") {
+      const customerId = invoice.appointment?.pet?.customer_id;
+      if (customerId) {
+        spendByCustomerId.set(customerId, (spendByCustomerId.get(customerId) || 0) + moneyNumber(invoice.total_amount));
+      }
+    }
+  });
 
   const customersByUserId = buildMaps(customers, "user_id");
   const doctorsByUserId = buildMaps(doctors, "user_id");
@@ -278,7 +325,7 @@ async function listAdminUsers(filters = {}) {
         petCount: customerPets.length,
         pets: customerPets.map((pet) => `${pet.name}${pet.animal_species?.name ? ` (${pet.animal_species.name})` : ""}`),
         totalVisits: customerAppointments.length,
-        totalSpend: "0",
+        totalSpend: moneyText(customer ? (spendByCustomerId.get(customer.id) || 0) : 0),
         lastVisit: formatDate(lastVisit),
       });
       return;
@@ -288,9 +335,11 @@ async function listAdminUsers(filters = {}) {
       const doctor = doctorsByUserId.get(user.id);
       const doctorAppointments = doctor ? appointmentsByDoctorId.get(doctor.id) || [] : [];
       const name = doctor?.full_name || user.email;
+      const perf = computeMonthlyPerf(doctorAppointments);
 
       doctorsResult.push({
         id: `D${String(doctor?.id || user.id).padStart(3, "0")}`,
+        _profileId: doctor?.id || null,
         role: "doctor",
         name,
         phone: "",
@@ -303,8 +352,10 @@ async function listAdminUsers(filters = {}) {
         status: locked ? "on_leave" : "active",
         todayPatients: doctorAppointments.filter((appointment) => appointment.status !== "CANCELLED").length,
         totalPatients: doctorAppointments.length,
-        rating: 0,
+        rating: doctor ? (avgRatingByDoctorId.get(doctor.id) || 0) : 0,
         licenseNo: "",
+        completedMonthly: perf.completedMonthly,
+        monthlyPerf: perf.monthlyPerf,
       });
       return;
     }
@@ -313,6 +364,7 @@ async function listAdminUsers(filters = {}) {
       const staff = staffsByUserId.get(user.id);
       const staffAppointments = staff ? appointmentsByStaffId.get(staff.id) || [] : [];
       const name = staff?.full_name || user.email;
+      const perf = computeMonthlyPerf(staffAppointments);
 
       staffResult.push({
         id: `S${String(staff?.id || user.id).padStart(3, "0")}`,
@@ -327,6 +379,8 @@ async function listAdminUsers(filters = {}) {
         position: "Nhân viên",
         status: locked ? "on_leave" : "active",
         tasksToday: staffAppointments.length,
+        completedMonthly: perf.completedMonthly,
+        monthlyPerf: perf.monthlyPerf,
       });
     }
   });
@@ -381,6 +435,18 @@ function matchesServiceSearch(service, query) {
 }
 
 function mapAdminService(service, stats) {
+  let pricingType = service.pricing_type || "fixed";
+  let variants = [];
+  if (service.variants_json) {
+    try {
+      variants = JSON.parse(service.variants_json);
+    } catch (_) {
+      variants = [];
+    }
+  }
+  if (!Array.isArray(variants) || variants.length === 0) {
+    pricingType = "fixed";
+  }
   return {
     id: `SV-${service.id}`,
     category: serviceCategory(service.type),
@@ -388,9 +454,9 @@ function mapAdminService(service, stats) {
     description: service.description || "",
     duration: service.type === "BOARDING" ? 1 : 30,
     durationUnit: service.type === "BOARDING" ? "đêm" : "phút",
-    pricingType: "fixed",
+    pricingType,
     basePrice: Number(service.price || 0),
-    variants: [],
+    variants,
     status: service.is_active ? "active" : "inactive",
     bookingsMonth: stats.bookings,
     revenueMonth: stats.revenue,
@@ -450,20 +516,42 @@ function servicePayload(input, existingType) {
     throw error;
   }
 
+  const pricingType = String(input?.pricingType || "fixed");
+  const rawVariants = Array.isArray(input?.variants) ? input.variants : [];
+  const variants = pricingType === "variants" && rawVariants.length > 0 ? rawVariants : [];
+  const effectivePrice = pricingType === "variants" && variants.length > 0
+    ? Math.min(...variants.map((v) => Number(v.price || 0)))
+    : price;
+
   return {
     name,
     type,
-    price,
+    price: effectivePrice,
     description: String(input?.description || "").trim() || null,
     is_active: input?.status ? input.status === "active" : true,
+    pricing_type: pricingType,
+    variants_json: variants.length > 0 ? JSON.stringify(variants) : null,
   };
+}
+
+async function readServicesWithVariants() {
+  const extendedResult = await supabase
+    .from("services")
+    .select("id, name, type, price, description, is_active, pricing_type, variants_json")
+    .order("name");
+  if (!extendedResult.error) return extendedResult.data || [];
+
+  const basicResult = await supabase
+    .from("services")
+    .select("id, name, type, price, description, is_active")
+    .order("name");
+  if (basicResult.error) throw new Error(basicResult.error.message);
+  return basicResult.data || [];
 }
 
 async function listAdminServices(filters = {}) {
   const [services, appointmentServices] = await Promise.all([
-    readTable("services", "id, name, type, price, description, is_active", {
-      order: { column: "name", ascending: true },
-    }),
+    readServicesWithVariants(),
     readTable("appointment_services", "service_id, quantity, unit_price"),
   ]);
 
@@ -496,17 +584,33 @@ async function listAdminServices(filters = {}) {
   };
 }
 
+function isColumnMissingError(err) {
+  if (!err) return false;
+  const msg = String(err.message || "").toLowerCase();
+  return msg.includes("column") || err.code === "42703" || err.code === "PGRST204";
+}
+
 async function createAdminService(input) {
   const payload = servicePayload(input);
-  const { data, error } = await supabase
+
+  let result = await supabase
     .from("services")
     .insert(payload)
-    .select("id, name, type, price, description, is_active")
+    .select("id, name, type, price, description, is_active, pricing_type, variants_json")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (result.error) {
+    if (!isColumnMissingError(result.error)) throw new Error(result.error.message);
+    const { pricing_type, variants_json, ...basicPayload } = payload;
+    result = await supabase
+      .from("services")
+      .insert(basicPayload)
+      .select("id, name, type, price, description, is_active")
+      .single();
+  }
 
-  return mapAdminService(data, { bookings: 0, revenue: 0 });
+  if (result.error) throw new Error(result.error.message);
+  return mapAdminService(result.data, { bookings: 0, revenue: 0 });
 }
 
 async function updateAdminService(displayId, input) {
@@ -530,17 +634,29 @@ async function updateAdminService(displayId, input) {
   }
 
   const payload = servicePayload(input, existing.type);
-  const { data, error } = await supabase
+
+  let updateResult = await supabase
     .from("services")
     .update(payload)
     .eq("id", id)
-    .select("id, name, type, price, description, is_active")
+    .select("id, name, type, price, description, is_active, pricing_type, variants_json")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (updateResult.error) {
+    if (!isColumnMissingError(updateResult.error)) throw new Error(updateResult.error.message);
+    const { pricing_type, variants_json, ...basicPayload } = payload;
+    updateResult = await supabase
+      .from("services")
+      .update(basicPayload)
+      .eq("id", id)
+      .select("id, name, type, price, description, is_active")
+      .single();
+  }
+
+  if (updateResult.error) throw new Error(updateResult.error.message);
 
   const result = await listAdminServices();
-  return result.services.find((service) => service.id === `SV-${id}`) || mapAdminService(data, { bookings: 0, revenue: 0 });
+  return result.services.find((service) => service.id === `SV-${id}`) || mapAdminService(updateResult.data, { bookings: 0, revenue: 0 });
 }
 
 async function updateAdminServiceStatus(displayId, status) {
@@ -843,9 +959,9 @@ async function listAdminStaff(filters = {}) {
     workStatus: doctor.status,
     locked: doctor.locked,
     todayTasks: doctor.todayPatients,
-    completedTasks: 0,
-    monthlyPerf: 0,
-    rating: doctor.rating,
+    completedTasks: doctor.completedMonthly || 0,
+    monthlyPerf: doctor.monthlyPerf || 0,
+    rating: doctor.rating || 0,
     notes: "",
     specialty: doctor.specialty,
     room: doctor.room,
@@ -865,8 +981,8 @@ async function listAdminStaff(filters = {}) {
     workStatus: member.status,
     locked: member.locked,
     todayTasks: member.tasksToday,
-    completedTasks: 0,
-    monthlyPerf: 0,
+    completedTasks: member.completedMonthly || 0,
+    monthlyPerf: member.monthlyPerf || 0,
     rating: 0,
     notes: "",
   }));
@@ -1289,8 +1405,182 @@ async function getAdminExamContext() {
   };
 }
 
+async function deleteAdminService(displayId) {
+  const id = parseServiceId(displayId);
+  if (!id) {
+    const error = new Error("ID dịch vụ không hợp lệ");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { error } = await supabase
+    .from("services")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  return { id: displayId };
+}
+
+async function updateAdminUserProfile(role, displayId, data) {
+  const normalizedRole = normalizeRole(role);
+  const config = {
+    customer: {
+      table: "customers",
+      prefixes: ["C"],
+      fields: (d) => ({
+        ...(d.name ? { full_name: d.name } : {}),
+        ...(d.phone !== undefined ? { phone: d.phone } : {}),
+        ...(d.address !== undefined ? { address: d.address } : {}),
+      }),
+    },
+    doctor: {
+      table: "doctors",
+      prefixes: ["D", "NV-C"],
+      fields: (d) => ({
+        ...(d.name ? { full_name: d.name } : {}),
+        ...(d.specialty !== undefined ? { specialization: d.specialty } : {}),
+        ...(d.room !== undefined ? { room_name: d.room } : {}),
+      }),
+    },
+    staff: {
+      table: "staffs",
+      prefixes: ["S", "NV-S"],
+      fields: (d) => ({
+        ...(d.name ? { full_name: d.name } : {}),
+        ...(d.phone !== undefined ? { phone: d.phone } : {}),
+        ...(d.address !== undefined ? { address: d.address } : {}),
+      }),
+    },
+  }[normalizedRole];
+
+  if (!config) {
+    const err = new Error("Vai trò không hợp lệ");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const id = parseProfileDisplayId(displayId, config.prefixes);
+  if (!id) {
+    const err = new Error("ID người dùng không hợp lệ");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const payload = config.fields(data);
+  if (Object.keys(payload).length === 0) {
+    const err = new Error("Không có thông tin cần cập nhật");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const { error } = await supabase.from(config.table).update(payload).eq("id", id);
+  if (error) throw new Error(error.message);
+
+  return { id: displayId, role: normalizedRole };
+}
+
+async function createAdminStaffMember(data) {
+  const { name, email, password, phone, address, role: userRole, specialty, room } = data;
+
+  if (!String(name || "").trim()) {
+    const err = new Error("Họ tên không được trống");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (!String(email || "").trim()) {
+    const err = new Error("Email không được trống");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (!password || String(password).length < 6) {
+    const err = new Error("Mật khẩu phải có ít nhất 6 ký tự");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const dbRole = userRole === "doctor" ? "DOCTOR" : userRole === "customer" ? "CUSTOMER" : "STAFF";
+  const profileTable = userRole === "doctor" ? "doctors" : userRole === "customer" ? "customers" : "staffs";
+
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: email.trim(),
+    password,
+    email_confirm: true,
+  });
+
+  if (authError) {
+    const err = new Error("Không thể tạo tài khoản: " + authError.message);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const userId = authData.user.id;
+
+  await supabase
+    .from("users")
+    .upsert({ id: userId, email: email.trim(), role: dbRole, status: "ACTIVE" }, { onConflict: "id" });
+
+  const profileData = userRole === "doctor"
+    ? { user_id: userId, full_name: name.trim(), specialization: specialty || "Nội khoa tổng quát", room_name: room || "Phòng khám 1" }
+    : userRole === "customer"
+    ? { user_id: userId, full_name: name.trim(), phone: phone || null, address: address || null }
+    : { user_id: userId, full_name: name.trim(), phone: phone || "", address: address || "" };
+
+  const { error: profileError } = await supabase.from(profileTable).insert(profileData);
+  if (profileError) {
+    const err = new Error("Tài khoản đã được tạo nhưng không thể tạo hồ sơ: " + profileError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+
+  return { userId, name: name.trim(), email: email.trim(), role: dbRole.toLowerCase() };
+}
+
+async function submitRating(appointmentId, customerId, score, comment) {
+  const parsedScore = Number(score);
+  if (!Number.isInteger(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+    const err = new Error("Điểm đánh giá phải từ 1 đến 5");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const { data: apt, error: aptError } = await supabase
+    .from("appointments")
+    .select("id, doctor_id, pet:pets(customer_id)")
+    .eq("id", appointmentId)
+    .single();
+
+  if (aptError || !apt) {
+    const err = new Error("Không tìm thấy lịch hẹn");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (apt.pet?.customer_id !== customerId) {
+    const err = new Error("Không có quyền đánh giá lịch hẹn này");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const { error: ratingError } = await supabase
+    .from("ratings")
+    .upsert({
+      appointment_id: appointmentId,
+      doctor_id: apt.doctor_id || null,
+      customer_id: customerId,
+      score: parsedScore,
+      comment: comment || null,
+    }, { onConflict: "appointment_id" });
+
+  if (ratingError) throw new Error(ratingError.message);
+
+  return { appointmentId, score: parsedScore };
+}
+
 module.exports = {
   createAdminService,
+  createAdminStaffMember,
+  deleteAdminService,
   getAdminDashboard,
   getAdminReports,
   getAdminSettings,
@@ -1303,4 +1593,6 @@ module.exports = {
   updateAdminService,
   updateAdminServiceStatus,
   updateAdminUserLock,
+  updateAdminUserProfile,
+  submitRating,
 };

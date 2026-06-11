@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DoctorSidebar, type DoctorPortalNavId } from "../../../components/doctor/DoctorSidebar";
 import { DoctorScheduleHeader } from "../../../components/doctor/DoctorScheduleHeader";
@@ -16,6 +16,7 @@ import {
   type DoctorScheduleMeta,
   type DoctorScheduleSummary,
 } from "../services/doctorAppointments";
+import { todayYmd } from "../../../components/staff/StaffCommon";
 import { doctorProfileService, type DoctorProfile } from "../services/doctorProfile";
 
 const EMPTY_SUMMARY: DoctorScheduleSummary = {
@@ -28,8 +29,8 @@ const EMPTY_SUMMARY: DoctorScheduleSummary = {
 const EMPTY_META: DoctorScheduleMeta = {
   title: "Lịch khám của bác sĩ",
   dateLabel: "",
-  roomLabel: "Phòng 1",
-  activityLabel: "Phòng 1 · Đang hoạt động",
+  roomLabel: "",
+  activityLabel: "",
 };
 
 export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
@@ -46,6 +47,19 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  const todaySummary = useMemo<DoctorScheduleSummary>(() => {
+    const today = todayYmd();
+    const todayAppts = appointments.filter(
+      (apt) => (apt.scheduleRow?.date || apt.date) === today,
+    );
+    return {
+      total: todayAppts.length,
+      completed: todayAppts.filter((a) => a.statusKey === "completed").length,
+      inProgress: todayAppts.filter((a) => a.statusKey === "in_progress").length,
+      scheduled: todayAppts.filter((a) => a.statusKey === "scheduled").length,
+    };
+  }, [appointments]);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -193,7 +207,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
               onMarkAllNotificationsRead={() => void handleMarkAllNotificationsRead()}
             />
             <main className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
-              <DoctorScheduleStats summary={summary} />
+              <DoctorScheduleStats summary={todaySummary} />
               <DoctorScheduleTable
                 appointments={appointments}
                 loading={appointmentsLoading}

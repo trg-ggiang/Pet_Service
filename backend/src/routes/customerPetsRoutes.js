@@ -31,6 +31,9 @@ const {
   listCustomerServiceHistoryView,
 } = require("../services/customer/customerServiceHistoryService");
 const {
+  submitRating,
+} = require("../services/adminService");
+const {
   listRoomsWithAvailability,
   createBoardingBooking,
   rescheduleBoardingBooking,
@@ -351,6 +354,21 @@ router.put("/pets/:petId", async (req, res) => {
     res.json({ ok: true, pet: data });
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message || "Không thể cập nhật hồ sơ thú cưng" });
+  }
+});
+
+router.post("/appointments/:appointmentId/rating", async (req, res) => {
+  try {
+    const appointmentId = Number(req.params.appointmentId);
+    if (!Number.isFinite(appointmentId) || appointmentId <= 0) {
+      return res.status(400).json({ ok: false, message: "ID lịch hẹn không hợp lệ" });
+    }
+    const customerId = req.auth.user.customerId;
+    const { score, comment } = req.body ?? {};
+    const result = await submitRating(appointmentId, customerId, score, comment);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể gửi đánh giá" });
   }
 });
 

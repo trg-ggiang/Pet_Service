@@ -7,6 +7,8 @@ const {
   getAdminSettings,
   updateAdminSettings,
   createAdminService,
+  createAdminStaffMember,
+  deleteAdminService,
   listAdminAppointments,
   listAdminServices,
   listAdminStaff,
@@ -15,6 +17,7 @@ const {
   updateAdminService,
   updateAdminServiceStatus,
   updateAdminUserLock,
+  updateAdminUserProfile,
 } = require("../services/adminService");
 const {
   getEmailTemplates,
@@ -58,6 +61,15 @@ router.patch("/users/:role/:id/lock", async function(req, res) {
   }
 });
 
+router.patch("/users/:role/:id/profile", async function(req, res) {
+  try {
+    const result = await updateAdminUserProfile(req.params.role, req.params.id, req.body || {});
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật thông tin người dùng" });
+  }
+});
+
 router.get("/services", async function(req, res) {
   try {
     const result = await listAdminServices({
@@ -95,6 +107,15 @@ router.patch("/services/:id/status", async function(req, res) {
     res.json({ ok: true, service });
   } catch (error) {
     res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái dịch vụ" });
+  }
+});
+
+router.delete("/services/:id", async function(req, res) {
+  try {
+    const result = await deleteAdminService(req.params.id);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể xoá dịch vụ" });
   }
 });
 
@@ -139,6 +160,25 @@ router.patch("/staff/:id/lock", async function(req, res) {
     res.json({ ok: true, user });
   } catch (error) {
     res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái khóa nhân viên" });
+  }
+});
+
+router.patch("/staff/:id/profile", async function(req, res) {
+  try {
+    const role = String(req.params.id || "").startsWith("NV-C") ? "doctor" : "staff";
+    const result = await updateAdminUserProfile(role, req.params.id, req.body || {});
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật thông tin nhân viên" });
+  }
+});
+
+router.post("/staff", async function(req, res) {
+  try {
+    const member = await createAdminStaffMember(req.body || {});
+    res.status(201).json({ ok: true, member });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể tạo nhân viên" });
   }
 });
 

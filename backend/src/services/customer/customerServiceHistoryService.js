@@ -206,6 +206,15 @@ async function listCustomerServiceHistory(customerId) {
     (invoices ?? []).map((invoice) => invoice.id),
   );
 
+  let ratedAptIds = new Set();
+  try {
+    const { data: ratingRows } = await supabase
+      .from("ratings")
+      .select("appointment_id")
+      .in("appointment_id", appointmentIds);
+    if (ratingRows) ratingRows.forEach((r) => ratedAptIds.add(r.appointment_id));
+  } catch (_) {}
+
   const petsById = new Map((pets ?? []).map((pet) => [pet.id, pet]));
   const appointmentsById = new Map((appointments ?? []).map((appointment) => [appointment.id, appointment]));
 
@@ -225,6 +234,8 @@ async function listCustomerServiceHistory(customerId) {
     return {
       id: `INV-${String(invoice.id).padStart(6, "0")}`,
       invoiceId: invoice.id,
+      appointmentId: invoice.appointment_id || null,
+      isRated: invoice.appointment_id ? ratedAptIds.has(invoice.appointment_id) : false,
       sortAt: serviceDate,
       date: formatDate(serviceDate),
       service: services.length > 1 ? `${services[0]} +${services.length - 1} dịch vụ` : services[0],
