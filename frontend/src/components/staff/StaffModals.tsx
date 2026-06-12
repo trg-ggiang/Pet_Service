@@ -60,7 +60,7 @@ export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onC
           ))}
           {apt.note && (
             <div className="py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-500 font-medium">Ghi ch?</span>
+              <span className="text-sm text-slate-500 font-medium">Ghi chú</span>
               <p className="text-sm font-medium text-slate-700 mt-1">{apt.note}</p>
             </div>
           )}

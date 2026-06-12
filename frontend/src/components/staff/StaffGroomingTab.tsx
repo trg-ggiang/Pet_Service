@@ -119,7 +119,7 @@ export function GroomingTab({
                         onClick={() => onUpdateStatus(task)}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 text-sm font-bold text-white transition-colors flex-shrink-0 hover:bg-emerald-600"
                       >
-                        <><CheckCircle2 size={14} /> Ho‡n th‡nh</>
+                        <><CheckCircle2 size={14} /> Ho√†n th√†nh</>
                       </button>
                     )}
                   </div>

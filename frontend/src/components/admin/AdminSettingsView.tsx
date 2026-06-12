@@ -29,7 +29,6 @@ const NOTIFICATION_LABELS: Record<string, { label: string; desc: string; group: 
   emailExamResult: { label: "Kết quả khám", desc: "Email khi kết quả khám được hoàn tất", group: "Email" },
   emailPaymentConfirmation: { label: "Xác nhận thanh toán", desc: "Email sau khi thanh toán thành công", group: "Email" },
   emailFollowUpReminder: { label: "Nhắc tái khám", desc: "Email trước ngày tái khám", group: "Email" },
-  emailVaccinationReminder: { label: "Nhắc tiêm chủng", desc: "Email trước ngày đến hạn vaccine", group: "Email" },
   emailBoardingUpdate: { label: "Cập nhật lưu trú", desc: "Email khi nhân viên cập nhật chăm sóc lưu trú", group: "Email" },
   smsNewAppt: { label: "Lịch hẹn mới", desc: "SMS xác nhận cho khách hàng", group: "SMS" },
   smsReminder: { label: "Nhắc lịch", desc: "SMS nhắc trước lịch hẹn", group: "SMS" },
@@ -40,7 +39,6 @@ const NOTIFICATION_LABELS: Record<string, { label: string; desc: string; group: 
   weeklyReport: { label: "Báo cáo tuần", desc: "Gửi báo cáo định kỳ", group: "Báo cáo" },
   monthlyReport: { label: "Báo cáo tháng", desc: "Gửi báo cáo định kỳ", group: "Báo cáo" },
   lowInventory: { label: "Tồn kho thấp", desc: "Khi vật tư sắp hết", group: "Cảnh báo" },
-  vaccineExpiry: { label: "Vaccine sắp đến hạn", desc: "Nhắc tiêm nhắc lại", group: "Cảnh báo" },
 };
 
 const EMAIL_TEMPLATE_LABELS: Record<string, string> = {
@@ -50,7 +48,6 @@ const EMAIL_TEMPLATE_LABELS: Record<string, string> = {
   exam_result: "Kết quả khám",
   payment_confirmation: "Xác nhận thanh toán",
   follow_up_reminder: "Nhắc tái khám",
-  vaccination_reminder: "Nhắc tiêm chủng",
   boarding_update: "Cập nhật lưu trú",
   custom: "Template tùy chỉnh",
 };

@@ -60,8 +60,8 @@ function ConfirmQueue({
   approvingAppointmentId?: number | null;
 }) {
   return (
-    <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-      <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between" style={{ background: "#FFFBEB" }}>
+    <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-0 h-full">
+      <div className="flex-shrink-0 px-5 py-4 border-b border-amber-100 flex items-center justify-between" style={{ background: "#FFFBEB" }}>
         <div>
           <h3 className="text-sm font-bold text-amber-900">Lịch hẹn chờ xác nhận</h3>
           <p className="text-[11px] text-amber-700 mt-0.5 font-medium">Sắp tới · Từ hôm nay</p>
@@ -79,7 +79,7 @@ function ConfirmQueue({
           <p className="text-sm text-slate-500 font-medium">Không có lịch hẹn chờ xác nhận</p>
         </div>
       ) : (
-        <div className="divide-y divide-slate-100 overflow-y-auto" style={{ maxHeight: 580 }}>
+        <div className="flex-1 min-h-0 divide-y divide-slate-100 overflow-y-auto">
           {appointments.map((apt) => {
             const svcIcon = SERVICE_ICONS[apt.serviceType] || SERVICE_ICONS.exam;
             const Icon = svcIcon.icon;
@@ -226,9 +226,9 @@ export function AppointmentsTab({
   const pageData = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5 h-full min-h-0">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="flex-shrink-0 grid grid-cols-3 gap-4">
         {[
           { label: "Chờ xác nhận", value: pendingConfirmation.length, icon: Clock, color: "#D97706", bg: "#FFFBEB" },
           { label: "Chờ check-in", value: appointments.filter((a) => a.status === "confirmed").length, icon: CheckCircle2, color: "#0891B2", bg: "#ECFEFF" },
@@ -250,7 +250,7 @@ export function AppointmentsTab({
       </div>
 
       {/* Two-column layout */}
-      <div className="grid gap-5 items-start" style={{ gridTemplateColumns: "420px 1fr" }}>
+      <div className="flex-1 min-h-0 grid gap-5" style={{ gridTemplateColumns: "420px 1fr", alignItems: "stretch" }}>
         {/* Left: confirmation queue */}
         <ConfirmQueue
           appointments={pendingConfirmation}
@@ -262,10 +262,14 @@ export function AppointmentsTab({
         />
 
         {/* Right: active appointments */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-slate-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-0 h-full">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-2">
-              <h3 className="text-base font-bold text-slate-900">Lịch trong ngày</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                {dateFilter.mode === "today" ? "Lịch hôm nay"
+                  : dateFilter.mode === "week" ? "Lịch trong tuần"
+                  : "Lịch theo ngày"}
+              </h3>
               <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
             </div>
             <div className="relative flex-shrink-0">
@@ -280,6 +284,7 @@ export function AppointmentsTab({
             </div>
           </div>
 
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {loading ? (
             <LoadingState label="Đang tải danh sách lịch hẹn..." />
           ) : error ? (
@@ -295,7 +300,7 @@ export function AppointmentsTab({
             />
           ) : (
             <>
-              <div className="divide-y divide-slate-100">
+              <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100">
                 {pageData.map((apt) => {
                   const statusCfg = APT_STATUS_CONFIG[apt.status];
                   const svcIcon = SERVICE_ICONS[apt.serviceType] || SERVICE_ICONS.exam;
@@ -366,6 +371,11 @@ export function AppointmentsTab({
                           >
                             <CheckCircle2 size={14} /> {isCompletingGrooming ? "Đang hoàn thành..." : "Hoàn thành"}
                           </button>
+                        ) : apt.status === "in_progress" ? (
+                          <span className="h-9 px-3 rounded-lg text-xs font-bold text-slate-500 border border-slate-200 bg-slate-50 flex items-center gap-1.5 flex-shrink-0">
+                            <Activity size={13} />
+                            {apt.serviceType === "boarding" ? "Đang lưu trú" : "Đang khám"}
+                          </span>
                         ) : apt.status === "confirmed" && (
                           <button
                             onClick={() => onCheckIn(apt)}
@@ -383,6 +393,7 @@ export function AppointmentsTab({
               <Pagination page={safePage} pageCount={pageCount} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
             </>
           )}
+          </div>
         </div>
       </div>
     </div>

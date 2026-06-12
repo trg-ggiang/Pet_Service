@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Calendar as CalendarIcon, Check, CheckCircle2, ChevronLeft, ClipboardList, Download, Eye, Heart, Image as ImageIcon, Loader2, Pencil, Scissors, Syringe, X } from "lucide-react";
+import { Calendar as CalendarIcon, Check, CheckCircle2, ChevronLeft, ClipboardList, Download, Eye, Heart, Image as ImageIcon, Loader2, Pencil, Scissors, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { downloadCustomerInvoicePdf } from "../../../services/customer/customerPetsApi";
 import type { PetDetail, PetSummary } from "../../../types/customer/pets";
@@ -158,7 +158,6 @@ function isFutureDate(value: string) {
 const HISTORY_TABS = [
   { id: "overview", label: "Tổng quan", icon: Heart },
   { id: "medical", label: "Lịch sử khám", icon: ClipboardList },
-  { id: "vaccine", label: "Tiêm chủng", icon: Syringe },
   { id: "grooming", label: "Grooming", icon: Scissors },
   { id: "boarding", label: "Lưu trú", icon: ChevronLeft },
   { id: "invoice", label: "Hóa đơn", icon: CheckCircle2 },
@@ -185,7 +184,6 @@ export function PetDetailModal({
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
   const [viewingImage, setViewingImage] = useState<{ src: string; label: string } | null>(null);
   const clr = getPetColorById(pet.colorId);
-  const latestVaccination = detail?.vaccinations?.[0] ?? null;
   const latestMedicalVisit = detail?.medicalVisits?.[0] ?? null;
 
   const handleDownloadInvoice = async (invoiceId: number) => {
@@ -266,12 +264,11 @@ export function PetDetailModal({
 
           {!loading && detail && activeTab === "overview" && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {[
                   { label: "Ngày sinh", value: formatDate(pet.dob) },
                   { label: "Cân nặng", value: pet.weight },
                   { label: "Khám gần nhất", value: pet.lastVisit },
-                  { label: "Tiêm nhắc", value: pet.nextVaccine },
                 ].map((item) => (
                   <div key={item.label} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
                     <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{item.label}</div>
@@ -286,30 +283,21 @@ export function PetDetailModal({
                   { label: "Bệnh nền", value: pet.chronicDiseases ?? "Không có" },
                   { label: "Ghi chú", value: pet.specialNote ?? "Không có" },
                 ]} />
-                <SummaryCard title="Tiêm chủng gần nhất" items={latestVaccination ? [
-                  { label: latestVaccination.vaccine_name, value: formatDate(latestVaccination.date_given) },
-                  { label: "Lịch tiêm tiếp theo", value: formatDate(latestVaccination.next_due_date) },
-                  { label: "Ghi chú", value: latestVaccination.note ?? "Không có" },
-                ] : [{ label: "Trạng thái", value: "Chưa có lịch tiêm" }]} />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
                 <SummaryCard title="Lần khám gần nhất" items={latestMedicalVisit ? [
                   { label: "Triệu chứng", value: latestMedicalVisit.symptoms ?? "Không có" },
                   { label: "Chẩn đoán", value: latestMedicalVisit.diagnosis_note ?? "Không có" },
                   { label: "Tái khám", value: formatDate(latestMedicalVisit.next_visit_date) },
                 ] : [{ label: "Trạng thái", value: "Chưa có lịch khám" }]} />
-                <SummaryCard title="Thống kê nhanh" items={[
+              </div>
+
+              <SummaryCard title="Thống kê nhanh" items={[
                   { label: "Lịch hẹn", value: String(detail.appointments.length) },
-                  { label: "Vaccine", value: String(detail.vaccinations.length) },
                   { label: "Hóa đơn", value: String(detail.invoices.length) },
                 ]} />
-              </div>
             </div>
           )}
 
           {!loading && detail && activeTab === "medical" && <TimelineList rows={detail.medicalVisits.map((row) => ({ title: row.diagnosis_note ?? "Khám thú y", subtitle: row.symptoms ?? "", meta: formatDate(row.created_at) }))} emptyText="Chưa có lịch sử khám." />}
-          {!loading && detail && activeTab === "vaccine" && <TimelineList rows={detail.vaccinations.map((row) => ({ title: row.vaccine_name, subtitle: row.note ?? "", meta: `${formatDate(row.date_given)} · nhắc ${formatDate(row.next_due_date)}` }))} emptyText="Chưa có lịch tiêm chủng." />}
           {!loading && detail && activeTab === "grooming" && <TimelineList rows={detail.groomingRecords.map((row) => ({ title: row.status, subtitle: row.notes ?? "", meta: formatDate(row.started_at) }))} emptyText="Chưa có dữ liệu grooming." />}
           {!loading && detail && activeTab === "boarding" && <BoardingStayList records={detail.boardingRecords} onViewImage={setViewingImage} />}
           {!loading && detail && activeTab === "invoice" && (

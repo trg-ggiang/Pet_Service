@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { Bell, Calendar, CheckCircle2, Clock, Heart, LogOut, Star, UserRound, X } from "lucide-react";
+import { Bell, Calendar, Dog, Heart, History, LogOut, Pill, UserRound, X } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { CustomerPetProfilesModule } from "./CustomerPetsPage";
 import { fetchCustomerPetDashboard } from "../../../services/customer/customerPetsApi";
@@ -31,6 +31,9 @@ import { CustomerAppointmentsTab } from "../../../components/customer/appointmen
 import { NewAppointmentModal, AppointmentDetailModal, RescheduleModal, BoardingRescheduleModal } from "../../../components/customer/appointments/CustomerAppointmentModals";
 import { BoardingBookingModal } from "../../../components/customer/boarding/BoardingBookingModal";
 import { CustomerHistoryTab } from "../../../components/customer/history/CustomerHistoryTab";
+import { CustomerMedicationsTab } from "../../../components/customer/medications/CustomerMedicationsTab";
+import { fetchActiveMedications } from "../../../services/customer/customerMedicationsApi";
+import type { ActiveMedicationsPayload } from "../../../types/customer/medications";
 import { HistoryDetailModal } from "../../../components/customer/history/HistoryDetailModal";
 import { CustomerHomeTab } from "../../../components/customer/home/CustomerHomeTab";
 import { CustomerNotificationsTab } from "../../../components/customer/notifications/CustomerNotificationsTab";
@@ -38,7 +41,7 @@ import { CustomerProfileTab } from "../../../components/customer/profile/Custome
 import { fetchCustomerProfile, updateCustomerProfile, type CustomerProfile } from "../../../services/customer/customerProfileApi";
 import { getNotifConfig, mapCustomerAppointment, mapCustomerNotification } from "../../../utils/customer/portalConfig";
 
-type CustomerTab = "home" | "apts" | "pets" | "history" | "notifications" | "profile";
+type CustomerTab = "home" | "apts" | "pets" | "history" | "medications" | "notifications" | "profile";
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -94,6 +97,9 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [profileError, setProfileError] = useState("");
   const [urgentNotification, setUrgentNotification] = useState<CustomerPortalNotification | null>(null);
   const shownUrgentNotificationIdsRef = useRef<Set<number>>(new Set());
+  const [medications, setMedications] = useState<ActiveMedicationsPayload | null>(null);
+  const [medicationsLoading, setMedicationsLoading] = useState(false);
+  const [medicationsError, setMedicationsError] = useState("");
 
   const [statusFilter, setStatusFilter] = useState<CustomerAppointmentStatusFilter>("all");
   const [petFilter, setPetFilter] = useState("all");
@@ -346,12 +352,30 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
   useEffect(() => {
     let ignore = false;
+    async function loadMeds() {
+      try {
+        setMedicationsLoading(true);
+        setMedicationsError("");
+        const data = await fetchActiveMedications();
+        if (!ignore) setMedications(data);
+      } catch (err) {
+        if (!ignore) setMedicationsError(err instanceof Error ? err.message : "Không thể tải lịch thuốc");
+      } finally {
+        if (!ignore) setMedicationsLoading(false);
+      }
+    }
+    void loadMeds();
+    return () => { ignore = true; };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
 
     async function loadCustomerData() {
       try {
         setAppointmentsLoading(true);
         setAppointmentsError("");
-        const appointmentsPayload = await fetchCustomerAppointments({ pageSize: 50 });
+        const appointmentsPayload = await fetchCustomerAppointments({ status: "upcoming", pageSize: 50 });
         if (ignore) return;
 
         setApts(appointmentsPayload.appointments.map(mapCustomerAppointment));
@@ -374,13 +398,24 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     };
   }, []);
 
+  const urgentMedCount = medications?.pets
+    .flatMap(p => p.medications)
+    .filter(m => m.daysRemaining <= 2).length ?? 0;
+
+  const urgentMedications = medications?.pets.flatMap(p =>
+    p.medications
+      .filter(m => m.daysRemaining <= 2)
+      .map(m => ({ petName: p.petName, medicineName: m.medicineName, daysRemaining: m.daysRemaining }))
+  ) ?? [];
+
   const navItems = [
-    { id: "home" as const, label: "Trang chủ", icon: Heart },
-    { id: "apts" as const, label: "Lịch hẹn", icon: Calendar, badge: apts.length || undefined },
-    { id: "pets" as const, label: "Thú cưng", icon: Star },
-    { id: "history" as const, label: "Lịch sử", icon: CheckCircle2 },
-    { id: "notifications" as const, label: "Thông báo", icon: Bell, badge: unreadCount || undefined },
-    { id: "profile" as const, label: "Hồ sơ", icon: UserRound },
+    { id: "home"        as const, label: "Trang chủ",  icon: Heart    },
+    { id: "apts"        as const, label: "Lịch hẹn",   icon: Calendar, badge: apts.length || undefined          },
+    { id: "pets"        as const, label: "Thú cưng",   icon: Dog                                               },
+    { id: "medications" as const, label: "Lịch thuốc", icon: Pill,     badge: urgentMedCount || undefined      },
+    { id: "history"     as const, label: "Lịch sử",    icon: History                                          },
+    { id: "notifications" as const, label: "Thông báo", icon: Bell,    badge: unreadCount || undefined         },
+    { id: "profile"     as const, label: "Hồ sơ",      icon: UserRound                                        },
   ];
 
   const tabMeta: Record<CustomerTab, { title: string; subtitle: string }> = {
@@ -388,6 +423,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     apts: { title: "Lịch hẹn", subtitle: "Quản lý lịch khám, grooming và lưu trú của thú cưng." },
     pets: { title: "Thú cưng", subtitle: "Xem hồ sơ, lịch sử chăm sóc và dịch vụ của từng thú cưng." },
     history: { title: "Lịch sử", subtitle: "Tra cứu các dịch vụ đã sử dụng và đánh giá trải nghiệm." },
+    medications: { title: "Lịch thuốc", subtitle: "Theo dõi thuốc đang dùng và lịch uống thuốc của từng thú cưng." },
     notifications: { title: "Thông báo", subtitle: "Cập nhật từ phòng khám và các cảnh báo cần chú ý." },
     profile: { title: "Hồ sơ chủ nuôi", subtitle: "Cập nhật thông tin liên hệ và hồ sơ cá nhân." },
   };
@@ -396,7 +432,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
       <aside className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white">
         <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-600 shadow-sm">
             <PawSVG className="h-5 w-5 text-white" />
           </div>
           <div className="min-w-0">
@@ -407,8 +443,8 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
         <div className="border-b border-slate-100 px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-              <span className="text-xs font-bold text-white">{displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 shadow-sm">
+              <span className="text-xs font-bold text-cyan-700">{displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
             </div>
             <div className="min-w-0">
               <div className="truncate text-sm font-bold text-slate-950">{displayName}</div>
@@ -602,7 +638,9 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             onOpenPets={() => setTab("pets")}
             onOpenHistory={() => setTab("history")}
             onOpenNotifications={() => setTab("notifications")}
+            onOpenMedications={() => setTab("medications")}
             onNotificationClick={handleNotificationClick}
+            urgentMedications={urgentMedications}
           />
         )}
 
@@ -661,6 +699,14 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               setHistoryRecords(payload.history);
               setHistorySummary(payload.summary);
             }}
+          />
+        )}
+
+        {tab === "medications" && (
+          <CustomerMedicationsTab
+            data={medications}
+            loading={medicationsLoading}
+            error={medicationsError}
           />
         )}
 

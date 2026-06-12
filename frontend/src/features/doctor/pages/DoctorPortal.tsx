@@ -47,6 +47,11 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [urgentAlertTarget, setUrgentAlertTarget] = useState<DoctorAppointment | null>(null);
+  const [urgentAlertMessage, setUrgentAlertMessage] = useState("");
+  const [urgentAlertSending, setUrgentAlertSending] = useState(false);
+  const [urgentAlertError, setUrgentAlertError] = useState("");
+  const [urgentAlertSuccess, setUrgentAlertSuccess] = useState("");
 
   const todaySummary = useMemo<DoctorScheduleSummary>(() => {
     const today = todayYmd();
@@ -151,6 +156,31 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
     await loadAppointments();
   }
 
+  function handleOpenUrgentAlert(appointment: DoctorAppointment) {
+    setUrgentAlertTarget(appointment);
+    setUrgentAlertMessage("");
+    setUrgentAlertError("");
+    setUrgentAlertSuccess("");
+  }
+
+  async function handleSendUrgentAlert() {
+    const content = urgentAlertMessage.trim();
+    if (!content || !urgentAlertTarget) return;
+
+    try {
+      setUrgentAlertSending(true);
+      setUrgentAlertError("");
+      setUrgentAlertSuccess("");
+      const result = await doctorAppointmentsService.sendUrgentAlert(urgentAlertTarget.appointmentId, content);
+      setUrgentAlertSuccess(result || "Đã gửi cảnh báo khẩn đến chủ thú cưng");
+      setUrgentAlertMessage("");
+    } catch (err) {
+      setUrgentAlertError(err instanceof Error ? err.message : "Không thể gửi cảnh báo khẩn");
+    } finally {
+      setUrgentAlertSending(false);
+    }
+  }
+
   return (
     <div className="h-screen flex overflow-hidden" style={{ background: "#F8FAFC" }}>
       {logoutConfirmOpen && (
@@ -161,6 +191,72 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
             onLogout();
           }}
         />
+      )}
+
+      {urgentAlertTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => !urgentAlertSending && setUrgentAlertTarget(null)}>
+          <div className="w-full max-w-[460px] rounded-2xl border border-red-100 bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-red-500">Cảnh báo khẩn cấp</div>
+                <h3 className="mt-1 text-lg font-bold text-slate-950">Gửi cảnh báo đến chủ thú cưng</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                  {urgentAlertTarget.petName} · {urgentAlertTarget.owner}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={urgentAlertSending}
+                onClick={() => setUrgentAlertTarget(null)}
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              >
+                ×
+              </button>
+            </div>
+
+            {urgentAlertError && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{urgentAlertError}</div>
+            )}
+            {urgentAlertSuccess && (
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">{urgentAlertSuccess}</div>
+            )}
+
+            <label className="mt-5 block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">
+              Nội dung gửi cho chủ thú cưng
+            </label>
+            <textarea
+              value={urgentAlertMessage}
+              onChange={(e) => setUrgentAlertMessage(e.target.value)}
+              rows={5}
+              maxLength={1000}
+              disabled={urgentAlertSending}
+              placeholder="Ví dụ: Bé có dấu hiệu bất thường, chủ nuôi vui lòng theo dõi sát và liên hệ ngay nếu tình trạng nặng hơn."
+              className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/10 disabled:opacity-60"
+            />
+            <div className="mt-2 text-right text-[11px] font-semibold text-slate-400">
+              {urgentAlertMessage.length}/1000
+            </div>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={urgentAlertSending}
+                onClick={() => setUrgentAlertTarget(null)}
+                className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={urgentAlertSending || !urgentAlertMessage.trim()}
+                onClick={() => void handleSendUrgentAlert()}
+                className="h-10 rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {urgentAlertSending ? "Đang gửi..." : "Gửi cảnh báo"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <DoctorSidebar
@@ -217,6 +313,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
                 view="today"
                 onFilterChange={setAppointmentFilter}
                 onOpenExam={handleOpenExam}
+                onUrgentAlert={handleOpenUrgentAlert}
               />
             </main>
           </div>
@@ -243,6 +340,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
                 onFilterChange={setAppointmentFilter}
                 onOpenExam={handleOpenExam}
                 onOpenRecordDetail={handleOpenRecordDetail}
+                onUrgentAlert={handleOpenUrgentAlert}
               />
             </main>
           </div>

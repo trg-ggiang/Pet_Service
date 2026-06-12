@@ -25,7 +25,7 @@ async function fetchWithAuth<T>(url: string, options: RequestInit = {}): Promise
 }
 
 export type StaffAppointmentStatus = "scheduled" | "confirmed" | "in_progress" | "completed";
-export type StaffServiceType = "exam" | "grooming" | "boarding" | "vaccination";
+export type StaffServiceType = "exam" | "grooming" | "boarding";
 export type GroomingTaskStatus = "scheduled" | "in_progress" | "completed";
 export type PaymentStatus = "pending" | "paid";
 export type PaymentMethod = "cash" | "transfer" | "card";
