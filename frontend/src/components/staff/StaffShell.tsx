@@ -211,23 +211,36 @@ export function StaffHeader({
 }
 
 export function StaffSettingsTab({ profile }: { profile: StaffProfile | null }) {
+  const fields = [
+    { label: "Họ tên", value: profile?.fullName || "Chưa cập nhật" },
+    { label: "Chức vụ", value: profile?.roleLabel || "Nhân viên chăm sóc" },
+    { label: "Email", value: profile?.email || "Chưa cập nhật" },
+    { label: "Số điện thoại", value: profile?.phone || "Chưa cập nhật" },
+  ];
+
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl space-y-4">
       <div className="bg-white border border-slate-200 rounded-2xl p-6">
-        <h3 className="text-base font-bold text-slate-900 mb-4">Cài đặt tài khoản</h3>
-        <div className="space-y-3">
-          {[
-            { label: "Họ tên", value: profile?.fullName || "Chưa cập nhật" },
-            { label: "Chức vụ", value: profile?.roleLabel || "Nhân viên chăm sóc" },
-            { label: "Email", value: profile?.email || "Chưa cập nhật" },
-            { label: "Số điện thoại", value: profile?.phone || "Chưa cập nhật" },
-          ].map((item) => (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-slate-900">Thông tin tài khoản</h3>
+          <span className="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full">
+            Chỉ đọc
+          </span>
+        </div>
+        <div className="space-y-1">
+          {fields.map((item) => (
             <div key={item.label} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-b-0">
-              <span className="text-sm font-medium text-slate-700">{item.label}</span>
+              <span className="text-sm font-medium text-slate-500">{item.label}</span>
               <span className="text-sm font-semibold text-slate-900">{item.value}</span>
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+        <p className="text-xs font-semibold text-slate-500">
+          Để thay đổi thông tin tài khoản, liên hệ quản trị viên hoặc bộ phận nhân sự.
+        </p>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ const { supabase } = require("../lib/supabaseClient");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const {
   getAdminDashboard,
+  getAdminHealthTrends,
   getAdminReports,
   getAdminSettings,
   updateAdminSettings,
@@ -188,6 +189,15 @@ router.get("/reports", async function(req, res) {
     res.json({ ok: true, reports });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message || "Không thể tải báo cáo" });
+  }
+});
+
+router.get("/health-trends", async function(req, res) {
+  try {
+    const trends = await getAdminHealthTrends();
+    res.json({ ok: true, trends });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message || "Không thể tải phân tích sức khỏe" });
   }
 });
 

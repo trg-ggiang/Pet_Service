@@ -279,6 +279,23 @@ export type AdminReports = {
   }>;
 };
 
+export type AdminHealthTrends = {
+  summary: {
+    totalPets: number;
+    totalVisits: number;
+    revisitRate: number;
+    petsWithAllergies: number;
+    petsWithChronic: number;
+    avgVisitsPerPet: number;
+  };
+  topDiseases: Array<{ name: string; count: number }>;
+  visitTrend: Array<{ label: string; count: number }>;
+  speciesDistribution: Array<{ name: string; count: number }>;
+  avgWeightBySpecies: Array<{ name: string; avgWeight: number }>;
+  topMedicines: Array<{ name: string; count: number }>;
+  petGrowthTrend: Array<{ label: string; count: number }>;
+};
+
 export type AdminSettings = {
   clinic: {
     name: string;
@@ -490,6 +507,10 @@ export const adminService = {
 
   getReports() {
     return adminGet<{ reports: AdminReports }>("/api/admin/reports");
+  },
+
+  getHealthTrends() {
+    return adminGet<{ trends: AdminHealthTrends }>("/api/admin/health-trends");
   },
 
   getSettings() {

@@ -73,6 +73,18 @@ export interface HistoryRecord {
   type: "medical" | "grooming" | "boarding";
   staff: string;
   details?: string;
+  medicalRecord?: {
+    chiefComplaint:   string | null;
+    selectedSymptoms: string[];
+    duration:         string | null;
+    onset:            string | null;
+    severity:         string | null;
+    ownerNotes:       string | null;
+    vitals: Array<{ key: string; label: string; unit: string; value: string }>;
+    systems: Array<{ id: string; label: string; status: string; notes: string }>;
+    diagnosisNote:    string | null;
+    nextVisitDate:    string | null;
+  } | null;
   prescriptions?: Array<{
     medicineName: string;
     dosage: string;

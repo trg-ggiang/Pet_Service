@@ -1,4 +1,4 @@
-﻿import { AlertTriangle, Bell, Calendar, Info, Megaphone, Star, Stethoscope, Syringe } from "lucide-react";
+﻿import { AlertTriangle, Bell, Calendar, Info, Megaphone, Star, Stethoscope } from "lucide-react";
 import type { CustomerAppointment } from "../../types/customer/appointments";
 import type { Apt, ServiceType } from "../../types/customer/portal";
 import type { CustomerNotification } from "../../types/customer/notifications";
@@ -94,9 +94,8 @@ export function mapCustomerAppointment(appointment: CustomerAppointment): Apt {
   };
 }
 
-export function getNotificationUiType(type: CustomerNotification["type"]) {
-  if (type === "SYSTEM") return "high";
-  if (type === "VACCINE" || type === "PAYMENT") return "high";
+export function getNotificationUiType(type: CustomerNotification["type"]): "high" | "medium" | "promo" | "info" {
+  if (type === "SYSTEM" || type === "PAYMENT") return "high";
   if (type === "APPOINTMENT" || type === "BOARDING") return "medium";
   if (type === "GROOMING") return "promo";
   return "info";

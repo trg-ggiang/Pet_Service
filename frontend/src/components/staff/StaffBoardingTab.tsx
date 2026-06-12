@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   BedDouble,
   Check,
   CheckCircle2,
@@ -22,7 +23,26 @@ import type {
   PendingBoarding,
   StaffBoardingRoom,
 } from "../../features/staff/services/staffAppointments";
-import { EmptyState, LoadingState, Pagination, parseAnyDateToYmd } from "./StaffCommon";
+import { EmptyState, LoadingState, Pagination, parseAnyDateToYmd, todayYmd } from "./StaffCommon";
+
+/** Tính số đêm thực tế từ ngày check-in đến hôm nay */
+function computeActualNights(checkInStr: string): number {
+  const checkInYmd = parseAnyDateToYmd(checkInStr);
+  if (!checkInYmd) return 1;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkIn = new Date(checkInYmd + "T00:00:00");
+  return Math.max(1, Math.ceil((today.getTime() - checkIn.getTime()) / 86400000));
+}
+
+/** Số ngày quá hạn so với lịch check-out (0 = đúng hạn hoặc chưa đến hạn) */
+function overdueDays(scheduledCheckOut: string): number {
+  const ymd = parseAnyDateToYmd(scheduledCheckOut);
+  if (!ymd) return 0;
+  const today = todayYmd();
+  if (today <= ymd) return 0;
+  return Math.ceil((new Date(today + "T00:00:00").getTime() - new Date(ymd + "T00:00:00").getTime()) / 86400000);
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -137,6 +157,8 @@ function CheckoutModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const overdue = overdueDays(guest.checkOut);
+  const todayDisplay = new Date().toLocaleDateString("vi-VN");
   const roomFee = guest.nights * pricePerDay;
   const foodFeeTotal = foodFeePerDay * guest.nights;
   const total = roomFee + foodFeeTotal + extraServiceFee;
@@ -152,12 +174,29 @@ function CheckoutModal({
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors"><X size={18} /></button>
         </div>
         <div className="px-6 py-5 space-y-4">
-          <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm">
-            <div className="flex justify-between font-semibold text-slate-700 mb-1">
-              <span>Check-in → Check-out</span><span>{guest.checkIn} → {guest.checkOut}</span>
+          {overdue > 0 && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <AlertTriangle size={16} className="flex-shrink-0 text-amber-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-800">Quá hạn check-out {overdue} ngày</p>
+                <p className="text-xs text-amber-600 mt-0.5">Liên hệ chủ nuôi để thông báo và thu thêm phí phát sinh</p>
+              </div>
             </div>
-            <div className="flex justify-between text-slate-500">
-              <span>Số đêm</span><span className="font-bold text-slate-700">{guest.nights} đêm</span>
+          )}
+          <div className={`rounded-xl px-4 py-3 text-sm space-y-1.5 ${overdue > 0 ? "bg-amber-50 border border-amber-100" : "bg-slate-50"}`}>
+            <div className="flex justify-between text-slate-600">
+              <span>Check-in</span><span className="font-semibold text-slate-800">{guest.checkIn}</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Lịch check-out</span>
+              <span className={`font-semibold ${overdue > 0 ? "text-amber-600" : "text-slate-800"}`}>{guest.checkOut}</span>
+            </div>
+            <div className="flex justify-between border-t border-slate-200 pt-1.5">
+              <span className="font-semibold text-slate-700">Check-out thực tế</span>
+              <span className="font-bold text-slate-900">{todayDisplay}</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Số đêm tính tiền</span><span className="font-bold text-violet-700">{guest.nights} đêm</span>
             </div>
           </div>
           <div>
@@ -181,8 +220,8 @@ function CheckoutModal({
           </div>
           <div className="border border-slate-200 rounded-xl overflow-hidden text-sm">
             {[
-              { label: `Phí phòng (${guest.nights}đ × ${pricePerDay.toLocaleString("vi-VN")} ₫)`, value: roomFee },
-              ...(foodFeeTotal > 0 ? [{ label: `Phí thức ăn (${guest.nights}d × ${foodFeePerDay.toLocaleString("vi-VN")} ₫)`, value: foodFeeTotal }] : []),
+              { label: `Phí phòng (${guest.nights} đêm × ${pricePerDay.toLocaleString("vi-VN")} ₫)`, value: roomFee },
+              ...(foodFeeTotal > 0 ? [{ label: `Phí thức ăn (${guest.nights} đêm × ${foodFeePerDay.toLocaleString("vi-VN")} ₫)`, value: foodFeeTotal }] : []),
               ...(extraServiceFee > 0 ? [{ label: "Phí dịch vụ thêm", value: extraServiceFee }] : []),
             ].map((item) => (
               <div key={item.label} className="flex justify-between items-center px-4 py-2.5 border-b border-slate-100 last:border-0">
@@ -708,18 +747,29 @@ function RoomMapTab({
                     );
                   }
 
+                  const isOverdue = overdueDays(boarding.checkOut) > 0;
+                  const daysOver = overdueDays(boarding.checkOut);
                   return (
-                    <button key={room.id} onClick={() => onRoomClick(room)} className="bg-white border-2 rounded-2xl p-3 shadow-sm text-left hover:shadow-md transition-shadow" style={{ borderColor: cfg.border }}>
+                    <button key={room.id} onClick={() => onRoomClick(room)}
+                      className={`border-2 rounded-2xl p-3 shadow-sm text-left hover:shadow-md transition-shadow ${isOverdue ? "bg-amber-50" : "bg-white"}`}
+                      style={{ borderColor: isOverdue ? "#F59E0B" : cfg.border }}
+                    >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-xs font-bold" style={{ color: cfg.color }}>{room.cageNumber}</span>
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ color: statusCfg.color, background: statusCfg.bg }}>
-                          {statusCfg.label}
-                        </span>
+                        {isOverdue ? (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 flex items-center gap-0.5">
+                            <AlertTriangle size={9} /> +{daysOver}n
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ color: statusCfg.color, background: statusCfg.bg }}>
+                            {statusCfg.label}
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs font-bold text-slate-800 truncate">{boarding.petName}</div>
                       <div className="text-[11px] text-slate-500 truncate">{boarding.species}</div>
                       <div className="text-[11px] text-slate-500 truncate">{boarding.owner}</div>
-                      <div className="text-[11px] text-slate-500 mt-1">→ {boarding.checkOut}</div>
+                      <div className={`text-[11px] mt-1 ${isOverdue ? "text-amber-600 font-bold" : "text-slate-500"}`}>→ {boarding.checkOut}</div>
                       {room.description && <div className="text-[10px] text-slate-400 mt-1 truncate italic">{room.description}</div>}
 
                       <div className="flex gap-1.5 mt-2.5" onClick={(e) => e.stopPropagation()}>
@@ -786,7 +836,7 @@ function StayingTab({
         {[
           { label: "Đang lưu trú",   value: guests.length,  sub: "Thú cưng hiện tại",  color: "#7C3AED" },
           { label: "Tổng đêm",       value: totalNights,    sub: "Đêm lưu trú hôm nay", color: "#0891B2" },
-          { label: "Cần cho ăn",     value: needsBreakfast, sub: "Chưa ăn sáng",        color: "#D97706" },
+          { label: "Cần ăn sáng",     value: needsBreakfast, sub: "Chưa ăn sáng",        color: "#D97706" },
           { label: "Cần vệ sinh",    value: needsCleaning,  sub: "Chưa dọn phòng",      color: "#059669" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm">
@@ -954,6 +1004,7 @@ export function BoardingTab({
     try {
       await staffAppointmentsService.approveBoardingBooking(boardingId);
       await loadPending();
+      onRefresh?.();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Duyệt thất bại");
     } finally {
@@ -989,19 +1040,21 @@ export function BoardingTab({
 
   function openCheckoutFromGuest(guest: BoardingGuest) {
     const room = roomsMap.get(guest.room);
-    setCheckoutTarget({ guest, pricePerDay: room?.pricePerDay || 150000 });
+    const actualNights = computeActualNights(guest.checkIn);
+    setCheckoutTarget({ guest: { ...guest, nights: actualNights }, pricePerDay: room?.pricePerDay || 150000 });
   }
 
   function openCheckoutFromRoom(room: StaffBoardingRoom) {
     if (!room.currentBoarding) return;
-    const checkInYmd = parseAnyDateToYmd(room.currentBoarding.checkIn);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nights = checkInYmd
-      ? Math.max(1, Math.ceil((today.getTime() - new Date(checkInYmd).getTime()) / 86400000))
-      : 1;
-    const todayFormatted = today.toLocaleDateString("vi-VN");
-    const fakeGuest: BoardingGuest = {
+    const actualNights = computeActualNights(room.currentBoarding.checkIn);
+    const realGuest = guestsMap.get(room.cageNumber);
+    if (realGuest) {
+      // Use real guest data (food info, notes etc.) but override nights with actual stay
+      setCheckoutTarget({ guest: { ...realGuest, nights: actualNights }, pricePerDay: room.pricePerDay });
+      return;
+    }
+    // Fallback from room metadata only
+    const fallbackGuest: BoardingGuest = {
       id: room.currentBoarding.boardingId,
       room: room.cageNumber,
       petName: room.currentBoarding.petName,
@@ -1010,14 +1063,14 @@ export function BoardingTab({
       owner: room.currentBoarding.owner,
       phone: room.currentBoarding.phone,
       checkIn: room.currentBoarding.checkIn,
-      checkOut: todayFormatted,
-      nights,
+      checkOut: room.currentBoarding.checkOut,
+      nights: actualNights,
       foodType: "",
       mealsPerDay: 2,
       specialNotes: "",
       todayStatus: { breakfast: false, lunch: false, dinner: false, cleaned: false, exercised: false, healthCheck: false },
     };
-    setCheckoutTarget({ guest: fakeGuest, pricePerDay: room.pricePerDay });
+    setCheckoutTarget({ guest: fallbackGuest, pricePerDay: room.pricePerDay });
   }
 
   async function handleCheckout(foodFeePerDay: number, extraServiceFee: number, paymentMethod: string) {
@@ -1049,7 +1102,7 @@ export function BoardingTab({
     }
   }
 
-  const totalPendingBadge = pendingBookings.length + confirmedBookings.length;
+  const totalPendingBadge = pendingBookings.length; // only count bookings needing staff action
 
   const SUB_TABS: { id: BoardingSubTab; label: string; badge?: number }[] = [
     { id: "pending",  label: "Đặt phòng",     badge: totalPendingBadge || undefined },

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Activity,
   BarChart3,
   Calendar,
   CircleHelp,
@@ -13,6 +14,7 @@ import {
 import { AdminDashboardPage } from "../features/admin/pages/AdminDashboardPage";
 import { AppointmentsPage } from "../features/admin/pages/AppointmentsPage";
 import { HelpPage } from "../features/admin/pages/HelpPage";
+import { PetHealthTrendsPage } from "../features/admin/pages/PetHealthTrendsPage";
 import { ReportsPage } from "../features/admin/pages/ReportsPage";
 import { ServicesPage } from "../features/admin/pages/ServicesPage";
 import { SettingsPage } from "../features/admin/pages/SettingsPage";
@@ -28,7 +30,7 @@ import { DoctorPortal } from "../features/doctor/pages/DoctorPortal";
 import { StaffPortal } from "../features/staff/pages/StaffPortal";
 import { clearSession, login, register, restoreSession, type AuthSession } from "../services/auth";
 
-type AdminPageId = "dashboard" | "appointments" | "users" | "services" | "staff" | "reports" | "settings" | "help";
+type AdminPageId = "dashboard" | "appointments" | "users" | "services" | "staff" | "reports" | "health-trends" | "settings" | "help";
 type AuthScreen = "welcome" | "login" | "register" | "forgot" | "app";
 
 const ADMIN_NAV: Array<{ id: AdminPageId; label: string; icon: typeof LayoutDashboard }> = [
@@ -38,6 +40,7 @@ const ADMIN_NAV: Array<{ id: AdminPageId; label: string; icon: typeof LayoutDash
   { id: "services", label: "Dịch vụ", icon: Scissors },
   { id: "staff", label: "Nhân sự", icon: Users },
   { id: "reports", label: "Báo cáo", icon: BarChart3 },
+  { id: "health-trends", label: "Sức khỏe thú cưng", icon: Activity },
   { id: "settings", label: "Cài đặt", icon: Settings },
   { id: "help", label: "Trợ giúp", icon: CircleHelp },
 ];
@@ -105,6 +108,7 @@ function AdminRoot({ onLogout }: { onLogout: () => void }) {
           {page === "services" && <ServicesPage />}
           {page === "staff" && <StaffPage />}
           {page === "reports" && <ReportsPage />}
+          {page === "health-trends" && <PetHealthTrendsPage />}
           {page === "settings" && <SettingsPage />}
           {page === "help" && <HelpPage />}
         </div>

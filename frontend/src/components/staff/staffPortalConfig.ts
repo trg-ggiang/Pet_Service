@@ -6,7 +6,6 @@ import {
   Home,
   Scissors,
   Settings,
-  Star,
   Stethoscope,
 } from "lucide-react";
 import type {
@@ -35,5 +34,4 @@ export const SERVICE_ICONS: Record<StaffServiceType, { icon: React.ElementType; 
   exam: { icon: Stethoscope, color: "#0891B2", bg: "#ECFEFF" },
   grooming: { icon: Scissors, color: "#D97706", bg: "#FFFBEB" },
   boarding: { icon: Home, color: "#7C3AED", bg: "#F5F3FF" },
-  vaccination: { icon: Star, color: "#059669", bg: "#ECFDF5" },
 };

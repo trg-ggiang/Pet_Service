@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, Syringe, User } from "lucide-react";
+import { AlertTriangle, Clock, User } from "lucide-react";
 import type { DoctorExamDetail } from "../../services/doctorAppointments";
 import { pickIcon } from "./utils";
 
@@ -7,14 +7,12 @@ export function PetSummaryPanel({
   petInfoItems,
   owner,
   riskAlerts,
-  vaccinations,
   history,
 }: {
   patientCard: DoctorExamDetail["patientCard"];
   petInfoItems: DoctorExamDetail["petInfoItems"];
   owner: DoctorExamDetail["owner"];
   riskAlerts: DoctorExamDetail["riskAlerts"];
-  vaccinations: DoctorExamDetail["vaccinations"];
   history: DoctorExamDetail["history"];
 }) {
   return (
@@ -84,35 +82,6 @@ export function PetSummaryPanel({
             </div>
           </div>
         )}
-
-        <div className="flex flex-col gap-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
-            Tiêm phòng
-          </p>
-
-          {vaccinations.length > 0 ? (
-            vaccinations.map((vaccine) => (
-              <div key={vaccine.id} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <Syringe size={12} className={vaccine.isDue ? "text-red-400" : "text-emerald-500"} />
-                  <span className="text-[12px] font-semibold text-foreground">{vaccine.name}</span>
-                </div>
-                <div className="text-right">
-                  <div className={`text-[10px] font-bold ${vaccine.isDue ? "text-red-500" : "text-emerald-600"}`}>
-                    {vaccine.isDue ? "Cần nhắc" : "Còn hạn"}
-                  </div>
-                  <div className="text-[9px] text-muted-foreground">
-                    {vaccine.dateGivenLabel || "?"} → {vaccine.nextDueDateLabel || "?"}
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-xs text-muted-foreground bg-slate-50 rounded-xl p-3">
-              Chưa có dữ liệu tiêm phòng.
-            </p>
-          )}
-        </div>
 
         <div className="flex flex-col gap-2">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">

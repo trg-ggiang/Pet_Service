@@ -44,6 +44,70 @@ function getHistoryDetails(invoice, details) {
   return boarding?.special_note ?? boarding?.habit_note ?? "";
 }
 
+const DURATION_LABELS = {
+  "<1d": "Dưới 1 ngày",
+  "1-3d": "1-3 ngày",
+  "3-7d": "3-7 ngày",
+  "1-2w": "1-2 tuần",
+  ">2w": "Hơn 2 tuần",
+};
+const ONSET_LABELS = { sudden: "Đột ngột", gradual: "Từ từ" };
+const SEVERITY_LABELS = ["", "Nhẹ", "Vừa phải", "Trung bình", "Nặng", "Rất nặng"];
+const SYSTEM_LABELS = {
+  general: "Tổng thể", skin: "Da & Lông", eyes_ears: "Mắt & Tai",
+  lymph: "Hạch bạch huyết", cardiac: "Tim mạch", respiratory: "Hô hấp",
+  gastro: "Tiêu hoá", musculo: "Cơ xương khớp", neuro: "Thần kinh",
+};
+
+function getMedicalRecord(appointmentId, details) {
+  const visit = details.medicalVisitsByAppointmentId.get(appointmentId);
+  if (!visit) return null;
+
+  let exam = {};
+  try {
+    if (visit.clinical_exam) {
+      exam = typeof visit.clinical_exam === "string"
+        ? JSON.parse(visit.clinical_exam)
+        : visit.clinical_exam;
+    }
+  } catch (_) {}
+
+  const vitals = exam.vitals || {};
+  const vitalsList = [
+    { key: "temp",   label: "Nhiệt độ",  unit: "°C",      value: vitals.temp   },
+    { key: "heart",  label: "Nhịp tim",  unit: "lần/phút", value: vitals.heart  },
+    { key: "resp",   label: "Nhịp thở",  unit: "lần/phút", value: vitals.resp   },
+    { key: "spo2",   label: "SpO₂",      unit: "%",        value: vitals.spo2   },
+    { key: "weight", label: "Cân nặng",  unit: "kg",       value: vitals.weight },
+  ].filter(v => v.value && String(v.value).trim() !== "");
+
+  const systems = Object.entries(exam.systems || {})
+    .filter(([, s]) => s && s.status !== "not_examined")
+    .map(([id, s]) => ({
+      id,
+      label:  SYSTEM_LABELS[id] || id,
+      status: s.status,
+      notes:  s.notes || "",
+    }));
+
+  const severity = Number(exam.severity || 0);
+
+  return {
+    chiefComplaint:   exam.chiefComplaint || null,
+    selectedSymptoms: Array.isArray(exam.selectedSymptoms) ? exam.selectedSymptoms : [],
+    duration:         DURATION_LABELS[exam.duration] || exam.duration || null,
+    onset:            ONSET_LABELS[exam.onset]        || exam.onset    || null,
+    severity:         severity > 0 ? SEVERITY_LABELS[severity] || null : null,
+    ownerNotes:       exam.ownerNotes || null,
+    vitals:           vitalsList,
+    systems,
+    diagnosisNote:    visit.diagnosis_note || null,
+    nextVisitDate:    visit.next_visit_date
+      ? new Date(visit.next_visit_date).toLocaleDateString("vi-VN")
+      : null,
+  };
+}
+
 function getServiceNames(invoice, appointment) {
   const itemDescriptions = (invoice.items ?? [])
     .map((item) => item.description)
@@ -65,7 +129,7 @@ async function loadDetails(appointmentIds, invoiceIds) {
     appointmentIds.length
       ? supabase
           .from("medical_visits")
-          .select("id, appointment_id, diagnosis_note")
+          .select("id, appointment_id, symptoms, clinical_exam, diagnosis_note, next_visit_date")
           .in("appointment_id", appointmentIds)
       : Promise.resolve({ data: [], error: null }),
     appointmentIds.length
@@ -260,6 +324,7 @@ async function listCustomerServiceHistory(customerId) {
       type: getHistoryType({ ...invoice, items }, details),
       staff: providerName ?? "Phòng khám",
       details: getHistoryDetails(invoice, details),
+      medicalRecord: getMedicalRecord(invoice.appointment_id, details),
       prescriptions,
     };
   });

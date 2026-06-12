@@ -213,24 +213,29 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 
   useEffect(() => {
     void loadProfile();
-    void loadAppointments();
     void loadSummary();
-  }, [loadAppointments, loadProfile, loadSummary]);
+  }, [loadProfile, loadSummary]);
 
   useEffect(() => {
+    if (activeNav === "appointments") void loadAppointments();
     if (activeNav === "grooming") void loadGrooming();
     if (activeNav === "boarding") void loadBoarding();
     if (activeNav === "payments") void loadPayments();
-  }, [activeNav, loadBoarding, loadGrooming, loadPayments]);
+  }, [activeNav, loadAppointments, loadBoarding, loadGrooming, loadPayments]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       const nextDateKey = getLocalDateKey();
       setBoardingDateKey((prevDateKey) => prevDateKey === nextDateKey ? prevDateKey : nextDateKey);
     }, 60000);
-
     return () => window.clearInterval(intervalId);
   }, []);
+
+  // Auto-refresh summary badges every 60s so sidebar stays current when other staff act
+  useEffect(() => {
+    const id = window.setInterval(() => void loadSummary(), 60000);
+    return () => window.clearInterval(id);
+  }, [loadSummary]);
 
   useEffect(() => {
     setBoardingGuests((prev) => prev.map(normalizeBoardingGuestForToday));
@@ -314,12 +319,8 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   async function handleUpdateGrooming(task: GroomingTask) {
     try {
       const nextStatus = "COMPLETED";
-      await staffAppointmentsService.updateGroomingStatus(
-        task.id,
-        nextStatus,
-      );
-      await loadGrooming();
-      if (nextStatus === "COMPLETED") await loadPayments();
+      await staffAppointmentsService.updateGroomingStatus(task.id, nextStatus);
+      await Promise.all([loadGrooming(), loadAppointments(), loadPayments()]);
       await loadSummary();
     } catch (error) {
       console.error("[FRONTEND] Update grooming failed:", error);
@@ -406,7 +407,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           pendingPayments={pendingPayments}
           onNavigate={setActiveNav}
         />
-        <main className="flex-1 min-h-0 overflow-y-auto p-6">
+        <main className={`flex-1 min-h-0 p-6 ${activeNav === "appointments" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
           {activeNav === "appointments" && (
             <AppointmentsTab
               appointments={appointments}
@@ -436,7 +437,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
               error={errors.boarding}
               onViewDetails={setViewingBoarding}
               onToggleStatus={(guest, field) => void handleToggleBoardingStatus(guest, field)}
-              onRefresh={loadBoarding}
+              onRefresh={() => { void loadBoarding(); void loadSummary(); void loadPayments(); }}
             />
           )}
           {activeNav === "payments" && (

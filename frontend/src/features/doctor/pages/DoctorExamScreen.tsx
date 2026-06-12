@@ -163,7 +163,6 @@ export function DoctorExamScreen({
           petInfoItems={detail.petInfoItems}
           owner={detail.owner}
           riskAlerts={detail.riskAlerts}
-          vaccinations={detail.vaccinations}
           history={detail.history}
         />
 

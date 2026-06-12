@@ -66,6 +66,18 @@ function monthKey(value) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
 }
 
+function getLast12Months() {
+  const now = new Date();
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+    const label = `T${d.getMonth() + 1}/${d.getFullYear()}`;
+    months.push({ key, label });
+  }
+  return months;
+}
+
 function dashboardStatusLabel(status) {
   const mapped = mapAppointmentStatus(status);
   const map = {
@@ -1233,6 +1245,97 @@ async function getAdminReports() {
   };
 }
 
+async function getAdminHealthTrends() {
+  const [pets, medicalVisits, medicalVisitDiseases, diseases, prescriptions, prescriptionItems] = await Promise.all([
+    readTable("pets", "id, weight, allergies, chronic_diseases, created_at, animal_species:species_id(name)"),
+    readTable("medical_visits", "id, appointment_id, diagnosis_note, next_visit_date, created_at"),
+    readTable("medical_visit_diseases", "medical_visit_id, disease_id"),
+    readTable("diseases", "id, name"),
+    readTable("prescriptions", "id, medical_visit_id"),
+    readTable("prescription_items", "id, prescription_id, medicine_name, duration_days"),
+  ]);
+
+  const totalPets = pets.length;
+  const totalVisits = medicalVisits.length;
+  const revisitScheduled = medicalVisits.filter((v) => v.next_visit_date).length;
+  const revisitRate = totalVisits > 0 ? Math.round((revisitScheduled / totalVisits) * 100) : 0;
+  const petsWithAllergies = pets.filter((p) => String(p.allergies || "").trim()).length;
+  const petsWithChronic = pets.filter((p) => String(p.chronic_diseases || "").trim()).length;
+  const avgVisitsPerPet = totalPets > 0 ? Math.round((totalVisits / totalPets) * 10) / 10 : 0;
+
+  const diseaseById = new Map(diseases.map((d) => [d.id, d.name]));
+  const diseaseCounts = new Map();
+  medicalVisitDiseases.forEach((row) => {
+    const name = diseaseById.get(row.disease_id) || "Khác";
+    diseaseCounts.set(name, (diseaseCounts.get(name) || 0) + 1);
+  });
+  const topDiseases = Array.from(diseaseCounts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const last12Months = getLast12Months();
+
+  const visitsByMonth = new Map();
+  medicalVisits.forEach((v) => {
+    const key = monthKey(v.created_at);
+    visitsByMonth.set(key, (visitsByMonth.get(key) || 0) + 1);
+  });
+  const visitTrend = last12Months.map(({ key, label }) => ({ label, count: visitsByMonth.get(key) || 0 }));
+
+  const speciesCount = new Map();
+  pets.forEach((p) => {
+    const name = p.animal_species?.name || "Khác";
+    speciesCount.set(name, (speciesCount.get(name) || 0) + 1);
+  });
+  const speciesDistribution = Array.from(speciesCount.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const weightBySpecies = new Map();
+  pets.forEach((p) => {
+    const species = p.animal_species?.name || "Khác";
+    const w = parseFloat(p.weight || 0);
+    if (w > 0) {
+      const cur = weightBySpecies.get(species) || { total: 0, count: 0 };
+      cur.total += w;
+      cur.count += 1;
+      weightBySpecies.set(species, cur);
+    }
+  });
+  const avgWeightBySpecies = Array.from(weightBySpecies.entries())
+    .map(([name, data]) => ({ name, avgWeight: Math.round((data.total / data.count) * 10) / 10 }))
+    .sort((a, b) => b.avgWeight - a.avgWeight);
+
+  const prescriptionByVisit = new Map(prescriptions.map((p) => [p.id, p.medical_visit_id]));
+  const medicineCount = new Map();
+  prescriptionItems.forEach((item) => {
+    if (!item.medicine_name) return;
+    medicineCount.set(item.medicine_name, (medicineCount.get(item.medicine_name) || 0) + 1);
+  });
+  const topMedicines = Array.from(medicineCount.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  const petsByMonth = new Map();
+  pets.forEach((p) => {
+    const key = monthKey(p.created_at);
+    petsByMonth.set(key, (petsByMonth.get(key) || 0) + 1);
+  });
+  const petGrowthTrend = last12Months.map(({ key, label }) => ({ label, count: petsByMonth.get(key) || 0 }));
+
+  return {
+    summary: { totalPets, totalVisits, revisitRate, petsWithAllergies, petsWithChronic, avgVisitsPerPet },
+    topDiseases,
+    visitTrend,
+    speciesDistribution,
+    avgWeightBySpecies,
+    topMedicines,
+    petGrowthTrend,
+  };
+}
+
 async function getAdminSettings(authUser) {
   const adminName = authUser?.fullName || authUser?.email || "Quản trị viên";
   const adminEmail = authUser?.email || "";
@@ -1616,6 +1719,7 @@ module.exports = {
   createAdminStaffMember,
   deleteAdminService,
   getAdminDashboard,
+  getAdminHealthTrends,
   getAdminReports,
   getAdminSettings,
   updateAdminSettings,

@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, DollarSign, Search } from "lucide-react";
+
+function fmtAmount(amount: number): string {
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  return `${Math.round(amount / 1000)}K`;
+}
 import type { PaymentItem } from "../../features/staff/services/staffAppointments";
 import {
   DateFilterBar,
@@ -55,9 +60,9 @@ export function PaymentsTab({
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: "Tổng hóa đơn", value: payments.length.toString(), sub: "Tất cả hóa đơn", color: "#0891B2" },
-          { label: "Chờ thanh toán", value: allPending.length.toString(), sub: `${(allTotalPending / 1000).toFixed(0)}K VND`, color: "#D97706" },
-          { label: "Đã thanh toán", value: allPaid.length.toString(), sub: `${(allTotalPaid / 1000).toFixed(0)}K VND`, color: "#059669" },
-          { label: "Tổng doanh thu", value: `${(allTotalPaid / 1000000).toFixed(1)}M`, sub: "VND", color: "#7C3AED" },
+          { label: "Chờ thanh toán", value: allPending.length.toString(), sub: `${fmtAmount(allTotalPending)} VND`, color: "#D97706" },
+          { label: "Đã thanh toán", value: allPaid.length.toString(), sub: `${fmtAmount(allTotalPaid)} VND`, color: "#059669" },
+          { label: "Tổng doanh thu", value: fmtAmount(allTotalPaid), sub: "VND", color: "#7C3AED" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm">
             <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
@@ -99,6 +104,7 @@ export function PaymentsTab({
           {pending.length > 0 && (
             <PaymentList
               title="Chờ thanh toán"
+              titleNote="Hiển thị tất cả — không lọc theo ngày"
               payments={pending}
               page={pendingPage}
               onPageChange={setPendingPage}
@@ -119,12 +125,14 @@ export function PaymentsTab({
 
 function PaymentList({
   title,
+  titleNote,
   payments,
   page,
   onPageChange,
   onProcess,
 }: {
   title: string;
+  titleNote?: string;
   payments: PaymentItem[];
   page: number;
   onPageChange: (page: number) => void;
@@ -138,8 +146,13 @@ function PaymentList({
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-      <div className="px-6 py-4 border-b border-slate-200">
+      <div className="px-6 py-4 border-b border-slate-200 flex items-center gap-3">
         <h3 className="text-base font-bold text-slate-900">{title}</h3>
+        {titleNote && (
+          <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+            {titleNote}
+          </span>
+        )}
       </div>
       <div className="divide-y divide-slate-100">
         {pageData.map((p) => (
@@ -152,7 +165,7 @@ function PaymentList({
               <div className="text-xs text-slate-500 mt-0.5">{p.owner} · {p.date} · Mã: {p.id}</div>
             </div>
             <div className="text-right flex-shrink-0">
-              <div className="text-lg font-bold text-slate-900">{(p.amount / 1000).toFixed(0)}K</div>
+              <div className="text-lg font-bold text-slate-900">{fmtAmount(p.amount)}</div>
               <div className="text-xs text-slate-500">VND</div>
             </div>
             {p.status === "pending" && onProcess ? (

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Calendar, Check, ChevronDown, ChevronRight, ListFilter, Loader2, Stethoscope } from "lucide-react";
+import { AlertTriangle, Calendar, Check, ChevronDown, ChevronRight, ListFilter, Loader2, Stethoscope } from "lucide-react";
 import type { DoctorAppointment, DoctorScheduleMeta } from "../../features/doctor/services/doctorAppointments";
 import {
   DateFilterBar,
@@ -26,12 +26,14 @@ function DoctorAppointmentRow({
   showRecordDetail = false,
   onOpenExam,
   onOpenRecordDetail,
+  onUrgentAlert,
 }: {
   appointment: DoctorAppointment;
   compact?: boolean;
   showRecordDetail?: boolean;
   onOpenExam: (appointment: DoctorAppointment) => void;
   onOpenRecordDetail?: (appointment: DoctorAppointment) => void;
+  onUrgentAlert?: (appointment: DoctorAppointment) => void;
 }) {
   const row = appointment.scheduleRow;
   const isActive = row.statusKey === "in_progress";
@@ -60,11 +62,22 @@ function DoctorAppointmentRow({
 
       {!compact && <div className="hidden md:block text-xs text-foreground font-medium w-44 truncate">{row.service}</div>}
 
-      <div className="flex w-[236px] flex-shrink-0 items-center justify-end gap-3">
+      <div className="flex flex-shrink-0 items-center justify-end gap-2">
         <span className={`inline-flex w-24 justify-center items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ring-1 ring-inset ${row.statusView.cls}`}>
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${row.statusView.dot}`} />
           <span className="truncate">{row.statusView.label}</span>
         </span>
+
+        {onUrgentAlert && (
+          <button
+            onClick={() => onUrgentAlert(appointment)}
+            className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 text-[10px] font-bold text-red-600 transition-colors hover:bg-red-100 flex-shrink-0"
+            title="Gửi cảnh báo khẩn"
+          >
+            <AlertTriangle size={11} />
+            <span className="hidden sm:inline">Khẩn</span>
+          </button>
+        )}
 
         <div className="w-28 flex justify-end">
           {showRecordDetail ? (
@@ -95,6 +108,7 @@ function DoctorAppointmentList({
   showRecordDetail = false,
   onOpenExam,
   onOpenRecordDetail,
+  onUrgentAlert,
 }: {
   appointments: DoctorAppointment[];
   emptyLabel: string;
@@ -102,6 +116,7 @@ function DoctorAppointmentList({
   showRecordDetail?: boolean;
   onOpenExam: (appointment: DoctorAppointment) => void;
   onOpenRecordDetail?: (appointment: DoctorAppointment) => void;
+  onUrgentAlert?: (appointment: DoctorAppointment) => void;
 }) {
   if (appointments.length === 0) {
     return <EmptyState icon={Calendar} label={emptyLabel} />;
@@ -117,6 +132,7 @@ function DoctorAppointmentList({
           showRecordDetail={showRecordDetail}
           onOpenExam={onOpenExam}
           onOpenRecordDetail={onOpenRecordDetail}
+          onUrgentAlert={onUrgentAlert}
         />
       ))}
     </div>
@@ -152,6 +168,7 @@ export function DoctorScheduleTable({
   onFilterChange,
   onOpenExam,
   onOpenRecordDetail,
+  onUrgentAlert,
 }: {
   appointments: DoctorAppointment[];
   loading: boolean;
@@ -162,6 +179,7 @@ export function DoctorScheduleTable({
   onFilterChange: (filter: DoctorScheduleFilter) => void;
   onOpenExam: (appointment: DoctorAppointment) => void;
   onOpenRecordDetail?: (appointment: DoctorAppointment) => void;
+  onUrgentAlert?: (appointment: DoctorAppointment) => void;
 }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateFilterState>(getDefaultDateFilter);
@@ -255,6 +273,7 @@ export function DoctorScheduleTable({
           showRecordDetail
           onOpenExam={onOpenExam}
           onOpenRecordDetail={onOpenRecordDetail}
+          onUrgentAlert={onUrgentAlert}
         />
       </section>
     );
@@ -280,6 +299,7 @@ export function DoctorScheduleTable({
         emptyLabel="Không có ca khám trong mốc thời gian này"
         compact
         onOpenExam={onOpenExam}
+        onUrgentAlert={onUrgentAlert}
       />
     </section>
   );

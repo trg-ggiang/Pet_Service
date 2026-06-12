@@ -42,6 +42,9 @@ const {
   createBoardingBooking,
   rescheduleBoardingBooking,
 } = require("../services/boardingService");
+const {
+  getActiveMedications,
+} = require("../services/customer/customerMedicationsService");
 
 const router = express.Router();
 
@@ -203,6 +206,18 @@ router.get("/service-history", async (req, res) => {
     res.status(error.statusCode || 500).json({
       ok: false,
       message: error.message || "Không thể tải lịch sử dịch vụ",
+    });
+  }
+});
+
+router.get("/medications/active", async (req, res) => {
+  try {
+    const result = await getActiveMedications(req.auth.user.customerId);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      ok: false,
+      message: error.message || "Không thể tải lịch thuốc",
     });
   }
 });

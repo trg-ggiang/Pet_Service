@@ -1,10 +1,9 @@
-﻿import { BarChart3, Calendar, CheckCircle2, Download, Scissors, Stethoscope, Syringe, Users, XCircle, BedDouble } from "lucide-react";
+﻿import { BarChart3, Calendar, CheckCircle2, Download, Scissors, Stethoscope, Users, XCircle, BedDouble } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { AdminReports } from "../../features/admin/services/admin";
 
 const CATEGORY = {
   clinic: { label: "Khám bệnh", color: "#0891B2", icon: Stethoscope },
-  vaccination: { label: "Tiêm chủng", color: "#10B981", icon: Syringe },
   grooming: { label: "Grooming", color: "#A855F7", icon: Scissors },
   boarding: { label: "Lưu trú", color: "#F59E0B", icon: BedDouble },
 };
@@ -68,7 +67,7 @@ export function AdminReportsView({ reports, loading, error }: { reports: AdminRe
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(value) => money(Number(value))} />
                     <Tooltip formatter={(value: number) => [`${money(value)}đ`, ""]} />
-                    {(["boarding", "vaccination", "grooming", "clinic"] as const).map((key) => (
+                    {(["boarding", "grooming", "clinic"] as const).map((key) => (
                       <Area key={key} type="monotone" dataKey={key} stackId="revenue" stroke={CATEGORY[key].color} fill={CATEGORY[key].color} fillOpacity={0.2} />
                     ))}
                   </AreaChart>
