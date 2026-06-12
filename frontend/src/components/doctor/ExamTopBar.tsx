@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react";
 import type { DoctorExamDetail } from "../../services/doctorAppointments";
 
 export function ExamTopBar({
@@ -9,6 +9,7 @@ export function ExamTopBar({
   message,
   onBack,
   onSaveDraft,
+  onUrgentAlert,
   onComplete,
 }: {
   appointment: DoctorExamDetail["appointment"];
@@ -18,6 +19,7 @@ export function ExamTopBar({
   message: string;
   onBack: () => void;
   onSaveDraft: () => void;
+  onUrgentAlert: () => void;
   onComplete: () => void;
 }) {
   return (
@@ -60,6 +62,15 @@ export function ExamTopBar({
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           Lưu nháp
+        </button>
+
+        <button
+          onClick={onUrgentAlert}
+          disabled={saving || completing}
+          className="flex items-center gap-1.5 h-9 px-4 border border-red-200 bg-red-50 rounded-xl text-[13px] font-bold text-red-600 hover:bg-red-100 transition-all disabled:opacity-50"
+        >
+          <AlertTriangle size={14} />
+          Thông báo khẩn
         </button>
 
         <button

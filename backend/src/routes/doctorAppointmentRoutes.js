@@ -712,6 +712,45 @@ async function createCustomerNotification(userId, payload) {
   if (error) throw new Error(error.message);
 }
 
+function sanitizeUrgentAlertMessage(value) {
+  const message = normalizeText(value).trim();
+  if (!message) {
+    const error = new Error("Vui lòng nhập nội dung thông báo khẩn");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (message.length > 1000) {
+    const error = new Error("Nội dung thông báo khẩn không được vượt quá 1000 ký tự");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return message;
+}
+
+async function createUrgentCustomerNotification(appointment, message) {
+  const customerUserId = appointment?.pets?.customers?.user_id;
+  if (!customerUserId) {
+    const error = new Error("Không tìm thấy tài khoản chủ thú cưng để gửi thông báo khẩn");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const petName = appointment?.pets?.name || "thú cưng";
+  const title = `Khẩn: Bất thường khi khám ${petName}`.slice(0, 150);
+
+  const { error } = await supabase.from("notifications").insert({
+    user_id: customerUserId,
+    title,
+    content: message,
+    type: "SYSTEM",
+    is_read: false,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
 async function createFollowUpAppointment(originalAppointment, cleanRecord) {
   const slot = assertFutureFollowUpSlot(cleanRecord);
   if (!slot) return null;
@@ -1271,6 +1310,25 @@ router.patch("/notifications/:notificationId/read", async function markDoctorNot
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// POST /api/doctor/appointments/:id/urgent-alert
+router.post("/:id/urgent-alert", async function sendUrgentAlert(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
+    const message = sanitizeUrgentAlertMessage(req.body?.message);
+
+    await createUrgentCustomerNotification(appointment, message);
+
+    res.json({
+      ok: true,
+      message: "Đã gửi thông báo khẩn đến chủ thú cưng",
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ ok: false, message: error.message });
   }
 });
 

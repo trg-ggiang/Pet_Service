@@ -1,6 +1,5 @@
 export type CustomerServiceHistoryType =
   | "medical"
-  | "vaccine"
   | "grooming"
   | "boarding";
 

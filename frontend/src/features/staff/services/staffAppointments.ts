@@ -90,6 +90,14 @@ export interface BoardingDailyStatus {
   healthCheck: boolean;
 }
 
+export interface BoardingDailyUpdate {
+  id: number;
+  date: string;
+  status: BoardingDailyStatus;
+  note?: string;
+  imageUrl?: string | null;
+}
+
 export interface BoardingGuest {
   id: number;
   room: string;
@@ -105,6 +113,9 @@ export interface BoardingGuest {
   mealsPerDay: number;
   specialNotes: string;
   todayStatus: BoardingDailyStatus;
+  todayNote?: string;
+  todayImageUrl?: string | null;
+  dailyUpdates?: BoardingDailyUpdate[];
 }
 
 export interface PendingBoarding {
@@ -357,10 +368,14 @@ export const staffAppointmentsService = {
     };
   },
 
-  async updateBoardingDailyStatus(guestId: number, todayStatus: BoardingDailyStatus): Promise<void> {
+  async updateBoardingDailyStatus(
+    guestId: number,
+    todayStatus: BoardingDailyStatus,
+    options: { dailyNote?: string; imageDataUrl?: string | null } = {},
+  ): Promise<void> {
     await fetchWithAuth<MutationResponse>(`/api/staff/boarding/${guestId}/daily-status`, {
       method: "PATCH",
-      body: JSON.stringify({ todayStatus }),
+      body: JSON.stringify({ todayStatus, ...options }),
     });
   },
 

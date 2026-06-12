@@ -1,7 +1,7 @@
 import type { ServicesResponse } from "../types/appointments";
 import { getAuthHeaders } from "../utils/authSession";
 import { apiUrl } from "../utils/apiUrl";
-import { Stethoscope, Star, Calendar, Syringe, Heart, CheckCircle2 } from "lucide-react";
+import { Stethoscope, Star, Calendar, Heart, CheckCircle2 } from "lucide-react";
 
 export type ServiceItem = {
   id: number;
@@ -37,9 +37,9 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
 function getServiceIcon(type: string): { icon: React.ElementType; iconColor: string; iconBg: string } {
   const iconMap: Record<string, { icon: React.ElementType; iconColor: string; iconBg: string }> = {
     MEDICAL:  { icon: Stethoscope,  iconColor: "#0891B2", iconBg: "#ECFEFF" },
+    VACCINE:  { icon: Stethoscope,  iconColor: "#0891B2", iconBg: "#ECFEFF" },
     GROOMING:  { icon: Star,         iconColor: "#D97706", iconBg: "#FFFBEB" },
     BOARDING:  { icon: Calendar,     iconColor: "#7C3AED", iconBg: "#F5F3FF" },
-    VACCINE:   { icon: Syringe,      iconColor: "#059669", iconBg: "#ECFDF5" },
     FOOD:      { icon: Heart,        iconColor: "#E11D48", iconBg: "#FFF1F2" },
     OTHER:     { icon: CheckCircle2, iconColor: "#64748B", iconBg: "#F1F5F9" },
   };

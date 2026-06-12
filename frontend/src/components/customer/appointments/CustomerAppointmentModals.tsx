@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { BedDouble, Calendar, Check, CheckCircle2, ChevronDown, Heart, Pill, Star, Stethoscope, Syringe, X } from "lucide-react";
+import { BedDouble, Calendar, Check, CheckCircle2, ChevronDown, Heart, Pill, Star, Stethoscope, X } from "lucide-react";
 import { rescheduleBoardingBooking } from "../../../services/customer/customerBoardingApi";
 import type { CustomerAppointmentOptions, CustomerAppointmentProvider } from "../../../types/customer/appointments";
 import type { Apt, Pet, ServiceType } from "../../../types/customer/portal";
@@ -10,7 +10,6 @@ import { getServiceTypeConfig, getStatusConfig } from "../../../utils/customer/p
 // ─────────────────────────────────────────────────────────────────────────────
 
 function getServiceIcon(iconKey: string) {
-  if (iconKey === "vaccine") return Syringe;
   if (iconKey === "grooming") return Star;
   if (iconKey === "boarding") return Calendar;
   return Stethoscope;
@@ -18,7 +17,6 @@ function getServiceIcon(iconKey: string) {
 
 function getBookingServiceDisplayName(service: CustomerAppointmentOptions["services"][number]) {
   if (service.serviceType === "Lưu trú") return "Lưu trú";
-  if (service.serviceType === "Tiêm phòng") return "Tiêm vaccine";
   return service.name;
 }
 

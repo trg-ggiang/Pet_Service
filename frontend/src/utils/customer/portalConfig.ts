@@ -28,7 +28,6 @@ export const STATUS_CONFIG = {
 
 export const SERVICE_TYPE_CONFIG: Record<ServiceType, { bg: string; color: string }> = {
   "Khám bệnh": { bg: "#ECFEFF", color: "#0891B2" },
-  "Tiêm phòng": { bg: "#ECFDF5", color: "#059669" },
   Grooming: { bg: "#FFFBEB", color: "#D97706" },
   "Lưu trú": { bg: "#EFF6FF", color: "#2563EB" },
 };
@@ -55,7 +54,6 @@ export function getNotifConfig(type?: string) {
 }
 
 export function getAppointmentIcon(iconKey?: CustomerAppointment["iconKey"]) {
-  if (iconKey === "vaccine") return Syringe;
   if (iconKey === "grooming") return Star;
   if (iconKey === "boarding") return Calendar;
   return Stethoscope;
@@ -97,10 +95,16 @@ export function mapCustomerAppointment(appointment: CustomerAppointment): Apt {
 }
 
 export function getNotificationUiType(type: CustomerNotification["type"]) {
+  if (type === "SYSTEM") return "high";
   if (type === "VACCINE" || type === "PAYMENT") return "high";
   if (type === "APPOINTMENT" || type === "BOARDING") return "medium";
   if (type === "GROOMING") return "promo";
   return "info";
+}
+
+export function isUrgentCustomerNotification(notification: CustomerNotification) {
+  const title = String(notification.title || "").trim().toLowerCase();
+  return notification.type === "SYSTEM" && title.startsWith("khẩn:");
 }
 
 export function formatNotificationTime(value: string) {
@@ -123,9 +127,11 @@ export function mapCustomerNotification(notification: CustomerNotification) {
   return {
     id: notification.id,
     type: getNotificationUiType(notification.type),
+    rawType: notification.type,
     title: notification.title,
     desc: notification.content,
     time: formatNotificationTime(notification.created_at),
     read: notification.is_read,
+    isUrgent: isUrgentCustomerNotification(notification),
   };
 }

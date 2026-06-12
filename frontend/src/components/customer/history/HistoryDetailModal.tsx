@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Calendar, Download, Pill, Scissors, Star, Stethoscope, Syringe, X } from "lucide-react";
+import { Calendar, Download, Pill, Scissors, Star, Stethoscope, X } from "lucide-react";
 import { downloadCustomerInvoicePdf } from "../../../services/customer/customerPetsApi";
 import type { HistoryRecord } from "../../../types/customer/portal";
 
@@ -10,13 +10,11 @@ import type { HistoryRecord } from "../../../types/customer/portal";
 export function HistoryDetailModal({ record, onClose }: { record: HistoryRecord; onClose: () => void }) {
   const typeIcons: Record<HistoryRecord["type"], React.ElementType> = {
     medical: Stethoscope,
-    vaccine: Syringe,
     grooming: Star,
     boarding: Calendar,
   };
   const typeColors: Record<HistoryRecord["type"], { bg: string; color: string }> = {
     medical: { bg: "#ECFEFF", color: "#0891B2" },
-    vaccine: { bg: "#ECFDF5", color: "#059669" },
     grooming: { bg: "#FFFBEB", color: "#D97706" },
     boarding: { bg: "#F5F3FF", color: "#7C3AED" },
   };
@@ -71,7 +69,7 @@ export function HistoryDetailModal({ record, onClose }: { record: HistoryRecord;
                     { label: "Thú cưng", value: record.pet },
                     { label: "Người phụ trách", value: record.staff },
                     { label: "Ngày thực hiện", value: record.date },
-                    { label: "Loại dịch vụ", value: record.type === "medical" ? "Khám bệnh" : record.type === "vaccine" ? "Tiêm phòng" : record.type === "grooming" ? "Grooming" : "Lưu trú" },
+                    { label: "Loại dịch vụ", value: record.type === "medical" ? "Khám bệnh" : record.type === "grooming" ? "Grooming" : "Lưu trú" },
                   ].map((item) => (
                     <div key={item.label} className="flex justify-between items-center py-2 border-b border-slate-100">
                       <span className="text-sm font-medium text-slate-500">{item.label}</span>

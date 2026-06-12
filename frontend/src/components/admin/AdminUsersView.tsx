@@ -25,6 +25,9 @@ interface Customer extends BaseUser {
   role: "customer";
   tier: "regular" | "vip";
   address: string;
+  dateOfBirth: string;
+  age: number | null;
+  gender: "MALE" | "FEMALE" | "OTHER" | "UNKNOWN";
   petCount: number;
   pets: string[];
   totalVisits: number;
@@ -61,6 +64,13 @@ const AVATAR_COLORS = [
   "from-rose-400 to-rose-600", "from-indigo-400 to-indigo-600",
 ];
 
+const CUSTOMER_GENDER_LABELS: Record<Customer["gender"], string> = {
+  MALE: "Nam",
+  FEMALE: "Nữ",
+  OTHER: "Khác",
+  UNKNOWN: "Chưa cập nhật",
+};
+
 function getColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
@@ -89,6 +99,8 @@ function UserEditModal({ user, onClose, onSaved }: { user: AnyUser; onClose: () 
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone || "");
   const [address, setAddress] = useState(user.role === "customer" ? (user as Customer).address || "" : "");
+  const [dateOfBirth, setDateOfBirth] = useState(user.role === "customer" ? (user as Customer).dateOfBirth || "" : "");
+  const [gender, setGender] = useState<Customer["gender"]>(user.role === "customer" ? (user as Customer).gender || "UNKNOWN" : "UNKNOWN");
   const [specialty, setSpecialty] = useState(user.role === "doctor" ? (user as Doctor).specialty || "" : "");
   const [room, setRoom] = useState(user.role === "doctor" ? (user as Doctor).room || "" : "");
   const [submitting, setSubmitting] = useState(false);
@@ -99,7 +111,7 @@ function UserEditModal({ user, onClose, onSaved }: { user: AnyUser; onClose: () 
     setSubmitting(true);
     setError("");
     try {
-      await adminService.updateUserProfile(user.role, user.id, { name, phone, address, specialty, room });
+      await adminService.updateUserProfile(user.role, user.id, { name, phone, address, dateOfBirth: dateOfBirth || null, gender, specialty, room });
       onSaved();
       onClose();
     } catch (err) {
@@ -131,10 +143,25 @@ function UserEditModal({ user, onClose, onSaved }: { user: AnyUser; onClose: () 
             </div>
           )}
           {user.role === "customer" && (
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Địa chỉ</label>
-              <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
-            </div>
+            <>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Ngày sinh</label>
+                <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Giới tính</label>
+                <select value={gender} onChange={(e) => setGender(e.target.value as Customer["gender"])} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white">
+                  <option value="MALE">Nam</option>
+                  <option value="FEMALE">Nữ</option>
+                  <option value="OTHER">Khác</option>
+                  <option value="UNKNOWN">Chưa cập nhật</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">Địa chỉ</label>
+                <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full h-10 px-4 border border-border rounded-xl text-[13.5px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white" />
+              </div>
+            </>
           )}
           {user.role === "doctor" && (
             <>
@@ -290,6 +317,9 @@ function CustomerDetail({ user, onToggleLock, onEdit }: { user: Customer; onTogg
           { icon: Phone,   value: user.phone },
           { icon: Mail,    value: user.email },
           { icon: MapPin,  value: user.address },
+          { icon: Calendar, value: `Ngày sinh: ${user.dateOfBirth || "Chưa cập nhật"}` },
+          { icon: Users, value: `Giới tính: ${CUSTOMER_GENDER_LABELS[user.gender]}` },
+          { icon: Clock, value: `Tuổi: ${user.age === null ? "Chưa cập nhật" : `${user.age} tuổi`}` },
           { icon: Calendar, value: `Tham gia: ${user.joinDate}` },
           { icon: Clock,   value: `Lần cuối: ${user.lastVisit}` },
         ].map(({ icon: Icon, value }) => (
@@ -506,6 +536,7 @@ function CustomerTable({
                           {c.tier === "vip" && <Star size={11} className="text-amber-500 fill-amber-500" />}
                         </div>
                         <div className="font-mono text-[11px] text-muted-foreground">{c.id}</div>
+                        <div className="text-[11px] text-muted-foreground">{CUSTOMER_GENDER_LABELS[c.gender]}{c.age !== null ? ` · ${c.age} tuổi` : ""}</div>
                       </div>
                     </div>
                   </td>
@@ -758,7 +789,7 @@ export function AdminUsersView() {
 
   const statCards = [
     { label: "Tổng khách hàng", value: String(summary?.totals.customers ?? customersData.length), sub: `${summary?.totals.vipCustomers ?? 0} VIP`, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Bác sĩ trực",     value: `${summary?.totals.activeDoctors ?? 0}/${summary?.totals.doctors ?? doctorsData.length}`, sub: "Theo dữ liệu backend", color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Bác sĩ trực",     value: `${summary?.totals.activeDoctors ?? 0}/${summary?.totals.doctors ?? doctorsData.length}`, sub: "Đang sẵn sàng làm việc", color: "text-emerald-600", bg: "bg-emerald-50" },
     { label: "Nhân viên",       value: String(summary?.totals.activeStaff ?? 0), sub: `${summary?.totals.staff ?? staffData.length} tài khoản nhân viên`, color: "text-cyan-600", bg: "bg-cyan-50" },
     { label: "Tài khoản khoá",  value: String(summary?.totals.locked ?? 0), sub: "Cần xem xét", color: "text-red-600", bg: "bg-red-50" },
   ];

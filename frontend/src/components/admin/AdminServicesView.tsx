@@ -1,12 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 import {
   Plus, Search, Edit, X, Check, ChevronDown, ToggleLeft, ToggleRight,
-  Stethoscope, Syringe, Scissors, BedDouble, Clock, TrendingUp,
+  Stethoscope, Scissors, BedDouble, Clock, TrendingUp,
   Star, BarChart3, Trash2, AlertTriangle, Copy,
 } from "lucide-react";
 import { adminService, type AdminServicePayload, type AdminServiceSummary } from "../../features/admin/services/admin";
 
-type Category = "clinic" | "vaccination" | "grooming" | "boarding";
+type Category = "clinic" | "grooming" | "boarding";
 
 interface PriceVariant {
   label: string;
@@ -36,12 +36,11 @@ const CATEGORY_CONFIG: Record<Category, {
   color: string; bg: string; border: string; dot: string;
 }> = {
   clinic:      { label: "Khám bệnh",  icon: Stethoscope, color: "text-cyan-600",    bg: "bg-cyan-50",    border: "border-cyan-200",   dot: "bg-cyan-500" },
-  vaccination: { label: "Tiêm chủng", icon: Syringe,     color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200", dot: "bg-violet-500" },
   grooming:    { label: "Grooming",   icon: Scissors,    color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200",dot: "bg-emerald-500" },
   boarding:    { label: "Lưu trú",    icon: BedDouble,   color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200",  dot: "bg-amber-500" },
 };
 
-const CATEGORIES: Category[] = ["clinic", "vaccination", "grooming", "boarding"];
+const CATEGORIES: Category[] = ["clinic", "grooming", "boarding"];
 
 const EMPTY_SUMMARY: AdminServiceSummary = {
   total: 0,
@@ -100,9 +99,11 @@ function CategoryTab({
           : "text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent"
       }`}
     >
-      <Icon size={14} />
-      {cfg.label}
-      <span className={`text-[11px] font-mono ${active ? cfg.color + "/70" : "text-muted-foreground"}`}>
+      <Icon size={14} className="flex-shrink-0" />
+      <span>{cfg.label}</span>
+      <span className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-mono font-bold leading-none ${
+        active ? "bg-white/70 text-current" : "bg-muted text-muted-foreground"
+      }`}>
         {count}
       </span>
     </button>
@@ -288,7 +289,6 @@ function ServiceModal({
 
   const catOptions: { v: Category; label: string; icon: React.ElementType }[] = [
     { v: "clinic",      label: "Khám bệnh",  icon: Stethoscope },
-    { v: "vaccination", label: "Tiêm chủng", icon: Syringe },
     { v: "grooming",    label: "Grooming",   icon: Scissors },
     { v: "boarding",    label: "Lưu trú",    icon: BedDouble },
   ];

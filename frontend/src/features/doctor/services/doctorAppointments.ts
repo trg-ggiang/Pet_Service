@@ -334,6 +334,18 @@ export const doctorAppointmentsService = {
     return data.message;
   },
 
+  async sendUrgentAlert(appointmentId: number, message: string): Promise<string> {
+    const data = await fetchWithAuth<MutationResponse>(
+      `/api/doctor/appointments/${appointmentId}/urgent-alert`,
+      {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      },
+    );
+
+    return data.message;
+  },
+
   async completeExam(appointmentId: number): Promise<void> {
     await fetchWithAuth<MutationResponse>(`/api/doctor/appointments/${appointmentId}/complete`, {
       method: "PUT",

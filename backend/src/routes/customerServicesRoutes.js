@@ -14,6 +14,7 @@ router.get("/", async function(req, res) {
       .from("services")
       .select("id, name, type, price, description, is_active")
       .eq("is_active", true)
+      .neq("type", "VACCINE")
       .order("name", { ascending: true });
 
     if (error) {

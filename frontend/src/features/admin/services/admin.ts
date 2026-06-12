@@ -24,6 +24,9 @@ export type AdminCustomer = {
   locked: boolean;
   tier: "regular" | "vip";
   address: string;
+  dateOfBirth: string;
+  age: number | null;
+  gender: "MALE" | "FEMALE" | "OTHER" | "UNKNOWN";
   petCount: number;
   pets: string[];
   totalVisits: number;
@@ -86,7 +89,7 @@ export type AdminUsersSummary = {
 
 export type AdminService = {
   id: string;
-  category: "clinic" | "vaccination" | "grooming" | "boarding";
+  category: "clinic" | "grooming" | "boarding";
   name: string;
   description: string;
   duration: number;
@@ -253,7 +256,7 @@ export type AdminReports = {
   topServices: Array<{
     id: number | string;
     name: string;
-    category: "clinic" | "vaccination" | "grooming" | "boarding";
+    category: "clinic" | "grooming" | "boarding";
     bookings: number;
     revenue: number;
     rating: number;
@@ -460,7 +463,7 @@ export const adminService = {
     return adminPatch<{ user: AdminUserLockResult }>(`/api/admin/staff/${encodeURIComponent(id)}/lock`, { locked });
   },
 
-  updateUserProfile(role: AdminUserRole, id: string, data: { name?: string; phone?: string; address?: string; specialty?: string; room?: string }) {
+  updateUserProfile(role: AdminUserRole, id: string, data: { name?: string; phone?: string; address?: string; dateOfBirth?: string | null; gender?: string; specialty?: string; room?: string }) {
     return adminPatch<{ id: string; role: string }>(`/api/admin/users/${role}/${encodeURIComponent(id)}/profile`, data);
   },
 

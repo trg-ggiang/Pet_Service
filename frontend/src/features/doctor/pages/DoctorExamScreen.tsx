@@ -36,6 +36,9 @@ export function DoctorExamScreen({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [urgentAlertOpen, setUrgentAlertOpen] = useState(false);
+  const [urgentAlertMessage, setUrgentAlertMessage] = useState("");
+  const [urgentAlertSending, setUrgentAlertSending] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -109,6 +112,29 @@ export function DoctorExamScreen({
     }
   }
 
+  async function handleSendUrgentAlert() {
+    const content = urgentAlertMessage.trim();
+    if (!content) {
+      setError("Vui lòng nhập nội dung thông báo khẩn");
+      setMessage("");
+      return;
+    }
+
+    try {
+      setUrgentAlertSending(true);
+      setError("");
+      setMessage("");
+      const resultMessage = await doctorAppointmentsService.sendUrgentAlert(appointmentId, content);
+      setMessage(resultMessage || "Đã gửi thông báo khẩn đến chủ thú cưng");
+      setUrgentAlertOpen(false);
+      setUrgentAlertMessage("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể gửi thông báo khẩn");
+    } finally {
+      setUrgentAlertSending(false);
+    }
+  }
+
   if (loading) {
     return <LoadingState text="Đang tải dữ liệu phiếu khám từ hệ thống..." />;
   }
@@ -127,6 +153,7 @@ export function DoctorExamScreen({
         message={message}
         onBack={onBack}
         onSaveDraft={handleSaveDraft}
+        onUrgentAlert={() => setUrgentAlertOpen(true)}
         onComplete={handleComplete}
       />
 
@@ -152,6 +179,65 @@ export function DoctorExamScreen({
           onChange={setRecord}
         />
       </div>
+
+      {urgentAlertOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => !urgentAlertSending && setUrgentAlertOpen(false)}>
+          <div className="w-full max-w-[460px] rounded-2xl border border-red-100 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-red-500">Thông báo khẩn</div>
+                <h3 className="mt-1 text-lg font-bold text-slate-950">Gửi cảnh báo đến chủ thú cưng</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                  Nội dung này sẽ xuất hiện trong chuông thông báo và bật popup khi khách hàng đang truy cập cổng khách hàng.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={urgentAlertSending}
+                onClick={() => setUrgentAlertOpen(false)}
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              >
+                ×
+              </button>
+            </div>
+
+            <label className="mt-5 block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">
+              Nội dung gửi cho chủ thú cưng
+            </label>
+            <textarea
+              value={urgentAlertMessage}
+              onChange={(event) => setUrgentAlertMessage(event.target.value)}
+              rows={5}
+              maxLength={1000}
+              disabled={urgentAlertSending}
+              placeholder="Ví dụ: Bé có dấu hiệu thở khó và sốt cao trong quá trình khám. Chủ nuôi vui lòng theo dõi sát và liên hệ ngay nếu tình trạng nặng hơn."
+              className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/10 disabled:opacity-60"
+            />
+            <div className="mt-2 text-right text-[11px] font-semibold text-slate-400">
+              {urgentAlertMessage.length}/1000
+            </div>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={urgentAlertSending}
+                onClick={() => setUrgentAlertOpen(false)}
+                className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={urgentAlertSending || !urgentAlertMessage.trim()}
+                onClick={() => void handleSendUrgentAlert()}
+                className="h-10 rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {urgentAlertSending ? "Đang gửi..." : "Gửi thông báo khẩn"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

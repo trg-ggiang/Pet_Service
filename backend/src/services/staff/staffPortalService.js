@@ -1,5 +1,23 @@
 const { supabase } = require("../../lib/supabaseClient");
 const { sendAppointmentEventEmail } = require("../emailService");
+
+const BOARDING_UPDATE_BUCKET = process.env.BOARDING_UPDATES_BUCKET || "boarding-updates";
+const MAX_BOARDING_IMAGE_BYTES = 5 * 1024 * 1024;
+const BOARDING_IMAGE_TYPES = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+]);
+let boardingBucketReady = false;
+
+function getLocalDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: process.env.APP_TIME_ZONE || "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
 const {
   ensureDoctorScheduleSlot,
   setDoctorScheduleSlotStatus,
@@ -368,9 +386,54 @@ function normalizeBoardingStatus(update) {
   };
 }
 
+function getBoardingCareNote(update) {
+  const tokens = new Set(["BREAKFAST", "LUNCH", "DINNER", "CLEANED", "EXERCISED", "HEALTHCHECK"]);
+  return String(update?.note || "")
+    .split(/\r?\n|,/)
+    .map((part) => part.trim())
+    .filter((part) => part && !tokens.has(part.toUpperCase()))
+    .join("\n");
+}
+
+function getBoardingCreationNote(boarding) {
+  return [
+    boarding.special_note ? `Ghi chú: ${boarding.special_note}` : "",
+    boarding.habit_note ? `Thói quen: ${boarding.habit_note}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+function getLatestBoardingUpdatesByDate(updates = []) {
+  const latestByDate = new Map();
+  [...updates]
+    .sort((left, right) => {
+      const dateDelta = new Date(right?.date || 0).getTime() - new Date(left?.date || 0).getTime();
+      if (dateDelta !== 0) return dateDelta;
+      return Number(right?.id || 0) - Number(left?.id || 0);
+    })
+    .forEach((update) => {
+      const dateKey = String(update?.date || "").slice(0, 10);
+      if (dateKey && !latestByDate.has(dateKey)) {
+        latestByDate.set(dateKey, update);
+      }
+    });
+  return Array.from(latestByDate.values());
+}
+
+function mapBoardingDailyUpdate(update) {
+  return {
+    id: update.id,
+    date: String(update.date || "").slice(0, 10),
+    status: normalizeBoardingStatus(update),
+    note: getBoardingCareNote(update),
+    imageUrl: update.img_url || null,
+  };
+}
+
 function mapBoarding(boarding) {
   const appointment = boarding.appointments;
-  const latestUpdate = boarding.boarding_daily_updates?.[0] || null;
+  const today = getLocalDateKey();
+  const dailyUpdates = getLatestBoardingUpdatesByDate(boarding.boarding_daily_updates || []);
+  const todayUpdate = dailyUpdates.find((update) => String(update?.date || "").slice(0, 10) === today) || null;
   const checkIn = boarding.check_in || appointment?.requested_date || appointment?.created_at;
   const checkOut = boarding.check_out || boarding.pickup_reminder_at;
   const checkInDate = checkIn ? new Date(checkIn) : null;
@@ -392,8 +455,11 @@ function mapBoarding(boarding) {
     nights,
     foodType: boarding.feeding_instruction || "Chưa cập nhật",
     mealsPerDay: 2,
-    specialNotes: boarding.special_note || boarding.habit_note || "",
-    todayStatus: normalizeBoardingStatus(latestUpdate),
+    specialNotes: getBoardingCreationNote(boarding),
+    todayStatus: normalizeBoardingStatus(todayUpdate),
+    todayNote: getBoardingCareNote(todayUpdate),
+    todayImageUrl: todayUpdate?.img_url || null,
+    dailyUpdates: dailyUpdates.map(mapBoardingDailyUpdate),
   };
 }
 
@@ -420,6 +486,73 @@ function moneyNumber(value) {
 
 function isGroomingService(service) {
   return service?.services?.type === "GROOMING";
+}
+
+function parseBoardingImageDataUrl(value) {
+  if (!value) return null;
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(value));
+  if (!match) {
+    const error = new Error("Ảnh lưu trú không đúng định dạng");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const mimeType = match[1];
+  const extension = BOARDING_IMAGE_TYPES.get(mimeType);
+  if (!extension) {
+    const error = new Error("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const buffer = Buffer.from(match[2], "base64");
+  if (buffer.length > MAX_BOARDING_IMAGE_BYTES) {
+    const error = new Error("Ảnh lưu trú không được vượt quá 5MB");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return { buffer, mimeType, extension };
+}
+
+async function ensureBoardingBucket() {
+  if (boardingBucketReady) return;
+
+  const bucketResult = await supabase.storage.getBucket(BOARDING_UPDATE_BUCKET);
+  if (bucketResult.error) {
+    const created = await supabase.storage.createBucket(BOARDING_UPDATE_BUCKET, {
+      public: true,
+      fileSizeLimit: MAX_BOARDING_IMAGE_BYTES,
+      allowedMimeTypes: Array.from(BOARDING_IMAGE_TYPES.keys()),
+    });
+    if (created.error) throw new Error(created.error.message);
+  } else if (bucketResult.data && bucketResult.data.public === false) {
+    await supabase.storage.updateBucket(BOARDING_UPDATE_BUCKET, { public: true });
+  }
+
+  boardingBucketReady = true;
+}
+
+async function uploadBoardingDailyImage(boardingId, imageDataUrl) {
+  const image = parseBoardingImageDataUrl(imageDataUrl);
+  if (!image) return null;
+
+  await ensureBoardingBucket();
+
+  const today = getLocalDateKey();
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const path = `boarding-${boardingId}/${today}-${unique}.${image.extension}`;
+  const uploaded = await supabase.storage
+    .from(BOARDING_UPDATE_BUCKET)
+    .upload(path, image.buffer, {
+      contentType: image.mimeType,
+      upsert: true,
+    });
+
+  if (uploaded.error) throw new Error(uploaded.error.message);
+
+  const { data } = supabase.storage.from(BOARDING_UPDATE_BUCKET).getPublicUrl(path);
+  return data?.publicUrl || null;
 }
 
 function getPrimaryGroomingService(appointment) {
@@ -865,11 +998,13 @@ async function listBoardingGuests() {
       current_status,
       cages:cage_id (cage_number),
       boarding_daily_updates (
+        id,
         date,
         eating_status,
         health_status,
         activity_status,
-        note
+        note,
+        img_url
       ),
       appointments:appointment_id (
         id,
@@ -897,7 +1032,7 @@ async function updateBoardingDailyStatus(boardingId, status, staffId) {
   const normalizedStatus = Object.fromEntries(
     allowedFields.map((field) => [field, Boolean(status?.[field])]),
   );
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalDateKey();
   const note = Object.entries(normalizedStatus)
     .filter(([, done]) => done)
     .map(([field]) => field.toUpperCase())
@@ -908,6 +1043,8 @@ async function updateBoardingDailyStatus(boardingId, status, staffId) {
     .select("id, health_status")
     .eq("boarding_id", id)
     .eq("date", today)
+    .order("id", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (fetchError) throw new Error(fetchError.message);
@@ -940,6 +1077,96 @@ async function updateBoardingDailyStatus(boardingId, status, staffId) {
       });
     }
   }
+}
+
+async function updateBoardingDailyStatusWithPhoto(boardingId, status, staffId, input = {}) {
+  const id = parsePositiveId(boardingId, "ID lưu trú");
+  const effectiveStaffId = assertStaffId(staffId);
+  const allowedFields = ["breakfast", "lunch", "dinner", "cleaned", "exercised", "healthCheck"];
+  const normalizedStatus = Object.fromEntries(
+    allowedFields.map((field) => [field, Boolean(status?.[field])]),
+  );
+  const hasDailyNote = Object.prototype.hasOwnProperty.call(input, "dailyNote") || Object.prototype.hasOwnProperty.call(input, "note");
+  const uploadedImageUrl = await uploadBoardingDailyImage(id, input?.imageDataUrl);
+  const today = getLocalDateKey();
+  const statusNote = Object.entries(normalizedStatus)
+    .filter(([, done]) => done)
+    .map(([field]) => field.toUpperCase())
+    .join(",");
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("boarding_daily_updates")
+    .select("id, health_status, img_url, note")
+    .eq("boarding_id", id)
+    .eq("date", today)
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  const dailyNote = hasDailyNote
+    ? String(input?.dailyNote || input?.note || "").trim()
+    : getBoardingCareNote(existing);
+  const note = [statusNote, dailyNote].filter(Boolean).join("\n");
+  const payload = {
+    boarding_id: id,
+    staff_id: effectiveStaffId,
+    date: today,
+    eating_status: [normalizedStatus.breakfast && "BREAKFAST", normalizedStatus.lunch && "LUNCH", normalizedStatus.dinner && "DINNER"].filter(Boolean).join(","),
+    activity_status: normalizedStatus.exercised ? "EXERCISED" : "",
+    health_status: normalizedStatus.healthCheck ? "CHECKED" : "",
+    note,
+    ...(uploadedImageUrl ? { img_url: uploadedImageUrl } : {}),
+  };
+
+  const result = existing?.id
+    ? await supabase.from("boarding_daily_updates").update(payload).eq("id", existing.id)
+    : await supabase.from("boarding_daily_updates").insert(payload);
+
+  if (result.error) throw new Error(result.error.message);
+
+  const savedUpdate = {
+    dailyNote,
+    imageUrl: uploadedImageUrl || existing?.img_url || null,
+  };
+
+  if ((normalizedStatus.healthCheck && existing?.health_status !== "CHECKED") || uploadedImageUrl || dailyNote) {
+    try {
+    const { data: boarding } = await supabase
+      .from("boarding")
+      .select(`
+        appointment_id,
+        appointments:appointment_id (
+          pets:pet_id (
+            name,
+            customers:customer_id (user_id)
+          )
+        )
+      `)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (boarding?.appointment_id) {
+      await sendAppointmentEventEmail("boarding_update", boarding.appointment_id, {
+        boardingStatus: dailyNote || statusNote || "Đã cập nhật tình trạng chăm sóc.",
+      });
+    }
+
+    const userId = boarding?.appointments?.pets?.customers?.user_id;
+    if (userId) {
+      await notifyAppointmentActor(
+        userId,
+        "Có cập nhật lưu trú mới",
+        `${boarding.appointments?.pets?.name || "Thú cưng"} vừa có cập nhật chăm sóc${uploadedImageUrl ? " kèm ảnh" : ""}.`,
+      );
+    }
+  }
+    catch (notifyError) {
+      console.warn("[STAFF] Boarding update notification failed:", notifyError.message);
+    }
+  }
+  return savedUpdate;
 }
 
 async function listPayments() {
@@ -1033,7 +1260,7 @@ module.exports = {
   updateGroomingStatus,
   completeGroomingAppointment,
   listBoardingGuests,
-  updateBoardingDailyStatus,
+  updateBoardingDailyStatus: updateBoardingDailyStatusWithPhoto,
   listPayments,
   markPaymentPaid,
   getStaffPortalSummary,

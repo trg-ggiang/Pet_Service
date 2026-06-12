@@ -26,7 +26,6 @@ function getHistoryType(invoice, details) {
 
   if (sourceTypes.has("BOARDING") || details.boardingByAppointmentId.has(invoice.appointment_id)) return "boarding";
   if (sourceTypes.has("GROOMING") || details.groomingByAppointmentId.has(invoice.appointment_id)) return "grooming";
-  if (sourceTypes.has("VACCINATION") || details.vaccinationsByAppointmentId.has(invoice.appointment_id)) return "vaccine";
   return "medical";
 }
 
@@ -266,7 +265,7 @@ async function listCustomerServiceHistory(customerId) {
   });
 }
 
-const HISTORY_TYPES = ["medical", "vaccine", "grooming", "boarding"];
+const HISTORY_TYPES = ["medical", "grooming", "boarding"];
 
 function normalizeHistoryTypeFilter(type) {
   if (type === "all" || type == null || type === "") return "all";

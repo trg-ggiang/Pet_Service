@@ -8,24 +8,22 @@ const {
 
 const SERVICE_TYPE_UI = {
   MEDICAL: "Khám bệnh",
-  VACCINE: "Tiêm phòng",
+  VACCINE: "Khám bệnh",
   GROOMING: "Grooming",
   BOARDING: "Lưu trú",
   FOOD: "Khám bệnh",
   OTHER: "Khám bệnh",
 };
-const CUSTOMER_BOOKING_SERVICE_TYPES = new Set(["MEDICAL", "VACCINE", "GROOMING", "BOARDING"]);
+const CUSTOMER_BOOKING_SERVICE_TYPES = new Set(["MEDICAL", "GROOMING", "BOARDING"]);
 
 const APPOINTMENT_TYPE_BY_UI = {
   "Khám bệnh": "MEDICAL",
-  "Tiêm phòng": "MEDICAL",
   Grooming: "GROOMING",
   "Lưu trú": "BOARDING",
 };
 
 const ICON_BY_UI_TYPE = {
   "Khám bệnh": { iconKey: "medical", iconColor: "#0891B2", iconBg: "#ECFEFF" },
-  "Tiêm phòng": { iconKey: "vaccine", iconColor: "#059669", iconBg: "#ECFDF5" },
   Grooming: { iconKey: "grooming", iconColor: "#D97706", iconBg: "#FFFBEB" },
   "Lưu trú": { iconKey: "boarding", iconColor: "#7C3AED", iconBg: "#F5F3FF" },
 };
@@ -67,7 +65,6 @@ async function getAppointmentActors(appointmentId) {
 }
 const ICON_KEY_BY_UI_TYPE = {
   "Khám bệnh": "medical",
-  "Tiêm phòng": "vaccine",
   Grooming: "grooming",
   "Lưu trú": "boarding",
 };
@@ -239,7 +236,7 @@ function getSlotEndTime(time) {
 
 function requiresDoctor(serviceType) {
   const text = String(serviceType ?? "").toLowerCase();
-  return text.includes("kh") || text.includes("ti") || text.includes("medical") || text.includes("vaccine");
+  return text.includes("kh") || text.includes("medical");
 }
 
 function requiresDoctorService(service) {
@@ -257,6 +254,12 @@ function getUiServiceType(appointment, service) {
   if (appointment.appointment_type === "GROOMING") return "Grooming";
   if (appointment.appointment_type === "BOARDING") return "Lưu trú";
   return "Khám bệnh";
+}
+
+function getDisplayServiceName(appointment, service) {
+  if (appointment.appointment_type === "BOARDING" || service?.type === "BOARDING") return "Lưu trú";
+  if (service?.type === "VACCINE") return "Khám bệnh";
+  return service?.name ?? SERVICE_TYPE_UI[appointment.appointment_type] ?? appointment.appointment_type ?? "Dịch vụ";
 }
 
 function mapAppointment(appointment, maps) {
@@ -298,7 +301,7 @@ function mapAppointment(appointment, maps) {
     petId: appointment.pet_id,
     date: formatDate(appointmentDate),
     time: formatTime(appointmentTime),
-    service: service?.name ?? appointment.appointment_type ?? "Dịch vụ",
+    service: getDisplayServiceName(appointment, service),
     pet: pet?.name ?? "Thú cưng",
     doctor: doctor?.full_name ?? staff?.full_name ?? "Đang chờ phân công",
     status: appointment.status,
@@ -609,17 +612,7 @@ async function resolveService(serviceName, serviceType) {
 
   if (data?.[0]) return data[0];
 
-  const mappedType = serviceType === "Tiêm phòng" ? "VACCINE" : undefined;
-  if (!mappedType) return null;
-
-  const fallback = await supabase
-    .from("services")
-    .select("id, name, type, price")
-    .eq("type", mappedType)
-    .limit(1);
-
-  if (fallback.error) throw new Error(fallback.error.message);
-  return fallback.data?.[0] ?? null;
+  return null;
 }
 
 async function resolveServiceById(serviceId) {

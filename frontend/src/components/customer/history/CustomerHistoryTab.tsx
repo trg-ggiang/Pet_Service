@@ -1,5 +1,5 @@
 ﻿import { useState, type ElementType } from "react";
-import { Calendar, CheckCircle2, Star, Stethoscope, Syringe, X } from "lucide-react";
+import { Calendar, CheckCircle2, Star, Stethoscope, X } from "lucide-react";
 import type { CustomerServiceHistoryListPayload, CustomerServiceHistoryTypeFilter } from "../../../types/customer/serviceHistory";
 import type { HistoryRecord } from "../../../types/customer/portal";
 
@@ -73,21 +73,18 @@ function RatingModal({ record, onClose, onSubmit }: { record: HistoryRecord; onC
 const HISTORY_TYPE_OPTIONS = [
   { id: "all" as const, label: "Tất cả", icon: CheckCircle2 },
   { id: "medical" as const, label: "Khám bệnh", icon: Stethoscope },
-  { id: "vaccine" as const, label: "Tiêm phòng", icon: Syringe },
   { id: "grooming" as const, label: "Grooming", icon: Star },
   { id: "boarding" as const, label: "Lưu trú", icon: Calendar },
 ];
 
 const TYPE_ICONS: Record<HistoryRecord["type"], ElementType> = {
   medical: Stethoscope,
-  vaccine: Syringe,
   grooming: Star,
   boarding: Calendar,
 };
 
 const TYPE_COLORS: Record<HistoryRecord["type"], { bg: string; color: string }> = {
   medical: { bg: "#ECFEFF", color: "#0891B2" },
-  vaccine: { bg: "#ECFDF5", color: "#059669" },
   grooming: { bg: "#FFFBEB", color: "#D97706" },
   boarding: { bg: "#F5F3FF", color: "#7C3AED" },
 };
