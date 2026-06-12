@@ -9,13 +9,11 @@
 
 export type CustomerAppointmentServiceType =
   | "Khám bệnh"
-  | "Tiêm phòng"
   | "Grooming"
   | "Lưu trú";
 
 export type CustomerAppointmentIconKey =
   | "medical"
-  | "vaccine"
   | "grooming"
   | "boarding";
 

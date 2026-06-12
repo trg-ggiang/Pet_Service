@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
-import { Bell, Calendar, CheckCircle2, Clock, Heart, LogOut, Star, X } from "lucide-react";
-import { useCallback } from "react";
+import { Bell, Calendar, CheckCircle2, Clock, Heart, LogOut, Star, UserRound, X } from "lucide-react";
+import { useCallback, useRef } from "react";
 import { CustomerPetProfilesModule } from "./CustomerPetsPage";
 import { fetchCustomerPetDashboard } from "../../../services/customer/customerPetsApi";
 import {
@@ -34,9 +34,11 @@ import { CustomerHistoryTab } from "../../../components/customer/history/Custome
 import { HistoryDetailModal } from "../../../components/customer/history/HistoryDetailModal";
 import { CustomerHomeTab } from "../../../components/customer/home/CustomerHomeTab";
 import { CustomerNotificationsTab } from "../../../components/customer/notifications/CustomerNotificationsTab";
+import { CustomerProfileTab } from "../../../components/customer/profile/CustomerProfileTab";
+import { fetchCustomerProfile, updateCustomerProfile, type CustomerProfile } from "../../../services/customer/customerProfileApi";
 import { getNotifConfig, mapCustomerAppointment, mapCustomerNotification } from "../../../utils/customer/portalConfig";
 
-type CustomerTab = "home" | "apts" | "pets" | "history" | "notifications";
+type CustomerTab = "home" | "apts" | "pets" | "history" | "notifications" | "profile";
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -87,6 +89,11 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [notificationsSummary, setNotificationsSummary] = useState({ total: 0, unreadCount: 0 });
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState("");
+  const [urgentNotification, setUrgentNotification] = useState<CustomerPortalNotification | null>(null);
+  const shownUrgentNotificationIdsRef = useRef<Set<number>>(new Set());
 
   const [statusFilter, setStatusFilter] = useState<CustomerAppointmentStatusFilter>("all");
   const [petFilter, setPetFilter] = useState("all");
@@ -107,12 +114,12 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   const [cancelLoading, setCancelLoading] = useState(false);
 
   const unreadCount = notificationsSummary.unreadCount;
+  const displayName = profile?.fullName || userName;
   const appointmentsPageSize = 5;
   const appointmentsPageCount = appointmentPagination.pageCount;
   const serviceFilterOptions: Array<{ value: ServiceType | "all"; label: string }> = [
     { value: "all", label: "Tất cả" },
     { value: "Khám bệnh", label: "Khám bệnh" },
-    { value: "Tiêm phòng", label: "Tiêm phòng" },
     { value: "Grooming", label: "Grooming" },
     { value: "Lưu trú", label: "Lưu trú" },
   ];
@@ -144,9 +151,23 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     }
   }, []);
 
+  const loadProfile = useCallback(async () => {
+    try {
+      setProfileLoading(true);
+      setProfileError("");
+      const payload = await fetchCustomerProfile();
+      setProfile(payload.profile);
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Không thể tải hồ sơ khách hàng.");
+    } finally {
+      setProfileLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPetsDashboard();
-  }, [loadPetsDashboard]);
+    void loadProfile();
+  }, [loadPetsDashboard, loadProfile]);
 
   useEffect(() => {
     setAppointmentsPage(1);
@@ -194,8 +215,16 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       setNotificationsLoading(true);
       setNotificationsError("");
       const payload = await fetchCustomerNotifications();
-      setNotifications(payload.notifications.map(mapCustomerNotification));
+      const mappedNotifications = payload.notifications.map(mapCustomerNotification);
+      setNotifications(mappedNotifications);
       setNotificationsSummary(payload.summary);
+      const nextUrgentNotification = mappedNotifications.find(
+        (notification) => notification.isUrgent && !notification.read && !shownUrgentNotificationIdsRef.current.has(notification.id),
+      );
+      if (nextUrgentNotification) {
+        shownUrgentNotificationIdsRef.current.add(nextUrgentNotification.id);
+        setUrgentNotification(nextUrgentNotification);
+      }
     } catch (error) {
       setNotificationsError(error instanceof Error ? error.message : "Không thể tải thông báo.");
       setNotifications([]);
@@ -259,8 +288,31 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     }
   };
 
+  const saveProfile = async (input: Parameters<typeof updateCustomerProfile>[0]) => {
+    const payload = await updateCustomerProfile(input);
+    setProfile(payload.profile);
+  };
+
+  const closeUrgentNotification = () => {
+    setUrgentNotification(null);
+  };
+
+  const acknowledgeUrgentNotification = async () => {
+    if (!urgentNotification) return;
+    await markRead(urgentNotification.id);
+    setUrgentNotification(null);
+  };
+
   useEffect(() => {
     void loadNotifications();
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void loadNotifications();
+    }, 15000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -324,49 +376,119 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
   const navItems = [
     { id: "home" as const, label: "Trang chủ", icon: Heart },
-    { id: "apts" as const, label: "Lịch hẹn", icon: Calendar },
+    { id: "apts" as const, label: "Lịch hẹn", icon: Calendar, badge: apts.length || undefined },
     { id: "pets" as const, label: "Thú cưng", icon: Star },
     { id: "history" as const, label: "Lịch sử", icon: CheckCircle2 },
+    { id: "notifications" as const, label: "Thông báo", icon: Bell, badge: unreadCount || undefined },
+    { id: "profile" as const, label: "Hồ sơ", icon: UserRound },
   ];
 
+  const tabMeta: Record<CustomerTab, { title: string; subtitle: string }> = {
+    home: { title: "Tổng quan", subtitle: "Theo dõi lịch hẹn, thú cưng và thông báo mới nhất." },
+    apts: { title: "Lịch hẹn", subtitle: "Quản lý lịch khám, grooming và lưu trú của thú cưng." },
+    pets: { title: "Thú cưng", subtitle: "Xem hồ sơ, lịch sử chăm sóc và dịch vụ của từng thú cưng." },
+    history: { title: "Lịch sử", subtitle: "Tra cứu các dịch vụ đã sử dụng và đánh giá trải nghiệm." },
+    notifications: { title: "Thông báo", subtitle: "Cập nhật từ phòng khám và các cảnh báo cần chú ý." },
+    profile: { title: "Hồ sơ chủ nuôi", subtitle: "Cập nhật thông tin liên hệ và hồ sơ cá nhân." },
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <header className="bg-white px-5 py-2.5 flex items-center justify-between sticky top-0 z-50 border-b border-slate-200/80">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-            <PawSVG className="w-4 h-4 text-white" />
+    <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
+      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white">
+        <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+            <PawSVG className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-foreground text-[14px] tracking-tight">PetCare Center</span>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold tracking-tight text-slate-950">PetCare Center</div>
+            <div className="truncate text-[11px] font-semibold text-slate-400">Cổng khách hàng</div>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="border-b border-slate-100 px-5 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+              <span className="text-xs font-bold text-white">{displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-bold text-slate-950">{displayName}</div>
+              <div className="truncate text-xs font-medium text-slate-500">{profile?.email || "Chủ thú cưng"}</div>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${
+                  active ? "bg-cyan-50 text-cyan-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <Icon size={18} strokeWidth={active ? 2.5 : 2} className="flex-shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </span>
+                {item.badge && (
+                  <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${active ? "bg-white text-cyan-700" : "bg-slate-100 text-slate-500"}`}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-slate-200 p-3">
+          <button
+            onClick={() => setConfirmLogout(true)}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            <LogOut size={18} />
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-bold text-slate-950">{tabMeta[tab].title}</h1>
+            <p className="truncate text-xs font-medium text-slate-500">{tabMeta[tab].subtitle}</p>
+          </div>
+
           <div className="relative">
             <button
               onClick={() => { setShowNotifDropdown((value) => !value); }}
-              className="w-10 h-10 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-foreground transition-colors relative"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
+                <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500" />
               )}
             </button>
 
             {showNotifDropdown && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setShowNotifDropdown(false)} />
-                <div className="absolute right-0 top-12 z-40 w-[360px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="text-[15px] font-bold text-slate-900">Thông báo</span>
                       {unreadCount > 0 && (
-                        <span className="text-[11px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full leading-none">{unreadCount}</span>
+                        <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">{unreadCount}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => void markAllRead()} className="text-[12px] text-cyan-600 font-semibold hover:underline">Đánh dấu đã đọc</button>
-                      <button onClick={() => { setShowNotifDropdown(false); setTab("notifications"); }} className="text-[12px] text-slate-500 font-semibold hover:text-slate-700">Xem tất cả</button>
+                      <button onClick={() => void markAllRead()} className="text-[12px] font-semibold text-cyan-600 hover:underline">Đánh dấu đã đọc</button>
+                      <button onClick={() => { setShowNotifDropdown(false); setTab("notifications"); }} className="text-[12px] font-semibold text-slate-500 hover:text-slate-700">Xem tất cả</button>
                     </div>
                   </div>
-                  <div className="divide-y divide-slate-100 max-h-[380px] overflow-y-auto">
+                  <div className="max-h-[380px] divide-y divide-slate-100 overflow-y-auto">
                     {notifications.slice(0, 4).map((notification) => {
                       const config = getNotifConfig(notification.type);
                       const Icon = config.icon;
@@ -374,18 +496,18 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                         <div
                           key={notification.id}
                           onClick={() => handleNotificationClick(notification)}
-                          className={`flex gap-3 px-4 py-3.5 cursor-pointer transition-colors ${notification.read ? "hover:bg-slate-50" : "bg-cyan-50/40 hover:bg-cyan-50/70"}`}
+                          className={`flex cursor-pointer gap-3 px-4 py-3.5 transition-colors ${notification.read ? "hover:bg-slate-50" : "bg-cyan-50/40 hover:bg-cyan-50/70"}`}
                         >
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: config.bg }}>
+                          <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl" style={{ background: config.bg }}>
                             <Icon size={15} style={{ color: config.color }} />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <span className={`text-[13px] font-semibold leading-snug ${notification.read ? "text-slate-700" : "text-slate-900"}`}>{notification.title}</span>
-                              {!notification.read && <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1" style={{ background: "#0891B2" }} />}
+                              {!notification.read && <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: "#0891B2" }} />}
                             </div>
-                            <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{notification.desc}</p>
-                            <span className="text-[11px] text-slate-400 font-medium mt-1 block">{notification.time}</span>
+                            <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-slate-500">{notification.desc}</p>
+                            <span className="mt-1 block text-[11px] font-medium text-slate-400">{notification.time}</span>
                           </div>
                         </div>
                       );
@@ -395,48 +517,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               </>
             )}
           </div>
-
-          <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-              <span className="text-xs font-bold text-white">{userName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
-            </div>
-            <span className="hidden sm:block text-sm font-semibold text-foreground">{userName}</span>
-          </div>
-          <button
-            onClick={() => setConfirmLogout(true)}
-            className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-red-500 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
-          >
-            <LogOut size={16} />
-            <span className="hidden sm:inline">Đăng xuất</span>
-          </button>
-        </div>
-      </header>
-
-      <div className="bg-slate-50 border-b border-slate-200/80 sticky top-[53px] z-40">
-        <div className="flex justify-center max-w-4xl mx-auto w-full px-5">
-          <div className="flex gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = tab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setTab(item.id)}
-                  className={`relative flex items-center gap-2 px-4 py-3.5 text-sm font-semibold transition-all ${
-                    active ? "text-cyan-600" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  <Icon size={16} strokeWidth={active ? 2.5 : 2} />
-                  <span className="hidden sm:inline">{item.label}</span>
-                  {active && (
-                    <span className="absolute bottom-0 left-0 w-full h-[2.5px] bg-cyan-500 rounded-t-full" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+        </header>
 
       {confirmLogout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmLogout(false)}>
@@ -454,10 +535,61 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         </div>
       )}
 
-      <main className="relative z-0 flex-1 px-5 py-8 max-w-7xl mx-auto w-full">
+      {urgentNotification && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={closeUrgentNotification}>
+          <div className="w-full max-w-[460px] overflow-hidden rounded-2xl border border-red-100 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="h-1.5 bg-red-600" />
+            <div className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                    <Bell size={20} />
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-red-500">Thông báo khẩn từ bác sĩ</div>
+                    <h3 className="mt-1 text-lg font-bold leading-snug text-slate-950">{urgentNotification.title}</h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeUrgentNotification}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <p className="mt-4 whitespace-pre-line rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
+                {urgentNotification.desc}
+              </p>
+              <div className="mt-3 text-xs font-semibold text-slate-400">{urgentNotification.time}</div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeUrgentNotification}
+                  className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void acknowledgeUrgentNotification()}
+                  className="h-10 rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700"
+                >
+                  Đã hiểu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+        <main className="relative z-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-7xl p-6">
         {tab === "home" && (
           <CustomerHomeTab
-            userName={userName}
+            userName={displayName}
             apts={apts}
             pets={pets}
             notifications={notifications}
@@ -543,7 +675,18 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             onNotificationClick={handleNotificationClick}
           />
         )}
-      </main>
+
+        {tab === "profile" && (
+          <CustomerProfileTab
+            profile={profile}
+            loading={profileLoading}
+            error={profileError}
+            onRefresh={loadProfile}
+            onSave={saveProfile}
+          />
+        )}
+          </div>
+        </main>
 
       {isBoardingOpen && (
         <BoardingBookingModal
@@ -695,6 +838,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

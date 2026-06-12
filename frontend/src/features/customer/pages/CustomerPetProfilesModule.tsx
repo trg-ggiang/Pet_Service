@@ -72,6 +72,29 @@ export function CustomerPetProfilesModule({
     void loadDashboard();
   }, []);
 
+  useEffect(() => {
+    if (!selectedPet) return undefined;
+
+    let active = true;
+    const refreshDetail = async () => {
+      try {
+        const result = await fetchPetDetail(selectedPet.id);
+        if (active) setDetail(result);
+      } catch (err) {
+        console.error("[FRONTEND] Failed to refresh pet detail:", err);
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void refreshDetail();
+    }, 15000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [selectedPet]);
+
   const speciesOptions = dashboard?.species ?? [];
   const breedOptions = dashboard?.breeds ?? [];
 

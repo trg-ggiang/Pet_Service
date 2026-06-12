@@ -3,6 +3,117 @@ title: "Session Log"
 description: "Ongoing development session notes."
 ---
 
+## 2026-06-12 - Customer Portal Sidebar Shell
+
+### Goal
+
+Align the customer portal layout with the admin/staff role shells without changing customer data flow or feature logic.
+
+### Work Completed
+
+- Replaced the customer top navigation layout with a left sidebar shell, fixed top content header, and scrollable content area.
+- Kept existing customer tabs, notification dropdown, urgent alert modal, appointment modals, and profile logic intact.
+- Added sidebar navigation entries for notifications and owner profile so all customer sections remain directly reachable.
+
+### Verification
+
+- `npm --prefix frontend run build`
+
+## 2026-06-11 - Boarding Daily Photo Updates
+
+### Goal
+
+Allow staff to upload daily boarding photos and notes so customers can track their pet's condition during a stay.
+
+### Work Completed
+
+- Extended staff boarding daily status updates to accept a selected image file from the frontend, upload it to Supabase Storage, and persist the resulting URL in `boarding_daily_updates.img_url`.
+- Returned today's boarding note and image URL to the staff portal.
+- Included boarding daily updates in customer pet detail responses and replaced the customer boarding tab with a stay-by-stay care journal that shows photos, checklist items, and notes.
+- Added customer notifications when staff posts a boarding note/photo update.
+
+### Verification
+
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `node --check backend/src/services/customerPetsService.js`
+- `node --check backend/src/routes/staffRoutes.js`
+- `npm --prefix frontend run build`
+
+## 2026-06-11 - Doctor Urgent Customer Alerts
+
+### Goal
+
+Allow doctors to send urgent in-app messages to the owner of the pet currently being examined, with the alert also appearing immediately for active customer portal sessions.
+
+### Work Completed
+
+- Added a doctor appointment urgent-alert endpoint that verifies the appointment belongs to the current doctor and creates a `SYSTEM` notification for the pet owner's user account.
+- Added a doctor exam-screen urgent alert button and modal so doctors can enter the message sent to the customer.
+- Marked `SYSTEM` notifications with `Khẩn:` titles as urgent in the customer notification mapper.
+- Added customer portal polling and an urgent popup modal for unread urgent notifications while preserving the existing notification bell flow.
+- Updated API and backend docs for the new doctor urgent alert endpoint.
+
+### Verification
+
+- `node --check backend/src/routes/doctorAppointmentRoutes.js`
+- `npm --prefix frontend run build`
+
+## 2026-06-11 - Customer Vaccine Service Removal
+
+### Goal
+
+Remove vaccination as a separate customer-facing service category while keeping pet vaccination health records intact.
+
+### Work Completed
+
+- Removed `VACCINE` from customer booking service options and the legacy customer services endpoint.
+- Mapped existing `VACCINE` appointment services to the medical customer display so old rows do not render a separate vaccination category.
+- Removed the customer appointment filter, booking icon/display branch, and customer appointment type literals for `Tiêm phòng`.
+- Merged customer service-history vaccination records into the medical type and removed the customer history vaccination tab.
+- Updated API and backend docs to describe medical, grooming, and boarding as the customer booking categories.
+
+### Verification
+
+- `node --check backend/src/services/customer/customerAppointmentsService.js`
+- `node --check backend/src/services/customer/customerServiceHistoryService.js`
+- `node --check backend/src/routes/customerServicesRoutes.js`
+- `npm --prefix frontend run build`
+
+## 2026-06-11 - Admin Service Vaccination Category Removal
+
+### Goal
+
+Remove vaccination from the admin service-management add/edit workflow so services cannot be created as a separate vaccination category.
+
+### Work Completed
+
+- Removed the admin service-management `Tiêm chủng` tab and add-service category option.
+- Updated admin service frontend types to support only clinic, grooming, and boarding service categories.
+- Mapped legacy `VACCINE` service rows to the clinic category in admin service management.
+- Removed `vaccination` from the admin service summary category list and create/update category mapping.
+
+### Verification
+
+- `node --check backend/src/services/adminService.js`
+- `npm --prefix frontend run build`
+- `npm run docs:check` could not run because the local `mint` command is not installed.
+
+## 2026-06-11 - Admin Dashboard Appointment Status Labels
+
+### Goal
+
+Fix the admin dashboard appointment-status pie chart showing every legend label as `Chờ khám`.
+
+### Work Completed
+
+- Updated admin appointment status mapping to accept already-grouped chart keys such as `scheduled`, `in_progress`, `completed`, and `cancelled`.
+- Added `CHECKED_IN` to the in-progress appointment status group.
+- Returned dashboard appointment-status rows in a stable order so chart colors remain consistent.
+
+### Verification
+
+- `node --check backend/src/services/adminService.js`
+
 ## 2026-06-10 - Customer Role Text Cleanup
 
 ### Goal
@@ -3662,6 +3773,72 @@ Fix the doctor settings schedule rows showing broken separators, a constant `1 c
 
 - Queried doctor settings against Supabase and confirmed `08:00-16:00` returns 16 slots, `08:00-08:30` returns 1 slot, and `08:00-10:00` returns 4 slots.
 - `node --check backend/src/services/doctor/doctorService.js`
+- `npm --prefix frontend run build`
+
+## 2026-06-12 - Staff Boarding Daily Journal Reset
+
+### Goal
+
+Reset staff boarding daily updates by the current Vietnam-local day while preserving prior-day journals for review.
+
+### Work Completed
+
+- Changed staff boarding mapping so `todayStatus`, `todayNote`, and `todayImageUrl` only come from the current local date, not the latest prior journal.
+- Added `dailyUpdates` to the staff boarding payload so staff can review previous daily records.
+- Updated the staff boarding modal with a daily journal history section and image preview overlay.
+- Kept local staff UI state in sync after toggling daily care status or saving today's note/photo.
+- Added a Vietnam-local day rollover check in the staff portal so daily care checkboxes reset without requiring a manual browser refresh.
+- Normalized staff save/toggle operations before PATCH requests so stale previous-day checklist state cannot be saved into the new day.
+- Added the boarding creation notes to the staff journal view and combined both `special_note` and `habit_note`.
+- Reset the existing copied checklist row for boarding daily update `id=62` after confirming it was the reason F5 still showed the June 11 checklist on June 12.
+
+### Verification
+
+- `node --check backend/src/services/staff/staffPortalService.js`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+## 2026-06-12 - Customer Owner Profile Fields Planning
+
+### Goal
+
+Prepare database fields needed for a complete customer owner profile flow.
+
+### Work Completed
+
+- Checked current `users` and `customers` rows in the configured Supabase database.
+- Confirmed owner email lives on `users.email`, while customer contact data lives on `customers`.
+- Added Prisma schema support for `CustomerGender`, `customers.date_of_birth`, and `customers.gender`.
+- Added a Prisma migration SQL file to add the nullable profile fields without changing existing customer rows.
+- Added `backend/prisma/customer_profile_demo_data.sql` to populate existing customers with complete demo profile data.
+- Updated database docs to describe owner profile demographics.
+
+### Verification
+
+- `npx prisma validate --schema backend/prisma/schema.prisma`
+- `npm --prefix backend run prisma:generate`
+
+## 2026-06-12 - Customer Owner Profile Phase 1
+
+### Goal
+
+Add a complete phase-1 owner profile flow for customer users and keep admin user management aligned with the new customer profile fields.
+
+### Work Completed
+
+- Verified Supabase `customers` rows have populated `phone`, `address`, `date_of_birth`, and `gender` demo data.
+- Added `GET /api/customer/profile` and `PATCH /api/customer/profile`.
+- Added a customer `Hồ sơ` tab with editable full name, phone, address, date of birth, and gender; email is displayed read-only.
+- Updated customer portal header/home display name from the loaded profile after edits.
+- Extended admin user listing and profile update to include customer date of birth, derived age, and gender.
+- Updated API and backend docs for customer/admin profile endpoints.
+
+### Verification
+
+- Supabase customer profile data query.
+- `node --check backend/src/services/customer/customerProfileService.js`
+- `node --check backend/src/routes/customerPetsRoutes.js`
+- `node --check backend/src/services/adminService.js`
 - `npm --prefix frontend run build`
 
 ## 2026-06-08 - Customer Service History Prescription Query

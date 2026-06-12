@@ -64,6 +64,7 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `GET /api/admin/dashboard` returns admin totals.
   - `GET /api/admin/users` lists customers, doctors, and staff users with backend search and user-management summary for the admin user-management page.
   - `PATCH /api/admin/users/:role/:id/lock` locks or unlocks one customer, doctor, or staff account from the admin user-management page.
+  - `PATCH /api/admin/users/:role/:id/profile` updates user profile fields; customer profiles include phone, address, date of birth, and gender.
   - `GET /api/admin/services` lists backend-filtered service catalog rows and returns category counts plus service KPI summary for the admin service-management page.
   - `POST /api/admin/services` creates one service catalog row.
   - `PATCH /api/admin/services/:id` updates one service catalog row.
@@ -84,8 +85,8 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `PUT /api/staff/appointments/:appointmentId/complete-grooming` completes an in-progress grooming appointment from the appointment list and creates or updates its unpaid invoice.
   - `GET /api/staff/grooming` lists grooming work items assigned to the current staff member or unassigned work.
   - `PATCH /api/staff/grooming/:groomingId/status` starts or completes one grooming work item. Completing grooming marks the appointment and appointment service complete, then creates or updates an unpaid invoice for the payment tab.
-  - `GET /api/staff/boarding` lists current boarding guests with today's care status.
-  - `PATCH /api/staff/boarding/:boardingId/daily-status` updates today's boarding care checklist for one guest.
+  - `GET /api/staff/boarding` lists current boarding guests with today's care status, note, and daily photo URL when available.
+  - `PATCH /api/staff/boarding/:boardingId/daily-status` updates today's boarding care checklist for one guest and can upload a daily photo through `imageDataUrl`; the backend stores the file in Supabase Storage and saves the public URL in `boarding_daily_updates.img_url`.
   - `GET /api/staff/payments` lists invoice rows for staff payment collection.
   - `PATCH /api/staff/payments/:invoiceId/pay` marks one invoice as paid.
 - `/api/doctor`
@@ -97,14 +98,17 @@ SUPABASE_SERVICE_ROLE_KEY=
   - `GET /api/doctor/exam/:appointmentId` returns exam-screen context for one current-doctor appointment from database rows.
   - `GET /api/doctor/appointments` lists active appointments for the authenticated doctor.
     - The response includes render-ready portal data: appointment rows, status keys, status view classes, schedule summary counts, and header metadata.
+  - `POST /api/doctor/appointments/:appointmentId/urgent-alert` creates an urgent `SYSTEM` notification for the owner of the pet in the current doctor's appointment.
   - `PUT /api/doctor/appointments/:appointmentId/start` starts an appointment exam.
   - `PUT /api/doctor/appointments/:appointmentId/exam-complete` saves the exam record, completes the appointment, and creates or updates an unpaid medical-visit invoice for the staff payment tab.
   - `PUT /api/doctor/appointments/:appointmentId/complete` completes an appointment exam and creates or updates an unpaid invoice when a medical visit already exists.
 - `/api/customer`
+  - `GET /api/customer/profile` returns the authenticated customer's owner profile, including login email, contact fields, date of birth, gender, and derived age.
+  - `PATCH /api/customer/profile` updates the authenticated customer's owner profile. Email remains managed by auth.
   - `GET /api/customer/pets` lists the current customer's pets.
   - `POST /api/customer/pets` creates a current-customer pet.
   - `PUT /api/customer/pets/:petId` updates a current-customer pet.
-  - `GET /api/customer/appointment-options` lists service options for customer booking.
+  - `GET /api/customer/appointment-options` lists medical, grooming, and boarding service options for customer booking. Vaccine services are not exposed as a separate customer booking category.
   - `POST /api/customer/appointment-provider-options` lists doctors with an `AVAILABLE` row in `doctor_schedule_slots` for the requested future date/time, or lists staff for staff-backed services. Past slots are rejected server-side.
   - `GET /api/customer/appointments` lists the current customer's appointments with backend filtering, status counts, and pagination summary.
     - Completed appointment rows include prescription items when available.

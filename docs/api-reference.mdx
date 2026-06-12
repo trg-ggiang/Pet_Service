@@ -44,6 +44,7 @@ Routes are mounted under `/api/admin` and require an admin auth token.
 | `GET` | `/api/admin/dashboard` | Get admin totals for dashboard widgets. |
 | `GET` | `/api/admin/users?role=&search=` | List customers, doctors, and staff users with backend search and user-management summary for `UsersPage`. |
 | `PATCH` | `/api/admin/users/:role/:id/lock` | Lock or unlock one customer, doctor, or staff account from `UsersPage`. |
+| `PATCH` | `/api/admin/users/:role/:id/profile` | Update one user profile. Customer profiles support name, phone, address, date of birth, and gender. |
 | `GET` | `/api/admin/services?category=&status=&search=` | List backend-filtered service catalog rows plus category counts and service KPI summary for `ServicesPage`. |
 | `POST` | `/api/admin/services` | Create one service catalog row. |
 | `PATCH` | `/api/admin/services/:id` | Update one service catalog row. |
@@ -78,6 +79,7 @@ Routes are mounted under `/api/doctor` and require a doctor auth token.
 | `PUT` | `/api/doctor/settings/schedule` | Returns `403`; doctor working schedules are managed by admin. |
 | `GET` | `/api/doctor/exam/:appointmentId` | Get database-backed context for `DoctorExamScreen`, including pet, owner, vaccination, visit history, and initial form data. |
 | `GET` | `/api/doctor/appointments` | List current doctor's active appointments with backend-shaped portal rows, status view metadata, schedule summary counts, and header metadata. |
+| `POST` | `/api/doctor/appointments/:appointmentId/urgent-alert` | Send a doctor-authored urgent in-app notification to the owner of the pet in the current doctor's appointment. |
 | `PUT` | `/api/doctor/appointments/:appointmentId/start` | Mark one current-doctor appointment as in progress. |
 | `PUT` | `/api/doctor/appointments/:appointmentId/exam-complete` | Save the exam record, mark one current-doctor appointment as completed, and create or update its unpaid invoice for staff payment collection. |
 | `PUT` | `/api/doctor/appointments/:appointmentId/complete` | Mark one current-doctor appointment as completed. If a medical visit exists, create or update its unpaid invoice for staff payment collection. |
@@ -94,8 +96,8 @@ Routes are mounted under `/api/staff` and require a staff auth token.
 | `PUT` | `/api/staff/appointments/:appointmentId/complete-grooming` | Complete an in-progress grooming appointment and create or update its unpaid invoice. |
 | `GET` | `/api/staff/grooming` | List grooming work items assigned to the current staff member or unassigned work. |
 | `PATCH` | `/api/staff/grooming/:groomingId/status` | Start or complete one grooming work item. Completion creates or updates an unpaid invoice for staff payment collection. |
-| `GET` | `/api/staff/boarding` | List current boarding guests with today's care checklist state. |
-| `PATCH` | `/api/staff/boarding/:boardingId/daily-status` | Update today's boarding care checklist for one guest. |
+| `GET` | `/api/staff/boarding` | List current boarding guests with today's care checklist state, note, and daily photo URL when available. |
+| `PATCH` | `/api/staff/boarding/:boardingId/daily-status` | Update today's boarding care checklist for one guest; accepts optional `dailyNote` and `imageDataUrl` for daily photo uploads. |
 | `GET` | `/api/staff/payments` | List invoice rows for staff payment collection. |
 | `PATCH` | `/api/staff/payments/:invoiceId/pay` | Mark one invoice as paid. |
 
@@ -126,7 +128,7 @@ Routes are mounted under `/api/customer` and require a customer auth token. Appo
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/customer/appointment-options` | List database-backed service options for customer booking. |
+| `GET` | `/api/customer/appointment-options` | List database-backed service options for customer booking. Customer booking exposes medical, grooming, and boarding service types; vaccine service rows are not offered as a separate booking category. |
 | `POST` | `/api/customer/appointment-provider-options` | List providers for a future service slot. Doctor services return doctors with an `AVAILABLE` `doctor_schedule_slots` row at the selected date/time; staff services return the staff list. Past slots are rejected. |
 | `GET` | `/api/customer/appointments?status=&pet=&serviceType=&page=&pageSize=` | List current customer's appointments with backend filtering, status counts, pagination summary, and prescription items when available. |
 | `POST` | `/api/customer/appointments` | Create a pending appointment for one current-customer pet and the selected provider. The requested date/time must be in the future. |
@@ -147,6 +149,8 @@ Routes are mounted under `/api/customer`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
+| `GET` | `/api/customer/profile` | Get the current customer's owner profile with email, phone, address, date of birth, gender, and derived age. |
+| `PATCH` | `/api/customer/profile` | Update the current customer's owner profile. Email is not changed by this endpoint. |
 | `GET` | `/api/customer/pets` | List current customer's pets. |
 | `POST` | `/api/customer/pets` | Create a customer pet. |
 | `GET` | `/api/customer/pets/:petId` | Get one customer pet. |

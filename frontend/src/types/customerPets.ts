@@ -137,6 +137,15 @@ export type PetDetail = {
     special_note: string | null;
     pickup_reminder_at: string | null;
     current_status: string;
+    boarding_daily_updates?: Array<{
+      id: number;
+      date: string;
+      eating_status: string | null;
+      health_status: string | null;
+      activity_status: string | null;
+      note: string | null;
+      img_url: string | null;
+    }>;
   }>;
   invoices: Array<{
     id: number;

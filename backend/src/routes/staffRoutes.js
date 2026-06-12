@@ -209,7 +209,7 @@ router.post("/boarding/:id/checkout", async function checkOutBoardingRoute(req, 
 
 router.patch("/boarding/:id/daily-status", async function patchBoardingDailyStatus(req, res) {
   try {
-    await updateBoardingDailyStatus(req.params.id, req.body?.todayStatus, req.auth?.user?.staffId);
+    const result = await updateBoardingDailyStatus(req.params.id, req.body?.todayStatus, req.auth?.user?.staffId, req.body ?? {});
     res.json({ ok: true, message: "Đã cập nhật lưu trú" });
   } catch (error) {
     sendError(res, error);

@@ -70,7 +70,7 @@ export interface HistoryRecord {
   pet: string;
   cost: string;
   status: "completed" | "pending" | "cancelled";
-  type: "medical" | "vaccine" | "grooming" | "boarding";
+  type: "medical" | "grooming" | "boarding";
   staff: string;
   details?: string;
   prescriptions?: Array<{
@@ -85,8 +85,10 @@ export interface HistoryRecord {
 export interface CustomerPortalNotification {
   id: number;
   type: "high" | "medium" | "info" | "promo";
+  rawType?: string;
   title: string;
   desc: string;
   time: string;
   read: boolean;
+  isUrgent?: boolean;
 }

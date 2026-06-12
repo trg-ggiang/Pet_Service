@@ -25,6 +25,10 @@ Key domains currently modeled include:
 - Services, grooming, boarding, invoices, payments
 - Notifications and reviews
 
+Customer owner profiles store contact fields on `customers` (`full_name`, `phone`, `address`) and login email on `users.email`.
+Additional owner demographics are stored as nullable profile fields on `customers`: `date_of_birth` and `gender`.
+Application code should derive age from `date_of_birth` instead of storing a fixed age value.
+
 Customer-created appointments store `requested_date` and `requested_time` on `appointments`.
 These fields preserve the requested slot for both doctor-backed services and staff-backed services such as grooming or boarding.
 Admin-managed doctor working windows are stored in `doctor_schedules`. Saving a window such as `08:00-16:00` creates 16 concrete 30-minute rows in `doctor_schedule_slots`.

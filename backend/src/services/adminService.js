@@ -25,6 +25,33 @@ function formatTime(value) {
   return raw.slice(0, 5);
 }
 
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) return null;
+  const birth = new Date(`${dateOfBirth}T00:00:00Z`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getUTCFullYear() - birth.getUTCFullYear();
+  const monthDelta = today.getUTCMonth() - birth.getUTCMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getUTCDate() < birth.getUTCDate())) age -= 1;
+  return age >= 0 ? age : null;
+}
+
+function normalizeCustomerGender(value) {
+  const gender = String(value || "UNKNOWN").toUpperCase();
+  return ["MALE", "FEMALE", "OTHER", "UNKNOWN"].includes(gender) ? gender : "UNKNOWN";
+}
+
+function normalizeCustomerDate(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    const error = new Error("Ngày sinh không hợp lệ");
+    error.statusCode = 400;
+    throw error;
+  }
+  return text;
+}
+
 function moneyText(value) {
   return Math.round(Number(value || 0)).toLocaleString("vi-VN");
 }
@@ -224,7 +251,7 @@ async function listAdminUsers(filters = {}) {
     readTable("users", "id, email, role, status, created_at", {
       order: { column: "created_at", ascending: false },
     }),
-    readTable("customers", "id, user_id, full_name, phone, address"),
+    readTable("customers", "id, user_id, full_name, phone, address, date_of_birth, gender"),
     readTable("doctors", "id, user_id, full_name, specialization, room_name"),
     readTable("staffs", "id, user_id, full_name, phone, address"),
     readTable("pets", "id, customer_id, name, animal_species:species_id(name)"),
@@ -322,6 +349,9 @@ async function listAdminUsers(filters = {}) {
         locked,
         tier: customerAppointments.length >= 10 ? "vip" : "regular",
         address: customer?.address || "",
+        dateOfBirth: customer?.date_of_birth || "",
+        age: calculateAge(customer?.date_of_birth),
+        gender: customer?.gender || "UNKNOWN",
         petCount: customerPets.length,
         pets: customerPets.map((pet) => `${pet.name}${pet.animal_species?.name ? ` (${pet.animal_species.name})` : ""}`),
         totalVisits: customerAppointments.length,
@@ -401,7 +431,7 @@ async function listAdminUsers(filters = {}) {
 function serviceCategory(type) {
   const map = {
     MEDICAL: "clinic",
-    VACCINE: "vaccination",
+    VACCINE: "clinic",
     GROOMING: "grooming",
     BOARDING: "boarding",
   };
@@ -411,7 +441,6 @@ function serviceCategory(type) {
 function serviceTypeFromCategory(category) {
   const map = {
     clinic: "MEDICAL",
-    vaccination: "VACCINE",
     grooming: "GROOMING",
     boarding: "BOARDING",
   };
@@ -464,7 +493,7 @@ function mapAdminService(service, stats) {
 }
 
 function buildServiceSummary(allServices, filteredServices, category) {
-  const categories = ["clinic", "vaccination", "grooming", "boarding"].map((item) => {
+  const categories = ["clinic", "grooming", "boarding"].map((item) => {
     const rows = allServices.filter((service) => service.category === item);
     const revenueMonth = rows.reduce((sum, service) => sum + Number(service.revenueMonth || 0), 0);
     return {
@@ -687,9 +716,12 @@ async function updateAdminServiceStatus(displayId, status) {
 }
 
 function mapAppointmentStatus(status) {
+  if (["scheduled", "in_progress", "completed", "cancelled"].includes(status)) return status;
+
   const map = {
     PENDING: "scheduled",
     CONFIRMED: "scheduled",
+    CHECKED_IN: "in_progress",
     IN_PROGRESS: "in_progress",
     COMPLETED: "completed",
     CANCELLED: "cancelled",
@@ -1066,10 +1098,10 @@ async function getAdminDashboard() {
       cages: cages.length,
       occupiedCages: activeBoardingByCage.size,
     },
-    appointmentsByStatus: Array.from(statusCounts.entries()).map(([status, value]) => ({
+    appointmentsByStatus: ["scheduled", "in_progress", "completed", "cancelled"].map((status) => ({
       status,
       label: dashboardStatusLabel(status),
-      value,
+      value: statusCounts.get(status) || 0,
     })),
     revenueByMonth: Array.from(revenueByMonthMap.entries())
       .slice(-6)
@@ -1432,6 +1464,8 @@ async function updateAdminUserProfile(role, displayId, data) {
         ...(d.name ? { full_name: d.name } : {}),
         ...(d.phone !== undefined ? { phone: d.phone } : {}),
         ...(d.address !== undefined ? { address: d.address } : {}),
+        ...(d.dateOfBirth !== undefined ? { date_of_birth: normalizeCustomerDate(d.dateOfBirth) } : {}),
+        ...(d.gender !== undefined ? { gender: normalizeCustomerGender(d.gender) } : {}),
       }),
     },
     doctor: {

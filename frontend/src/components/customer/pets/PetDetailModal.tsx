@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
-import { Calendar as CalendarIcon, Check, CheckCircle2, ChevronLeft, ClipboardList, Download, Heart, Loader2, Pencil, Scissors, Syringe, X } from "lucide-react";
+import { Calendar as CalendarIcon, Check, CheckCircle2, ChevronLeft, ClipboardList, Download, Eye, Heart, Image as ImageIcon, Loader2, Pencil, Scissors, Syringe, X } from "lucide-react";
+import { createPortal } from "react-dom";
 import { downloadCustomerInvoicePdf } from "../../../services/customer/customerPetsApi";
 import type { PetDetail, PetSummary } from "../../../types/customer/pets";
 
@@ -37,6 +38,61 @@ function formatDate(value?: string | null) {
 function formatCurrency(amount?: number | null) {
   if (amount == null) return "0₫";
   return new Intl.NumberFormat("vi-VN").format(amount) + "₫";
+}
+
+function getBoardingStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    BOOKED: "Đã đặt",
+    CHECKED_IN: "Đã check-in",
+    STAYING: "Đang lưu trú",
+    CHECKED_OUT: "Đã checkout",
+    CANCELLED: "Đã hủy",
+  };
+  return labels[status] || status;
+}
+
+function getBoardingCareItems(update: {
+  eating_status: string | null;
+  health_status: string | null;
+  activity_status: string | null;
+  note: string | null;
+}) {
+  const eating = String(update.eating_status || "").toUpperCase();
+  const activity = String(update.activity_status || "").toUpperCase();
+  const health = String(update.health_status || "").toUpperCase();
+  const note = String(update.note || "").toUpperCase();
+  return [
+    eating.includes("BREAKFAST") || note.includes("BREAKFAST") ? "Bữa sáng" : "",
+    eating.includes("LUNCH") || note.includes("LUNCH") ? "Bữa trưa" : "",
+    eating.includes("DINNER") || note.includes("DINNER") ? "Bữa tối" : "",
+    note.includes("CLEANED") ? "Vệ sinh phòng" : "",
+    activity.includes("EXERCISED") || note.includes("EXERCISED") ? "Vận động" : "",
+    health.includes("CHECKED") || note.includes("HEALTHCHECK") ? "Kiểm tra sức khỏe" : "",
+  ].filter(Boolean);
+}
+
+function getBoardingDisplayNote(note?: string | null) {
+  const tokens = new Set(["BREAKFAST", "LUNCH", "DINNER", "CLEANED", "EXERCISED", "HEALTHCHECK"]);
+  return String(note || "")
+    .split(/\r?\n|,/)
+    .map((part) => part.trim())
+    .filter((part) => part && !tokens.has(part.toUpperCase()))
+    .join("\n");
+}
+
+function getLatestBoardingUpdatesByDate(records: NonNullable<PetDetail["boardingRecords"][number]["boarding_daily_updates"]>) {
+  const latestByDate = new Map<string, typeof records[number]>();
+  [...records]
+    .sort((left, right) => {
+      const dateDelta = new Date(right.date).getTime() - new Date(left.date).getTime();
+      if (dateDelta !== 0) return dateDelta;
+      return Number(right.id || 0) - Number(left.id || 0);
+    })
+    .forEach((record) => {
+      const key = String(record.date || "").slice(0, 10);
+      if (key && !latestByDate.has(key)) latestByDate.set(key, record);
+    });
+  return Array.from(latestByDate.values());
 }
 
 function getGenderLabel(gender: PetSummary["gender"]) {
@@ -127,6 +183,7 @@ export function PetDetailModal({
   const [activeTab, setActiveTab] = useState<PetDetailTab>("overview");
   const [downloadError, setDownloadError] = useState("");
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
+  const [viewingImage, setViewingImage] = useState<{ src: string; label: string } | null>(null);
   const clr = getPetColorById(pet.colorId);
   const latestVaccination = detail?.vaccinations?.[0] ?? null;
   const latestMedicalVisit = detail?.medicalVisits?.[0] ?? null;
@@ -143,30 +200,30 @@ export function PetDetailModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center overflow-hidden bg-slate-900/40 p-3 backdrop-blur-sm sm:p-5" onClick={onClose}>
+      <div className="flex max-h-[calc(100dvh-1.5rem)] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             {pet.image ? (
-              <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
                 <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${clr.from}, ${clr.to})` }}>
-                <span className="text-xl font-bold text-white">{pet.initials}</span>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${clr.from}, ${clr.to})` }}>
+                <span className="text-base font-bold text-white">{pet.initials}</span>
               </div>
             )}
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">{pet.name}</h3>
-              <p className="text-sm text-slate-500">{pet.species} • {pet.breed} • {getGenderLabel(pet.gender)}</p>
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-bold text-slate-900 sm:text-base">{pet.name}</h3>
+              <p className="truncate text-xs text-slate-500 sm:text-sm">{pet.species} • {pet.breed} • {getGenderLabel(pet.gender)}</p>
             </div>
-            <span className={`px-2.5 py-1 text-[11px] font-bold rounded-lg ring-1 ring-inset ${pet.healthy ? "bg-emerald-50 text-emerald-700 ring-emerald-200/50" : "bg-amber-50 text-amber-700 ring-amber-200/50"}`}>
+            <span className={`hidden shrink-0 px-2.5 py-1 text-[11px] font-bold rounded-lg ring-1 ring-inset sm:inline-flex ${pet.healthy ? "bg-emerald-50 text-emerald-700 ring-emerald-200/50" : "bg-amber-50 text-amber-700 ring-amber-200/50"}`}>
               {pet.healthy ? "Khoẻ mạnh" : "Cần theo dõi"}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={onEdit} className="h-9 px-3 rounded-full flex items-center gap-2 text-sm font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 transition-colors">
+          <div className="flex shrink-0 items-center gap-2">
+            <button onClick={onEdit} className="h-8 px-3 rounded-full flex items-center gap-2 text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 transition-colors sm:text-sm">
               <Pencil size={15} />
               Chỉnh sửa
             </button>
@@ -176,7 +233,7 @@ export function PetDetailModal({
           </div>
         </div>
 
-        <div className="border-b border-slate-100 px-6 flex gap-1 overflow-x-auto">
+        <div className="flex flex-shrink-0 gap-1 overflow-x-auto border-b border-slate-100 px-5">
           {HISTORY_TABS.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -184,7 +241,7 @@ export function PetDetailModal({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-bold transition-all relative whitespace-nowrap flex items-center gap-2 ${active ? "text-cyan-600" : "text-slate-500 hover:text-slate-700"}`}
+                className={`px-3 py-2 text-xs font-bold transition-all relative whitespace-nowrap flex items-center gap-2 sm:text-sm ${active ? "text-cyan-600" : "text-slate-500 hover:text-slate-700"}`}
               >
                 <Icon size={14} />
                 {tab.label}
@@ -194,7 +251,7 @@ export function PetDetailModal({
           })}
         </div>
 
-        <div className="px-6 py-5 overflow-y-auto flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {loading && (
             <div className="flex items-center justify-center py-20 text-slate-500">
               <Loader2 className="w-5 h-5 animate-spin mr-2" /> Đang tải chi tiết thú cưng...
@@ -254,7 +311,7 @@ export function PetDetailModal({
           {!loading && detail && activeTab === "medical" && <TimelineList rows={detail.medicalVisits.map((row) => ({ title: row.diagnosis_note ?? "Khám thú y", subtitle: row.symptoms ?? "", meta: formatDate(row.created_at) }))} emptyText="Chưa có lịch sử khám." />}
           {!loading && detail && activeTab === "vaccine" && <TimelineList rows={detail.vaccinations.map((row) => ({ title: row.vaccine_name, subtitle: row.note ?? "", meta: `${formatDate(row.date_given)} · nhắc ${formatDate(row.next_due_date)}` }))} emptyText="Chưa có lịch tiêm chủng." />}
           {!loading && detail && activeTab === "grooming" && <TimelineList rows={detail.groomingRecords.map((row) => ({ title: row.status, subtitle: row.notes ?? "", meta: formatDate(row.started_at) }))} emptyText="Chưa có dữ liệu grooming." />}
-          {!loading && detail && activeTab === "boarding" && <TimelineList rows={detail.boardingRecords.map((row) => ({ title: row.current_status, subtitle: row.special_note ?? row.habit_note ?? "", meta: `${formatDate(row.check_in)} → ${formatDate(row.check_out)}` }))} emptyText="Chưa có dữ liệu lưu trú." />}
+          {!loading && detail && activeTab === "boarding" && <BoardingStayList records={detail.boardingRecords} onViewImage={setViewingImage} />}
           {!loading && detail && activeTab === "invoice" && (
             detail.invoices.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center text-slate-500">Chưa có hóa đơn.</div>
@@ -285,7 +342,23 @@ export function PetDetailModal({
           )}
         </div>
       </div>
-    </div>
+      {viewingImage && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/80 p-4" onClick={() => setViewingImage(null)}>
+          <div className="relative max-h-[92vh] w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setViewingImage(null)}
+              className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition-colors hover:bg-white"
+              aria-label="Đóng ảnh"
+            >
+              <X size={18} />
+            </button>
+            <img src={viewingImage.src} alt={viewingImage.label} className="max-h-[92vh] w-full rounded-2xl object-contain shadow-2xl" />
+          </div>
+        </div>
+      )}
+    </div>,
+    document.body,
   );
 }
 
@@ -301,6 +374,96 @@ function SummaryCard({ title, items }: { title: string; items: Array<{ label: st
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function BoardingStayList({
+  records,
+  onViewImage,
+}: {
+  records: PetDetail["boardingRecords"];
+  onViewImage: (image: { src: string; label: string }) => void;
+}) {
+  if (records.length === 0) {
+    return <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center text-slate-500">Chưa có dữ liệu lưu trú.</div>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {records.map((record) => {
+        const updates = getLatestBoardingUpdatesByDate(record.boarding_daily_updates || []);
+
+        return (
+          <div key={record.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
+            <div className="flex flex-col gap-2 border-b border-slate-100 pb-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <div className="break-words text-sm font-bold text-slate-900">{getBoardingStatusLabel(record.current_status)}</div>
+                <div className="mt-1 break-words text-xs font-semibold text-slate-500">{formatDate(record.check_in)} → {formatDate(record.check_out)}</div>
+              </div>
+              <span className="inline-flex w-fit shrink-0 rounded-xl bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100">Phòng #{record.cage_id}</span>
+            </div>
+
+            {(record.feeding_instruction || record.special_note || record.habit_note) && (
+              <div className="mt-2 space-y-1 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                {record.feeding_instruction && <div className="break-words"><span className="font-bold text-slate-700">Thức ăn:</span> {record.feeding_instruction}</div>}
+                {(record.special_note || record.habit_note) && <div className="break-words"><span className="font-bold text-slate-700">Ghi chú:</span> {record.special_note || record.habit_note}</div>}
+              </div>
+            )}
+
+            <div className="mt-2.5">
+              <div className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Nhật ký chăm sóc</div>
+              {updates.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-6 text-center text-sm font-medium text-slate-400">Chưa có cập nhật hằng ngày.</div>
+              ) : (
+                <div className="space-y-2.5">
+                  {updates.map((update) => {
+                    const careItems = getBoardingCareItems(update);
+                    const displayNote = getBoardingDisplayNote(update.note);
+                    return (
+                      <div key={update.id} className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 p-2">
+                        <div className="grid min-w-0 gap-2.5 md:grid-cols-[128px_minmax(0,1fr)]">
+                        <div className="relative h-32 overflow-hidden rounded-xl border border-slate-200 bg-white md:h-24">
+                          {update.img_url ? (
+                            <>
+                              <img src={update.img_url} alt={`Ảnh lưu trú ngày ${formatDate(update.date)}`} className="h-full w-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => onViewImage({ src: update.img_url || "", label: `Ảnh lưu trú ngày ${formatDate(update.date)}` })}
+                                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm transition-colors hover:bg-white"
+                                aria-label="Xem ảnh lưu trú"
+                              >
+                                <Eye size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center text-slate-300">
+                              <ImageIcon size={24} />
+                              <span className="mt-2 text-xs font-semibold">Chưa có ảnh</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 overflow-hidden">
+                          <div className="break-words text-sm font-bold text-slate-900">{formatDate(update.date)}</div>
+                          {careItems.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {careItems.map((item) => (
+                                <span key={item} className="max-w-full break-words rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-100">{item}</span>
+                              ))}
+                            </div>
+                          )}
+                          {displayNote && <p className="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-slate-600">{displayNote}</p>}
+                        </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

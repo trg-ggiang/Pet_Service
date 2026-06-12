@@ -31,6 +31,10 @@ const {
   listCustomerServiceHistoryView,
 } = require("../services/customer/customerServiceHistoryService");
 const {
+  getCustomerProfile,
+  updateCustomerProfile,
+} = require("../services/customer/customerProfileService");
+const {
   submitRating,
 } = require("../services/adminService");
 const {
@@ -43,6 +47,24 @@ const router = express.Router();
 
 router.use(authMiddleware);
 router.use(requireRole("customer"));
+
+router.get("/profile", async (req, res) => {
+  try {
+    const profile = await getCustomerProfile(req.auth.user.customerId);
+    res.json({ ok: true, profile });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể tải hồ sơ khách hàng" });
+  }
+});
+
+router.patch("/profile", async (req, res) => {
+  try {
+    const profile = await updateCustomerProfile(req.auth.user.customerId, req.body || {});
+    res.json({ ok: true, profile });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật hồ sơ khách hàng" });
+  }
+});
 
 router.get("/pets", async (req, res) => {
   try {

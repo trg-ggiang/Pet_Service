@@ -851,7 +851,7 @@ function StayingTab({
                       </div>
                       <div className="flex flex-col gap-2 flex-shrink-0">
                         <button onClick={() => onViewDetails(guest)} className="h-9 px-4 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5">
-                          <Eye size={14} /> Chi tiết
+                          <Eye size={14} /> Cập nhật nhật ký
                         </button>
                         <button onClick={() => onCheckout(guest)} className="h-9 px-4 rounded-lg text-sm font-bold text-white flex items-center gap-1.5 transition-colors" style={{ background: "#DC2626" }}>
                           Checkout

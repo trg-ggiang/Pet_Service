@@ -43,6 +43,65 @@ const INITIAL_ERRORS: ErrorState = {
   payments: null,
 };
 
+const EMPTY_BOARDING_STATUS: BoardingDailyStatus = {
+  breakfast: false,
+  lunch: false,
+  dinner: false,
+  cleaned: false,
+  exercised: false,
+  healthCheck: false,
+};
+
+function getLocalDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function normalizeBoardingGuestForToday(guest: BoardingGuest): BoardingGuest {
+  const today = getLocalDateKey();
+  const todayUpdate = (guest.dailyUpdates || []).find((update) => update.date === today);
+
+  if (!todayUpdate) {
+    return {
+      ...guest,
+      todayStatus: { ...EMPTY_BOARDING_STATUS },
+      todayNote: "",
+      todayImageUrl: null,
+    };
+  }
+
+  return {
+    ...guest,
+    todayStatus: todayUpdate.status,
+    todayNote: todayUpdate.note || "",
+    todayImageUrl: todayUpdate.imageUrl || null,
+  };
+}
+
+function upsertTodayBoardingUpdate(guest: BoardingGuest): BoardingGuest {
+  const today = getLocalDateKey();
+  const dailyUpdates = guest.dailyUpdates || [];
+  const todayUpdate = {
+    id: dailyUpdates.find((update) => update.date === today)?.id || Date.now(),
+    date: today,
+    status: guest.todayStatus,
+    note: guest.todayNote || "",
+    imageUrl: guest.todayImageUrl || null,
+  };
+
+  return {
+    ...guest,
+    dailyUpdates: [
+      todayUpdate,
+      ...dailyUpdates.filter((update) => update.date !== today),
+    ],
+  };
+}
+
 export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [activeNav, setActiveNav] = useState<StaffNavId>("appointments");
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -65,6 +124,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [completingGroomingAppointmentId, setCompletingGroomingAppointmentId] = useState<number | null>(null);
   const [viewingBoarding, setViewingBoarding] = useState<BoardingGuest | null>(null);
   const [processingPayment, setProcessingPayment] = useState<PaymentItem | null>(null);
+  const [boardingDateKey, setBoardingDateKey] = useState(getLocalDateKey());
 
   const setDataLoading = useCallback((key: DataKey, value: boolean) => {
     setLoading((prev) => ({ ...prev, [key]: value }));
@@ -121,7 +181,12 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const loadBoarding = useCallback(async () => {
     try {
       setDataLoading("boarding", true);
-      setBoardingGuests(await staffAppointmentsService.fetchBoardingGuests());
+      const guests = (await staffAppointmentsService.fetchBoardingGuests()).map(normalizeBoardingGuestForToday);
+      setBoardingGuests(guests);
+      setViewingBoarding((prev) => {
+        if (!prev) return prev;
+        return guests.find((guest) => guest.id === prev.id) || null;
+      });
       setDataError("boarding", null);
     } catch (error) {
       console.error("[FRONTEND] Failed to load boarding guests:", error);
@@ -157,6 +222,25 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
     if (activeNav === "boarding") void loadBoarding();
     if (activeNav === "payments") void loadPayments();
   }, [activeNav, loadBoarding, loadGrooming, loadPayments]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      const nextDateKey = getLocalDateKey();
+      setBoardingDateKey((prevDateKey) => prevDateKey === nextDateKey ? prevDateKey : nextDateKey);
+    }, 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    setBoardingGuests((prev) => prev.map(normalizeBoardingGuestForToday));
+    setViewingBoarding((prev) => prev ? normalizeBoardingGuestForToday(prev) : prev);
+
+    if (activeNav === "boarding") {
+      void loadBoarding();
+      void loadSummary();
+    }
+  }, [boardingDateKey, activeNav, loadBoarding, loadSummary]);
 
   const { doneGrooming, totalGrooming, pendingCheckIn, needsFed, pendingPayments } = summary;
 
@@ -244,13 +328,14 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   }
 
   async function handleToggleBoardingStatus(guest: BoardingGuest, field: keyof BoardingDailyStatus) {
-    const nextGuest = {
-      ...guest,
+    const currentGuest = normalizeBoardingGuestForToday(guest);
+    const nextGuest = upsertTodayBoardingUpdate({
+      ...currentGuest,
       todayStatus: {
-        ...guest.todayStatus,
-        [field]: !guest.todayStatus[field],
+        ...currentGuest.todayStatus,
+        [field]: !currentGuest.todayStatus[field],
       },
-    };
+    });
 
     setBoardingGuests((prev) => prev.map((item) => item.id === guest.id ? nextGuest : item));
     setViewingBoarding((prev) => prev?.id === guest.id ? nextGuest : prev);
@@ -262,6 +347,28 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
       console.error("[FRONTEND] Update boarding failed:", error);
       await loadBoarding();
       alert("Không thể cập nhật lưu trú: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+    }
+  }
+
+  async function handleSaveBoardingDailyUpdate(guest: BoardingGuest, dailyNote: string, imageDataUrl: string | null) {
+    const currentGuest = normalizeBoardingGuestForToday(guest);
+    try {
+      await staffAppointmentsService.updateBoardingDailyStatus(currentGuest.id, currentGuest.todayStatus, {
+        dailyNote,
+        imageDataUrl,
+      });
+      const nextGuest = upsertTodayBoardingUpdate({
+        ...currentGuest,
+        todayNote: dailyNote,
+        todayImageUrl: imageDataUrl || currentGuest.todayImageUrl || null,
+      });
+      setBoardingGuests((prev) => prev.map((item) => item.id === currentGuest.id ? nextGuest : item));
+      setViewingBoarding((prev) => prev?.id === currentGuest.id ? nextGuest : prev);
+      await loadBoarding();
+      await loadSummary();
+    } catch (error) {
+      console.error("[FRONTEND] Save boarding daily update failed:", error);
+      throw error;
     }
   }
 
@@ -367,6 +474,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           guest={viewingBoarding}
           onClose={() => setViewingBoarding(null)}
           onToggleStatus={(field) => void handleToggleBoardingStatus(viewingBoarding, field)}
+          onSaveDailyUpdate={(dailyNote, imageDataUrl) => handleSaveBoardingDailyUpdate(viewingBoarding, dailyNote, imageDataUrl)}
         />
       )}
       {processingPayment && (

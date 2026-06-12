@@ -320,7 +320,7 @@ async function getPetDetail(petId, customerId) {
       ? supabase
           .from("boarding")
           .select(
-            "id, appointment_id, cage_id, check_in, check_out, feeding_instruction, habit_note, special_note, pickup_reminder_at, current_status",
+            "id, appointment_id, cage_id, check_in, check_out, feeding_instruction, habit_note, special_note, pickup_reminder_at, current_status, boarding_daily_updates (id, date, eating_status, health_status, activity_status, note, img_url)",
           )
           .in("appointment_id", appointmentIds)
           .order("check_in", { ascending: false })

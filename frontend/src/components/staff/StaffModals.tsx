@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Activity, BedDouble, CheckCircle2, Coffee, Loader2, Stethoscope, Star, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, BedDouble, CheckCircle2, Coffee, Eye, Image as ImageIcon, ImagePlus, Loader2, Stethoscope, Star, Upload, X } from "lucide-react";
 import type {
   BoardingDailyStatus,
   BoardingGuest,
@@ -100,12 +100,84 @@ export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onC
   );
 }
 
-export function BoardingDetailModal({ guest, onClose, onToggleStatus }: {
+export function BoardingDetailModal({ guest, onClose, onToggleStatus, onSaveDailyUpdate }: {
   guest: BoardingGuest;
   onClose: () => void;
   onToggleStatus: (field: keyof BoardingDailyStatus) => void;
+  onSaveDailyUpdate: (dailyNote: string, imageDataUrl: string | null) => Promise<void>;
 }) {
+  const [dailyNote, setDailyNote] = useState(guest.todayNote || "");
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState(guest.todayImageUrl || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
+  const [viewingImage, setViewingImage] = useState<{ src: string; label: string } | null>(null);
+
+  const statusItems = [
+    { label: "Bữa sáng", field: "breakfast" as const, icon: Coffee },
+    { label: "Bữa trưa", field: "lunch" as const, icon: Coffee },
+    { label: "Bữa tối", field: "dinner" as const, icon: Coffee },
+    { label: "Vệ sinh phòng", field: "cleaned" as const, icon: Star },
+    { label: "Vận động", field: "exercised" as const, icon: Activity },
+    { label: "Kiểm tra sức khỏe", field: "healthCheck" as const, icon: Stethoscope },
+  ];
+  const dailyHistory = guest.dailyUpdates || [];
+  const todayKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  useEffect(() => {
+    setDailyNote(guest.todayNote || "");
+    setPreviewUrl(guest.todayImageUrl || "");
+    setImageDataUrl(null);
+    setError("");
+    setSavedMessage("");
+  }, [guest.id, guest.todayNote, guest.todayImageUrl]);
+
+  function handleImageChange(file: File | undefined) {
+    setError("");
+    setSavedMessage("");
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Ảnh không được vượt quá 5MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result || "");
+      setImageDataUrl(value);
+      setPreviewUrl(value);
+    };
+    reader.onerror = () => setError("Không thể đọc ảnh đã chọn.");
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSave() {
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      await onSaveDailyUpdate(dailyNote.trim(), imageDataUrl);
+      setImageDataUrl(null);
+      setSavedMessage("Đã lưu nhật ký lưu trú hôm nay. Chủ nuôi có thể xem cập nhật mới trong hồ sơ thú cưng.");
+    } catch (err) {
+      setSavedMessage("");
+      setError(err instanceof Error ? err.message : "Không thể lưu cập nhật lưu trú.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(event) => event.stopPropagation()}>
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
@@ -155,14 +227,7 @@ export function BoardingDetailModal({ guest, onClose, onToggleStatus }: {
           <div className="bg-cyan-50 rounded-2xl p-4 border border-cyan-100">
             <h4 className="text-sm font-bold text-cyan-900 mb-3">Cập nhật trạng thái hôm nay</h4>
             <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "Bữa sáng", field: "breakfast" as const, icon: Coffee },
-                { label: "Bữa trưa", field: "lunch" as const, icon: Coffee },
-                { label: "Bữa tối", field: "dinner" as const, icon: Coffee },
-                { label: "Vệ sinh phòng", field: "cleaned" as const, icon: Star },
-                { label: "Vận động", field: "exercised" as const, icon: Activity },
-                { label: "Kiểm tra sức khỏe", field: "healthCheck" as const, icon: Stethoscope },
-              ].map((item) => {
+              {statusItems.map((item) => {
                 const Icon = item.icon;
                 const done = guest.todayStatus[item.field];
                 return (
@@ -176,6 +241,137 @@ export function BoardingDetailModal({ guest, onClose, onToggleStatus }: {
               })}
             </div>
           </div>
+          <div className="bg-white rounded-2xl p-4 border border-slate-200">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h4 className="text-sm font-bold text-slate-900">Ảnh và ghi chú hôm nay</h4>
+              <label className="h-9 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-2 cursor-pointer">
+                <ImagePlus size={14} />
+                Chọn ảnh
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => handleImageChange(event.target.files?.[0])}
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 md:grid-cols-[180px,1fr]">
+              <div className="aspect-[4/3] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                {previewUrl ? (
+                  <img src={previewUrl} alt={`Cập nhật lưu trú của ${guest.petName}`} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex flex-col items-center justify-center text-slate-400">
+                    <Upload size={24} />
+                    <span className="mt-2 text-xs font-semibold">Chưa có ảnh</span>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <textarea
+                  value={dailyNote}
+                  onChange={(event) => {
+                    setDailyNote(event.target.value);
+                    setSavedMessage("");
+                  }}
+                  rows={4}
+                  maxLength={500}
+                  placeholder="Tình trạng ăn uống, tinh thần, dấu hiệu cần theo dõi..."
+                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                />
+                {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{error}</div>}
+                <button
+                  type="button"
+                  onClick={() => void handleSave()}
+                  disabled={saving}
+                  className="h-10 w-full rounded-xl bg-cyan-600 text-sm font-bold text-white transition-colors hover:bg-cyan-700 disabled:cursor-wait disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                  {saving ? "Đang lưu..." : "Lưu cập nhật hôm nay"}
+                </button>
+                {savedMessage && (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0 text-emerald-600" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-emerald-800">Lưu nhật ký thành công</div>
+                        <p className="mt-1 text-xs font-semibold leading-5 text-emerald-700">{savedMessage}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="mt-3 h-9 w-full rounded-xl bg-emerald-600 text-xs font-bold text-white transition-colors hover:bg-emerald-700"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-slate-200">
+            <h4 className="text-sm font-bold text-slate-900 mb-3">Nhật ký các ngày</h4>
+            {dailyHistory.length > 0 ? (
+              <div className="space-y-3">
+                {dailyHistory.map((update) => {
+                  const doneItems = statusItems.filter((item) => update.status[item.field]);
+                  return (
+                    <div key={`${update.id}-${update.date}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <div className="relative h-28 w-full overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-36 sm:flex-shrink-0">
+                          {update.imageUrl ? (
+                            <>
+                              <img src={update.imageUrl} alt={`Nhật ký lưu trú ngày ${update.date}`} className="h-full w-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => setViewingImage({ src: update.imageUrl || "", label: update.date })}
+                                className="absolute right-2 top-2 h-8 w-8 rounded-full bg-white/90 text-slate-700 shadow-sm transition-colors hover:bg-white hover:text-cyan-700 flex items-center justify-center"
+                                aria-label="Xem ảnh"
+                              >
+                                <Eye size={15} />
+                              </button>
+                            </>
+                          ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center text-slate-300">
+                              <ImageIcon size={22} />
+                              <span className="mt-1 text-xs font-semibold">Chưa có ảnh</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="text-sm font-bold text-slate-900">{update.date}</div>
+                            {update.date === todayKey && (
+                              <span className="rounded-full bg-cyan-50 px-2 py-1 text-[11px] font-bold text-cyan-700">Hôm nay</span>
+                            )}
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {doneItems.length > 0 ? doneItems.map((item) => (
+                              <span key={item.field} className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">
+                                {item.label}
+                              </span>
+                            )) : (
+                              <span className="text-xs font-semibold text-slate-400">Chưa cập nhật trạng thái</span>
+                            )}
+                          </div>
+                          {update.note && (
+                            <div className="mt-3 rounded-xl border border-cyan-100 bg-white px-3 py-2">
+                              <div className="text-[11px] font-bold uppercase tracking-wide text-cyan-700">Cập nhật tình trạng</div>
+                              <p className="mt-1 whitespace-pre-line text-xs font-semibold leading-5 text-slate-700">{update.note}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-400">
+                Chưa có nhật ký lưu trú.
+              </div>
+            )}
+          </div>
         </div>
         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
           <button onClick={onClose} className="w-full h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-white transition-colors">
@@ -184,6 +380,22 @@ export function BoardingDetailModal({ guest, onClose, onToggleStatus }: {
         </div>
       </div>
     </div>
+    {viewingImage && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 p-4" onClick={() => setViewingImage(null)}>
+        <div className="relative max-h-[92vh] w-full max-w-4xl" onClick={(event) => event.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => setViewingImage(null)}
+            className="absolute right-3 top-3 z-10 h-10 w-10 rounded-full bg-white/90 text-slate-700 shadow-sm transition-colors hover:bg-white flex items-center justify-center"
+            aria-label="Đóng ảnh"
+          >
+            <X size={18} />
+          </button>
+          <img src={viewingImage.src} alt={`Ảnh lưu trú ngày ${viewingImage.label}`} className="max-h-[92vh] w-full rounded-2xl object-contain" />
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
