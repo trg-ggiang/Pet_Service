@@ -4,6 +4,7 @@ import {
   AppointmentsTab,
   BoardingDetailModal,
   BoardingTab,
+  DeleteAppointmentModal,
   GroomingTab,
   LogoutConfirmModal,
   PaymentProcessModal,
@@ -120,6 +121,8 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [loading, setLoading] = useState<LoadingState>(INITIAL_LOADING);
   const [errors, setErrors] = useState<ErrorState>(INITIAL_ERRORS);
   const [viewingApt, setViewingApt] = useState<StaffAppointment | null>(null);
+  const [deletingApt, setDeletingApt] = useState<StaffAppointment | null>(null);
+  const [isDeletingAppointment, setIsDeletingAppointment] = useState(false);
   const [approvingAppointmentId, setApprovingAppointmentId] = useState<number | null>(null);
   const [completingGroomingAppointmentId, setCompletingGroomingAppointmentId] = useState<number | null>(null);
   const [viewingBoarding, setViewingBoarding] = useState<BoardingGuest | null>(null);
@@ -373,6 +376,22 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
     }
   }
 
+  async function handleDeleteAppointment(appointment: StaffAppointment) {
+    try {
+      setIsDeletingAppointment(true);
+      await staffAppointmentsService.deleteAppointment(appointment.appointmentId);
+      setDeletingApt(null);
+      setViewingApt(null);
+      await loadAppointments();
+      await loadSummary();
+    } catch (error) {
+      console.error("[FRONTEND] Delete appointment failed:", error);
+      alert("Không thể xóa lịch hẹn: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+    } finally {
+      setIsDeletingAppointment(false);
+    }
+  }
+
   async function handleCompletePayment(payment: PaymentItem, method: PaymentMethod) {
     try {
       await staffAppointmentsService.markPaymentPaid(payment.invoiceId, method);
@@ -418,6 +437,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
               onCheckIn={(appointment) => void handleCheckIn(appointment)}
               onCompleteGrooming={(appointment) => void handleCompleteGroomingAppointment(appointment)}
               onApproveRequest={(appointment) => void handleApproveAppointmentRequest(appointment)}
+              onDelete={setDeletingApt}
               approvingAppointmentId={approvingAppointmentId}
               completingGroomingAppointmentId={completingGroomingAppointmentId}
             />
@@ -466,6 +486,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           onCheckIn={() => void handleCheckIn(viewingApt)}
           onCompleteGrooming={() => void handleCompleteGroomingAppointment(viewingApt)}
           onApproveRequest={() => void handleApproveAppointmentRequest(viewingApt)}
+          onDelete={() => { setViewingApt(null); setDeletingApt(viewingApt); }}
           approving={approvingAppointmentId === viewingApt.appointmentId}
           completingGrooming={completingGroomingAppointmentId === viewingApt.appointmentId}
         />
@@ -483,6 +504,14 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           payment={processingPayment}
           onClose={() => setProcessingPayment(null)}
           onComplete={(method) => handleCompletePayment(processingPayment, method)}
+        />
+      )}
+      {deletingApt && (
+        <DeleteAppointmentModal
+          apt={deletingApt}
+          onClose={() => setDeletingApt(null)}
+          onConfirm={() => void handleDeleteAppointment(deletingApt)}
+          deleting={isDeletingAppointment}
         />
       )}
     </div>

@@ -29,9 +29,9 @@ const TYPE_META: Record<
 };
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; border: string }> = {
-  completed: { label: "Hoàn thành", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  pending:   { label: "Chờ TT",     bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200"   },
-  cancelled: { label: "Đã hủy",     bg: "bg-red-50",     text: "text-red-600",     border: "border-red-200"     },
+  completed: { label: "Hoàn thành",      bg: "bg-white", text: "text-emerald-700", border: "border-emerald-300" },
+  pending:   { label: "Chờ thanh toán",  bg: "bg-white", text: "text-slate-600",   border: "border-slate-300"   },
+  cancelled: { label: "Đã hủy",          bg: "bg-white", text: "text-red-500",     border: "border-red-200"     },
 };
 
 const HISTORY_FILTERS: Array<{ id: CustomerServiceHistoryTypeFilter; label: string; icon: ElementType }> = [
@@ -78,7 +78,7 @@ function RatingModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="w-full max-w-sm overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-6 pt-6 pb-2">
@@ -93,7 +93,7 @@ function RatingModal({
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(0)}
                 onClick={() => setScore(i)}
-                className="transition-transform hover:scale-110"
+                className=""
               >
                 <Star size={36} className={i <= display ? "fill-amber-400 text-amber-400" : "fill-slate-100 text-slate-200"} />
               </button>
@@ -107,21 +107,21 @@ function RatingModal({
             onChange={e => setComment(e.target.value)}
             rows={3}
             placeholder="Nhận xét thêm (không bắt buộc)..."
-            className="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-2.5 text-[13px] focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
+            className="w-full resize-none rounded-lg border border-slate-200 px-3.5 py-2.5 text-[13px] focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
           />
           {error && <p className="text-[12.5px] font-semibold text-red-600">{error}</p>}
         </div>
         <div className="flex gap-3 px-6 pb-6">
           <button
             onClick={onClose}
-            className="h-10 flex-1 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+            className="h-10 flex-1 rounded-lg border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
           >
             Hủy
           </button>
           <button
             onClick={() => void handleSubmit()}
             disabled={submitting || score === 0}
-            className="h-10 flex-1 rounded-xl bg-cyan-500 text-[13px] font-bold text-white transition-colors hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-10 flex-1 rounded-lg bg-cyan-500 text-[13px] font-bold text-white transition-colors hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {submitting ? "Đang gửi..." : "Gửi đánh giá"}
           </button>
@@ -180,13 +180,13 @@ export function CustomerHistoryTab({
             <button
               key={type}
               onClick={() => onChangeTypeFilter(active ? "all" : type)}
-              className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all hover:shadow-md active:scale-[0.98] ${
+              className={`flex items-center gap-3 rounded-xl border p-3.5 text-left transition-colors ${
                 active
-                  ? `${meta.accentBg} ${meta.accentBorder} shadow-sm`
+                  ? `${meta.accentBg} ${meta.accentBorder}`
                   : "border-slate-200 bg-white"
               }`}
             >
-              <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${meta.accentBg}`}>
+              <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${meta.accentBg}`}>
                 <Icon size={18} className={meta.accentText} />
               </div>
               <div>
@@ -201,7 +201,7 @@ export function CustomerHistoryTab({
       {/* ── Filters row ───────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         {/* Type tabs */}
-        <div className="flex flex-1 gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5">
+        <div className="flex flex-1 gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5">
           {HISTORY_FILTERS.map(f => {
             const active = historyTypeFilter === f.id;
             const Icon   = f.icon;
@@ -212,8 +212,8 @@ export function CustomerHistoryTab({
               <button
                 key={f.id}
                 onClick={() => onChangeTypeFilter(f.id)}
-                className={`flex min-w-fit flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-bold transition-all ${
-                  active ? "bg-cyan-500 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
+                className={`flex min-w-fit flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-bold transition-colors ${
+                  active ? "bg-cyan-500 text-white" : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 <Icon size={13} strokeWidth={active ? 2.5 : 2} />
@@ -236,7 +236,7 @@ export function CustomerHistoryTab({
           <select
             value={petFilter}
             onChange={e => setPetFilter(e.target.value)}
-            className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold shadow-sm focus:border-cyan-400 focus:outline-none"
+            className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold focus:border-cyan-400 focus:outline-none"
           >
             <option value="all">Tất cả thú cưng</option>
             {petOptions.map(p => <option key={p} value={p}>{p}</option>)}
@@ -245,7 +245,7 @@ export function CustomerHistoryTab({
         </div>
 
         {/* Count badge */}
-        <div className="flex items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-500 shadow-sm whitespace-nowrap h-10 flex-shrink-0">
+        <div className="flex items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-500 whitespace-nowrap h-10 flex-shrink-0">
           {displayed.length} kết quả
         </div>
       </div>
@@ -254,7 +254,7 @@ export function CustomerHistoryTab({
       {historyLoading ? (
         <div className="space-y-3">
           {[0, 1, 2].map(i => (
-            <div key={i} className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div key={i} className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
               <div className="w-[88px] flex-shrink-0 animate-pulse bg-slate-100" />
               <div className="flex-1 space-y-3 p-5">
                 <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
@@ -266,7 +266,7 @@ export function CustomerHistoryTab({
           ))}
         </div>
       ) : historyError ? (
-        <div className="flex items-center gap-4 rounded-2xl border border-red-200 bg-red-50 p-5">
+        <div className="flex items-center gap-4 rounded-xl border border-red-200 bg-red-50 p-5">
           <AlertTriangle size={20} className="flex-shrink-0 text-red-500" />
           <div>
             <p className="text-sm font-bold text-red-700">Không thể tải lịch sử</p>
@@ -274,7 +274,7 @@ export function CustomerHistoryTab({
           </div>
         </div>
       ) : displayed.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
             <Receipt size={24} className="text-slate-400" />
           </div>
@@ -299,11 +299,11 @@ export function CustomerHistoryTab({
               <div
                 key={record.id}
                 onClick={() => onViewHistory(record)}
-                className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md hover:border-slate-300 cursor-pointer"
+                className="flex overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300 cursor-pointer"
               >
                 {/* ── Date / type accent column ──────────────────── */}
                 <div className={`flex w-[88px] flex-shrink-0 flex-col items-center justify-center gap-1 border-r py-4 ${meta.accentBg} ${meta.accentBorder}`}>
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${meta.accentBg} border ${meta.accentBorder}`}>
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${meta.accentBg} border ${meta.accentBorder}`}>
                     <TypeIcon size={16} className={meta.accentText} />
                   </div>
                   <div className={`text-[10px] font-bold text-center leading-tight px-1 ${meta.accentText}`}>
@@ -345,7 +345,7 @@ export function CustomerHistoryTab({
 
                   {/* Row 2: medical diagnosis preview */}
                   {record.type === "medical" && record.medicalRecord?.diagnosisNote && (
-                    <div className="mt-2.5 flex items-start gap-2 rounded-xl border border-cyan-100 bg-cyan-50/60 px-3.5 py-2.5">
+                    <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-cyan-100 bg-cyan-50/60 px-3.5 py-2.5">
                       <Stethoscope size={13} className="mt-0.5 flex-shrink-0 text-cyan-600" />
                       <div className="min-w-0">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-cyan-700">Chẩn đoán: </span>
@@ -356,7 +356,7 @@ export function CustomerHistoryTab({
 
                   {/* Row 3: items (service details) */}
                   {hasItems && (
-                    <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden">
+                    <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 overflow-hidden">
                       <div className="flex items-center gap-2 border-b border-slate-100 px-3.5 py-2">
                         <Receipt size={12} className="text-slate-400 flex-shrink-0" />
                         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Chi tiết dịch vụ</span>
@@ -380,7 +380,7 @@ export function CustomerHistoryTab({
 
                   {/* Row 3: prescriptions */}
                   {hasRx && (
-                    <div className="mt-2.5 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-2.5">
+                    <div className="mt-2.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3.5 py-2.5">
                       <div className="mb-2 flex items-center gap-1.5">
                         <Pill size={12} className="text-emerald-600 flex-shrink-0" />
                         <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Đơn thuốc</span>
@@ -409,7 +409,7 @@ export function CustomerHistoryTab({
                       ) : canRate ? (
                         <button
                           onClick={() => setRatingRecord(record)}
-                          className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-1.5 text-[12px] font-bold text-amber-700 transition-colors hover:bg-amber-100"
+                          className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-1.5 text-[12px] font-bold text-amber-700 transition-colors hover:bg-amber-100"
                         >
                           <Star size={12} className="fill-amber-400 text-amber-400" />
                           Đánh giá dịch vụ

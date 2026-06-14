@@ -453,7 +453,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto py-3">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = tab === item.id;
@@ -461,8 +461,10 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               <button
                 key={item.id}
                 onClick={() => setTab(item.id)}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${
-                  active ? "bg-cyan-50 text-cyan-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                className={`flex w-full items-center justify-between py-2.5 pr-3 text-sm font-semibold transition-colors ${
+                  active
+                    ? "border-l-2 border-cyan-500 bg-cyan-50 pl-[10px] text-cyan-700"
+                    : "border-l-2 border-transparent pl-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-3">
@@ -470,7 +472,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                   <span className="truncate">{item.label}</span>
                 </span>
                 {item.badge && (
-                  <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${active ? "bg-white text-cyan-700" : "bg-slate-100 text-slate-500"}`}>
+                  <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${active ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500"}`}>
                     {item.badge}
                   </span>
                 )}
@@ -482,7 +484,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         <div className="border-t border-slate-200 p-3">
           <button
             onClick={() => setConfirmLogout(true)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
           >
             <LogOut size={18} />
             <span>Đăng xuất</span>
@@ -491,6 +493,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {tab !== "home" && (
         <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold text-slate-950">{tabMeta[tab].title}</h1>
@@ -511,7 +514,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             {showNotifDropdown && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setShowNotifDropdown(false)} />
-                <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
                   <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="text-[15px] font-bold text-slate-900">Thông báo</span>
@@ -554,18 +557,19 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             )}
           </div>
         </header>
+        )}
 
       {confirmLogout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmLogout(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
+          <div className="bg-white rounded-xl shadow-md w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
               <LogOut size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 text-center">Xác nhận đăng xuất</h3>
             <p className="text-sm text-slate-500 text-center mt-2">Bạn có chắc muốn đăng xuất khỏi tài khoản?</p>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setConfirmLogout(false)} className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Hủy</button>
-              <button onClick={onLogout} className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors">Đăng xuất</button>
+              <button onClick={() => setConfirmLogout(false)} className="flex-1 h-11 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Hủy</button>
+              <button onClick={onLogout} className="flex-1 h-11 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors">Đăng xuất</button>
             </div>
           </div>
         </div>
@@ -573,12 +577,12 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
       {urgentNotification && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={closeUrgentNotification}>
-          <div className="w-full max-w-[460px] overflow-hidden rounded-2xl border border-red-100 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-[460px] overflow-hidden rounded-xl border border-red-100 bg-white shadow-md" onClick={(event) => event.stopPropagation()}>
             <div className="h-1.5 bg-red-600" />
             <div className="p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
                     <Bell size={20} />
                   </div>
                   <div>
@@ -604,14 +608,14 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                 <button
                   type="button"
                   onClick={closeUrgentNotification}
-                  className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Đóng
                 </button>
                 <button
                   type="button"
                   onClick={() => void acknowledgeUrgentNotification()}
-                  className="h-10 rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700"
+                  className="h-10 rounded-lg bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700"
                 >
                   Đã hiểu
                 </button>
@@ -622,28 +626,28 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       )}
 
         <main className="relative z-0 flex-1 overflow-y-auto">
+          {tab === "home" && (
+            <CustomerHomeTab
+              userName={displayName}
+              apts={apts}
+              pets={pets}
+              notifications={notifications}
+              notificationsLoading={notificationsLoading}
+              notificationsError={notificationsError}
+              unreadCount={unreadCount}
+              onBookAppointment={() => setIsNewAptOpen(true)}
+              onBookBoarding={() => setIsBoardingOpen(true)}
+              onOpenAppointments={() => setTab("apts")}
+              onOpenPets={() => setTab("pets")}
+              onOpenHistory={() => setTab("history")}
+              onOpenNotifications={() => setTab("notifications")}
+              onOpenMedications={() => setTab("medications")}
+              onNotificationClick={handleNotificationClick}
+              urgentMedications={urgentMedications}
+            />
+          )}
+          {tab !== "home" && (
           <div className="mx-auto w-full max-w-7xl p-6">
-        {tab === "home" && (
-          <CustomerHomeTab
-            userName={displayName}
-            apts={apts}
-            pets={pets}
-            notifications={notifications}
-            notificationsLoading={notificationsLoading}
-            notificationsError={notificationsError}
-            unreadCount={unreadCount}
-            onBookAppointment={() => setIsNewAptOpen(true)}
-            onBookBoarding={() => setIsBoardingOpen(true)}
-            onOpenAppointments={() => setTab("apts")}
-            onOpenPets={() => setTab("pets")}
-            onOpenHistory={() => setTab("history")}
-            onOpenNotifications={() => setTab("notifications")}
-            onOpenMedications={() => setTab("medications")}
-            onNotificationClick={handleNotificationClick}
-            urgentMedications={urgentMedications}
-          />
-        )}
-
         {tab === "apts" && (
           <CustomerAppointmentsTab
             pets={pets}
@@ -732,6 +736,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           />
         )}
           </div>
+          )}
         </main>
 
       {isBoardingOpen && (
@@ -830,8 +835,8 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
       {cancellingAptId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={cancelLoading ? undefined : () => { setCancellingAptId(null); setCancelReason(""); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
+          <div className="bg-white rounded-xl shadow-md w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
               <X size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 text-center">Hủy lịch hẹn?</h3>
@@ -844,14 +849,14 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                 rows={3}
                 disabled={cancelLoading}
                 placeholder="Nhập lý do hủy lịch..."
-                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold transition-all focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/10 disabled:opacity-50"
+                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold transition-colors focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/10 disabled:opacity-50"
               />
             </div>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => { setCancellingAptId(null); setCancelReason(""); }}
                 disabled={cancelLoading}
-                className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40"
+                className="flex-1 h-11 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40"
               >
                 Giữ lại
               </button>
@@ -870,7 +875,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                   }
                 }}
                 disabled={!cancelReason.trim() || cancelLoading}
-                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 h-11 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {cancelLoading && (
                   <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">

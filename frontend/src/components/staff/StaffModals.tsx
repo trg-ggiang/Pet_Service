@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, BedDouble, CheckCircle2, Coffee, Eye, Image as ImageIcon, ImagePlus, Loader2, Stethoscope, Star, Upload, X } from "lucide-react";
+import { Activity, BedDouble, CheckCircle2, Coffee, Eye, Image as ImageIcon, ImagePlus, Loader2, Stethoscope, Star, Trash2, Upload, X } from "lucide-react";
 import type {
   BoardingDailyStatus,
   BoardingGuest,
@@ -9,13 +9,14 @@ import type {
 } from "../../features/staff/services/staffAppointments";
 import { APT_STATUS_CONFIG, SERVICE_ICONS } from "./staffPortalConfig";
 
-export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onCompleteGrooming, onApproveRequest, approving, completingGrooming }: {
+export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onCompleteGrooming, onApproveRequest, onDelete, approving, completingGrooming }: {
   apt: StaffAppointment;
   onClose: () => void;
   onConfirm: () => void;
   onCheckIn: () => void;
   onCompleteGrooming: () => void;
   onApproveRequest: () => void;
+  onDelete?: () => void;
   approving?: boolean;
   completingGrooming?: boolean;
 }) {
@@ -74,27 +75,33 @@ export function AppointmentDetailModal({ apt, onClose, onConfirm, onCheckIn, onC
             </div>
           )}
         </div>
-        {(apt.status === "scheduled" || apt.status === "confirmed" || (apt.status === "in_progress" && apt.serviceType === "grooming")) && (
-          <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
-            {apt.status === "scheduled" && apt.pendingRequest ? (
-              <button onClick={onApproveRequest} disabled={approving} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
-                <CheckCircle2 size={16} /> {approving ? "Đang duyệt..." : "Duyệt yêu cầu"}
-              </button>
-            ) : apt.status === "scheduled" ? (
-              <button onClick={onConfirm} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
-                <CheckCircle2 size={16} /> Xác nhận lịch hẹn
-              </button>
-            ) : apt.status === "confirmed" ? (
-              <button onClick={onCheckIn} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#7C3AED,#8B5CF6)" }}>
-                <CheckCircle2 size={16} /> Check-in · Bắt đầu khám
-              </button>
-            ) : apt.status === "in_progress" && apt.serviceType === "grooming" ? (
-              <button onClick={onCompleteGrooming} disabled={completingGrooming} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
-                <CheckCircle2 size={16} /> {completingGrooming ? "Đang hoàn thành..." : "Hoàn thành grooming"}
-              </button>
-            ) : null}
-          </div>
-        )}
+        <div className="px-6 py-5 border-t border-slate-100 bg-slate-50 rounded-b-3xl space-y-2">
+          {apt.status === "scheduled" && apt.pendingRequest ? (
+            <button onClick={onApproveRequest} disabled={approving} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
+              <CheckCircle2 size={16} /> {approving ? "Đang duyệt..." : "Duyệt yêu cầu"}
+            </button>
+          ) : apt.status === "scheduled" ? (
+            <button onClick={onConfirm} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}>
+              <CheckCircle2 size={16} /> Xác nhận lịch hẹn
+            </button>
+          ) : apt.status === "confirmed" ? (
+            <button onClick={onCheckIn} className="w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2" style={{ background: "linear-gradient(135deg,#7C3AED,#8B5CF6)" }}>
+              <CheckCircle2 size={16} /> Check-in · Bắt đầu khám
+            </button>
+          ) : apt.status === "in_progress" && apt.serviceType === "grooming" ? (
+            <button onClick={onCompleteGrooming} disabled={completingGrooming} className="w-full h-11 rounded-xl bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
+              <CheckCircle2 size={16} /> {completingGrooming ? "Đang hoàn thành..." : "Hoàn thành grooming"}
+            </button>
+          ) : null}
+          {onDelete && (apt.status === "scheduled" || apt.status === "confirmed") && (
+            <button
+              onClick={onDelete}
+              className="w-full h-10 rounded-xl border border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <Trash2 size={15} /> Xóa lịch hẹn
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -470,6 +477,72 @@ export function PaymentProcessModal({ payment, onClose, onComplete }: {
             style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
           >
             {submitting ? <><Loader2 size={15} className="animate-spin" /> Đang xử lý...</> : "Xác nhận thanh toán"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DeleteAppointmentModal({ apt, onClose, onConfirm, deleting }: {
+  apt: StaffAppointment;
+  onClose: () => void;
+  onConfirm: () => void;
+  deleting?: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+              <Trash2 size={18} className="text-red-500" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Xóa lịch hẹn</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Mã #{apt.appointmentId}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-6 py-5">
+          <p className="text-sm text-slate-600">
+            Xóa lịch hẹn của <span className="font-bold text-slate-900">{apt.petName}</span>{" "}
+            <span className="text-slate-500">({apt.species})</span>?
+          </p>
+          <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 space-y-1.5">
+            {[
+              { label: "Dịch vụ", value: apt.service },
+              { label: "Chủ nuôi", value: apt.owner },
+              { label: "Ngày · Giờ", value: `${apt.date} · ${apt.time || "--:--"}` },
+            ].map((row) => (
+              <div key={row.label} className="flex justify-between text-xs">
+                <span className="text-slate-400">{row.label}</span>
+                <span className="font-semibold text-slate-700">{row.value}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs font-semibold text-red-600">Thao tác này không thể hoàn tác.</p>
+        </div>
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={deleting}
+            className="flex-1 h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {deleting
+              ? <><Loader2 size={15} className="animate-spin" /> Đang xóa...</>
+              : <><Trash2 size={15} /> Xóa lịch hẹn</>
+            }
           </button>
         </div>
       </div>

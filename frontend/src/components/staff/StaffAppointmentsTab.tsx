@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Calendar, CheckCircle2, Clock, Eye, Search, Send, Stethoscope, User } from "lucide-react";
+import {
+  Activity, Calendar, CheckCircle2,
+  Eye, Search, Send, Stethoscope, Trash2, User,
+} from "lucide-react";
 import type { StaffAppointment } from "../../features/staff/services/staffAppointments";
 import {
   DateFilterBar,
@@ -13,12 +16,12 @@ import {
 } from "./StaffCommon";
 import { APT_STATUS_CONFIG, SERVICE_ICONS } from "./staffPortalConfig";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
+
+/* ── Shared sub-components ──────────────────────────────────────────── */
 
 function ProviderBadge({
-  doctorName,
-  roomName,
-  staffName,
+  doctorName, roomName, staffName,
 }: {
   doctorName?: string | null;
   roomName?: string | null;
@@ -26,30 +29,50 @@ function ProviderBadge({
 }) {
   if (doctorName) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-cyan-700 font-medium">
-        <Stethoscope size={11} className="flex-shrink-0" />
+      <div className="flex items-center gap-1 text-xs font-semibold text-cyan-700">
+        <Stethoscope size={10} className="flex-shrink-0" />
         <span>{doctorName}</span>
-        {roomName && <span className="text-slate-400 font-normal">· {roomName}</span>}
+        {roomName && <span className="font-normal text-slate-400">· {roomName}</span>}
       </div>
     );
   }
   if (staffName) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-orange-600 font-medium">
-        <User size={11} className="flex-shrink-0" />
+      <div className="flex items-center gap-1 text-xs font-semibold text-orange-600">
+        <User size={10} className="flex-shrink-0" />
         <span>{staffName}</span>
       </div>
     );
   }
-  return <span className="text-xs text-slate-400">Chưa phân công</span>;
+  return <span className="text-[11px] text-slate-400">Chưa phân công</span>;
 }
 
+function PendingRequestBadge({ request }: {
+  request: NonNullable<StaffAppointment["pendingRequest"]>;
+}) {
+  const isReschedule = request.type === "RESCHEDULE";
+  return (
+    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-relaxed">
+      <span className="font-bold text-amber-800">
+        {isReschedule ? "Yêu cầu đổi lịch" : "Yêu cầu hủy lịch"}
+      </span>
+      {isReschedule && request.date && (
+        <span className="ml-1 font-semibold text-amber-700">
+          → {request.date} {String(request.time || "").slice(0, 5)}
+        </span>
+      )}
+      {request.reason && (
+        <div className="mt-0.5 text-amber-700">Lý do: {request.reason}</div>
+      )}
+    </div>
+  );
+}
+
+/* ── Left column: Pending confirmation queue ────────────────────────── */
+
 function ConfirmQueue({
-  appointments,
-  loading,
-  onViewDetails,
-  onConfirm,
-  onApproveRequest,
+  appointments, loading,
+  onViewDetails, onConfirm, onApproveRequest, onDelete,
   approvingAppointmentId,
 }: {
   appointments: StaffAppointment[];
@@ -57,16 +80,21 @@ function ConfirmQueue({
   onViewDetails: (apt: StaffAppointment) => void;
   onConfirm: (apt: StaffAppointment) => void;
   onApproveRequest: (apt: StaffAppointment) => void;
+  onDelete: (apt: StaffAppointment) => void;
   approvingAppointmentId?: number | null;
 }) {
   return (
-    <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-0 h-full">
-      <div className="flex-shrink-0 px-5 py-4 border-b border-amber-100 flex items-center justify-between" style={{ background: "#FFFBEB" }}>
+    <div className="flex flex-col min-h-0 h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Header */}
+      <div
+        className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-amber-100"
+        style={{ background: "#FFFBEB" }}
+      >
         <div>
-          <h3 className="text-sm font-bold text-amber-900">Lịch hẹn chờ xác nhận</h3>
-          <p className="text-[11px] text-amber-700 mt-0.5 font-medium">Sắp tới · Từ hôm nay</p>
+          <h3 className="text-sm font-black text-amber-900">Chờ xác nhận</h3>
+          <p className="mt-0.5 text-[11px] font-medium text-amber-700">Sắp tới · Từ hôm nay</p>
         </div>
-        <span className="text-[11px] font-bold bg-amber-500 text-white px-2.5 py-1 rounded-full">
+        <span className="min-w-[28px] rounded-full bg-amber-500 px-2.5 py-1 text-center text-xs font-black text-white">
           {appointments.length}
         </span>
       </div>
@@ -74,83 +102,88 @@ function ConfirmQueue({
       {loading ? (
         <LoadingState label="Đang tải..." />
       ) : appointments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-14">
-          <CheckCircle2 size={36} className="text-emerald-300 mb-2" />
-          <p className="text-sm text-slate-500 font-medium">Không có lịch hẹn chờ xác nhận</p>
+        <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
+          <CheckCircle2 size={36} className="mb-3 text-emerald-300" />
+          <p className="text-sm font-semibold text-slate-500">Không có lịch chờ xác nhận</p>
+          <p className="mt-1 text-xs text-slate-400">Tất cả đã được xử lý</p>
         </div>
       ) : (
         <div className="flex-1 min-h-0 divide-y divide-slate-100 overflow-y-auto">
           {appointments.map((apt) => {
-            const svcIcon = SERVICE_ICONS[apt.serviceType] || SERVICE_ICONS.exam;
-            const Icon = svcIcon.icon;
+            const svcCfg  = SERVICE_ICONS[apt.serviceType] ?? SERVICE_ICONS.exam;
+            const SvcIcon = svcCfg.icon;
             const isApproving = approvingAppointmentId === apt.appointmentId;
 
             return (
-              <div key={apt.id} className="px-5 py-4 hover:bg-slate-50/70 transition-colors">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: svcIcon.bg }}>
-                    <Icon size={16} style={{ color: svcIcon.color }} />
+              <div
+                key={apt.id}
+                className="relative px-4 py-4 hover:bg-slate-50/60 transition-colors"
+                style={{ borderLeft: `3px solid ${svcCfg.color}` }}
+              >
+                {/* Service row + date */}
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+                      style={{ background: svcCfg.bg }}
+                    >
+                      <SvcIcon size={15} style={{ color: svcCfg.color }} />
+                    </div>
+                    <span className="truncate text-sm font-bold text-slate-800">{apt.service}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-sm font-bold text-slate-900 truncate">
-                          {apt.petName}
-                          <span className="ml-1.5 text-xs font-normal text-slate-500">{apt.species}</span>
-                        </div>
-                        <div className="text-xs text-slate-500 mt-0.5 truncate">{apt.owner} · {apt.phone}</div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-xs font-bold text-slate-800">{apt.date}</div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">{apt.time || "--:--"}</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium">{apt.service}</span>
-                      <ProviderBadge doctorName={apt.doctorName} roomName={apt.roomName} staffName={apt.staffName} />
-                    </div>
-
-                    {apt.pendingRequest && (
-                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800">
-                        {apt.pendingRequest.type === "RESCHEDULE" ? "Yêu cầu đổi lịch" : "Yêu cầu hủy lịch"}
-                        {apt.pendingRequest.type === "RESCHEDULE" && apt.pendingRequest.date && (
-                          <span className="ml-1 font-normal text-amber-700">
-                            → {apt.pendingRequest.date} {String(apt.pendingRequest.time || "").slice(0, 5)}
-                          </span>
-                        )}
-                        {apt.pendingRequest.reason && (
-                          <div className="mt-0.5 font-normal text-amber-700">Lý do: {apt.pendingRequest.reason}</div>
-                        )}
-                      </div>
-                    )}
+                  <div className="flex-shrink-0 text-right">
+                    <div className="text-xs font-bold text-slate-700">{apt.date}</div>
+                    <div className="mt-0.5 font-mono text-[11px] text-slate-400">{apt.time || "--:--"}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mt-3">
+                {/* Pet + owner */}
+                <div className="mb-2.5">
+                  <div className="text-sm font-bold text-slate-900">
+                    {apt.petName}
+                    <span className="ml-1.5 text-xs font-normal text-slate-500">{apt.species}</span>
+                  </div>
+                  <div className="mt-0.5 truncate text-xs text-slate-500">
+                    {apt.owner} · {apt.phone}
+                  </div>
+                  <div className="mt-1">
+                    <ProviderBadge doctorName={apt.doctorName} roomName={apt.roomName} staffName={apt.staffName} />
+                  </div>
+                </div>
+
+                {apt.pendingRequest && <PendingRequestBadge request={apt.pendingRequest} />}
+
+                {/* Action buttons */}
+                <div className="mt-3 flex items-center gap-1.5">
                   <button
                     onClick={() => onViewDetails(apt)}
-                    className="flex-1 h-8 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1"
+                    className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                   >
                     <Eye size={12} /> Chi tiết
                   </button>
-                  {apt.pendingRequest ? (
-                    <button
-                      onClick={() => onApproveRequest(apt)}
-                      disabled={isApproving}
-                      className="flex-1 h-8 rounded-lg text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1 disabled:opacity-60"
-                    >
-                      <Send size={12} /> {isApproving ? "Đang duyệt..." : "Duyệt"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onConfirm(apt)}
-                      className="flex-1 h-8 rounded-lg text-xs font-bold text-white transition-colors flex items-center justify-center gap-1"
-                      style={{ background: "linear-gradient(135deg,#0891B2,#06B6D4)" }}
-                    >
-                      <CheckCircle2 size={12} /> Xác nhận
-                    </button>
-                  )}
+                  <button
+                    onClick={() => apt.pendingRequest ? onApproveRequest(apt) : onConfirm(apt)}
+                    disabled={isApproving}
+                    className="flex flex-1 h-8 items-center justify-center gap-1 rounded-lg text-xs font-bold text-white transition-colors disabled:opacity-60"
+                    style={{
+                      background: apt.pendingRequest
+                        ? "linear-gradient(135deg,#059669,#10B981)"
+                        : "linear-gradient(135deg,#0891B2,#06B6D4)",
+                    }}
+                  >
+                    {apt.pendingRequest ? (
+                      <><Send size={12} />{isApproving ? "Đang duyệt..." : "Duyệt"}</>
+                    ) : (
+                      <><CheckCircle2 size={12} />Xác nhận</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => onDelete(apt)}
+                    title="Xóa lịch hẹn"
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             );
@@ -161,6 +194,18 @@ function ConfirmQueue({
   );
 }
 
+/* ── Right column tabs ──────────────────────────────────────────────── */
+
+type ActiveTab = "all" | "confirmed" | "in_progress";
+
+const TABS: { id: ActiveTab; label: string }[] = [
+  { id: "all",         label: "Tất cả"       },
+  { id: "confirmed",   label: "Chờ check-in" },
+  { id: "in_progress", label: "Đang xử lý"   },
+];
+
+/* ── Main export ────────────────────────────────────────────────────── */
+
 export function AppointmentsTab({
   appointments,
   loading,
@@ -170,6 +215,7 @@ export function AppointmentsTab({
   onCheckIn,
   onCompleteGrooming,
   onApproveRequest,
+  onDelete,
   approvingAppointmentId,
   completingGroomingAppointmentId,
 }: {
@@ -181,16 +227,16 @@ export function AppointmentsTab({
   onCheckIn: (apt: StaffAppointment) => void;
   onCompleteGrooming: (apt: StaffAppointment) => void;
   onApproveRequest: (apt: StaffAppointment) => void;
+  onDelete: (apt: StaffAppointment) => void;
   approvingAppointmentId?: number | null;
   completingGroomingAppointmentId?: number | null;
 }) {
-  const [dateFilter, setDateFilter] = useState<DateFilterState>(getDefaultDateFilter);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-
   const today = todayYmd();
+  const [activeTab, setActiveTab]   = useState<ActiveTab>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilterState>(getDefaultDateFilter);
+  const [search, setSearch]         = useState("");
+  const [page, setPage]             = useState(1);
 
-  // Left column: PENDING (status="scheduled") from today onwards, sorted by date+time
   const pendingConfirmation = useMemo(
     () =>
       appointments
@@ -198,201 +244,238 @@ export function AppointmentsTab({
         .sort((a, b) => {
           const da = a.rawDate || "9999";
           const db = b.rawDate || "9999";
-          if (da !== db) return da < db ? -1 : 1;
-          return (a.time || "") < (b.time || "") ? -1 : 1;
+          return da !== db ? (da < db ? -1 : 1) : (a.time || "") < (b.time || "") ? -1 : 1;
         }),
     [appointments, today],
   );
 
-  // Right column: confirmed (chờ check-in) + in_progress (đang thực hiện)
-  const activeAppointments = useMemo(
+  const confirmedCount  = useMemo(() => appointments.filter((a) => a.status === "confirmed").length,   [appointments]);
+  const inProgressCount = useMemo(() => appointments.filter((a) => a.status === "in_progress").length, [appointments]);
+
+  const activeBase = useMemo(
     () => appointments.filter((a) => a.status === "confirmed" || a.status === "in_progress"),
     [appointments],
   );
 
-  useEffect(() => { setPage(1); }, [dateFilter, search]);
+  useEffect(() => { setPage(1); }, [activeTab, dateFilter, search]);
 
   const filtered = useMemo(() => {
+    const base = activeTab === "all"
+      ? activeBase
+      : activeBase.filter((a) => a.status === activeTab);
     const q = search.trim().toLowerCase();
-    return activeAppointments.filter((apt) => {
+    return base.filter((apt) => {
       if (!matchesDateFilter(apt.date, dateFilter)) return false;
       if (q && !apt.petName.toLowerCase().includes(q) && !apt.owner.toLowerCase().includes(q) && !apt.service.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [activeAppointments, dateFilter, search]);
+  }, [activeBase, activeTab, dateFilter, search]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const pageData = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const safePage  = Math.min(page, pageCount);
+  const pageData  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
-    <div className="flex flex-col gap-5 h-full min-h-0">
-      {/* Stats */}
-      <div className="flex-shrink-0 grid grid-cols-3 gap-4">
-        {[
-          { label: "Chờ xác nhận", value: pendingConfirmation.length, icon: Clock, color: "#D97706", bg: "#FFFBEB" },
-          { label: "Chờ check-in", value: appointments.filter((a) => a.status === "confirmed").length, icon: CheckCircle2, color: "#0891B2", bg: "#ECFEFF" },
-          { label: "Đang thực hiện", value: appointments.filter((a) => a.status === "in_progress").length, icon: Activity, color: "#DC2626", bg: "#FEF2F2" },
-        ].map((s) => {
-          const Icon = s.icon;
-          return (
-            <div key={s.label} className="bg-white border border-slate-200 rounded-2xl px-5 py-4 flex items-center gap-3 shadow-sm">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: s.bg }}>
-                <Icon size={20} style={{ color: s.color }} />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-slate-900">{s.value}</div>
-                <div className="text-xs text-slate-500 font-medium">{s.label}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="flex h-full min-h-0 flex-col gap-5">
 
       {/* Two-column layout */}
-      <div className="flex-1 min-h-0 grid gap-5" style={{ gridTemplateColumns: "420px 1fr", alignItems: "stretch" }}>
-        {/* Left: confirmation queue */}
+      <div className="flex-1 min-h-0 grid gap-5" style={{ gridTemplateColumns: "380px 1fr", alignItems: "stretch" }}>
+
+        {/* LEFT — confirmation queue */}
         <ConfirmQueue
           appointments={pendingConfirmation}
           loading={loading}
           onViewDetails={onViewDetails}
           onConfirm={onConfirm}
           onApproveRequest={onApproveRequest}
+          onDelete={onDelete}
           approvingAppointmentId={approvingAppointmentId}
         />
 
-        {/* Right: active appointments */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-0 h-full">
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-base font-bold text-slate-900">
-                {dateFilter.mode === "today" ? "Lịch hôm nay"
-                  : dateFilter.mode === "week" ? "Lịch trong tuần"
-                  : "Lịch theo ngày"}
-              </h3>
-              <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
-            </div>
-            <div className="relative flex-shrink-0">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm thú cưng, chủ nhân..."
-                className="h-9 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all w-52"
-              />
-            </div>
-          </div>
+        {/* RIGHT — active appointments */}
+        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {loading ? (
-            <LoadingState label="Đang tải danh sách lịch hẹn..." />
-          ) : error ? (
-            <EmptyState icon={Calendar} label={error} />
-          ) : pageData.length === 0 ? (
-            <EmptyState
-              icon={Calendar}
-              label={
-                filtered.length === 0
-                  ? "Không có lịch hẹn đang hoạt động trong khoảng thời gian này"
-                  : "Không tìm thấy kết quả"
-              }
-            />
-          ) : (
-            <>
-              <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100">
-                {pageData.map((apt) => {
-                  const statusCfg = APT_STATUS_CONFIG[apt.status];
-                  const svcIcon = SERVICE_ICONS[apt.serviceType] || SERVICE_ICONS.exam;
-                  const Icon = svcIcon.icon;
-                  const isCompletingGrooming = completingGroomingAppointmentId === apt.appointmentId;
-
+          {/* Panel header */}
+          <div className="flex-shrink-0 space-y-3 border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center justify-between gap-4">
+              {/* Status tabs */}
+              <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
+                {TABS.map((tab) => {
+                  const count =
+                    tab.id === "confirmed"   ? confirmedCount  :
+                    tab.id === "in_progress" ? inProgressCount :
+                    activeBase.length;
+                  const isActive = activeTab === tab.id;
                   return (
-                    <div key={apt.id} className="flex items-start gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
-                      <div className="w-20 text-center flex-shrink-0 pt-0.5">
-                        <div className="text-sm font-bold font-mono text-slate-900">{apt.time || "--:--"}</div>
-                        <div className="text-[10px] font-semibold text-slate-400 mt-0.5">{apt.date || "Chưa có ngày"}</div>
-                        {apt.queue && <div className="text-[10px] font-semibold text-cyan-500 mt-0.5">{apt.queue}</div>}
-                      </div>
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: svcIcon.bg }}>
-                          <Icon size={18} style={{ color: svcIcon.color }} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-bold text-slate-900">
-                            {apt.petName}
-                            <span className="ml-2 text-xs font-normal text-slate-500">{apt.species} - {apt.breed}</span>
-                          </div>
-                          <div className="text-xs text-slate-500 truncate mt-0.5">{apt.owner} · {apt.service}</div>
-                          <div className="mt-1">
-                            <ProviderBadge doctorName={apt.doctorName} roomName={apt.roomName} staffName={apt.staffName} />
-                          </div>
-                          {apt.pendingRequest && (
-                            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-                              <div>{apt.pendingRequest.type === "RESCHEDULE" ? "Yêu cầu đổi lịch" : "Yêu cầu hủy lịch"}</div>
-                              {apt.pendingRequest.type === "RESCHEDULE" && (
-                                <div className="mt-0.5 text-amber-700">
-                                  Lịch mới: {apt.pendingRequest.date || "--"} {String(apt.pendingRequest.time || "").slice(0, 5)}
-                                </div>
-                              )}
-                              {apt.pendingRequest.reason && (
-                                <div className="mt-0.5 text-amber-700">Lý do: {apt.pendingRequest.reason}</div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <span
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0 mt-0.5"
-                        style={{ color: statusCfg.color, background: statusCfg.bg, border: `1px solid ${statusCfg.border}` }}
-                      >
-                        {statusCfg.label}
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold transition-all ${
+                        isActive ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {tab.label}
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                        isActive ? "bg-slate-100 text-slate-700" : "bg-slate-200/60 text-slate-500"
+                      }`}>
+                        {count}
                       </span>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => onViewDetails(apt)}
-                          className="h-9 px-3 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
-                        >
-                          <Eye size={14} /> Chi tiết
-                        </button>
-                        {apt.pendingRequest ? (
-                          <button
-                            onClick={() => onApproveRequest(apt)}
-                            disabled={approvingAppointmentId === apt.appointmentId}
-                            className="h-9 px-4 rounded-lg text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
-                          >
-                            <Send size={14} /> {approvingAppointmentId === apt.appointmentId ? "Đang duyệt..." : "Duyệt yêu cầu"}
-                          </button>
-                        ) : apt.status === "in_progress" && apt.serviceType === "grooming" ? (
-                          <button
-                            onClick={() => onCompleteGrooming(apt)}
-                            disabled={isCompletingGrooming}
-                            className="h-9 px-4 rounded-lg bg-emerald-500 text-sm font-bold text-white transition-colors hover:bg-emerald-600 flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
-                          >
-                            <CheckCircle2 size={14} /> {isCompletingGrooming ? "Đang hoàn thành..." : "Hoàn thành"}
-                          </button>
-                        ) : apt.status === "in_progress" ? (
-                          <span className="h-9 px-3 rounded-lg text-xs font-bold text-slate-500 border border-slate-200 bg-slate-50 flex items-center gap-1.5 flex-shrink-0">
-                            <Activity size={13} />
-                            {apt.serviceType === "boarding" ? "Đang lưu trú" : "Đang khám"}
-                          </span>
-                        ) : apt.status === "confirmed" && (
-                          <button
-                            onClick={() => onCheckIn(apt)}
-                            className="h-9 px-4 rounded-lg text-sm font-bold text-white transition-colors flex items-center gap-1.5"
-                            style={{ background: "linear-gradient(135deg,#7C3AED,#8B5CF6)" }}
-                          >
-                            <CheckCircle2 size={14} /> Check-in
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
-              <Pagination page={safePage} pageCount={pageCount} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
-            </>
-          )}
+              <span className="text-xs font-semibold text-slate-400">
+                {dateFilter.mode === "today" ? "Hôm nay"
+                  : dateFilter.mode === "week" ? "Tuần này"
+                  : dateFilter.date}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
+              <div className="relative ml-auto flex-shrink-0">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tên thú cưng, chủ nuôi..."
+                  className="h-9 w-52 rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs placeholder:text-slate-400 transition-all focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Rows */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {loading ? (
+              <LoadingState label="Đang tải danh sách lịch hẹn..." />
+            ) : error ? (
+              <EmptyState icon={Calendar} label={error} />
+            ) : pageData.length === 0 ? (
+              <EmptyState
+                icon={Calendar}
+                label={filtered.length === 0
+                  ? "Không có lịch hẹn nào trong khoảng thời gian này"
+                  : "Không tìm thấy kết quả"}
+              />
+            ) : (
+              <>
+                <div className="flex-1 min-h-0 divide-y divide-slate-100 overflow-y-auto">
+                  {pageData.map((apt) => {
+                    const statusCfg   = APT_STATUS_CONFIG[apt.status];
+                    const svcCfg      = SERVICE_ICONS[apt.serviceType] ?? SERVICE_ICONS.exam;
+                    const SvcIcon     = svcCfg.icon;
+                    const isDone      = completingGroomingAppointmentId === apt.appointmentId;
+                    const isApproving = approvingAppointmentId === apt.appointmentId;
+                    const canDelete   = apt.status === "confirmed";
+
+                    return (
+                      <div
+                        key={apt.id}
+                        className="flex items-start gap-3 px-5 py-4 transition-colors hover:bg-slate-50/60"
+                        style={{ borderLeft: `3px solid ${svcCfg.color}` }}
+                      >
+                        {/* Time */}
+                        <div className="w-14 flex-shrink-0 pt-0.5 text-center">
+                          <div className="font-mono text-sm font-bold text-slate-900">{apt.time || "--:--"}</div>
+                          <div className="mt-0.5 text-[10px] font-semibold text-slate-400">{apt.date}</div>
+                          {apt.queue && <div className="mt-0.5 text-[10px] font-bold text-cyan-500">{apt.queue}</div>}
+                        </div>
+
+                        {/* Service icon */}
+                        <div
+                          className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl"
+                          style={{ background: svcCfg.bg }}
+                        >
+                          <SvcIcon size={16} style={{ color: svcCfg.color }} />
+                        </div>
+
+                        {/* Info */}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold text-slate-900">
+                            {apt.petName}
+                            <span className="ml-1.5 text-xs font-normal text-slate-500">{apt.species} · {apt.breed}</span>
+                          </div>
+                          <div className="mt-0.5 truncate text-xs text-slate-500">{apt.owner} · {apt.service}</div>
+                          <div className="mt-1">
+                            <ProviderBadge doctorName={apt.doctorName} roomName={apt.roomName} staffName={apt.staffName} />
+                          </div>
+                          {apt.pendingRequest && <PendingRequestBadge request={apt.pendingRequest} />}
+                        </div>
+
+                        {/* Status + actions */}
+                        <div className="flex flex-shrink-0 items-center gap-2 pt-0.5">
+                          <span
+                            className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
+                            style={{ color: statusCfg.color, background: statusCfg.bg, border: `1px solid ${statusCfg.border}` }}
+                          >
+                            {statusCfg.label}
+                          </span>
+
+                          <button
+                            onClick={() => onViewDetails(apt)}
+                            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                          >
+                            <Eye size={13} /> Chi tiết
+                          </button>
+
+                          {apt.pendingRequest ? (
+                            <button
+                              onClick={() => onApproveRequest(apt)}
+                              disabled={isApproving}
+                              className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60"
+                            >
+                              <Send size={13} />
+                              {isApproving ? "Duyệt..." : "Duyệt yêu cầu"}
+                            </button>
+                          ) : apt.status === "in_progress" && apt.serviceType === "grooming" ? (
+                            <button
+                              onClick={() => onCompleteGrooming(apt)}
+                              disabled={isDone}
+                              className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60"
+                            >
+                              <CheckCircle2 size={13} />
+                              {isDone ? "Đang hoàn thành..." : "Hoàn thành"}
+                            </button>
+                          ) : apt.status === "in_progress" ? (
+                            <span className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500">
+                              <Activity size={13} />
+                              {apt.serviceType === "boarding" ? "Đang lưu trú" : "Đang khám"}
+                            </span>
+                          ) : apt.status === "confirmed" ? (
+                            <button
+                              onClick={() => onCheckIn(apt)}
+                              className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-white transition-colors"
+                              style={{ background: "linear-gradient(135deg,#7C3AED,#8B5CF6)" }}
+                            >
+                              <CheckCircle2 size={13} /> Check-in
+                            </button>
+                          ) : null}
+
+                          {canDelete && (
+                            <button
+                              onClick={() => onDelete(apt)}
+                              title="Xóa lịch hẹn"
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Pagination
+                  page={safePage}
+                  pageCount={pageCount}
+                  total={filtered.length}
+                  pageSize={PAGE_SIZE}
+                  onChange={setPage}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

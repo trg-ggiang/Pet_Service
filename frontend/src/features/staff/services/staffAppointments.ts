@@ -286,6 +286,12 @@ export const staffAppointmentsService = {
     });
   },
 
+  async deleteAppointment(appointmentId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/staff/appointments/${appointmentId}`, {
+      method: "DELETE",
+    });
+  },
+
   async fetchGroomingTasks(): Promise<GroomingTask[]> {
     const data = await fetchWithAuth<GroomingResponse>("/api/staff/grooming");
     return data.tasks || [];
