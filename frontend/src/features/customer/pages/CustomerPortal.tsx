@@ -511,7 +511,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             {showNotifDropdown && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setShowNotifDropdown(false)} />
-                <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
                   <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="text-[15px] font-bold text-slate-900">Thông báo</span>
@@ -557,15 +557,15 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
       {confirmLogout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmLogout(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
+          <div className="bg-white rounded-xl shadow-md w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
               <LogOut size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 text-center">Xác nhận đăng xuất</h3>
             <p className="text-sm text-slate-500 text-center mt-2">Bạn có chắc muốn đăng xuất khỏi tài khoản?</p>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setConfirmLogout(false)} className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Hủy</button>
-              <button onClick={onLogout} className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors">Đăng xuất</button>
+              <button onClick={() => setConfirmLogout(false)} className="flex-1 h-11 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Hủy</button>
+              <button onClick={onLogout} className="flex-1 h-11 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors">Đăng xuất</button>
             </div>
           </div>
         </div>
@@ -573,12 +573,12 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
       {urgentNotification && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={closeUrgentNotification}>
-          <div className="w-full max-w-[460px] overflow-hidden rounded-2xl border border-red-100 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-[460px] overflow-hidden rounded-xl border border-red-100 bg-white shadow-md" onClick={(event) => event.stopPropagation()}>
             <div className="h-1.5 bg-red-600" />
             <div className="p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
                     <Bell size={20} />
                   </div>
                   <div>
@@ -604,14 +604,14 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                 <button
                   type="button"
                   onClick={closeUrgentNotification}
-                  className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Đóng
                 </button>
                 <button
                   type="button"
                   onClick={() => void acknowledgeUrgentNotification()}
-                  className="h-10 rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700"
+                  className="h-10 rounded-lg bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700"
                 >
                   Đã hiểu
                 </button>
@@ -830,8 +830,8 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
       {cancellingAptId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={cancelLoading ? undefined : () => { setCancellingAptId(null); setCancelReason(""); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
+          <div className="bg-white rounded-xl shadow-md w-[320px] p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-5 border border-red-100">
               <X size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 text-center">Hủy lịch hẹn?</h3>
@@ -844,14 +844,14 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                 rows={3}
                 disabled={cancelLoading}
                 placeholder="Nhập lý do hủy lịch..."
-                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold transition-all focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/10 disabled:opacity-50"
+                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold transition-colors focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/10 disabled:opacity-50"
               />
             </div>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => { setCancellingAptId(null); setCancelReason(""); }}
                 disabled={cancelLoading}
-                className="flex-1 h-11 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40"
+                className="flex-1 h-11 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40"
               >
                 Giữ lại
               </button>
@@ -870,7 +870,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                   }
                 }}
                 disabled={!cancelReason.trim() || cancelLoading}
-                className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 h-11 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {cancelLoading && (
                   <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">

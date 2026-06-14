@@ -2,7 +2,7 @@
 
 :root {
   --font-size: 15px;
-  --background: #F8FAFC;
+  --background: #F5F7F9;
   --foreground: #0F172A;
   --card: #FFFFFF;
   --card-foreground: #0F172A;
@@ -18,9 +18,9 @@
   --accent-foreground: #0E7490;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --border: rgba(15, 23, 42, 0.09);
+  --border: rgba(15, 23, 42, 0.14);
   --input: transparent;
-  --input-background: #F1F5F9;
+  --input-background: #FFFFFF;
   --switch-background: #CBD5E1;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
@@ -30,7 +30,7 @@
   --chart-3: #F59E0B;
   --chart-4: #10B981;
   --chart-5: #F43F5E;
-  --radius: 0.5rem;
+  --radius: 0.375rem;
   --sidebar: #0F172A;
   --sidebar-foreground: #F1F5F9;
   --sidebar-primary: #0891B2;

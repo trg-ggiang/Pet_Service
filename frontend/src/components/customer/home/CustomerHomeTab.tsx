@@ -49,7 +49,7 @@ export function CustomerHomeTab({
       {urgentMedications && urgentMedications.length > 0 && (
         <button
           onClick={onOpenMedications}
-          className="flex w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-left transition-all hover:border-red-300 hover:bg-red-100 active:scale-[0.99]"
+          className="flex w-full items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-left transition-colors hover:border-red-300 hover:bg-red-100"
         >
           <AlertTriangle size={18} className="flex-shrink-0 text-red-500" />
           <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ export function CustomerHomeTab({
               {urgentMedications.length > 2 && "..."}
             </span>
           </div>
-          <div className="flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 shadow-sm">
+          <div className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5">
             <Pill size={12} className="text-red-500" />
             <span className="text-xs font-bold text-red-600">Xem thuốc</span>
           </div>
@@ -73,7 +73,7 @@ export function CustomerHomeTab({
     <div className="grid grid-cols-6 gap-4 auto-rows-[88px]">
 
       {/* Hero welcome card */}
-      <div className="relative col-span-6 md:col-span-4 md:col-start-1 md:row-start-1 row-span-3 rounded-3xl overflow-hidden shadow-sm">
+      <div className="relative col-span-6 md:col-span-4 md:col-start-1 md:row-start-1 row-span-3 rounded-xl overflow-hidden shadow-sm">
         <img
           src={HERO_IMG}
           alt=""
@@ -94,7 +94,7 @@ export function CustomerHomeTab({
           </div>
           <button
             onClick={onOpenAppointments}
-            className="mt-auto flex w-fit items-center gap-1.5 rounded-2xl bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.98]"
+            className="mt-auto flex w-fit items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-50"
           >
             Xem lịch hẹn <ChevronRight size={15} />
           </button>
@@ -104,9 +104,9 @@ export function CustomerHomeTab({
       {/* Book appointment */}
       <button
         onClick={onBookAppointment}
-        className="col-span-6 md:col-span-2 md:col-start-5 md:row-start-1 group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-cyan-200 hover:shadow-md active:scale-[0.98]"
+        className="col-span-6 md:col-span-2 md:col-start-5 md:row-start-1 group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-cyan-200"
       >
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-cyan-50 transition-transform group-hover:scale-110">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-50">
           <Plus size={20} className="text-cyan-600" />
         </div>
         <div className="min-w-0">
@@ -118,9 +118,9 @@ export function CustomerHomeTab({
       {/* History */}
       <button
         onClick={onOpenHistory}
-        className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-2 group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-violet-200 hover:shadow-md active:scale-[0.98]"
+        className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-2 group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-violet-200"
       >
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 transition-transform group-hover:scale-110">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-violet-50">
           <Clock size={20} className="text-violet-600" />
         </div>
         <div className="min-w-0">
@@ -132,9 +132,9 @@ export function CustomerHomeTab({
       {/* Boarding */}
       <button
         onClick={onBookBoarding}
-        className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-3 group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-amber-200 hover:shadow-md active:scale-[0.98]"
+        className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-3 group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-amber-200"
       >
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 transition-transform group-hover:scale-110">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50">
           <BedDouble size={20} className="text-amber-600" />
         </div>
         <div className="min-w-0">
@@ -144,7 +144,7 @@ export function CustomerHomeTab({
       </button>
 
       {/* Upcoming appointments */}
-      <div className="col-span-6 md:col-span-4 md:col-start-1 md:row-start-4 row-span-6 rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="col-span-6 md:col-span-4 md:col-start-1 md:row-start-4 row-span-6 rounded-xl border border-slate-200 bg-white p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-900">Lịch hẹn sắp tới</h3>
@@ -160,7 +160,7 @@ export function CustomerHomeTab({
 
         {apts.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-10">
-            <div className="h-24 w-32 overflow-hidden rounded-2xl">
+            <div className="h-24 w-32 overflow-hidden rounded-xl">
               <img src={HERO_IMG} alt="" className="h-full w-full object-cover opacity-40" />
             </div>
             <div className="text-center">
@@ -180,9 +180,9 @@ export function CustomerHomeTab({
               return (
                 <div
                   key={apt.id}
-                  className="flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-cyan-100 hover:bg-cyan-50/20"
+                  className="flex cursor-pointer items-center gap-4 rounded-lg border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-cyan-100 hover:bg-cyan-50/20"
                 >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white shadow-sm">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-white">
                     <Icon size={18} style={{ color: apt.iconColor }} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -192,7 +192,7 @@ export function CustomerHomeTab({
                       {apt.doctor && <> · {apt.doctor}</>}
                     </div>
                   </div>
-                  <div className="flex-shrink-0 rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-right shadow-sm">
+                  <div className="flex-shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-right">
                     <div className="text-xs font-bold text-slate-900">{apt.date}</div>
                     <div className="mt-0.5 text-[11px] font-semibold text-cyan-600">{apt.time}</div>
                   </div>
@@ -206,13 +206,13 @@ export function CustomerHomeTab({
       {/* Pet profiles card */}
       <button
         onClick={onOpenPets}
-        className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-4 row-span-3 group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition-all hover:border-rose-200 hover:shadow-md active:scale-[0.98]"
+        className="col-span-3 md:col-span-2 md:col-start-5 md:row-start-4 row-span-3 group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left transition-colors hover:border-rose-200"
       >
         <div className="relative h-[100px] flex-shrink-0 overflow-hidden">
           <img
             src={PETS_IMG}
             alt=""
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-slate-900/20" />
           <div className="absolute bottom-2 left-3">
@@ -258,7 +258,7 @@ export function CustomerHomeTab({
       </button>
 
       {/* Notifications preview */}
-      <div className="col-span-6 md:col-span-2 md:col-start-5 md:row-start-7 row-span-3 flex flex-col rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="col-span-6 md:col-span-2 md:col-start-5 md:row-start-7 row-span-3 flex flex-col rounded-xl border border-slate-200 bg-white p-5">
         <div className="mb-3 flex items-center gap-2">
           <h3 className="text-sm font-bold text-slate-900">Thông báo mới</h3>
           {unreadCount > 0 && (
@@ -270,12 +270,12 @@ export function CustomerHomeTab({
 
         <div className="flex-1 space-y-2 overflow-y-auto">
           {notificationsLoading && (
-            <div className="rounded-xl bg-slate-50 p-3 text-center text-xs font-semibold text-slate-400">
+            <div className="rounded-lg bg-slate-50 p-3 text-center text-xs font-semibold text-slate-400">
               Đang tải...
             </div>
           )}
           {!notificationsLoading && notificationsError && (
-            <div className="rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-600">
+            <div className="rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-600">
               {notificationsError}
             </div>
           )}
@@ -299,10 +299,10 @@ export function CustomerHomeTab({
                   <div
                     key={n.id}
                     onClick={() => onNotificationClick(n)}
-                    className="flex cursor-pointer gap-2.5 rounded-xl border p-3 transition-all hover:shadow-sm"
+                    className="flex cursor-pointer gap-2.5 rounded-lg border p-3 transition-colors"
                     style={{ borderColor: cfg.borderColor, background: cfg.bg }}
                   >
-                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-white border border-slate-100">
                       <Icon size={13} style={{ color: cfg.color }} />
                     </div>
                     <div className="min-w-0 flex-1">

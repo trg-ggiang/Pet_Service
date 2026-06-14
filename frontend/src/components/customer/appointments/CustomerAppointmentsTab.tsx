@@ -148,7 +148,7 @@ export function CustomerAppointmentsTab({
           {onBookBoarding && (
             <button
               onClick={onBookBoarding}
-              className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-95"
+              className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
             >
               <BedDouble size={15} className="text-blue-500" />
               <span className="hidden sm:inline">Lưu trú</span>
@@ -156,7 +156,7 @@ export function CustomerAppointmentsTab({
           )}
           <button
             onClick={onBookAppointment}
-            className="flex h-10 items-center gap-2 rounded-xl bg-cyan-600 px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-cyan-700 active:scale-95"
+            className="flex h-10 items-center gap-2 rounded-lg bg-cyan-600 px-5 text-sm font-bold text-white transition-colors hover:bg-cyan-700"
           >
             <Plus size={15} strokeWidth={2.5} />
             Đặt lịch mới
@@ -165,7 +165,7 @@ export function CustomerAppointmentsTab({
       </div>
 
       {/* ── Status tabs ───────────────────────────────────────────── */}
-      <div className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5">
         {([
           { id: "all"         as const, label: "Tất cả"        },
           { id: "upcoming"    as const, label: "Sắp tới"       },
@@ -181,8 +181,8 @@ export function CustomerAppointmentsTab({
             <button
               key={s.id}
               onClick={() => setStatusFilter(s.id)}
-              className={`h-9 min-w-fit flex-1 whitespace-nowrap rounded-xl px-4 text-sm font-bold transition-all ${
-                active ? "bg-cyan-500 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
+              className={`h-9 min-w-fit flex-1 whitespace-nowrap rounded-lg px-4 text-sm font-bold transition-colors ${
+                active ? "bg-cyan-500 text-white" : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               {s.label}
@@ -208,7 +208,7 @@ export function CustomerAppointmentsTab({
           <select
             value={petFilter}
             onChange={e => { setPetFilter(e.target.value); setAppointmentsPage(1); }}
-            className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold shadow-sm focus:border-cyan-400 focus:outline-none"
+            className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold focus:border-cyan-400 focus:outline-none"
           >
             <option value="all">Tất cả thú cưng</option>
             {pets.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
@@ -222,7 +222,7 @@ export function CustomerAppointmentsTab({
           <select
             value={serviceTypeFilter}
             onChange={e => { setServiceTypeFilter(e.target.value as ServiceType | "all"); setAppointmentsPage(1); }}
-            className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold shadow-sm focus:border-cyan-400 focus:outline-none"
+            className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold focus:border-cyan-400 focus:outline-none"
           >
             {serviceFilterOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -230,7 +230,7 @@ export function CustomerAppointmentsTab({
         </div>
 
         {/* Result count */}
-        <div className="flex items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-500 shadow-sm whitespace-nowrap">
+        <div className="flex items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-500 whitespace-nowrap">
           {appointmentSummary.filtered} kết quả
         </div>
       </div>
@@ -239,7 +239,7 @@ export function CustomerAppointmentsTab({
       {appointmentsLoading ? (
         <div className="space-y-3">
           {[0,1,2].map(i => (
-            <div key={i} className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div key={i} className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
               <div className="w-[88px] flex-shrink-0 animate-pulse bg-slate-100" />
               <div className="flex-1 space-y-3 p-5">
                 <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
@@ -250,7 +250,7 @@ export function CustomerAppointmentsTab({
           ))}
         </div>
       ) : appointmentsError ? (
-        <div className="flex items-center gap-4 rounded-2xl border border-red-200 bg-red-50 p-5">
+        <div className="flex items-center gap-4 rounded-xl border border-red-200 bg-red-50 p-5">
           <AlertTriangle size={20} className="flex-shrink-0 text-red-500" />
           <div>
             <p className="text-sm font-bold text-red-700">Không thể tải lịch hẹn</p>
@@ -258,7 +258,7 @@ export function CustomerAppointmentsTab({
           </div>
         </div>
       ) : appointmentSummary.filtered === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
             <Calendar size={24} className="text-slate-400" />
           </div>
@@ -268,7 +268,7 @@ export function CustomerAppointmentsTab({
           </div>
           <button
             onClick={onBookAppointment}
-            className="mt-1 flex h-10 items-center gap-2 rounded-xl bg-cyan-600 px-5 text-sm font-bold text-white hover:bg-cyan-700 transition-colors"
+            className="mt-1 flex h-10 items-center gap-2 rounded-lg bg-cyan-600 px-5 text-sm font-bold text-white hover:bg-cyan-700 transition-colors"
           >
             <Plus size={15} /> Đặt lịch ngay
           </button>
@@ -287,7 +287,7 @@ export function CustomerAppointmentsTab({
               <div
                 key={apt.id}
                 onClick={() => onViewAppointment(apt)}
-                className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md hover:border-slate-300 cursor-pointer"
+                className="flex overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300 cursor-pointer"
               >
                 {/* ── Date / time accent column ──────────────────── */}
                 <div className={`flex w-[88px] flex-shrink-0 flex-col items-center justify-center gap-0.5 border-r py-4 ${accent.bg} ${accent.border}`}>
@@ -316,7 +316,7 @@ export function CustomerAppointmentsTab({
                   {/* Row 1: service + badges */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl" style={{ background: apt.iconBg }}>
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg" style={{ background: apt.iconBg }}>
                         <Icon size={16} style={{ color: apt.iconColor }} />
                       </div>
                       <div className="min-w-0">
@@ -373,14 +373,14 @@ export function CustomerAppointmentsTab({
                       {!isBoarding && (
                         <button
                           onClick={() => onRescheduleAppointment(apt)}
-                          className="h-9 flex-1 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                          className="h-9 flex-1 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
                         >
                           Đổi lịch
                         </button>
                       )}
                       <button
                         onClick={() => onCancelAppointment(apt.id)}
-                        className="h-9 flex-1 rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-red-600 transition-colors hover:bg-red-100"
+                        className="h-9 flex-1 rounded-lg border border-red-100 bg-red-50 text-sm font-bold text-red-600 transition-colors hover:bg-red-100"
                       >
                         {isBoarding ? "Hủy đặt phòng" : "Hủy lịch"}
                       </button>
@@ -395,7 +395,7 @@ export function CustomerAppointmentsTab({
 
       {/* ── Pagination ────────────────────────────────────────────── */}
       {!appointmentsLoading && !appointmentsError && appointmentSummary.filtered > 0 && (
-        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-3">
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3">
           <span className="text-sm font-semibold text-slate-500">
             Hiển thị {appointmentPagination.from}–{appointmentPagination.to} / {appointmentPagination.total}
           </span>
@@ -404,18 +404,18 @@ export function CustomerAppointmentsTab({
               type="button"
               onClick={() => setAppointmentsPage(p => Math.max(1, p - 1))}
               disabled={appointmentPagination.page === 1}
-              className="h-9 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
+              className="h-9 rounded-lg border border-slate-200 px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
             >
               Trước
             </button>
-            <span className="min-w-[60px] rounded-xl bg-cyan-50 px-3 py-2 text-center text-sm font-bold text-cyan-700">
+            <span className="min-w-[60px] rounded-lg bg-cyan-50 px-3 py-2 text-center text-sm font-bold text-cyan-700">
               {appointmentPagination.page} / {appointmentPagination.pageCount}
             </span>
             <button
               type="button"
               onClick={() => setAppointmentsPage(p => Math.min(appointmentsPageCount, p + 1))}
               disabled={appointmentPagination.page === appointmentPagination.pageCount}
-              className="h-9 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
+              className="h-9 rounded-lg border border-slate-200 px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
             >
               Sau
             </button>
