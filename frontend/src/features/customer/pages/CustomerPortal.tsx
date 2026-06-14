@@ -453,7 +453,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto py-3">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = tab === item.id;
@@ -461,8 +461,10 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               <button
                 key={item.id}
                 onClick={() => setTab(item.id)}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${
-                  active ? "bg-cyan-50 text-cyan-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                className={`flex w-full items-center justify-between py-2.5 pr-3 text-sm font-semibold transition-colors ${
+                  active
+                    ? "border-l-2 border-cyan-500 bg-cyan-50 pl-[10px] text-cyan-700"
+                    : "border-l-2 border-transparent pl-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-3">
@@ -470,7 +472,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                   <span className="truncate">{item.label}</span>
                 </span>
                 {item.badge && (
-                  <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${active ? "bg-white text-cyan-700" : "bg-slate-100 text-slate-500"}`}>
+                  <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${active ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500"}`}>
                     {item.badge}
                   </span>
                 )}
@@ -482,7 +484,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         <div className="border-t border-slate-200 p-3">
           <button
             onClick={() => setConfirmLogout(true)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
           >
             <LogOut size={18} />
             <span>Đăng xuất</span>

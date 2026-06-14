@@ -17,13 +17,13 @@ export function getPetColorById(id: string) {
 }
 
 export const STATUS_CONFIG = {
-  PENDING: { label: "Chờ xác nhận", bg: "#FFFBEB", color: "#D97706", ring: "#FDE68A" },
-  CONFIRMED: { label: "Đã xác nhận", bg: "#EFF6FF", color: "#2563EB", ring: "#BFDBFE" },
-  CHECKED_IN: { label: "Đã check-in", bg: "#F0F9FF", color: "#0891B2", ring: "#BAE6FD" },
-  IN_PROGRESS: { label: "Đang thực hiện", bg: "#F5F3FF", color: "#7C3AED", ring: "#DDD6FE" },
-  COMPLETED: { label: "Hoàn thành", bg: "#ECFDF5", color: "#059669", ring: "#BBF7D0" },
-  CANCELLED: { label: "Đã hủy", bg: "#FEF2F2", color: "#DC2626", ring: "#FECACA" },
-  NO_SHOW: { label: "Không đến", bg: "#F8FAFC", color: "#64748B", ring: "#CBD5E1" },
+  PENDING:     { label: "Chờ xác nhận",    bg: "#F8FAFC", color: "#475569", ring: "#CBD5E1", badgeCls: "border border-slate-300 text-slate-600 bg-white"     },
+  CONFIRMED:   { label: "Đã xác nhận",     bg: "#ECFEFF", color: "#0E7490", ring: "#A5F3FC", badgeCls: "border border-cyan-300 text-cyan-700 bg-white"        },
+  CHECKED_IN:  { label: "Đã check-in",     bg: "#ECFEFF", color: "#0E7490", ring: "#A5F3FC", badgeCls: "border border-cyan-400 text-cyan-800 bg-cyan-50"      },
+  IN_PROGRESS: { label: "Đang thực hiện",  bg: "#ECFEFF", color: "#0E7490", ring: "#A5F3FC", badgeCls: "border border-cyan-400 text-cyan-800 bg-cyan-50"      },
+  COMPLETED:   { label: "Hoàn thành",      bg: "#F0FDF4", color: "#15803D", ring: "#BBF7D0", badgeCls: "border border-emerald-300 text-emerald-700 bg-white"  },
+  CANCELLED:   { label: "Đã hủy",          bg: "#FFFFFF", color: "#94A3B8", ring: "#E2E8F0", badgeCls: "border border-slate-200 text-slate-400 bg-white"      },
+  NO_SHOW:     { label: "Không đến",       bg: "#FFFFFF", color: "#94A3B8", ring: "#E2E8F0", badgeCls: "border border-slate-200 text-slate-400 bg-white"      },
 };
 
 export const SERVICE_TYPE_CONFIG: Record<ServiceType, { bg: string; color: string }> = {
@@ -41,7 +41,7 @@ export const NOTIF_CONFIG = {
 
 export function getStatusConfig(status?: string) {
   return STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]
-    ?? { label: "Unknown", bg: "#F8FAFC", color: "#64748B", ring: "#CBD5E1" };
+    ?? { label: "Unknown", bg: "#F8FAFC", color: "#64748B", ring: "#CBD5E1", badgeCls: "border border-slate-200 text-slate-400 bg-white" };
 }
 
 export function getServiceTypeConfig(serviceType?: string) {

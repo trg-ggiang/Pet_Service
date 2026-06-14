@@ -99,13 +99,13 @@ function ProgressTrack({ status, isBoarding }: { status: string; isBoarding: boo
 /* ── Status colour palette ─────────────────────────────────────────── */
 
 const STATUS_ACCENT: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  PENDING:     { bg: "bg-sky-50",     text: "text-sky-700",     border: "border-sky-100",     dot: "bg-sky-400"     },
-  CONFIRMED:   { bg: "bg-cyan-50",    text: "text-cyan-700",    border: "border-cyan-100",    dot: "bg-cyan-500"    },
-  CHECKED_IN:  { bg: "bg-indigo-50",  text: "text-indigo-700",  border: "border-indigo-100",  dot: "bg-indigo-500"  },
-  IN_PROGRESS: { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-100",   dot: "bg-amber-400"   },
-  COMPLETED:   { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" },
-  CANCELLED:   { bg: "bg-slate-50",   text: "text-slate-500",   border: "border-slate-200",   dot: "bg-slate-300"   },
-  NO_SHOW:     { bg: "bg-slate-50",   text: "text-slate-500",   border: "border-slate-200",   dot: "bg-slate-300"   },
+  PENDING:     { bg: "bg-slate-50",    text: "text-slate-600",   border: "border-slate-200",   dot: "bg-slate-400"   },
+  CONFIRMED:   { bg: "bg-cyan-50",     text: "text-cyan-700",    border: "border-cyan-100",    dot: "bg-cyan-500"    },
+  CHECKED_IN:  { bg: "bg-cyan-50",     text: "text-cyan-800",    border: "border-cyan-100",    dot: "bg-cyan-600"    },
+  IN_PROGRESS: { bg: "bg-cyan-50",     text: "text-cyan-800",    border: "border-cyan-100",    dot: "bg-cyan-600"    },
+  COMPLETED:   { bg: "bg-emerald-50",  text: "text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" },
+  CANCELLED:   { bg: "bg-white",       text: "text-slate-400",   border: "border-slate-200",   dot: "bg-slate-300"   },
+  NO_SHOW:     { bg: "bg-white",       text: "text-slate-400",   border: "border-slate-200",   dot: "bg-slate-300"   },
 };
 const DEFAULT_ACCENT = STATUS_ACCENT.PENDING;
 
@@ -339,7 +339,7 @@ export function CustomerAppointmentsTab({
                       <span className="rounded-lg px-2.5 py-1 text-[11px] font-bold" style={{ background: svcCfg.bg, color: svcCfg.color }}>
                         {apt.serviceType}
                       </span>
-                      <span className="rounded-lg px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset" style={{ background: statusCfg.bg, color: statusCfg.color }}>
+                      <span className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${statusCfg.badgeCls}`}>
                         {statusCfg.label}
                       </span>
                     </div>

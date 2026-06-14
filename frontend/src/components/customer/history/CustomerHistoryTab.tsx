@@ -29,9 +29,9 @@ const TYPE_META: Record<
 };
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; border: string }> = {
-  completed: { label: "Hoàn thành", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  pending:   { label: "Chờ thanh toán", bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200"   },
-  cancelled: { label: "Đã hủy",     bg: "bg-red-50",     text: "text-red-600",     border: "border-red-200"     },
+  completed: { label: "Hoàn thành",      bg: "bg-white", text: "text-emerald-700", border: "border-emerald-300" },
+  pending:   { label: "Chờ thanh toán",  bg: "bg-white", text: "text-slate-600",   border: "border-slate-300"   },
+  cancelled: { label: "Đã hủy",          bg: "bg-white", text: "text-red-500",     border: "border-red-200"     },
 };
 
 const HISTORY_FILTERS: Array<{ id: CustomerServiceHistoryTypeFilter; label: string; icon: ElementType }> = [
