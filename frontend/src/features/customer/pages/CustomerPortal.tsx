@@ -493,6 +493,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {tab !== "home" && (
         <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold text-slate-950">{tabMeta[tab].title}</h1>
@@ -556,6 +557,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             )}
           </div>
         </header>
+        )}
 
       {confirmLogout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmLogout(false)}>
@@ -624,28 +626,28 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
       )}
 
         <main className="relative z-0 flex-1 overflow-y-auto">
+          {tab === "home" && (
+            <CustomerHomeTab
+              userName={displayName}
+              apts={apts}
+              pets={pets}
+              notifications={notifications}
+              notificationsLoading={notificationsLoading}
+              notificationsError={notificationsError}
+              unreadCount={unreadCount}
+              onBookAppointment={() => setIsNewAptOpen(true)}
+              onBookBoarding={() => setIsBoardingOpen(true)}
+              onOpenAppointments={() => setTab("apts")}
+              onOpenPets={() => setTab("pets")}
+              onOpenHistory={() => setTab("history")}
+              onOpenNotifications={() => setTab("notifications")}
+              onOpenMedications={() => setTab("medications")}
+              onNotificationClick={handleNotificationClick}
+              urgentMedications={urgentMedications}
+            />
+          )}
+          {tab !== "home" && (
           <div className="mx-auto w-full max-w-7xl p-6">
-        {tab === "home" && (
-          <CustomerHomeTab
-            userName={displayName}
-            apts={apts}
-            pets={pets}
-            notifications={notifications}
-            notificationsLoading={notificationsLoading}
-            notificationsError={notificationsError}
-            unreadCount={unreadCount}
-            onBookAppointment={() => setIsNewAptOpen(true)}
-            onBookBoarding={() => setIsBoardingOpen(true)}
-            onOpenAppointments={() => setTab("apts")}
-            onOpenPets={() => setTab("pets")}
-            onOpenHistory={() => setTab("history")}
-            onOpenNotifications={() => setTab("notifications")}
-            onOpenMedications={() => setTab("medications")}
-            onNotificationClick={handleNotificationClick}
-            urgentMedications={urgentMedications}
-          />
-        )}
-
         {tab === "apts" && (
           <CustomerAppointmentsTab
             pets={pets}
@@ -734,6 +736,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           />
         )}
           </div>
+          )}
         </main>
 
       {isBoardingOpen && (
