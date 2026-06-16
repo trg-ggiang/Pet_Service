@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { Bell, Calendar, Dog, Heart, History, LogOut, Pill, UserRound, X } from "lucide-react";
+import { Bell, Calendar, Dog, Heart, History, LogOut, PanelLeftClose, Pill, UserRound, X } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { CustomerPetProfilesModule } from "./CustomerPetsPage";
 import { fetchCustomerPetDashboard } from "../../../services/customer/customerPetsApi";
@@ -38,6 +38,7 @@ import { HistoryDetailModal } from "../../../components/customer/history/History
 import { CustomerHomeTab } from "../../../components/customer/home/CustomerHomeTab";
 import { CustomerNotificationsTab } from "../../../components/customer/notifications/CustomerNotificationsTab";
 import { CustomerProfileTab } from "../../../components/customer/profile/CustomerProfileTab";
+import { PixelDogOverlay } from "../../../components/ui/PixelDogLoader";
 import { fetchCustomerProfile, updateCustomerProfile, type CustomerProfile } from "../../../services/customer/customerProfileApi";
 import { getNotifConfig, mapCustomerAppointment, mapCustomerNotification } from "../../../utils/customer/portalConfig";
 
@@ -57,6 +58,8 @@ function PawSVG({ className }: { className?: string }) {
 
 export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; userName: string }) {
   const [tab, setTab] = useState<CustomerTab>("home");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [pets, setPets] = useState<Pet[]>([]);
@@ -131,6 +134,14 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
   ];
   const selectedPetLabel = petFilter === "all" ? "Tất cả" : petFilter;
   const selectedServiceLabel = serviceFilterOptions.find((option) => option.value === serviceTypeFilter)?.label ?? "Tất cả";
+  const formatBadgeCount = (value: number) => (value > 99 ? "99+" : value);
+
+  const navigateTab = useCallback((nextTab: CustomerTab) => {
+    if (nextTab === tab) return;
+    setTabLoading(true);
+    setTab(nextTab);
+    window.setTimeout(() => setTabLoading(false), 420);
+  }, [tab]);
 
   const loadPetsDashboard = useCallback(async () => {
     try {
@@ -272,7 +283,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
   const refreshAppointments = async (page = appointmentsPage) => {
     const [allPayload, viewPayload] = await Promise.all([
-      fetchCustomerAppointments({ pageSize: 50 }),
+      fetchCustomerAppointments({ status: "upcoming", pageSize: 50 }),
       fetchCustomerAppointments({
         status: statusFilter,
         pet: petFilter,
@@ -398,9 +409,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     };
   }, []);
 
-  const urgentMedCount = medications?.pets
-    .flatMap(p => p.medications)
-    .filter(m => m.daysRemaining <= 2).length ?? 0;
+  const todayMedCount = medications?.totalActive ?? medications?.pets.flatMap(p => p.medications).length ?? 0;
 
   const urgentMedications = medications?.pets.flatMap(p =>
     p.medications
@@ -412,7 +421,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     { id: "home"        as const, label: "Trang chủ",  icon: Heart    },
     { id: "apts"        as const, label: "Lịch hẹn",   icon: Calendar, badge: apts.length || undefined          },
     { id: "pets"        as const, label: "Thú cưng",   icon: Dog                                               },
-    { id: "medications" as const, label: "Lịch thuốc", icon: Pill,     badge: urgentMedCount || undefined      },
+    { id: "medications" as const, label: "Lịch thuốc", icon: Pill,     badge: todayMedCount || undefined       },
     { id: "history"     as const, label: "Lịch sử",    icon: History                                          },
     { id: "notifications" as const, label: "Thông báo", icon: Bell,    badge: unreadCount || undefined         },
     { id: "profile"     as const, label: "Hồ sơ",      icon: UserRound                                        },
@@ -430,50 +439,85 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-600 shadow-sm">
-            <PawSVG className="h-5 w-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-bold tracking-tight text-slate-950">PetCare Center</div>
-            <div className="truncate text-[11px] font-semibold text-slate-400">Cổng khách hàng</div>
-          </div>
+      {tabLoading && <PixelDogOverlay label="Đang chuyển trang..." />}
+      <aside className={`flex flex-shrink-0 flex-col border-r border-slate-200 bg-white transition-[width] duration-200 ${sidebarCollapsed ? "w-20" : "w-64"}`}>
+        <div className={`relative flex items-center border-b border-slate-200 ${sidebarCollapsed ? "justify-center px-3 py-5" : "gap-3 px-5 py-4"}`}>
+          {sidebarCollapsed ? (
+            <button
+              type="button"
+              title="Mở rộng sidebar"
+              aria-label="Mở rộng sidebar"
+              onClick={() => setSidebarCollapsed(false)}
+              className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-sm transition-transform hover:scale-[1.03]"
+            >
+              <PawSVG className="h-5 w-5 text-white" />
+            </button>
+          ) : (
+            <>
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-sm">
+                <PawSVG className="h-5 w-5 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-bold tracking-tight text-slate-950">PetCare Center</div>
+                <div className="truncate text-[11px] font-semibold text-slate-400">Cổng khách hàng</div>
+              </div>
+              <button
+                type="button"
+                title="Thu gọn sidebar"
+                aria-label="Thu gọn sidebar"
+                onClick={() => setSidebarCollapsed(true)}
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              >
+                <PanelLeftClose size={18} />
+              </button>
+            </>
+          )}
         </div>
 
-        <div className="border-b border-slate-100 px-5 py-5">
-          <div className="flex items-center gap-3">
+        <div className={`border-b border-slate-100 ${sidebarCollapsed ? "px-3 py-4" : "px-5 py-5"}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "gap-3"}`}>
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 shadow-sm">
               <span className="text-xs font-bold text-cyan-700">{displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "KH"}</span>
             </div>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-bold text-slate-950">{displayName}</div>
-              <div className="truncate text-xs font-medium text-slate-500">{profile?.email || "Chủ thú cưng"}</div>
-            </div>
+            {!sidebarCollapsed && (
+              <div className="min-w-0">
+                <div className="truncate text-sm font-bold text-slate-950">{displayName}</div>
+                <div className="truncate text-xs font-medium text-slate-500">{profile?.email || "Chủ thú cưng"}</div>
+              </div>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto py-3">
+        <nav className={`flex-1 space-y-0.5 overflow-y-auto ${sidebarCollapsed ? "p-3" : "py-3"}`}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = tab === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setTab(item.id)}
-                className={`flex w-full items-center justify-between py-2.5 pr-3 text-sm font-semibold transition-colors ${
-                  active
-                    ? "border-l-2 border-cyan-500 bg-cyan-50 pl-[10px] text-cyan-700"
-                    : "border-l-2 border-transparent pl-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                title={sidebarCollapsed ? item.label : undefined}
+                aria-label={sidebarCollapsed ? item.label : undefined}
+                onClick={() => navigateTab(item.id)}
+                className={`flex w-full items-center text-sm font-semibold transition-colors ${
+                  sidebarCollapsed
+                    ? `justify-center rounded-xl px-2 py-3 ${active ? "bg-cyan-50 text-cyan-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`
+                    : active
+                      ? "justify-between border-l-2 border-cyan-500 bg-cyan-50 py-2.5 pl-[10px] pr-3 text-cyan-700"
+                      : "justify-between border-l-2 border-transparent py-2.5 pl-3 pr-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
-                <span className="flex min-w-0 items-center gap-3">
+                <span className={`flex min-w-0 items-center ${sidebarCollapsed ? "relative justify-center" : "gap-3"}`}>
                   <Icon size={18} strokeWidth={active ? 2.5 : 2} className="flex-shrink-0" />
-                  <span className="truncate">{item.label}</span>
+                  {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                  {sidebarCollapsed && item.badge && (
+                    <span className={`absolute -right-3 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none ring-2 ring-white ${active ? "bg-cyan-600 text-white" : "bg-red-500 text-white"}`}>
+                      {formatBadgeCount(item.badge)}
+                    </span>
+                  )}
                 </span>
-                {item.badge && (
+                {!sidebarCollapsed && item.badge && (
                   <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${active ? "bg-cyan-100 text-cyan-700" : "bg-slate-100 text-slate-500"}`}>
-                    {item.badge}
+                    {formatBadgeCount(item.badge)}
                   </span>
                 )}
               </button>
@@ -484,10 +528,12 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
         <div className="border-t border-slate-200 p-3">
           <button
             onClick={() => setConfirmLogout(true)}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            title={sidebarCollapsed ? "Đăng xuất" : undefined}
+            aria-label={sidebarCollapsed ? "Đăng xuất" : undefined}
+            className={`flex w-full items-center rounded-lg py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3"}`}
           >
             <LogOut size={18} />
-            <span>Đăng xuất</span>
+            {!sidebarCollapsed && <span>Đăng xuất</span>}
           </button>
         </div>
       </aside>
@@ -524,7 +570,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
                     </div>
                     <div className="flex items-center gap-3">
                       <button onClick={() => void markAllRead()} className="text-[12px] font-semibold text-cyan-600 hover:underline">Đánh dấu đã đọc</button>
-                      <button onClick={() => { setShowNotifDropdown(false); setTab("notifications"); }} className="text-[12px] font-semibold text-slate-500 hover:text-slate-700">Xem tất cả</button>
+                      <button onClick={() => { setShowNotifDropdown(false); navigateTab("notifications"); }} className="text-[12px] font-semibold text-slate-500 hover:text-slate-700">Xem tất cả</button>
                     </div>
                   </div>
                   <div className="max-h-[380px] divide-y divide-slate-100 overflow-y-auto">
@@ -637,11 +683,11 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               unreadCount={unreadCount}
               onBookAppointment={() => setIsNewAptOpen(true)}
               onBookBoarding={() => setIsBoardingOpen(true)}
-              onOpenAppointments={() => setTab("apts")}
-              onOpenPets={() => setTab("pets")}
-              onOpenHistory={() => setTab("history")}
-              onOpenNotifications={() => setTab("notifications")}
-              onOpenMedications={() => setTab("medications")}
+              onOpenAppointments={() => navigateTab("apts")}
+              onOpenPets={() => navigateTab("pets")}
+              onOpenHistory={() => navigateTab("history")}
+              onOpenNotifications={() => navigateTab("notifications")}
+              onOpenMedications={() => navigateTab("medications")}
               onNotificationClick={handleNotificationClick}
               urgentMedications={urgentMedications}
             />
@@ -721,7 +767,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             onMarkAllRead={() => void markAllRead()}
             onMarkRead={(id) => void markRead(id)}
             onDismiss={(id) => void dismissNotif(id)}
-            onOpenAppointments={() => setTab("apts")}
+            onOpenAppointments={() => navigateTab("apts")}
             onNotificationClick={handleNotificationClick}
           />
         )}
@@ -746,7 +792,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
           onSuccess={async () => {
             await refreshAppointments(1);
             setAppointmentsPage(1);
-            setTab("apts");
+            navigateTab("apts");
           }}
         />
       )}
@@ -780,7 +826,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
             setAppointmentsPage(1);
             setIsNewAptOpen(false);
             setBookingPetName(null);
-            setTab("apts");
+            navigateTab("apts");
             return apt;
           }}
         />

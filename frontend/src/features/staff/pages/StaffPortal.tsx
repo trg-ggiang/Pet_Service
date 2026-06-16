@@ -14,6 +14,7 @@ import {
   StaffSidebar,
   type StaffNavId,
 } from "../../../components/staff/StaffPortalView";
+import { PixelDogOverlay } from "../../../components/ui/PixelDogLoader";
 import {
   staffAppointmentsService,
   type BoardingDailyStatus,
@@ -105,6 +106,7 @@ function upsertTodayBoardingUpdate(guest: BoardingGuest): BoardingGuest {
 
 export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [activeNav, setActiveNav] = useState<StaffNavId>("appointments");
+  const [navLoading, setNavLoading] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [summary, setSummary] = useState<StaffPortalSummary>({
@@ -251,6 +253,13 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   }, [boardingDateKey, activeNav, loadBoarding, loadSummary]);
 
   const { doneGrooming, totalGrooming, pendingCheckIn, needsFed, pendingPayments } = summary;
+
+  function navigateStaffNav(nextNav: StaffNavId) {
+    if (nextNav === activeNav) return;
+    setNavLoading(true);
+    setActiveNav(nextNav);
+    window.setTimeout(() => setNavLoading(false), 420);
+  }
 
   async function handleConfirmAppointment(appointment: StaffAppointment) {
     try {
@@ -406,6 +415,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="h-screen flex overflow-hidden bg-slate-50">
+      {navLoading && <PixelDogOverlay label="Đang chuyển trang..." />}
       <StaffSidebar
         activeNav={activeNav}
         profile={profile}
@@ -414,7 +424,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
         pendingCheckIn={pendingCheckIn}
         needsFed={needsFed}
         pendingPayments={pendingPayments}
-        onNavigate={setActiveNav}
+        onNavigate={navigateStaffNav}
         onLogoutClick={() => setConfirmLogout(true)}
       />
 
@@ -424,7 +434,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           pendingCheckIn={pendingCheckIn}
           needsFed={needsFed}
           pendingPayments={pendingPayments}
-          onNavigate={setActiveNav}
+          onNavigate={navigateStaffNav}
         />
         <main className={`flex-1 min-h-0 p-6 ${activeNav === "appointments" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
           {activeNav === "appointments" && (

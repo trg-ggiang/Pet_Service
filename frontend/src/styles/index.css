@@ -1,3 +1,173 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+.blue-pixel-dog-orbit {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.blue-pixel-dog-orbit::before {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border: 2px dashed rgb(8 145 178 / 0.28);
+  border-radius: inherit;
+}
+
+.blue-pixel-dog-runner {
+  position: absolute;
+  inset: 0;
+  animation: blue-pixel-dog-orbit 1s steps(18) infinite;
+  transform-origin: 50% 50%;
+}
+
+.blue-pixel-dog {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  width: 5px;
+  height: 5px;
+  background: #0891b2;
+  color: #0891b2;
+  image-rendering: pixelated;
+  transform: translateX(-50%);
+  animation: blue-pixel-dog-bob 0.32s steps(2) infinite;
+  filter: drop-shadow(0 10px 8px rgb(8 145 178 / 0.2));
+  box-shadow:
+    /* tail */
+    -15px 5px #0e7490,
+    -20px 0 #0e7490,
+    -25px -5px #0e7490,
+    -25px -10px #22d3ee,
+    /* back and body */
+    -10px -5px #0e7490,
+    -5px -5px #0891b2,
+    0 -5px #0891b2,
+    5px -5px #0891b2,
+    10px -5px #0e7490,
+    -15px 0 #0e7490,
+    -10px 0 #06b6d4,
+    -5px 0 #22d3ee,
+    0 0 #22d3ee,
+    5px 0 #06b6d4,
+    10px 0 #0891b2,
+    -15px 5px #0891b2,
+    -10px 5px #22d3ee,
+    -5px 5px #67e8f9,
+    0 5px #67e8f9,
+    5px 5px #22d3ee,
+    10px 5px #0891b2,
+    -10px 10px #0e7490,
+    -5px 10px #06b6d4,
+    0 10px #06b6d4,
+    5px 10px #0e7490,
+    /* head */
+    15px -15px #0e7490,
+    20px -15px #0e7490,
+    15px -10px #0891b2,
+    20px -10px #22d3ee,
+    25px -10px #0891b2,
+    15px -5px #22d3ee,
+    20px -5px #67e8f9,
+    25px -5px #22d3ee,
+    30px -5px #0891b2,
+    20px 0 #67e8f9,
+    25px 0 #22d3ee,
+    30px 0 #0891b2,
+    /* ear */
+    10px -20px #0f766e,
+    15px -20px #0f766e,
+    10px -15px #0e7490,
+    /* face details */
+    25px -10px #0f172a,
+    35px -5px #0f172a,
+    30px 5px #0f172a,
+    /* tongue */
+    35px 5px #fb7185,
+    40px 5px #fb7185,
+    40px 10px #fb7185,
+    /* legs frame A */
+    -10px 15px #0e7490,
+    -15px 20px #0e7490,
+    5px 15px #0e7490,
+    10px 20px #0e7490,
+    /* motion pixels */
+    -35px 5px #67e8f9,
+    -45px 10px #22d3ee,
+    -40px -5px #a5f3fc;
+}
+
+@keyframes blue-pixel-dog-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes blue-pixel-dog-bob {
+  50% {
+    transform: translateX(-50%) translateY(4px);
+    box-shadow:
+      -15px 5px #0e7490,
+      -20px 0 #0e7490,
+      -25px -5px #0e7490,
+      -25px -10px #22d3ee,
+      -10px -5px #0e7490,
+      -5px -5px #0891b2,
+      0 -5px #0891b2,
+      5px -5px #0891b2,
+      10px -5px #0e7490,
+      -15px 0 #0e7490,
+      -10px 0 #06b6d4,
+      -5px 0 #22d3ee,
+      0 0 #22d3ee,
+      5px 0 #06b6d4,
+      10px 0 #0891b2,
+      -15px 5px #0891b2,
+      -10px 5px #22d3ee,
+      -5px 5px #67e8f9,
+      0 5px #67e8f9,
+      5px 5px #22d3ee,
+      10px 5px #0891b2,
+      -10px 10px #0e7490,
+      -5px 10px #06b6d4,
+      0 10px #06b6d4,
+      5px 10px #0e7490,
+      15px -15px #0e7490,
+      20px -15px #0e7490,
+      15px -10px #0891b2,
+      20px -10px #22d3ee,
+      25px -10px #0891b2,
+      15px -5px #22d3ee,
+      20px -5px #67e8f9,
+      25px -5px #22d3ee,
+      30px -5px #0891b2,
+      20px 0 #67e8f9,
+      25px 0 #22d3ee,
+      30px 0 #0891b2,
+      10px -20px #0f766e,
+      15px -20px #0f766e,
+      10px -15px #0e7490,
+      25px -10px #0f172a,
+      35px -5px #0f172a,
+      30px 5px #0f172a,
+      35px 5px #fb7185,
+      40px 5px #fb7185,
+      40px 10px #fb7185,
+      -15px 15px #0e7490,
+      -10px 20px #0e7490,
+      10px 15px #0e7490,
+      5px 20px #0e7490,
+      -35px 5px #67e8f9,
+      -45px 10px #22d3ee,
+      -40px -5px #a5f3fc;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blue-pixel-dog-runner,
+  .blue-pixel-dog {
+    animation-duration: 2s;
+  }
+}

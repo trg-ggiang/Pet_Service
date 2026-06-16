@@ -9,6 +9,7 @@ import { DoctorExamScreen } from "./DoctorExamScreen";
 import { DoctorRecordsPage } from "./DoctorRecordsPage";
 import { DoctorStatsPage } from "./DoctorStatsPage";
 import { DoctorSettingsPage } from "./DoctorSettingsPage";
+import { PixelDogOverlay } from "../../../components/ui/PixelDogLoader";
 import {
   doctorAppointmentsService,
   type DoctorAppointment,
@@ -47,6 +48,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [navLoading, setNavLoading] = useState(false);
   const [urgentAlertTarget, setUrgentAlertTarget] = useState<DoctorAppointment | null>(null);
   const [urgentAlertMessage, setUrgentAlertMessage] = useState("");
   const [urgentAlertSending, setUrgentAlertSending] = useState(false);
@@ -138,16 +140,21 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
   }
 
   function handleOpenRecordDetail(appointment: DoctorAppointment) {
+    setNavLoading(true);
     setRecordsTarget({
       petId: appointment.petId,
       appointmentId: appointment.appointmentId,
     });
     setActiveNav("records");
+    window.setTimeout(() => setNavLoading(false), 420);
   }
 
   function handleNavigate(navId: DoctorPortalNavId) {
+    if (navId === activeNav && !recordsTarget) return;
+    setNavLoading(true);
     setRecordsTarget(null);
     setActiveNav(navId);
+    window.setTimeout(() => setNavLoading(false), 420);
   }
 
   async function handleFinishExam() {
@@ -183,6 +190,7 @@ export function DoctorPortal({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ background: "#F8FAFC" }}>
+      {navLoading && <PixelDogOverlay label="Đang chuyển trang..." />}
       {logoutConfirmOpen && (
         <DoctorLogoutConfirm
           onCancel={() => setLogoutConfirmOpen(false)}
