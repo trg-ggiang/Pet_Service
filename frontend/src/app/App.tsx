@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   Activity,
   BarChart3,
@@ -23,11 +23,11 @@ import { UsersPage } from "../features/admin/pages/UsersPage";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
-import { SplashScreen } from "../features/auth/pages/SplashScreen";
 import { WelcomePage } from "../features/auth/pages/WelcomePage";
 import { CustomerPortal } from "../features/customer/pages/CustomerPortal";
 import { DoctorPortal } from "../features/doctor/pages/DoctorPortal";
 import { StaffPortal } from "../features/staff/pages/StaffPortal";
+import { PixelDogOverlay } from "../components/ui/PixelDogLoader";
 import { clearSession, login, register, restoreSession, type AuthSession } from "../services/auth";
 
 type AdminPageId = "dashboard" | "appointments" | "users" | "services" | "staff" | "reports" | "health-trends" | "settings" | "help";
@@ -48,9 +48,18 @@ const ADMIN_NAV: Array<{ id: AdminPageId; label: string; icon: typeof LayoutDash
 function AdminRoot({ onLogout }: { onLogout: () => void }) {
   const [page, setPage] = useState<AdminPageId>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navLoading, setNavLoading] = useState(false);
+
+  function navigateAdminPage(nextPage: AdminPageId) {
+    if (nextPage === page) return;
+    setNavLoading(true);
+    setPage(nextPage);
+    window.setTimeout(() => setNavLoading(false), 420);
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {navLoading && <PixelDogOverlay label="Đang chuyển trang..." />}
       <aside className={`flex flex-shrink-0 flex-col border-r border-border bg-white transition-[width] duration-200 ${sidebarCollapsed ? "w-20" : "w-60"}`}>
         <div className={`flex h-[100px] items-center border-b border-border ${sidebarCollapsed ? "justify-center px-3" : "justify-between px-5"}`}>
           {!sidebarCollapsed && (
@@ -74,7 +83,7 @@ function AdminRoot({ onLogout }: { onLogout: () => void }) {
             <button
               key={id}
               title={sidebarCollapsed ? label : undefined}
-              onClick={() => setPage(id)}
+              onClick={() => navigateAdminPage(id)}
               className={`flex w-full items-center rounded-xl py-2.5 text-sm font-semibold transition-colors ${
                 sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3"
               } ${
@@ -102,7 +111,7 @@ function AdminRoot({ onLogout }: { onLogout: () => void }) {
 
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[1280px] px-6 py-6">
-          {page === "dashboard" && <AdminDashboardPage onNav={setPage} />}
+          {page === "dashboard" && <AdminDashboardPage onNav={navigateAdminPage} />}
           {page === "appointments" && <AppointmentsPage />}
           {page === "users" && <UsersPage />}
           {page === "services" && <ServicesPage />}
@@ -123,6 +132,20 @@ export default function App() {
   const [screen, setScreen] = useState<AuthScreen>("welcome");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [booting, setBooting] = useState(true);
+  const [routeLoading, setRouteLoading] = useState("");
+
+  function finishRouteLoading() {
+    window.setTimeout(() => setRouteLoading(""), 420);
+  }
+
+  function withRouteLoader(node: ReactNode) {
+    return (
+      <>
+        {node}
+        {routeLoading && <PixelDogOverlay label={routeLoading} />}
+      </>
+    );
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -141,44 +164,58 @@ export default function App() {
     };
   }, []);
 
-  if (booting) return <SplashScreen onDone={() => setBooting(false)} />;
-  if (screen === "welcome") return <WelcomePage onLogin={() => setScreen("login")} onRegister={() => setScreen("register")} />;
+  if (booting) return <PixelDogOverlay label="Đang khởi động..." />;
+  if (screen === "welcome") return withRouteLoader(<WelcomePage onLogin={() => setScreen("login")} onRegister={() => setScreen("register")} />);
   if (screen === "login") {
-    return (
+    return withRouteLoader(
       <LoginPage
         onLogin={async (input) => {
-          setSession(await login(input));
-          setScreen("app");
+          setRouteLoading("Đang đăng nhập...");
+          try {
+            setSession(await login(input));
+            setScreen("app");
+          } finally {
+            finishRouteLoading();
+          }
         }}
         onRegister={() => setScreen("register")}
         onForgotPassword={() => setScreen("forgot")}
-      />
+      />,
     );
   }
   if (screen === "register") {
-    return (
+    return withRouteLoader(
       <RegisterPage
         onBack={() => setScreen("login")}
         onRegister={async (input) => {
-          setSession(await register(input));
-          setScreen("app");
+          setRouteLoading("Đang tạo tài khoản...");
+          try {
+            setSession(await register(input));
+            setScreen("app");
+          } finally {
+            finishRouteLoading();
+          }
         }}
-      />
+      />,
     );
   }
-  if (screen === "forgot") return <ForgotPasswordPage onBack={() => setScreen("login")} />;
+  if (screen === "forgot") return withRouteLoader(<ForgotPasswordPage onBack={() => setScreen("login")} />);
 
   const logout = () => {
-    clearSession();
-    setSession(null);
-    setScreen("welcome");
+    setRouteLoading("Đang đăng xuất...");
+    window.setTimeout(() => {
+      clearSession();
+      setSession(null);
+      setScreen("welcome");
+      finishRouteLoading();
+    }, 420);
   };
   const role = session?.user.role;
-  if (role === "admin") return <AdminRoot onLogout={logout} />;
-  if (role === "doctor") return <DoctorPortal onLogout={logout} />;
-  if (role === "staff") return <StaffPortal onLogout={logout} />;
-  if (role === "customer") return <CustomerPortal onLogout={logout} userName={session?.user.fullName ?? session?.user.email ?? "Khách hàng"} />;
+  if (role === "admin") return withRouteLoader(<AdminRoot onLogout={logout} />);
+  if (role === "doctor") return withRouteLoader(<DoctorPortal onLogout={logout} />);
+  if (role === "staff") return withRouteLoader(<StaffPortal onLogout={logout} />);
+  if (role === "customer") return withRouteLoader(<CustomerPortal onLogout={logout} userName={session?.user.fullName ?? session?.user.email ?? "Khách hàng"} />);
 
   clearSession();
-  return <WelcomePage onLogin={() => setScreen("login")} onRegister={() => setScreen("register")} />;
+  return withRouteLoader(<WelcomePage onLogin={() => setScreen("login")} onRegister={() => setScreen("register")} />);
 }

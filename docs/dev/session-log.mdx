@@ -3,6 +3,57 @@ title: "Session Log"
 description: "Ongoing development session notes."
 ---
 
+## 2026-06-16 - Customer Sidebar Collapse
+
+### Goal
+
+Add a compact customer sidebar mode that keeps navigation usable with icons and small notification counts.
+
+### Work Completed
+
+- Added a collapse/expand control to the customer portal sidebar.
+- Hid sidebar labels and profile text in compact mode while preserving icon-only navigation titles.
+- Converted sidebar badges into small count bubbles above icons when collapsed, capped at `99+`.
+- Kept the appointment badge tied to upcoming appointments after mutations, including cancellation.
+- Changed the medication badge to show today's active medication count.
+- Adjusted collapsed sidebar styling to use doctor-sidebar-like rounded icon buttons.
+
+### Verification
+
+- `npm --prefix frontend run build`
+
+## 2026-06-16 - Admin Email Template Encoding
+
+### Goal
+
+Prevent admin email template text from showing corrupted Vietnamese when older stored settings contain mojibake.
+
+### Work Completed
+
+- Added a safe merge path for admin email templates that normalizes stored text and falls back to UTF-8 defaults if mojibake remains.
+- Kept email template defaults and custom email send fallbacks in UTF-8 Vietnamese.
+
+### Verification
+
+- `node --check backend/src/services/emailService.js`
+
+## 2026-06-16 - Pixel Dog Loading Overlay
+
+### Goal
+
+Show a playful centered loading state during login, logout, startup, and role navigation waits.
+
+### Work Completed
+
+- Added a reusable pixel dog loader and centered overlay component.
+- Added pixel dog overlay during app startup, login, registration, logout, admin navigation, customer tab navigation, doctor navigation, and staff navigation.
+- Kept auth button loading behavior as-is so the dog appears in the center of the screen instead of inside buttons.
+- Replaced the CSS pixel dog with a larger transparent golden retriever illustration inside a lighter glass overlay.
+
+### Verification
+
+- `npm --prefix frontend run build`
+
 ## 2026-06-12 - Customer Portal Sidebar Shell
 
 ### Goal

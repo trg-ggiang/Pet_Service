@@ -107,6 +107,25 @@ function normalizeEmailTemplates(templates) {
   return next;
 }
 
+function preferReadableTemplateText(key, field, value) {
+  const text = normalizeText(value);
+  if (!MOJIBAKE_PATTERN.test(text)) return text;
+  return DEFAULT_TEMPLATES[key]?.[field] ?? text;
+}
+
+function mergeEmailTemplates(stored) {
+  const merged = {};
+  Object.entries(DEFAULT_TEMPLATES).forEach(([key, defaults]) => {
+    const custom = stored?.[key] && typeof stored[key] === "object" ? stored[key] : {};
+    merged[key] = {
+      subject: preferReadableTemplateText(key, "subject", custom.subject ?? defaults.subject),
+      heading: preferReadableTemplateText(key, "heading", custom.heading ?? defaults.heading),
+      message: preferReadableTemplateText(key, "message", custom.message ?? defaults.message),
+    };
+  });
+  return merged;
+}
+
 function getSmtpConfig() {
   const user = process.env.SMTP_USER;
   const password = process.env.SMTP_APP_PASSWORD;
@@ -149,7 +168,7 @@ function buildHtml(heading, message) {
 
 async function getEmailTemplates() {
   const stored = await getStoredSetting(TEMPLATE_SETTING_KEY);
-  return normalizeEmailTemplates({ ...DEFAULT_TEMPLATES, ...(stored || {}) });
+  return mergeEmailTemplates(stored || {});
 }
 
 async function updateEmailTemplates(input) {

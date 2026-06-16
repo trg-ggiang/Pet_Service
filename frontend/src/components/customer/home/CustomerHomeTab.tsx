@@ -366,8 +366,8 @@ export function CustomerHomeTab({
               <div className="min-h-[200px] max-h-[200px] overflow-y-auto pr-1 flex flex-col justify-start gap-3.5">
                 {todayApts.length === 0 ? (
                   <div className="h-full flex items-center justify-start text-base text-slate-500 italic bg-white rounded-xl px-5 py-6 border border-cyan-100/40 shadow-sm">
-                    Hôm nay bạn không có lịch hẹn nào tại trung tâm. Thú cưng của bạn đang rảnh!
-                  </div>
+                    Hôm nay bạn không có lịch hẹn nào tại trung tâm. 
+                                      </div>
                 ) : (
                   todayApts.slice(0, 3).map((apt) => {
                     const statusCfg = getStatusConfig(apt.status);
