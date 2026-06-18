@@ -519,11 +519,6 @@ export function AdminAppointmentsView() {
       </div>
 
       {/* Table */}
-      {loading && (
-        <div className="rounded-xl border border-border bg-card px-5 py-8 text-center text-sm text-muted-foreground">
-          Đang tải dữ liệu lịch hẹn...
-        </div>
-      )}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px]">
@@ -536,10 +531,31 @@ export function AdminAppointmentsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.length === 0 && (
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-border last:border-0">
+                    <td className="pl-6 pr-4 py-3.5">
+                      <div className="h-2.5 w-14 rounded-full skeleton-shimmer mb-2" />
+                      <div className="h-4 w-12 rounded skeleton-shimmer" />
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full skeleton-shimmer flex-shrink-0" />
+                        <div className="h-3.5 w-28 rounded-full skeleton-shimmer" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5"><div className="h-3.5 w-20 rounded-full skeleton-shimmer" /></td>
+                    <td className="px-4 py-3.5"><div className="h-3.5 w-32 rounded-full skeleton-shimmer" /></td>
+                    <td className="px-4 py-3.5"><div className="h-3.5 w-20 rounded-full skeleton-shimmer" /></td>
+                    <td className="px-4 py-3.5"><div className="h-6 w-20 rounded-full skeleton-shimmer" /></td>
+                    <td className="px-4 py-3.5 pr-6 text-right"><div className="h-3.5 w-16 rounded-full skeleton-shimmer ml-auto" /></td>
+                    <td className="pr-3 py-3.5"><div className="h-4 w-8 rounded skeleton-shimmer" /></td>
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan={8} className="px-6 py-16 text-center text-muted-foreground text-sm">Không có lịch hẹn phù hợp</td></tr>
-              )}
-              {pageData.map((apt) => (
+              ) : null}
+              {!loading && pageData.map((apt) => (
                 <tr
                   key={apt.id}
                   className="hover:bg-muted/25 group transition-colors cursor-pointer"

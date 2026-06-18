@@ -1,12 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 import {
-  Plus, Search, Edit, X, Check, ChevronDown, ToggleLeft, ToggleRight,
-  Stethoscope, Scissors, BedDouble, Clock, TrendingUp,
+  Plus, Search, Edit, X, Check, ToggleLeft, ToggleRight,
+  Stethoscope, Scissors, BedDouble, FlaskConical, Clock, TrendingUp,
   Star, BarChart3, Trash2, AlertTriangle, Copy,
 } from "lucide-react";
-import { adminService, type AdminServicePayload, type AdminServiceSummary } from "../../features/admin/services/admin";
+import { adminService, type AdminServicePayload, type AdminServiceSummary, type SpecialistRoomType } from "../../features/admin/services/admin";
 
-type Category = "clinic" | "grooming" | "boarding";
+type Category = "clinic" | "grooming" | "boarding" | "specialist";
 
 interface PriceVariant {
   label: string;
@@ -24,10 +24,21 @@ interface Service {
   basePrice: number;
   variants?: PriceVariant[];
   status: "active" | "inactive";
+  specialistRoomType?: SpecialistRoomType | null;
   bookingsMonth: number;
   revenueMonth: number;
   tag?: string;
 }
+
+const SPECIALIST_ROOM_OPTIONS: { value: SpecialistRoomType; label: string }[] = [
+  { value: "XRAY",             label: "X-quang" },
+  { value: "LAB",              label: "Xét nghiệm" },
+  { value: "ULTRASOUND",       label: "Siêu âm" },
+  { value: "ENDOSCOPY",        label: "Nội soi" },
+  { value: "SURGERY",          label: "Phẫu thuật" },
+  { value: "DENTAL",           label: "Nha khoa" },
+  { value: "OTHER_SPECIALIST", label: "Chuyên khoa khác" },
+];
 
 // --- Config ───────────────────────────────────────────────────────────────────
 
@@ -35,12 +46,13 @@ const CATEGORY_CONFIG: Record<Category, {
   label: string; icon: React.ElementType;
   color: string; bg: string; border: string; dot: string;
 }> = {
-  clinic:      { label: "Khám bệnh",  icon: Stethoscope, color: "text-cyan-600",    bg: "bg-cyan-50",    border: "border-cyan-200",   dot: "bg-cyan-500" },
-  grooming:    { label: "Grooming",   icon: Scissors,    color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200",dot: "bg-emerald-500" },
-  boarding:    { label: "Lưu trú",    icon: BedDouble,   color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200",  dot: "bg-amber-500" },
+  clinic:     { label: "Khám bệnh",  icon: Stethoscope,  color: "text-cyan-600",    bg: "bg-cyan-50",    border: "border-cyan-200",   dot: "bg-cyan-500" },
+  grooming:   { label: "Grooming",   icon: Scissors,     color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500" },
+  boarding:   { label: "Lưu trú",   icon: BedDouble,    color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200",  dot: "bg-amber-500" },
+  specialist: { label: "Chuyên khoa", icon: FlaskConical, color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200", dot: "bg-violet-500" },
 };
 
-const CATEGORIES: Category[] = ["clinic", "grooming", "boarding"];
+const CATEGORIES: Category[] = ["clinic", "grooming", "boarding", "specialist"];
 
 const EMPTY_SUMMARY: AdminServiceSummary = {
   total: 0,
@@ -50,7 +62,7 @@ const EMPTY_SUMMARY: AdminServiceSummary = {
   totalRevenueMonth: 0,
   totalRevenueMonthText: "0",
   topService: null,
-  categories: CATEGORIES.map((category) => ({
+  categories: ["clinic", "grooming", "boarding", "specialist"].map((category) => ({
     category,
     count: 0,
     activeCount: 0,
@@ -147,6 +159,11 @@ function ServiceDrawer({
               <span className={`w-1.5 h-1.5 rounded-full ${service.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />
               {service.status === "active" ? "Đang hoạt động" : "Tạm ngưng"}
             </span>
+            {service.specialistRoomType && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200">
+                <FlaskConical size={10} /> {SPECIALIST_ROOM_OPTIONS.find(o => o.value === service.specialistRoomType)?.label ?? service.specialistRoomType}
+              </span>
+            )}
             {service.tag && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200">
                 <Star size={10} className="fill-amber-500 text-amber-500" /> {service.tag}
@@ -238,14 +255,17 @@ const EMPTY_SERVICE: Omit<Service, "id" | "bookingsMonth" | "revenueMonth"> = {
     { label: "Lớn (>15 kg)", price: 0 },
   ],
   status: "active",
+  specialistRoomType: null,
 };
 
 function ServiceModal({
   editing,
+  defaultCategory,
   onClose,
   onSave,
 }: {
   editing: Service | null;
+  defaultCategory: Category;
   onClose: () => void;
   onSave: (svc: AdminServicePayload) => Promise<void>;
 }) {
@@ -254,8 +274,8 @@ function ServiceModal({
   const [modalError, setModalError] = useState("");
   const [form, setForm] = useState<Omit<Service, "id" | "bookingsMonth" | "revenueMonth">>(
     editing
-      ? { category: editing.category, name: editing.name, description: editing.description, duration: editing.duration, durationUnit: editing.durationUnit, pricingType: editing.pricingType, basePrice: editing.basePrice, variants: editing.variants ?? EMPTY_SERVICE.variants, status: editing.status, tag: editing.tag }
-      : { ...EMPTY_SERVICE }
+      ? { category: editing.category, name: editing.name, description: editing.description, duration: editing.duration, durationUnit: editing.durationUnit, pricingType: editing.pricingType, basePrice: editing.basePrice, variants: editing.variants ?? EMPTY_SERVICE.variants, status: editing.status, specialistRoomType: editing.specialistRoomType ?? null, tag: editing.tag }
+      : { ...EMPTY_SERVICE, category: defaultCategory, specialistRoomType: defaultCategory === "specialist" ? "XRAY" : null }
   );
 
   const set = <K extends keyof typeof form>(k: K, v: typeof form[K]) =>
@@ -287,10 +307,12 @@ function ServiceModal({
     }
   };
 
+  const isSpecialist = form.category === "specialist";
   const catOptions: { v: Category; label: string; icon: React.ElementType }[] = [
-    { v: "clinic",      label: "Khám bệnh",  icon: Stethoscope },
-    { v: "grooming",    label: "Grooming",   icon: Scissors },
-    { v: "boarding",    label: "Lưu trú",    icon: BedDouble },
+    { v: "clinic",     label: "Khám bệnh",   icon: Stethoscope },
+    { v: "grooming",   label: "Grooming",    icon: Scissors },
+    { v: "boarding",   label: "Lưu trú",    icon: BedDouble },
+    { v: "specialist", label: "Chuyên khoa", icon: FlaskConical },
   ];
 
   return (
@@ -301,10 +323,10 @@ function ServiceModal({
         <div className="px-6 py-5 border-b border-border flex items-start justify-between flex-shrink-0">
           <div>
             <h2 className="text-[17px] font-bold text-foreground tracking-tight">
-              {isEdit ? "Chỉnh sửa dịch vụ" : "Thêm dịch vụ mới"}
+              {isEdit ? "Chỉnh sửa dịch vụ" : `Thêm dịch vụ${isSpecialist ? " chuyên khoa" : " mới"}`}
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {isEdit ? `Đang sửa: ${editing!.name}` : "Điền thông tin để tạo dịch vụ mới"}
+              {isEdit ? `Đang sửa: ${editing!.name}` : isSpecialist ? "Dịch vụ do phòng chuyên khoa thực hiện" : "Điền thông tin để tạo dịch vụ mới"}
             </p>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors mt-0.5">
@@ -313,11 +335,12 @@ function ServiceModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {/* Category */}
+          {/* Category — hidden when specialist (category is fixed) */}
+          {!isSpecialist && (
           <div>
             <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-2">Danh mục dịch vụ</label>
             <div className="grid grid-cols-2 gap-2">
-              {catOptions.map(({ v, label, icon: Icon }) => {
+              {catOptions.filter(o => o.v !== "specialist").map(({ v, label, icon: Icon }) => {
                 const cfg = CATEGORY_CONFIG[v];
                 return (
                   <button
@@ -335,6 +358,35 @@ function ServiceModal({
             </div>
             {isEdit && <p className="text-[11px] text-muted-foreground mt-1.5 italic">Không thể đổi danh mục sau khi tạo.</p>}
           </div>
+          )}
+
+          {/* Specialist room type — required khi là chuyên khoa */}
+          {isSpecialist && (
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground block mb-1.5">
+              Phòng thực hiện <span className="text-red-500">*</span>
+            </label>
+            <p className="text-[11.5px] text-muted-foreground mb-2.5">
+              Chọn phòng chuyên khoa phụ trách dịch vụ này.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {SPECIALIST_ROOM_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => set("specialistRoomType", opt.value)}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-[12.5px] font-medium transition-all text-left ${
+                    form.specialistRoomType === opt.value
+                      ? "bg-violet-50 border-violet-300 text-violet-700"
+                      : "border-border bg-white text-muted-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  {form.specialistRoomType === opt.value && <Check size={12} className="text-violet-600 flex-shrink-0" />}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          )}
 
           {/* Name */}
           <div>
@@ -474,6 +526,34 @@ function ServiceModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Skeleton Row ─────────────────────────────────────────────────────────────
+
+function SkeletonServiceRow() {
+  return (
+    <tr className="border-b border-border last:border-0">
+      <td className="pl-5 pr-4 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg skeleton-shimmer" />
+          <div className="flex flex-col gap-1.5">
+            <div className="h-3.5 w-36 rounded-full skeleton-shimmer" />
+            <div className="h-2.5 w-20 rounded-full skeleton-shimmer" />
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3.5"><div className="h-3 w-14 rounded-full skeleton-shimmer" /></td>
+      <td className="px-4 py-3.5"><div className="h-3.5 w-24 rounded-full skeleton-shimmer" /></td>
+      <td className="px-4 py-3.5">
+        <div className="flex flex-col gap-1.5">
+          <div className="h-3 w-16 rounded-full skeleton-shimmer" />
+          <div className="h-2.5 w-12 rounded-full skeleton-shimmer" />
+        </div>
+      </td>
+      <td className="px-4 py-3.5"><div className="h-6 w-20 rounded-full skeleton-shimmer" /></td>
+      <td className="pr-4 py-3.5"><div className="h-4 w-10 rounded skeleton-shimmer" /></td>
+    </tr>
   );
 }
 
@@ -755,11 +835,6 @@ export function AdminServicesView() {
       </div>
 
       {/* Service table */}
-      {loading && (
-        <div className="rounded-xl border border-border bg-card px-5 py-8 text-center text-sm text-muted-foreground">
-          Đang tải dữ liệu dịch vụ...
-        </div>
-      )}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[780px]">
@@ -771,7 +846,9 @@ export function AdminServicesView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.length === 0 ? (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonServiceRow key={i} />)
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3">
@@ -813,6 +890,7 @@ export function AdminServicesView() {
       {showModal && (
         <ServiceModal
           editing={editingService}
+          defaultCategory={editingService ? editingService.category : activeCat}
           onClose={() => { setShowModal(false); setEditingService(null); }}
           onSave={handleSave}
         />

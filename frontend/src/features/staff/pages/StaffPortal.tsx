@@ -14,7 +14,6 @@ import {
   StaffSidebar,
   type StaffNavId,
 } from "../../../components/staff/StaffPortalView";
-import { PixelDogOverlay } from "../../../components/ui/PixelDogLoader";
 import {
   staffAppointmentsService,
   type BoardingDailyStatus,
@@ -106,7 +105,6 @@ function upsertTodayBoardingUpdate(guest: BoardingGuest): BoardingGuest {
 
 export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const [activeNav, setActiveNav] = useState<StaffNavId>("appointments");
-  const [navLoading, setNavLoading] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [summary, setSummary] = useState<StaffPortalSummary>({
@@ -117,6 +115,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
     pendingPayments: 0,
   });
   const [appointments, setAppointments] = useState<StaffAppointment[]>([]);
+  const [autoConfirmedCount, setAutoConfirmedCount] = useState(0);
   const [groomingTasks, setGroomingTasks] = useState<GroomingTask[]>([]);
   const [boardingGuests, setBoardingGuests] = useState<BoardingGuest[]>([]);
   const [payments, setPayments] = useState<PaymentItem[]>([]);
@@ -158,7 +157,9 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   const loadAppointments = useCallback(async () => {
     try {
       setDataLoading("appointments", true);
-      setAppointments(await staffAppointmentsService.fetchPendingAppointments());
+      const { appointments, autoConfirmedCount: count } = await staffAppointmentsService.fetchPendingAppointments();
+      setAppointments(appointments);
+      if (count > 0) setAutoConfirmedCount(count);
       setDataError("appointments", null);
     } catch (error) {
       console.error("[FRONTEND] Failed to load appointments:", error);
@@ -243,6 +244,12 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
   }, [loadSummary]);
 
   useEffect(() => {
+    if (autoConfirmedCount <= 0) return;
+    const id = window.setTimeout(() => setAutoConfirmedCount(0), 6000);
+    return () => window.clearTimeout(id);
+  }, [autoConfirmedCount]);
+
+  useEffect(() => {
     setBoardingGuests((prev) => prev.map(normalizeBoardingGuestForToday));
     setViewingBoarding((prev) => prev ? normalizeBoardingGuestForToday(prev) : prev);
 
@@ -256,9 +263,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 
   function navigateStaffNav(nextNav: StaffNavId) {
     if (nextNav === activeNav) return;
-    setNavLoading(true);
     setActiveNav(nextNav);
-    window.setTimeout(() => setNavLoading(false), 420);
   }
 
   async function handleConfirmAppointment(appointment: StaffAppointment) {
@@ -415,7 +420,6 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="h-screen flex overflow-hidden bg-slate-50">
-      {navLoading && <PixelDogOverlay label="Đang chuyển trang..." />}
       <StaffSidebar
         activeNav={activeNav}
         profile={profile}
@@ -437,6 +441,13 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
           onNavigate={navigateStaffNav}
         />
         <main className={`flex-1 min-h-0 p-6 ${activeNav === "appointments" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
+          {activeNav === "appointments" && autoConfirmedCount > 0 && (
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+              Đã tự động xác nhận {autoConfirmedCount} lịch hẹn chờ quá {" "}
+              <span className="font-semibold">2 giờ</span>
+            </div>
+          )}
           {activeNav === "appointments" && (
             <AppointmentsTab
               appointments={appointments}
@@ -448,6 +459,7 @@ export function StaffPortal({ onLogout }: { onLogout: () => void }) {
               onCompleteGrooming={(appointment) => void handleCompleteGroomingAppointment(appointment)}
               onApproveRequest={(appointment) => void handleApproveAppointmentRequest(appointment)}
               onDelete={setDeletingApt}
+              onWalkInCreated={() => { void loadAppointments(); void loadSummary(); }}
               approvingAppointmentId={approvingAppointmentId}
               completingGroomingAppointmentId={completingGroomingAppointmentId}
             />

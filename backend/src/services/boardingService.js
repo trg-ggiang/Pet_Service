@@ -735,6 +735,231 @@ async function deleteCage(cageId) {
   if (error) throw new Error(error.message);
 }
 
+// ─── CUSTOMER: get own boardings with daily updates ──────────────────────────
+
+async function getCustomerBoardings(customerId) {
+  const custId = parsePositiveId(customerId, "ID khách hàng");
+
+  const { data: pets, error: petsErr } = await supabase
+    .from("pets")
+    .select("id")
+    .eq("customer_id", custId);
+  if (petsErr) throw new Error(petsErr.message);
+  if (!pets?.length) return [];
+
+  const petIds = pets.map((p) => p.id);
+
+  const { data: apts, error: aptsErr } = await supabase
+    .from("appointments")
+    .select("id")
+    .in("pet_id", petIds)
+    .eq("appointment_type", "BOARDING");
+  if (aptsErr) throw new Error(aptsErr.message);
+  if (!apts?.length) return [];
+
+  const aptIds = apts.map((a) => a.id);
+
+  const { data, error } = await supabase
+    .from("boarding")
+    .select(`
+      id,
+      current_status,
+      check_in,
+      check_out,
+      pickup_reminder_at,
+      feeding_instruction,
+      habit_note,
+      special_note,
+      cages:cage_id (cage_number, size_type, price_per_day),
+      appointments:appointment_id (
+        id,
+        pets:pet_id (
+          id, name,
+          species:species_id (name),
+          breed:breed_id (name)
+        )
+      ),
+      boarding_daily_updates (
+        id, date, eating_status, health_status, activity_status, note, img_url,
+        staffs:staff_id (full_name)
+      )
+    `)
+    .in("appointment_id", aptIds)
+    .not("current_status", "in", "(CANCELLED)")
+    .order("check_in", { ascending: false });
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((b) => {
+    const checkIn = timestampToDate(b.check_in);
+    const checkOut = timestampToDate(b.check_out || b.pickup_reminder_at);
+    const updates = (b.boarding_daily_updates || [])
+      .slice()
+      .sort((a, z) => String(z.date).localeCompare(String(a.date)));
+    return {
+      id: b.id,
+      status: b.current_status,
+      petName: b.appointments?.pets?.name || "",
+      petId: b.appointments?.pets?.id,
+      species: b.appointments?.pets?.species?.name || "",
+      breed: b.appointments?.pets?.breed?.name || "",
+      roomNumber: b.cages?.cage_number || "",
+      roomSize: b.cages?.size_type || "MEDIUM",
+      pricePerDay: Number(b.cages?.price_per_day || 0),
+      checkIn,
+      checkOut,
+      feedingInstruction: b.feeding_instruction || "",
+      habitNote: b.habit_note || "",
+      specialNote: b.special_note || "",
+      dailyUpdates: updates.map((u) => ({
+        id: u.id,
+        date: String(u.date || "").slice(0, 10),
+        eatingStatus: u.eating_status || "",
+        healthStatus: u.health_status || "",
+        activityStatus: u.activity_status || "",
+        note: u.note || "",
+        imageUrl: u.img_url || null,
+        staffName: u.staffs?.full_name || null,
+      })),
+    };
+  });
+}
+
+// ─── CUSTOMER: update care notes during stay ─────────────────────────────────
+
+async function updateBoardingCareByCustomer(boardingId, customerId, care) {
+  const id = parsePositiveId(boardingId, "ID lưu trú");
+  const custId = parsePositiveId(customerId, "ID khách hàng");
+
+  const { data: boarding, error: fetchErr } = await supabase
+    .from("boarding")
+    .select(`
+      id, current_status,
+      cages:cage_id (cage_number),
+      appointments:appointment_id (
+        pets:pet_id (
+          name,
+          customers:customer_id (id)
+        )
+      )
+    `)
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!boarding) throw notFound("Không tìm thấy lịch lưu trú");
+
+  const petOwnerId = boarding.appointments?.pets?.customers?.id;
+  if (String(petOwnerId) !== String(custId)) {
+    throw Object.assign(new Error("Bạn không có quyền cập nhật lịch lưu trú này"), { statusCode: 403 });
+  }
+  if (["CHECKED_OUT", "CANCELLED"].includes(boarding.current_status)) {
+    throw badRequest("Không thể cập nhật thông tin sau khi đã kết thúc lưu trú");
+  }
+
+  const updates = {};
+  if (care.feedingInstruction !== undefined) updates.feeding_instruction = String(care.feedingInstruction || "");
+  if (care.habitNote !== undefined) updates.habit_note = String(care.habitNote || "");
+  if (care.specialNote !== undefined) updates.special_note = String(care.specialNote || "");
+  if (!Object.keys(updates).length) return;
+
+  const { error: updateErr } = await supabase.from("boarding").update(updates).eq("id", id);
+  if (updateErr) throw new Error(updateErr.message);
+
+  // Notify all staff about the update
+  const petName = boarding.appointments?.pets?.name || "Thú cưng";
+  const roomNum = boarding.cages?.cage_number || "";
+  const { data: staffList } = await supabase.from("staffs").select("user_id");
+  for (const s of staffList || []) {
+    await supabase.from("notifications").insert({
+      user_id: s.user_id,
+      title: "Cập nhật hướng dẫn chăm sóc",
+      content: `Chủ nuôi của ${petName} (Phòng ${roomNum}) vừa cập nhật hướng dẫn chăm sóc.`,
+      type: "BOARDING",
+      is_read: false,
+    });
+  }
+}
+
+// ─── CUSTOMER: extend boarding stay ──────────────────────────────────────────
+
+async function extendBoardingStay(boardingId, customerId, { newCheckOut }) {
+  const id = parsePositiveId(boardingId, "ID lưu trú");
+  const custId = parsePositiveId(customerId, "ID khách hàng");
+
+  if (!newCheckOut) throw badRequest("Vui lòng chọn ngày gia hạn");
+
+  const { data: boarding, error: fetchErr } = await supabase
+    .from("boarding")
+    .select(`
+      id, current_status, cage_id, pickup_reminder_at,
+      cages:cage_id (cage_number, price_per_day, size_type),
+      appointments:appointment_id (
+        pets:pet_id (
+          name,
+          customers:customer_id (id)
+        )
+      )
+    `)
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!boarding) throw notFound("Không tìm thấy lịch lưu trú");
+
+  const petOwnerId = boarding.appointments?.pets?.customers?.id;
+  if (String(petOwnerId) !== String(custId)) {
+    throw Object.assign(new Error("Bạn không có quyền gia hạn lịch lưu trú này"), { statusCode: 403 });
+  }
+  if (!["CHECKED_IN", "STAYING"].includes(boarding.current_status)) {
+    throw badRequest("Chỉ có thể gia hạn khi thú cưng đang lưu trú");
+  }
+
+  const currentCheckOut = timestampToDate(boarding.pickup_reminder_at);
+  if (!newCheckOut || newCheckOut <= currentCheckOut) {
+    throw badRequest(`Ngày gia hạn phải sau ngày check-out hiện tại (${formatDate(currentCheckOut)})`);
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (newCheckOut <= today) throw badRequest("Ngày gia hạn phải là ngày trong tương lai");
+
+  // Check cage availability for the extended period
+  const currentCheckOutTs = dateToTimestamp(currentCheckOut);
+  const newCheckOutTs = dateToTimestamp(newCheckOut);
+
+  const { data: overlap } = await supabase
+    .from("boarding")
+    .select("id")
+    .eq("cage_id", boarding.cage_id)
+    .neq("id", id)
+    .not("current_status", "in", "(CHECKED_OUT,CANCELLED)")
+    .lt("check_in", newCheckOutTs)
+    .gt("pickup_reminder_at", currentCheckOutTs)
+    .limit(1);
+
+  if (overlap?.length) {
+    throw badRequest("Phòng đã có khách đặt trong khoảng thời gian gia hạn. Vui lòng chọn ngày ngắn hơn.");
+  }
+
+  const { error: extendErr } = await supabase
+    .from("boarding")
+    .update({ pickup_reminder_at: newCheckOutTs })
+    .eq("id", id);
+  if (extendErr) throw new Error(extendErr.message);
+
+  const petName = boarding.appointments?.pets?.name || "Thú cưng";
+  const roomNum = boarding.cages?.cage_number || "";
+  const { data: staffList } = await supabase.from("staffs").select("user_id");
+  for (const s of staffList || []) {
+    await supabase.from("notifications").insert({
+      user_id: s.user_id,
+      title: "Gia hạn lưu trú",
+      content: `${petName} (Phòng ${roomNum}) đã được gia hạn đến ${formatDate(newCheckOut)}.`,
+      type: "BOARDING",
+      is_read: false,
+    });
+  }
+
+  return { newCheckOut, petName, roomNumber: roomNum };
+}
+
 // ─── CUSTOMER: reschedule boarding dates ──────────────────────────────────────
 
 async function rescheduleBoardingBooking(appointmentId, customerId, { checkIn, checkOut }) {
@@ -788,6 +1013,9 @@ module.exports = {
   listRoomsWithAvailability,
   createBoardingBooking,
   rescheduleBoardingBooking,
+  getCustomerBoardings,
+  updateBoardingCareByCustomer,
+  extendBoardingStay,
   listPendingBoardings,
   listConfirmedBoardings,
   approveBoardingBooking,

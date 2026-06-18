@@ -351,4 +351,73 @@ export const doctorAppointmentsService = {
       method: "PUT",
     });
   },
+
+  async listSpecialistServices(): Promise<SpecialistService[]> {
+    const data = await fetchWithAuth<{ ok: boolean; services: SpecialistService[] }>(
+      "/api/doctor/appointments/specialist-services",
+    );
+    return data.services ?? [];
+  },
+
+  async listServiceOrders(appointmentId: number): Promise<ServiceOrder[]> {
+    const data = await fetchWithAuth<{ ok: boolean; serviceOrders: ServiceOrder[] }>(
+      `/api/doctor/appointments/${appointmentId}/service-orders`,
+    );
+    return data.serviceOrders ?? [];
+  },
+
+  async createServiceOrder(appointmentId: number, serviceId: number, note?: string): Promise<ServiceOrder> {
+    const data = await fetchWithAuth<{ ok: boolean; serviceOrder: ServiceOrder }>(
+      `/api/doctor/appointments/${appointmentId}/service-orders`,
+      { method: "POST", body: JSON.stringify({ serviceId, note }) },
+    );
+    return data.serviceOrder;
+  },
+
+  async cancelServiceOrder(orderId: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>(`/api/doctor/appointments/service-orders/${orderId}`, {
+      method: "DELETE",
+    });
+  },
 };
+
+export type SpecialistRoomType =
+  | "XRAY" | "LAB" | "SURGERY" | "ENDOSCOPY" | "ULTRASOUND" | "DENTAL" | "OTHER_SPECIALIST";
+
+export const SPECIALIST_ROOM_LABELS: Record<SpecialistRoomType, string> = {
+  XRAY:             "X-quang",
+  LAB:              "Xét nghiệm",
+  ULTRASOUND:       "Siêu âm",
+  ENDOSCOPY:        "Nội soi",
+  SURGERY:          "Phẫu thuật",
+  DENTAL:           "Nha khoa",
+  OTHER_SPECIALIST: "Chuyên khoa khác",
+};
+
+export interface SpecialistService {
+  id: number;
+  name: string;
+  price: number;
+  specialist_room_type: SpecialistRoomType;
+}
+
+export interface ServiceOrderResult {
+  id: number;
+  result_text: string | null;
+  image_urls: string[];
+  measurements: Record<string, unknown> | null;
+  notes: string | null;
+  performed_at: string;
+}
+
+export interface ServiceOrder {
+  id: number;
+  service_id: number;
+  quantity: number;
+  unit_price: number;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  note: string | null;
+  ordered_at: string;
+  services: SpecialistService;
+  service_order_results: ServiceOrderResult | null;
+}

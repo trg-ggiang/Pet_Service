@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { Bell, Calendar, Dog, Heart, History, LogOut, PanelLeftClose, Pill, UserRound, X } from "lucide-react";
+import { BedDouble, Bell, Calendar, Dog, Heart, History, LogOut, PanelLeftClose, Pill, UserRound, X } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { CustomerPetProfilesModule } from "./CustomerPetsPage";
 import { fetchCustomerPetDashboard } from "../../../services/customer/customerPetsApi";
@@ -30,6 +30,7 @@ import type { Apt, CustomerPortalNotification, HistoryRecord, Pet, ServiceType }
 import { CustomerAppointmentsTab } from "../../../components/customer/appointments/CustomerAppointmentsTab";
 import { NewAppointmentModal, AppointmentDetailModal, RescheduleModal, BoardingRescheduleModal } from "../../../components/customer/appointments/CustomerAppointmentModals";
 import { BoardingBookingModal } from "../../../components/customer/boarding/BoardingBookingModal";
+import { CustomerBoardingTrackingTab } from "../../../components/customer/boarding/CustomerBoardingTrackingTab";
 import { CustomerHistoryTab } from "../../../components/customer/history/CustomerHistoryTab";
 import { CustomerMedicationsTab } from "../../../components/customer/medications/CustomerMedicationsTab";
 import { fetchActiveMedications } from "../../../services/customer/customerMedicationsApi";
@@ -38,11 +39,10 @@ import { HistoryDetailModal } from "../../../components/customer/history/History
 import { CustomerHomeTab } from "../../../components/customer/home/CustomerHomeTab";
 import { CustomerNotificationsTab } from "../../../components/customer/notifications/CustomerNotificationsTab";
 import { CustomerProfileTab } from "../../../components/customer/profile/CustomerProfileTab";
-import { PixelDogOverlay } from "../../../components/ui/PixelDogLoader";
 import { fetchCustomerProfile, updateCustomerProfile, type CustomerProfile } from "../../../services/customer/customerProfileApi";
 import { getNotifConfig, mapCustomerAppointment, mapCustomerNotification } from "../../../utils/customer/portalConfig";
 
-type CustomerTab = "home" | "apts" | "pets" | "history" | "medications" | "notifications" | "profile";
+type CustomerTab = "home" | "apts" | "pets" | "history" | "medications" | "notifications" | "profile" | "boarding";
 
 function PawSVG({ className }: { className?: string }) {
   return (
@@ -59,7 +59,6 @@ function PawSVG({ className }: { className?: string }) {
 export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; userName: string }) {
   const [tab, setTab] = useState<CustomerTab>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [tabLoading, setTabLoading] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [pets, setPets] = useState<Pet[]>([]);
@@ -138,9 +137,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
 
   const navigateTab = useCallback((nextTab: CustomerTab) => {
     if (nextTab === tab) return;
-    setTabLoading(true);
     setTab(nextTab);
-    window.setTimeout(() => setTabLoading(false), 420);
   }, [tab]);
 
   const loadPetsDashboard = useCallback(async () => {
@@ -422,6 +419,7 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     { id: "apts"        as const, label: "Lịch hẹn",   icon: Calendar, badge: apts.length || undefined          },
     { id: "pets"        as const, label: "Thú cưng",   icon: Dog                                               },
     { id: "medications" as const, label: "Lịch thuốc", icon: Pill,     badge: todayMedCount || undefined       },
+    { id: "boarding"    as const, label: "Lưu trú",    icon: BedDouble                                        },
     { id: "history"     as const, label: "Lịch sử",    icon: History                                          },
     { id: "notifications" as const, label: "Thông báo", icon: Bell,    badge: unreadCount || undefined         },
     { id: "profile"     as const, label: "Hồ sơ",      icon: UserRound                                        },
@@ -435,11 +433,11 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
     medications: { title: "Lịch thuốc", subtitle: "Theo dõi thuốc đang dùng và lịch uống thuốc của từng thú cưng." },
     notifications: { title: "Thông báo", subtitle: "Cập nhật từ phòng khám và các cảnh báo cần chú ý." },
     profile: { title: "Hồ sơ chủ nuôi", subtitle: "Cập nhật thông tin liên hệ và hồ sơ cá nhân." },
+    boarding: { title: "Theo dõi lưu trú", subtitle: "Xem tình trạng thú cưng, cập nhật chăm sóc và gia hạn thời gian lưu trú." },
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-      {tabLoading && <PixelDogOverlay label="Đang chuyển trang..." />}
       <aside className={`flex flex-shrink-0 flex-col border-r border-slate-200 bg-white transition-[width] duration-200 ${sidebarCollapsed ? "w-20" : "w-64"}`}>
         <div className={`relative flex items-center border-b border-slate-200 ${sidebarCollapsed ? "justify-center px-3 py-5" : "gap-3 px-5 py-4"}`}>
           {sidebarCollapsed ? (
@@ -731,6 +729,10 @@ export function CustomerPortal({ onLogout, userName }: { onLogout: () => void; u
               setIsNewAptOpen(true);
             }}
           />
+        )}
+
+        {tab === "boarding" && (
+          <CustomerBoardingTrackingTab onBookBoarding={() => setIsBoardingOpen(true)} />
         )}
 
         {tab === "history" && (

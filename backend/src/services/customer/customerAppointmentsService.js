@@ -558,6 +558,7 @@ async function listCustomerAppointmentOptions(customerId) {
     .from("services")
     .select("id, name, type")
     .eq("is_active", true)
+    .is("specialist_room_type", null)
     .order("type", { ascending: true })
     .order("name", { ascending: true });
 

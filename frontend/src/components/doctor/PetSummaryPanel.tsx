@@ -16,7 +16,7 @@ export function PetSummaryPanel({
   history: DoctorExamDetail["history"];
 }) {
   return (
-    <div className="border-r border-border bg-white overflow-y-auto flex flex-col">
+    <div className="border-r border-border bg-white overflow-y-auto flex flex-col h-full">
       <div className="relative flex-shrink-0 h-52 bg-slate-100">
         {patientCard.imageUrl ? (
           <img src={patientCard.imageUrl} alt={patientCard.name} className="w-full h-full object-cover" />

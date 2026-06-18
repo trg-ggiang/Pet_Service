@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx tsc *)",
       "Bash(npm run *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(cd /d/project/Pet_Service/backend && cat .env 2>/dev/null | grep -v \"PASSWORD\\\\|SECRET\\\\|KEY\" | head -20)",
+      "Read(//d/d/project/Pet_Service/backend/**)",
+      "Bash(cd /d/project/Pet_Service/backend && ls prisma/)",
+      "Bash(npx prisma *)"
     ]
   }
 }

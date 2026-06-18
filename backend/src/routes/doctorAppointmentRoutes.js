@@ -224,6 +224,32 @@ function formatDate(value) {
   return date.toLocaleDateString("vi-VN");
 }
 
+function getTodayVN() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+}
+
+function getYesterdayVN() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+}
+
+function getHourVN() {
+  return parseInt(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh", hour: "numeric", hour12: false }), 10);
+}
+
+// Cho phép: đúng ngày hôm nay, HOẶC ngày hôm qua nếu hiện tại < 03:00 (ca trực đêm)
+function isDateAllowed(aptDate) {
+  if (!aptDate) return true;
+  const todayVN = getTodayVN();
+  if (aptDate === todayVN) return true;
+  return aptDate === getYesterdayVN() && getHourVN() < 3;
+}
+
+function getAppointmentDate(appointment) {
+  return appointment.requested_date || appointment.doctor_schedule_slots?.slot_date || null;
+}
+
 function formatTime(value) {
   if (!value) return "--:--";
   return String(value).slice(0, 5);
@@ -634,6 +660,40 @@ async function createOrUpdateMedicalVisitInvoice(appointment, medicalVisitId) {
       .eq("id", appointmentService.id);
 
     if (serviceStatusResult.error) throw new Error(serviceStatusResult.error.message);
+  }
+
+  // Add completed specialist service orders that were not yet on the invoice
+  const specialistOrders = await supabase
+    .from("appointment_services")
+    .select("id, service_id, unit_price, quantity, services(name)")
+    .eq("appointment_id", appointment.id)
+    .not("ordered_by_doctor_id", "is", null)
+    .eq("status", "COMPLETED");
+
+  if (!specialistOrders.error) {
+    for (const order of specialistOrders.data || []) {
+      const existingSpecialistItem = await supabase
+        .from("invoice_items")
+        .select("id")
+        .eq("invoice_id", invoice.id)
+        .eq("appointment_service_id", order.id)
+        .maybeSingle();
+
+      if (existingSpecialistItem.data?.id) continue;
+
+      const svcQty = Math.max(1, Number(order.quantity || 1));
+      const svcPrice = moneyNumber(order.unit_price);
+      await supabase.from("invoice_items").insert({
+        invoice_id: invoice.id,
+        service_id: order.service_id,
+        appointment_service_id: order.id,
+        source_type: "SERVICE",
+        description: order.services?.name ?? "Dịch vụ chuyên sâu",
+        quantity: svcQty,
+        unit_price: svcPrice,
+        total_price: svcQty * svcPrice,
+      });
+    }
   }
 
   if (invoice.payment_status !== "PAID") {
@@ -1142,8 +1202,6 @@ async function saveMedicalVisit(appointmentId, record) {
     nextVisitTime: cleanRecord.nextVisitTime,
   };
 
-  assertFutureFollowUpSlot(cleanRecord);
-
   const existingVisit = await getCurrentMedicalVisit(appointmentId);
 
   const payload = {
@@ -1346,6 +1404,16 @@ router.put("/:id/start", async function startExam(req, res) {
       });
     }
 
+    const aptDate = getAppointmentDate(appointment);
+    if (aptDate && !isDateAllowed(aptDate)) {
+      const aptDateDisplay = new Date(aptDate + "T00:00:00").toLocaleDateString("vi-VN");
+      const todayDisplay   = new Date(getTodayVN() + "T00:00:00").toLocaleDateString("vi-VN");
+      return res.status(400).json({
+        ok: false,
+        message: `Chỉ được bắt đầu khám vào đúng ngày hẹn. Lịch hẹn vào ${aptDateDisplay}, hôm nay là ${todayDisplay}.`,
+      });
+    }
+
     const { error } = await supabase
       .from("appointments")
       .update({
@@ -1425,7 +1493,19 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
     const doctorId = req.auth?.user?.doctorId;
 
     const appointment = await getOwnedAppointment(appointmentId, doctorId);
+
+    const aptDate = getAppointmentDate(appointment);
+    if (aptDate && !isDateAllowed(aptDate)) {
+      const aptDateDisplay = new Date(aptDate + "T00:00:00").toLocaleDateString("vi-VN");
+      const todayDisplay   = new Date(getTodayVN() + "T00:00:00").toLocaleDateString("vi-VN");
+      return res.status(400).json({
+        ok: false,
+        message: `Không thể hoàn thành ca khám qua ngày. Lịch hẹn vào ${aptDateDisplay} nhưng hiện tại là ${todayDisplay}. Vui lòng liên hệ quản lý để xử lý.`,
+      });
+    }
+
     const cleanRecord = sanitizeExamRecord(req.body?.record);
+    assertFutureFollowUpSlot(cleanRecord);
     const medicalVisitId = await saveMedicalVisit(appointmentId, cleanRecord);
     const followUpAppointment = await createFollowUpAppointment(appointment, cleanRecord);
 
@@ -1455,6 +1535,412 @@ router.put("/:id/exam-complete", async function completeExamWithRecord(req, res)
     res.status(400).json({ ok: false, message: error.message });
   }
 });
+
+// ── SERVICE ORDER ENDPOINTS ────────────────────────────────────────────
+
+// GET /api/doctor/specialist-services – danh mục dịch vụ chuyên khoa để bác sĩ chỉ định
+router.get("/specialist-services", async function getSpecialistServices(_req, res) {
+  try {
+    const { data, error } = await supabase
+      .from("services")
+      .select("id, name, type, price, description, specialist_room_type")
+      .eq("is_active", true)
+      .not("specialist_room_type", "is", null)
+      .order("specialist_room_type")
+      .order("name");
+    if (error) throw new Error(error.message);
+    res.json({ ok: true, services: data ?? [] });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+});
+
+// GET /api/doctor/appointments/:id/service-orders – danh sách chỉ định + kết quả
+router.get("/:id/service-orders", async function listServiceOrders(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+    await getOwnedAppointment(appointmentId, doctorId);
+
+    const { data, error } = await supabase
+      .from("appointment_services")
+      .select(`
+        id, appointment_id, service_id, quantity, unit_price, status, note, ordered_at, ordered_by_doctor_id,
+        services ( id, name, price, specialist_room_type ),
+        service_order_results ( id, result_text, image_urls, measurements, notes, performed_at )
+      `)
+      .eq("appointment_id", appointmentId)
+      .not("ordered_by_doctor_id", "is", null)
+      .order("ordered_at");
+
+    if (error) throw new Error(error.message);
+    res.json({ ok: true, serviceOrders: data ?? [] });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+});
+
+// POST /api/doctor/appointments/:id/service-orders – chỉ định dịch vụ bổ sung
+router.post("/:id/service-orders", async function createServiceOrder(req, res) {
+  try {
+    const appointmentId = parsePositiveId(req.params.id, "ID lịch hẹn");
+    const doctorId = req.auth?.user?.doctorId;
+    const userId = req.auth?.user?.id;
+    const appointment = await getOwnedAppointment(appointmentId, doctorId);
+
+    if (appointment.status === "COMPLETED") {
+      return res.status(400).json({ ok: false, message: "Không thể chỉ định thêm dịch vụ cho lịch hẹn đã hoàn thành" });
+    }
+
+    const { serviceId, note } = req.body ?? {};
+    if (!serviceId) return res.status(400).json({ ok: false, message: "Thiếu serviceId" });
+
+    const { data: svc, error: svcErr } = await supabase
+      .from("services")
+      .select("id, name, price, specialist_room_type, is_active")
+      .eq("id", serviceId)
+      .single();
+    if (svcErr || !svc) return res.status(404).json({ ok: false, message: "Dịch vụ không tồn tại" });
+    if (!svc.is_active) return res.status(400).json({ ok: false, message: "Dịch vụ không còn hoạt động" });
+    if (!svc.specialist_room_type) return res.status(400).json({ ok: false, message: "Chỉ có thể chỉ định dịch vụ chuyên khoa" });
+
+    const { data: inserted, error: insertErr } = await supabase
+      .from("appointment_services")
+      .insert({
+        appointment_id: appointmentId,
+        service_id: serviceId,
+        quantity: 1,
+        unit_price: svc.price,
+        status: "PENDING",
+        ordered_by_doctor_id: userId,
+        note: note ?? null,
+        ordered_at: new Date().toISOString(),
+      })
+      .select(`
+        id, service_id, quantity, unit_price, status, note, ordered_at,
+        services ( id, name, price, specialist_room_type )
+      `)
+      .single();
+
+    if (insertErr) throw new Error(insertErr.message);
+    res.json({ ok: true, message: "Đã chỉ định dịch vụ", serviceOrder: inserted });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+});
+
+// DELETE /api/doctor/service-orders/:orderId – hủy chỉ định (chỉ khi còn PENDING)
+router.delete("/service-orders/:orderId", async function cancelServiceOrder(req, res) {
+  try {
+    const orderId = parsePositiveId(req.params.orderId, "ID chỉ định");
+    const doctorId = req.auth?.user?.doctorId;
+    const userId = req.auth?.user?.id;
+
+    const { data: order, error: fetchErr } = await supabase
+      .from("appointment_services")
+      .select("id, status, ordered_by_doctor_id, appointment_id")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchErr || !order) return res.status(404).json({ ok: false, message: "Không tìm thấy chỉ định" });
+    if (order.ordered_by_doctor_id !== userId) return res.status(403).json({ ok: false, message: "Không có quyền hủy chỉ định này" });
+    if (order.status !== "PENDING") return res.status(400).json({ ok: false, message: "Chỉ có thể hủy chỉ định chưa được thực hiện" });
+
+    await getOwnedAppointment(order.appointment_id, doctorId);
+
+    const { error: delErr } = await supabase
+      .from("appointment_services")
+      .delete()
+      .eq("id", orderId);
+
+    if (delErr) throw new Error(delErr.message);
+    res.json({ ok: true, message: "Đã hủy chỉ định dịch vụ" });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+});
+
+// ── DOCTOR SPECIALIST QUEUE ───────────────────────────────────────────
+
+// GET /api/doctor/specialist-queue – tất cả chỉ định dịch vụ chuyên sâu (mọi bác sĩ đều thấy)
+router.get("/specialist-queue", async function getDoctorSpecialistQueue(req, res) {
+  try {
+    const userId = req.auth?.user?.id;
+    const { search, roomType } = req.query;
+
+    let query = supabase
+      .from("appointment_services")
+      .select(`
+        id, quantity, unit_price, status, note, ordered_at, ordered_by_doctor_id,
+        services ( id, name, specialist_room_type ),
+        appointments (
+          id,
+          pets:pet_id (
+            name,
+            species:species_id ( name ),
+            breed:breed_id ( name ),
+            customers:customer_id ( full_name, phone )
+          )
+        ),
+        service_order_results (
+          id, performed_by_id, result_text, image_urls, measurements, notes, performed_at
+        )
+      `)
+      .not("ordered_by_doctor_id", "is", null)
+      .not("services.specialist_room_type", "is", null)
+      .order("ordered_at", { ascending: false });
+
+    if (roomType) {
+      query = query.eq("services.specialist_room_type", roomType);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    let rows = (data ?? []).filter(row => row.services?.specialist_room_type);
+
+    if (roomType) {
+      rows = rows.filter(row => row.services?.specialist_room_type === roomType);
+    }
+
+    if (search) {
+      const q = String(search).toLowerCase().trim();
+      rows = rows.filter(row => {
+        const customer = row.appointments?.pets?.customers;
+        return (
+          (customer?.full_name || "").toLowerCase().includes(q) ||
+          (customer?.phone || "").toLowerCase().includes(q) ||
+          (row.appointments?.pets?.name || "").toLowerCase().includes(q)
+        );
+      });
+    }
+
+    // Resolve doctor names by user_id (ordered_by và performed_by)
+    const userIds = [...new Set([
+      ...rows.map(r => r.ordered_by_doctor_id),
+      ...rows.map(r => r.service_order_results?.performed_by_id),
+    ].filter(Boolean))];
+
+    let doctorNameByUserId = {};
+    if (userIds.length > 0) {
+      const { data: doctors } = await supabase
+        .from("doctors")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+      doctorNameByUserId = Object.fromEntries((doctors || []).map(d => [d.user_id, d.full_name]));
+    }
+
+    rows = rows.map(row => ({
+      ...row,
+      ordered_by_doctor_name: doctorNameByUserId[row.ordered_by_doctor_id] ?? null,
+      performed_by_doctor_name: row.service_order_results
+        ? (doctorNameByUserId[row.service_order_results.performed_by_id] ?? null)
+        : null,
+      is_mine_to_perform:
+        row.status === "PENDING" ||
+        (row.status === "IN_PROGRESS" && row.service_order_results?.performed_by_id === userId),
+    }));
+
+    res.json({ ok: true, queue: rows });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+});
+
+// PATCH /api/doctor/service-orders/:orderId/start – bác sĩ bắt đầu và khóa chỉ định
+router.patch("/service-orders/:orderId/start", async function doctorStartServiceOrder(req, res) {
+  try {
+    const orderId = parsePositiveId(req.params.orderId, "ID chỉ định");
+    const userId = req.auth?.user?.id;
+
+    const { data: order, error: fetchErr } = await supabase
+      .from("appointment_services")
+      .select(`
+        id, status,
+        appointments ( requested_date, doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey ( slot_date ) )
+      `)
+      .eq("id", orderId)
+      .single();
+
+    if (fetchErr || !order) return res.status(404).json({ ok: false, message: "Không tìm thấy chỉ định" });
+    if (order.status !== "PENDING") return res.status(400).json({ ok: false, message: "Chỉ định phải ở trạng thái Chờ" });
+
+    const aptDate = order.appointments?.requested_date || order.appointments?.doctor_schedule_slots?.slot_date;
+    if (aptDate && !isDateAllowed(aptDate)) {
+      const aptDateDisplay = new Date(aptDate + "T00:00:00").toLocaleDateString("vi-VN");
+      return res.status(400).json({
+        ok: false,
+        message: `Chỉ có thể thực hiện dịch vụ vào ngày khám (${aptDateDisplay}).`,
+      });
+    }
+
+    // Kiểm tra chưa có ai khóa
+    const { data: existing } = await supabase
+      .from("service_order_results")
+      .select("id, performed_by_id")
+      .eq("appointment_service_id", orderId)
+      .maybeSingle();
+
+    if (existing?.id) {
+      return res.status(409).json({ ok: false, message: "Chỉ định này đã được bác sĩ khác nhận thực hiện" });
+    }
+
+    // Khóa bằng cách insert bản ghi partial với performed_by_id = người bắt đầu
+    const { error: lockErr } = await supabase
+      .from("service_order_results")
+      .insert({
+        appointment_service_id: orderId,
+        performed_by_id: userId,
+        result_text: null,
+        image_urls: [],
+      });
+
+    if (lockErr) throw new Error(lockErr.message);
+
+    const { error } = await supabase
+      .from("appointment_services")
+      .update({ status: "IN_PROGRESS" })
+      .eq("id", orderId);
+
+    if (error) throw new Error(error.message);
+    res.json({ ok: true, message: "Đã bắt đầu thực hiện" });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+});
+
+// POST /api/doctor/service-orders/:orderId/result – bác sĩ nhập kết quả chuyên sâu
+router.post("/service-orders/:orderId/result", async function doctorSubmitServiceOrderResult(req, res) {
+  try {
+    const orderId = parsePositiveId(req.params.orderId, "ID chỉ định");
+    const userId = req.auth?.user?.id;
+
+    const { data: order, error: fetchErr } = await supabase
+      .from("appointment_services")
+      .select("id, status, appointment_id, service_id, unit_price, quantity, ordered_by_doctor_id, services(name)")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchErr || !order) return res.status(404).json({ ok: false, message: "Không tìm thấy chỉ định" });
+    if (order.status === "COMPLETED") return res.status(400).json({ ok: false, message: "Đã có kết quả rồi" });
+
+    // Kiểm tra khóa: chỉ người đã bắt đầu mới được nhập kết quả
+    const { data: lockRow } = await supabase
+      .from("service_order_results")
+      .select("performed_by_id")
+      .eq("appointment_service_id", orderId)
+      .maybeSingle();
+
+    if (lockRow && lockRow.performed_by_id !== userId) {
+      let performerName = "bác sĩ khác";
+      const { data: perfDoc } = await supabase
+        .from("doctors")
+        .select("full_name")
+        .eq("user_id", lockRow.performed_by_id)
+        .maybeSingle();
+      if (perfDoc?.full_name) performerName = perfDoc.full_name;
+
+      return res.status(403).json({
+        ok: false,
+        message: `Chỉ định này đang được thực hiện bởi ${performerName}`,
+      });
+    }
+
+    const { resultText, imageUrls, measurements, notes } = req.body ?? {};
+    if (!resultText && (!imageUrls || imageUrls.length === 0)) {
+      return res.status(400).json({ ok: false, message: "Cần nhập kết quả hoặc thêm hình ảnh" });
+    }
+
+    const now = new Date().toISOString();
+
+    const { error: resultErr } = await supabase
+      .from("service_order_results")
+      .upsert({
+        appointment_service_id: orderId,
+        performed_by_id: userId,
+        result_text: resultText ?? null,
+        image_urls: imageUrls ?? [],
+        measurements: measurements ?? null,
+        notes: notes ?? null,
+        performed_at: now,
+        updated_at: now,
+      }, { onConflict: "appointment_service_id" });
+
+    if (resultErr) throw new Error(resultErr.message);
+
+    const { error: statusErr } = await supabase
+      .from("appointment_services")
+      .update({ status: "COMPLETED" })
+      .eq("id", orderId);
+
+    if (statusErr) throw new Error(statusErr.message);
+
+    // Cập nhật hóa đơn sau khi dịch vụ hoàn thành
+    const { data: aptService } = await supabase
+      .from("appointment_services")
+      .select("appointment_id, service_id, unit_price, quantity, services(name)")
+      .eq("id", orderId)
+      .maybeSingle();
+
+    if (aptService?.appointment_id) {
+      const { data: invoice } = await supabase
+        .from("invoices")
+        .select("id, payment_status, status")
+        .eq("appointment_id", aptService.appointment_id)
+        .maybeSingle();
+
+      if (invoice?.id) {
+        const { data: existingItem } = await supabase
+          .from("invoice_items")
+          .select("id")
+          .eq("invoice_id", invoice.id)
+          .eq("appointment_service_id", orderId)
+          .maybeSingle();
+
+        if (!existingItem?.id) {
+          const qty = Math.max(1, Number(aptService.quantity || 1));
+          const price = Number(aptService.unit_price || 0);
+          await supabase.from("invoice_items").insert({
+            invoice_id: invoice.id,
+            service_id: aptService.service_id,
+            appointment_service_id: orderId,
+            source_type: "SERVICE",
+            description: aptService.services?.name ?? "Dịch vụ chuyên sâu",
+            quantity: qty,
+            unit_price: price,
+            total_price: qty * price,
+          });
+
+          // Nếu hóa đơn chưa thanh toán thì cập nhật tổng tiền
+          if (!["PAID", "REFUNDED"].includes(invoice.payment_status)) {
+            const { data: items } = await supabase
+              .from("invoice_items")
+              .select("total_price")
+              .eq("invoice_id", invoice.id);
+            const subtotal = (items || []).reduce((s, i) => s + Number(i.total_price), 0);
+            await supabase.from("invoices").update({
+              subtotal_amount: subtotal,
+              total_amount: subtotal,
+              updated_at: new Date().toISOString(),
+            }).eq("id", invoice.id);
+          } else {
+            // Hóa đơn đã thanh toán: ghi nhận cần thu thêm (log server-side)
+            console.warn(
+              `[INVOICE] Dịch vụ #${orderId} hoàn thành nhưng hóa đơn #${invoice.id} đã PAID. ` +
+              `Cần thu thêm ${aptService.services?.name} từ khách hàng.`
+            );
+          }
+        }
+      }
+    }
+
+    res.json({ ok: true, message: "Đã lưu kết quả dịch vụ chuyên sâu" });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+});
+
+// ── LEGACY COMPLETE ─────────────────────────────────────────────────────
 
 // Giữ endpoint cũ để không vỡ nơi khác nếu đang gọi /complete.
 router.put("/:id/complete", async function completeExamOnly(req, res) {

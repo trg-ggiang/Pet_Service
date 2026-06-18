@@ -87,7 +87,7 @@ export function SymptomForm({
   )?.label;
 
   return (
-    <div className="overflow-y-auto border-r border-border">
+    <div>
       <div className="p-5 flex flex-col gap-5">
         <div>
           <h3 className="text-sm font-bold text-foreground mb-0.5">Triệu chứng</h3>
