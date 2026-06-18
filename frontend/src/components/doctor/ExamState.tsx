@@ -1,10 +1,9 @@
-import { Loader2 } from "lucide-react";
+import { PixelDogLoader } from "../ui/PixelDogLoader";
 
 export function LoadingState({ text }: { text: string }) {
   return (
-    <div className="flex h-full min-h-0 items-center justify-center bg-slate-50">
-      <Loader2 size={30} className="animate-spin text-cyan-500" />
-      <span className="ml-3 text-sm text-slate-500">{text}</span>
+    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-5 bg-slate-50">
+      <PixelDogLoader label={text} size="md" />
     </div>
   );
 }

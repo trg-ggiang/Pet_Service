@@ -87,6 +87,9 @@ export type AdminUsersSummary = {
   tabs: Array<{ role: AdminUsersTab; label: string; count: number }>;
 };
 
+export type SpecialistRoomType =
+  | "XRAY" | "LAB" | "SURGERY" | "ENDOSCOPY" | "ULTRASOUND" | "DENTAL" | "OTHER_SPECIALIST";
+
 export type AdminService = {
   id: string;
   category: "clinic" | "grooming" | "boarding";
@@ -98,6 +101,7 @@ export type AdminService = {
   basePrice: number;
   variants?: Array<{ label: string; price: number }>;
   status: "active" | "inactive";
+  specialistRoomType?: SpecialistRoomType | null;
   bookingsMonth: number;
   revenueMonth: number;
   tag?: string;
@@ -116,6 +120,7 @@ export type AdminServicePayload = {
   basePrice: number;
   variants?: AdminService["variants"];
   status: AdminServiceStatus;
+  specialistRoomType?: SpecialistRoomType | null;
   tag?: string;
 };
 

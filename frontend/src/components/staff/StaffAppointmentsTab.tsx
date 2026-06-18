@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, Calendar, CheckCircle2,
-  Eye, Search, Send, Stethoscope, Trash2, User,
+  Eye, Loader2, Plus, Search, Send, Stethoscope, Trash2, User,
 } from "lucide-react";
 import type { StaffAppointment } from "../../features/staff/services/staffAppointments";
+import { staffAppointmentsService } from "../../features/staff/services/staffAppointments";
 import {
   DateFilterBar,
   EmptyState,
@@ -17,6 +18,205 @@ import {
 import { APT_STATUS_CONFIG, SERVICE_ICONS } from "./staffPortalConfig";
 
 const PAGE_SIZE = 12;
+
+/* ── Walk-in modal ──────────────────────────────────────────────────── */
+
+type CustomerOption = { id: number; full_name: string; phone: string };
+type PetOption      = { id: number; name: string; species: { name: string } | null; breed: { name: string } | null };
+type DoctorOption   = { id: number; full_name: string; specialization: string | null; room_name: string | null };
+
+function WalkInModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [step, setStep]               = useState<"customer" | "details">("customer");
+  const [customerQ, setCustomerQ]     = useState("");
+  const [customers, setCustomers]     = useState<CustomerOption[]>([]);
+  const [searching, setSearching]     = useState(false);
+  const [customer, setCustomer]       = useState<CustomerOption | null>(null);
+  const [pets, setPets]               = useState<PetOption[]>([]);
+  const [petId, setPetId]             = useState<number | null>(null);
+  const [doctors, setDoctors]         = useState<DoctorOption[]>([]);
+  const [doctorId, setDoctorId]       = useState<number | null>(null);
+  const [note, setNote]               = useState("");
+  const [submitting, setSubmitting]   = useState(false);
+  const [error, setError]             = useState("");
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce customer search
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (customerQ.trim().length < 2) { setCustomers([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try { setCustomers(await staffAppointmentsService.searchCustomers(customerQ)); }
+      catch { setCustomers([]); }
+      finally { setSearching(false); }
+    }, 350);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [customerQ]);
+
+  async function selectCustomer(c: CustomerOption) {
+    setCustomer(c);
+    setCustomerQ("");
+    setCustomers([]);
+    setPetId(null);
+    setDoctorId(null);
+    try {
+      const [petsData, doctorsData] = await Promise.all([
+        staffAppointmentsService.getCustomerPets(c.id),
+        staffAppointmentsService.getDoctors(),
+      ]);
+      setPets(petsData);
+      setDoctors(doctorsData);
+      setStep("details");
+    } catch { setError("Không tải được dữ liệu thú cưng / bác sĩ"); }
+  }
+
+  async function handleSubmit() {
+    if (!customer || !petId || !doctorId) { setError("Vui lòng chọn đủ thú cưng và bác sĩ"); return; }
+    try {
+      setSubmitting(true); setError("");
+      await staffAppointmentsService.createWalkIn({ customerId: customer.id, petId, doctorId, note: note.trim() || undefined });
+      onCreated();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tạo lịch hẹn");
+    } finally { setSubmitting(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm" onClick={() => !submitting && onClose()}>
+      <div className="w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-cyan-600">Tiếp nhận vãng lai</div>
+            <h3 className="mt-1 text-lg font-bold text-slate-900">Đăng ký khám không hẹn trước</h3>
+          </div>
+          <button onClick={onClose} disabled={submitting} className="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-50">×</button>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        )}
+
+        {step === "customer" ? (
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-[0.07em] text-slate-500 mb-2">
+              Tìm khách hàng (tên hoặc SĐT)
+            </label>
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                autoFocus
+                type="text"
+                value={customerQ}
+                onChange={(e) => setCustomerQ(e.target.value)}
+                placeholder="Nhập tên hoặc số điện thoại..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+              />
+              {searching && <Loader2 size={13} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />}
+            </div>
+            {customers.length > 0 && (
+              <div className="mt-2 rounded-xl border border-slate-200 bg-white shadow-md overflow-hidden">
+                {customers.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => void selectCustomer(c)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors"
+                  >
+                    <div className="h-8 w-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                      <User size={13} className="text-cyan-700" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{c.full_name}</div>
+                      <div className="text-xs text-slate-500">{c.phone}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {customerQ.trim().length >= 2 && !searching && customers.length === 0 && (
+              <p className="mt-3 text-sm text-slate-500 text-center">Không tìm thấy khách hàng</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Selected customer */}
+            <div className="flex items-center justify-between rounded-xl bg-cyan-50 border border-cyan-200 px-4 py-3">
+              <div>
+                <div className="text-xs font-semibold text-cyan-700">Khách hàng</div>
+                <div className="text-sm font-bold text-slate-900">{customer!.full_name}</div>
+                <div className="text-xs text-slate-500">{customer!.phone}</div>
+              </div>
+              <button onClick={() => { setStep("customer"); setCustomer(null); }} className="text-xs text-cyan-600 hover:underline font-semibold">Đổi</button>
+            </div>
+
+            {/* Pet */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-[0.07em] text-slate-500 mb-1.5">Thú cưng</label>
+              {pets.length === 0 ? (
+                <p className="text-sm text-slate-500">Khách hàng chưa có thú cưng trong hệ thống</p>
+              ) : (
+                <select
+                  value={petId ?? ""}
+                  onChange={(e) => setPetId(e.target.value ? Number(e.target.value) : null)}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                >
+                  <option value="">Chọn thú cưng...</option>
+                  {pets.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}{p.species?.name ? ` · ${p.species.name}` : ""}{p.breed?.name ? ` (${p.breed.name})` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Doctor */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-[0.07em] text-slate-500 mb-1.5">Bác sĩ phụ trách</label>
+              <select
+                value={doctorId ?? ""}
+                onChange={(e) => setDoctorId(e.target.value ? Number(e.target.value) : null)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+              >
+                <option value="">Chọn bác sĩ...</option>
+                {doctors.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    BS. {d.full_name}{d.room_name ? ` · ${d.room_name}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Note */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-[0.07em] text-slate-500 mb-1.5">Ghi chú (không bắt buộc)</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                placeholder="Lý do đến khám, triệu chứng sơ bộ..."
+                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button onClick={onClose} disabled={submitting} className="h-10 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+                Hủy
+              </button>
+              <button
+                onClick={() => void handleSubmit()}
+                disabled={submitting || !petId || !doctorId || pets.length === 0}
+                className="h-10 flex-1 rounded-xl bg-cyan-600 text-sm font-bold text-white hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {submitting ? <><Loader2 size={14} className="animate-spin" />Đang tạo...</> : "Tạo lịch hẹn"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /* ── Shared sub-components ──────────────────────────────────────────── */
 
@@ -216,6 +416,7 @@ export function AppointmentsTab({
   onCompleteGrooming,
   onApproveRequest,
   onDelete,
+  onWalkInCreated,
   approvingAppointmentId,
   completingGroomingAppointmentId,
 }: {
@@ -228,14 +429,16 @@ export function AppointmentsTab({
   onCompleteGrooming: (apt: StaffAppointment) => void;
   onApproveRequest: (apt: StaffAppointment) => void;
   onDelete: (apt: StaffAppointment) => void;
+  onWalkInCreated?: () => void;
   approvingAppointmentId?: number | null;
   completingGroomingAppointmentId?: number | null;
 }) {
   const today = todayYmd();
-  const [activeTab, setActiveTab]   = useState<ActiveTab>("all");
-  const [dateFilter, setDateFilter] = useState<DateFilterState>(getDefaultDateFilter);
-  const [search, setSearch]         = useState("");
-  const [page, setPage]             = useState(1);
+  const [activeTab, setActiveTab]     = useState<ActiveTab>("all");
+  const [dateFilter, setDateFilter]   = useState<DateFilterState>(getDefaultDateFilter);
+  const [search, setSearch]           = useState("");
+  const [page, setPage]               = useState(1);
+  const [walkInOpen, setWalkInOpen]   = useState(false);
 
   const pendingConfirmation = useMemo(
     () =>
@@ -275,7 +478,7 @@ export function AppointmentsTab({
   const safePage  = Math.min(page, pageCount);
   const pageData  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  return (
+  return (<>
     <div className="flex h-full min-h-0 flex-col gap-5">
 
       {/* Two-column layout */}
@@ -300,6 +503,7 @@ export function AppointmentsTab({
             <div className="flex items-center justify-between gap-4">
               {/* Status tabs */}
               <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
+
                 {TABS.map((tab) => {
                   const count =
                     tab.id === "confirmed"   ? confirmedCount  :
@@ -324,11 +528,19 @@ export function AppointmentsTab({
                   );
                 })}
               </div>
-              <span className="text-xs font-semibold text-slate-400">
-                {dateFilter.mode === "today" ? "Hôm nay"
-                  : dateFilter.mode === "week" ? "Tuần này"
-                  : dateFilter.date}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-400">
+                  {dateFilter.mode === "today" ? "Hôm nay"
+                    : dateFilter.mode === "week" ? "Tuần này"
+                    : dateFilter.date}
+                </span>
+                <button
+                  onClick={() => setWalkInOpen(true)}
+                  className="flex h-8 items-center gap-1.5 rounded-lg bg-cyan-600 px-3 text-xs font-bold text-white hover:bg-cyan-700 transition-colors"
+                >
+                  <Plus size={13} /> Vãng lai
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -480,5 +692,12 @@ export function AppointmentsTab({
         </div>
       </div>
     </div>
-  );
+
+    {walkInOpen && (
+      <WalkInModal
+        onClose={() => setWalkInOpen(false)}
+        onCreated={() => { setWalkInOpen(false); onWalkInCreated?.(); }}
+      />
+    )}
+  </>);
 }

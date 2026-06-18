@@ -1,6 +1,6 @@
-import { BarChart3, Calendar, FileClock, FileText, LogOut, Settings, User } from "lucide-react";
+import { BarChart3, Calendar, FileClock, FileText, FlaskConical, LogOut, Settings, User } from "lucide-react";
 
-export type DoctorPortalNavId = "schedule" | "scheduleHistory" | "records" | "reports" | "settings";
+export type DoctorPortalNavId = "schedule" | "scheduleHistory" | "records" | "specialist" | "reports" | "settings";
 
 interface DoctorSidebarProfile {
   fullName?: string;
@@ -12,6 +12,7 @@ const NAV_ITEMS: Array<{ id: DoctorPortalNavId; label: string; icon: typeof Cale
   { id: "schedule", label: "Lịch hôm nay", icon: Calendar },
   { id: "scheduleHistory", label: "Lịch sử khám", icon: FileClock },
   { id: "records", label: "Hồ sơ bệnh án", icon: FileText },
+  { id: "specialist", label: "Dịch vụ chuyên sâu", icon: FlaskConical },
   { id: "reports", label: "Thống kê", icon: BarChart3 },
   { id: "settings", label: "Cài đặt", icon: Settings },
 ];

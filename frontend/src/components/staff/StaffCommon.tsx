@@ -1,5 +1,6 @@
 import type React from "react";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PixelDogLoader } from "../ui/PixelDogLoader";
 
 export function PawSVG({ className }: { className?: string }) {
   return (
@@ -25,8 +26,7 @@ export function EmptyState({ icon: Icon, label }: { icon: React.ElementType; lab
 export function LoadingState({ label }: { label: string }) {
   return (
     <div className="flex items-center justify-center py-16">
-      <Loader2 size={30} className="animate-spin text-cyan-500" />
-      <span className="ml-3 text-sm text-slate-500">{label}</span>
+      <PixelDogLoader label={label} size="sm" />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, BedDouble, CalendarCheck, DollarSign, LogOut } from "lucide-react";
-import type { StaffProfile } from "../../features/staff/services/staffAppointments";
+import { staffAppointmentsService, type StaffProfile } from "../../features/staff/services/staffAppointments";
 import { PawSVG } from "./StaffCommon";
 import { NAV_ITEMS, type StaffNavId } from "./staffPortalConfig";
 
@@ -218,6 +218,32 @@ export function StaffSettingsTab({ profile }: { profile: StaffProfile | null }) 
     { label: "Số điện thoại", value: profile?.phone || "Chưa cập nhật" },
   ];
 
+  const [inputHours, setInputHours] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  useEffect(() => {
+    staffAppointmentsService.fetchAutoConfirmHours().then(h => setInputHours(String(h))).catch(() => {});
+  }, []);
+
+  async function handleSave() {
+    const val = Number(inputHours);
+    if (!Number.isFinite(val) || val < 0 || val > 72) {
+      setSaveMsg({ type: "err", text: "Vui lòng nhập số từ 0 đến 72" });
+      return;
+    }
+    setSaving(true);
+    try {
+      await staffAppointmentsService.updateAutoConfirmHours(val);
+      setSaveMsg({ type: "ok", text: "Đã lưu" });
+      setTimeout(() => setSaveMsg(null), 3000);
+    } catch {
+      setSaveMsg({ type: "err", text: "Lưu thất bại" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="max-w-2xl space-y-4">
       <div className="bg-white border border-slate-200 rounded-2xl p-6">
@@ -234,6 +260,38 @@ export function StaffSettingsTab({ profile }: { profile: StaffProfile | null }) 
               <span className="text-sm font-semibold text-slate-900">{item.value}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-6">
+        <h3 className="text-base font-bold text-slate-900 mb-1">Tự động xác nhận lịch hẹn</h3>
+        <p className="text-xs text-slate-500 mb-4">
+          Lịch hẹn chờ xác nhận quá số giờ dưới đây sẽ tự động chuyển thành "Đã xác nhận". Đặt 0 để tắt tính năng.
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus-within:border-cyan-400 transition-colors">
+            <input
+              type="number"
+              min={0}
+              max={72}
+              value={inputHours}
+              onChange={e => setInputHours(e.target.value)}
+              className="w-14 bg-transparent text-sm font-semibold text-slate-900 outline-none text-center"
+            />
+            <span className="text-xs text-slate-500 font-medium">giờ</span>
+          </div>
+          <button
+            onClick={() => void handleSave()}
+            disabled={saving}
+            className="h-9 px-4 rounded-xl text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 disabled:opacity-60 transition-colors"
+          >
+            {saving ? "Đang lưu…" : "Lưu"}
+          </button>
+          {saveMsg && (
+            <span className={`text-xs font-semibold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
+              {saveMsg.text}
+            </span>
+          )}
         </div>
       </div>
 

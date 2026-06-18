@@ -440,7 +440,8 @@ async function listAdminUsers(filters = {}) {
   };
 }
 
-function serviceCategory(type) {
+function serviceCategory(type, specialistRoomType) {
+  if (specialistRoomType) return "specialist";
   const map = {
     MEDICAL: "clinic",
     VACCINE: "clinic",
@@ -452,9 +453,10 @@ function serviceCategory(type) {
 
 function serviceTypeFromCategory(category) {
   const map = {
-    clinic: "MEDICAL",
-    grooming: "GROOMING",
-    boarding: "BOARDING",
+    clinic:     "MEDICAL",
+    specialist: "MEDICAL",
+    grooming:   "GROOMING",
+    boarding:   "BOARDING",
   };
   return map[category] || null;
 }
@@ -490,8 +492,9 @@ function mapAdminService(service, stats) {
   }
   return {
     id: `SV-${service.id}`,
-    category: serviceCategory(service.type),
+    category: serviceCategory(service.type, service.specialist_room_type),
     name: service.name,
+    specialistRoomType: service.specialist_room_type || null,
     description: service.description || "",
     duration: service.type === "BOARDING" ? 1 : 30,
     durationUnit: service.type === "BOARDING" ? "đêm" : "phút",
@@ -505,7 +508,7 @@ function mapAdminService(service, stats) {
 }
 
 function buildServiceSummary(allServices, filteredServices, category) {
-  const categories = ["clinic", "grooming", "boarding"].map((item) => {
+  const categories = ["clinic", "grooming", "boarding", "specialist"].map((item) => {
     const rows = allServices.filter((service) => service.category === item);
     const revenueMonth = rows.reduce((sum, service) => sum + Number(service.revenueMonth || 0), 0);
     return {
@@ -538,6 +541,7 @@ function servicePayload(input, existingType) {
   const category = String(input?.category || "").trim();
   const type = serviceTypeFromCategory(category) || existingType;
   const price = Number(input?.basePrice ?? input?.price ?? 0);
+  const specialistRoomType = input?.specialistRoomType || null;
 
   if (!name) {
     const error = new Error("Service name is required");
@@ -547,6 +551,12 @@ function servicePayload(input, existingType) {
 
   if (!type) {
     const error = new Error("Danh mục dịch vụ không hợp lệ");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (category === "specialist" && !specialistRoomType) {
+    const error = new Error("Vui lòng chọn loại phòng chuyên khoa");
     error.statusCode = 400;
     throw error;
   }
@@ -572,13 +582,14 @@ function servicePayload(input, existingType) {
     is_active: input?.status ? input.status === "active" : true,
     pricing_type: pricingType,
     variants_json: variants.length > 0 ? JSON.stringify(variants) : null,
+    specialist_room_type: specialistRoomType,
   };
 }
 
 async function readServicesWithVariants() {
   const extendedResult = await supabase
     .from("services")
-    .select("id, name, type, price, description, is_active, pricing_type, variants_json")
+    .select("id, name, type, price, description, is_active, pricing_type, variants_json, specialist_room_type")
     .order("name");
   if (!extendedResult.error) return extendedResult.data || [];
 
@@ -637,7 +648,7 @@ async function createAdminService(input) {
   let result = await supabase
     .from("services")
     .insert(payload)
-    .select("id, name, type, price, description, is_active, pricing_type, variants_json")
+    .select("id, name, type, price, description, is_active, pricing_type, variants_json, specialist_room_type")
     .single();
 
   if (result.error) {
@@ -680,7 +691,7 @@ async function updateAdminService(displayId, input) {
     .from("services")
     .update(payload)
     .eq("id", id)
-    .select("id, name, type, price, description, is_active, pricing_type, variants_json")
+    .select("id, name, type, price, description, is_active, pricing_type, variants_json, specialist_room_type")
     .single();
 
   if (updateResult.error) {

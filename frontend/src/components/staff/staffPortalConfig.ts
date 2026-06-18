@@ -14,11 +14,11 @@ import type {
 } from "../../features/staff/services/staffAppointments";
 
 export const NAV_ITEMS = [
-  { id: "appointments" as const, label: "Lịch hẹn", icon: Calendar },
-  { id: "grooming" as const, label: "Grooming", icon: Scissors },
-  { id: "boarding" as const, label: "Lưu trú", icon: BedDouble },
-  { id: "payments" as const, label: "Thanh toán", icon: DollarSign },
-  { id: "settings" as const, label: "Cài đặt", icon: Settings },
+  { id: "appointments" as const, label: "Lịch hẹn",   icon: Calendar },
+  { id: "grooming"     as const, label: "Grooming",    icon: Scissors },
+  { id: "boarding"     as const, label: "Lưu trú",     icon: BedDouble },
+  { id: "payments"     as const, label: "Thanh toán",  icon: DollarSign },
+  { id: "settings"     as const, label: "Cài đặt",     icon: Settings },
 ];
 
 export type StaffNavId = typeof NAV_ITEMS[number]["id"];

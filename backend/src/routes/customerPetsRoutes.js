@@ -41,6 +41,9 @@ const {
   listRoomsWithAvailability,
   createBoardingBooking,
   rescheduleBoardingBooking,
+  getCustomerBoardings,
+  updateBoardingCareByCustomer,
+  extendBoardingStay,
 } = require("../services/boardingService");
 const {
   getActiveMedications,
@@ -379,6 +382,33 @@ router.patch("/boarding/:appointmentId/reschedule", async (req, res) => {
   try {
     await rescheduleBoardingBooking(req.params.appointmentId, req.auth.user.customerId, req.body ?? {});
     res.json({ ok: true, message: "Đã cập nhật ngày lưu trú" });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ ok: false, message: error.message });
+  }
+});
+
+router.get("/boarding/my", async (req, res) => {
+  try {
+    const boardings = await getCustomerBoardings(req.auth.user.customerId);
+    res.json({ ok: true, boardings });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, message: error.message });
+  }
+});
+
+router.patch("/boarding/:boardingId/care", async (req, res) => {
+  try {
+    await updateBoardingCareByCustomer(req.params.boardingId, req.auth.user.customerId, req.body ?? {});
+    res.json({ ok: true, message: "Đã cập nhật hướng dẫn chăm sóc" });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ ok: false, message: error.message });
+  }
+});
+
+router.post("/boarding/:boardingId/extend", async (req, res) => {
+  try {
+    const result = await extendBoardingStay(req.params.boardingId, req.auth.user.customerId, req.body ?? {});
+    res.json({ ok: true, message: `Đã gia hạn đến ${result.newCheckOut}`, ...result });
   } catch (error) {
     res.status(error.statusCode || 400).json({ ok: false, message: error.message });
   }

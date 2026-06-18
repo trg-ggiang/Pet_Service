@@ -1,5 +1,6 @@
 const { supabase } = require("../../lib/supabaseClient");
 const { sendAppointmentEventEmail } = require("../emailService");
+const { getStoredSetting } = require("../settingsService");
 
 const BOARDING_UPDATE_BUCKET = process.env.BOARDING_UPDATES_BUCKET || "boarding-updates";
 const MAX_BOARDING_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -585,7 +586,60 @@ async function getStaffProfile(staffId) {
   };
 }
 
+async function autoConfirmPendingAppointments() {
+  const rawHours = await getStoredSetting("auto_confirm_hours").catch(() => null);
+  const hours = Number(rawHours ?? 2);
+  if (!Number.isFinite(hours) || hours <= 0) return 0;
+
+  const cutoff = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+  const todayVN = getLocalDateKey();
+
+  const { data: candidates, error } = await supabase
+    .from("appointments")
+    .select(`
+      id,
+      requested_date,
+      pets:pet_id (
+        customers:customer_id ( user_id )
+      ),
+      doctor_schedule_slots:doctor_schedule_slot_id ( slot_date )
+    `)
+    .eq("status", "PENDING")
+    .lte("created_at", cutoff);
+
+  if (error || !candidates?.length) return 0;
+
+  const toConfirm = candidates.filter(apt => {
+    const aptDate = apt.requested_date || apt.doctor_schedule_slots?.slot_date;
+    return !aptDate || aptDate >= todayVN;
+  });
+
+  if (!toConfirm.length) return 0;
+
+  const ids = toConfirm.map(a => a.id);
+  const { error: updateError } = await supabase
+    .from("appointments")
+    .update({ status: "CONFIRMED", updated_at: new Date().toISOString() })
+    .in("id", ids);
+
+  if (updateError) return 0;
+
+  for (const apt of toConfirm) {
+    const userId = apt.pets?.customers?.user_id;
+    if (userId) {
+      await createUserNotification(
+        userId,
+        "Lịch hẹn đã được xác nhận",
+        "Lịch hẹn của bạn đã được phòng khám xác nhận tự động. Vui lòng đến đúng giờ.",
+      ).catch(() => {});
+    }
+  }
+
+  return ids.length;
+}
+
 async function listStaffAppointments(staffId) {
+  const autoConfirmedCount = await autoConfirmPendingAppointments().catch(() => 0);
   const effectiveStaffId = assertStaffId(staffId);
   const query = supabase
     .from("appointments")
@@ -620,7 +674,7 @@ async function listStaffAppointments(staffId) {
   const { data, error } = await query;
 
   if (error) throw new Error(error.message);
-  return (data || []).map(mapAppointment);
+  return { appointments: (data || []).map(mapAppointment), autoConfirmedCount };
 }
 
 async function confirmAppointment(appointmentId, staffId) {
@@ -670,6 +724,8 @@ async function checkInAppointment(appointmentId, staffId) {
       id,
       status,
       staff_id,
+      requested_date,
+      doctor_schedule_slots:doctor_schedule_slots!appointments_doctor_schedule_slot_id_fkey ( slot_date ),
       appointment_services (
         id,
         service_id,
@@ -689,6 +745,16 @@ async function checkInAppointment(appointmentId, staffId) {
     const error = new Error("Chỉ có thể check-in lịch hẹn đã được xác nhận");
     error.statusCode = 400;
     throw error;
+  }
+
+  // Chỉ cho check-in đúng ngày hẹn (hoặc không có ngày cụ thể)
+  const aptDate = appointment.requested_date || appointment.doctor_schedule_slots?.slot_date;
+  const todayVN = getLocalDateKey();
+  if (aptDate && aptDate !== todayVN) {
+    const displayDate = new Date(aptDate + "T00:00:00").toLocaleDateString("vi-VN");
+    const err = new Error(`Chỉ có thể check-in vào đúng ngày hẹn (${displayDate}). Nếu khách đến sai ngày, vui lòng hủy và đặt lại lịch.`);
+    err.statusCode = 400;
+    throw err;
   }
 
   const { error } = await supabase
@@ -1250,9 +1316,61 @@ async function getStaffPortalSummary(staffId) {
   };
 }
 
+// Tạo lịch hẹn vãng lai (khách đến trực tiếp không có đặt trước)
+async function createWalkInAppointment(staffId, { customerId, petId, doctorId, note }) {
+  const effectiveStaffId = assertStaffId(staffId);
+
+  if (!customerId) throw Object.assign(new Error("Thiếu thông tin khách hàng"), { statusCode: 400 });
+  if (!petId)      throw Object.assign(new Error("Thiếu thông tin thú cưng"),   { statusCode: 400 });
+  if (!doctorId)   throw Object.assign(new Error("Thiếu thông tin bác sĩ"),    { statusCode: 400 });
+
+  // Verify pet belongs to customer
+  const { data: pet, error: petErr } = await supabase
+    .from("pets")
+    .select("id, name, customer_id")
+    .eq("id", petId)
+    .eq("customer_id", customerId)
+    .maybeSingle();
+  if (petErr || !pet) throw Object.assign(new Error("Thú cưng không thuộc khách hàng này"), { statusCode: 400 });
+
+  // Verify doctor exists
+  const { data: doctor, error: doctorErr } = await supabase
+    .from("doctors")
+    .select("id, full_name, user_id")
+    .eq("id", doctorId)
+    .maybeSingle();
+  if (doctorErr || !doctor) throw Object.assign(new Error("Bác sĩ không tồn tại"), { statusCode: 400 });
+
+  const todayVN = getLocalDateKey();
+  const nowISO = new Date().toISOString();
+  // requested_time = current time in HH:MM
+  const nowVNTime = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" });
+
+  const { data: apt, error: insertErr } = await supabase
+    .from("appointments")
+    .insert({
+      pet_id: petId,
+      doctor_id: doctorId,
+      staff_id: effectiveStaffId,
+      appointment_type: "MEDICAL",
+      status: "CONFIRMED",
+      requested_date: todayVN,
+      requested_time: nowVNTime,
+      note: note || null,
+      created_at: nowISO,
+      updated_at: nowISO,
+    })
+    .select("id, status, requested_date, requested_time, pet_id, doctor_id")
+    .single();
+
+  if (insertErr) throw new Error(insertErr.message);
+  return { appointmentId: apt.id, petName: pet.name, doctorName: doctor.full_name };
+}
+
 module.exports = {
   getStaffProfile,
   listStaffAppointments,
+  autoConfirmPendingAppointments,
   confirmAppointment,
   checkInAppointment,
   approveAppointmentRequest,
@@ -1264,4 +1382,5 @@ module.exports = {
   listPayments,
   markPaymentPaid,
   getStaffPortalSummary,
+  createWalkInAppointment,
 };

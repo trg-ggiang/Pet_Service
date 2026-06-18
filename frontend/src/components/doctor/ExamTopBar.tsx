@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, Loader2, Save } from "lucide-react";
 import type { DoctorExamDetail } from "../../services/doctorAppointments";
 
 export function ExamTopBar({
@@ -7,6 +7,7 @@ export function ExamTopBar({
   completing,
   error,
   message,
+  elapsedMinutes,
   onBack,
   onSaveDraft,
   onUrgentAlert,
@@ -17,11 +18,17 @@ export function ExamTopBar({
   completing: boolean;
   error: string;
   message: string;
+  elapsedMinutes: number;
   onBack: () => void;
   onSaveDraft: () => void;
   onUrgentAlert: () => void;
   onComplete: () => void;
 }) {
+  const mm = elapsedMinutes % 60;
+  const hh = Math.floor(elapsedMinutes / 60);
+  const timerLabel = hh > 0 ? `${hh}g${String(mm).padStart(2,"0")}p` : `${mm}p`;
+  const timerOver = elapsedMinutes >= 45;
+
   return (
     <div className="flex-shrink-0 flex items-center justify-between px-6 py-3.5 bg-white border-b border-border">
       <div className="flex items-center gap-3">
@@ -44,6 +51,20 @@ export function ExamTopBar({
           <span className="text-[12px] font-semibold text-amber-600">
             {appointment.statusLabel}
           </span>
+        </div>
+
+        {appointment.time && (
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-mono text-slate-500">
+            <Clock size={10} />
+            {appointment.time}{appointment.endTime ? `–${appointment.endTime}` : ""}
+          </div>
+        )}
+
+        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold ${
+          timerOver ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+        }`}>
+          {timerOver && <Clock size={10} className="animate-pulse" />}
+          {timerLabel}
         </div>
       </div>
 

@@ -198,6 +198,7 @@ interface ProfileResponse {
 interface StaffAppointmentsResponse {
   ok: boolean;
   appointments: StaffAppointment[];
+  autoConfirmedCount?: number;
 }
 
 interface GroomingResponse {
@@ -257,9 +258,21 @@ export const staffAppointmentsService = {
     return data.summary;
   },
 
-  async fetchPendingAppointments(): Promise<StaffAppointment[]> {
+  async fetchPendingAppointments(): Promise<{ appointments: StaffAppointment[]; autoConfirmedCount: number }> {
     const data = await fetchWithAuth<StaffAppointmentsResponse>("/api/staff/appointments");
-    return data.appointments || [];
+    return { appointments: data.appointments || [], autoConfirmedCount: data.autoConfirmedCount ?? 0 };
+  },
+
+  async fetchAutoConfirmHours(): Promise<number> {
+    const data = await fetchWithAuth<{ ok: boolean; hours: number }>("/api/staff/settings/auto-confirm");
+    return data.hours;
+  },
+
+  async updateAutoConfirmHours(hours: number): Promise<void> {
+    await fetchWithAuth<MutationResponse>("/api/staff/settings/auto-confirm", {
+      method: "PUT",
+      body: JSON.stringify({ hours }),
+    });
   },
 
   async confirmAppointment(appointmentId: number): Promise<void> {
@@ -395,5 +408,35 @@ export const staffAppointmentsService = {
       method: "PATCH",
       body: JSON.stringify({ method }),
     });
+  },
+
+  // Walk-in helpers
+  async searchCustomers(q: string): Promise<{ id: number; full_name: string; phone: string }[]> {
+    const data = await fetchWithAuth<{ ok: boolean; customers: { id: number; full_name: string; phone: string }[] }>(
+      `/api/staff/walk-in/customers?q=${encodeURIComponent(q)}`,
+    );
+    return data.customers ?? [];
+  },
+
+  async getCustomerPets(customerId: number): Promise<{ id: number; name: string; species: { name: string } | null; breed: { name: string } | null }[]> {
+    const data = await fetchWithAuth<{ ok: boolean; pets: { id: number; name: string; species: { name: string } | null; breed: { name: string } | null }[] }>(
+      `/api/staff/walk-in/pets/${customerId}`,
+    );
+    return data.pets ?? [];
+  },
+
+  async getDoctors(): Promise<{ id: number; full_name: string; specialization: string | null; room_name: string | null }[]> {
+    const data = await fetchWithAuth<{ ok: boolean; doctors: { id: number; full_name: string; specialization: string | null; room_name: string | null }[] }>(
+      "/api/staff/walk-in/doctors",
+    );
+    return data.doctors ?? [];
+  },
+
+  async createWalkIn(payload: { customerId: number; petId: number; doctorId: number; note?: string }): Promise<{ appointmentId: number; petName: string; doctorName: string }> {
+    const data = await fetchWithAuth<{ ok: boolean; message: string; appointmentId: number; petName: string; doctorName: string }>(
+      "/api/staff/appointments/walk-in",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+    return { appointmentId: data.appointmentId, petName: data.petName, doctorName: data.doctorName };
   },
 };

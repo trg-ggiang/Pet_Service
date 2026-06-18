@@ -134,72 +134,80 @@ export function CustomerAppointmentsTab({
   setAppointmentsPage,
 }: Props) {
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-3">
 
-      {/* ── Title row ─────────────────────────────────────────────── */}
+      {/* ── Header: title + actions ────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Lịch hẹn của tôi</h2>
           <p className="mt-0.5 text-sm text-slate-500">
-            {appointmentSummary.total} lịch hẹn · {appointmentSummary.statusCounts.find(s => s.status === "upcoming")?.count ?? 0} sắp tới
+            {appointmentSummary.total} lịch hẹn
+            {" · "}
+            {appointmentSummary.statusCounts.find(s => s.status === "upcoming")?.count ?? 0} sắp tới
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-shrink-0 gap-2">
           {onBookBoarding && (
             <button
               onClick={onBookBoarding}
-              className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+              className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
             >
-              <BedDouble size={15} className="text-blue-500" />
+              <BedDouble size={14} className="text-blue-500" />
               <span className="hidden sm:inline">Lưu trú</span>
             </button>
           )}
           <button
             onClick={onBookAppointment}
-            className="flex h-10 items-center gap-2 rounded-lg bg-cyan-600 px-5 text-sm font-bold text-white transition-colors hover:bg-cyan-700"
+            className="flex h-9 items-center gap-2 rounded-lg bg-cyan-600 px-4 text-sm font-bold text-white transition-colors hover:bg-cyan-700"
           >
-            <Plus size={15} strokeWidth={2.5} />
+            <Plus size={14} strokeWidth={2.5} />
             Đặt lịch mới
           </button>
         </div>
       </div>
 
-      {/* ── Status tabs ───────────────────────────────────────────── */}
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5">
-        {([
-          { id: "all"         as const, label: "Tất cả"        },
-          { id: "upcoming"    as const, label: "Sắp tới"       },
-          { id: "in_progress" as const, label: "Đang xử lý"    },
-          { id: "completed"   as const, label: "Hoàn thành"    },
-          { id: "cancelled"   as const, label: "Đã hủy"        },
-        ] as const).map(s => {
-          const active = statusFilter === s.id;
-          const count  = s.id === "all"
-            ? appointmentSummary.total
-            : (appointmentSummary.statusCounts.find(x => x.status === s.id)?.count ?? 0);
-          return (
-            <button
-              key={s.id}
-              onClick={() => setStatusFilter(s.id)}
-              className={`h-9 min-w-fit flex-1 whitespace-nowrap rounded-lg px-4 text-sm font-bold transition-colors ${
-                active ? "bg-cyan-500 text-white" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {s.label}
-              <span className={`ml-1.5 text-[11px] ${active ? "opacity-70" : "text-slate-400"}`}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* ── Unified filter bar ────────────────────────────────────── */}
+      <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white">
 
-      {/* ── Filter row ────────────────────────────────────────────── */}
-      <div className="flex gap-3">
-        {/* Pet */}
-        <div className="relative min-w-[160px] flex-1">
-          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-rose-400">
-            <svg viewBox="0 0 80 80" className="h-3.5 w-3.5" fill="currentColor">
+        {/* Status tabs */}
+        <div className="flex flex-1 gap-1 p-1.5">
+          {([
+            { id: "all"         as const, label: "Tất cả"     },
+            { id: "upcoming"    as const, label: "Sắp tới"    },
+            { id: "in_progress" as const, label: "Đang xử lý" },
+            { id: "completed"   as const, label: "Hoàn thành" },
+            { id: "cancelled"   as const, label: "Đã hủy"     },
+          ] as const).map(s => {
+            const active = statusFilter === s.id;
+            const count  = s.id === "all"
+              ? appointmentSummary.total
+              : (appointmentSummary.statusCounts.find(x => x.status === s.id)?.count ?? 0);
+            return (
+              <button
+                key={s.id}
+                onClick={() => setStatusFilter(s.id)}
+                className={`flex h-8 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg text-xs font-bold transition-colors ${
+                  active ? "bg-cyan-500 text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                }`}
+              >
+                {s.label}
+                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                  active ? "bg-white/25 text-white" : "bg-slate-100 text-slate-400"
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Separator */}
+        <div className="w-px bg-slate-100 my-1.5" />
+
+        {/* Pet filter */}
+        <div className="relative flex items-center">
+          <div className="pointer-events-none absolute left-3 text-rose-400">
+            <svg viewBox="0 0 80 80" className="h-3 w-3" fill="currentColor">
               <ellipse cx="40" cy="54" rx="18" ry="15" /><ellipse cx="18" cy="35" rx="8.5" ry="10" />
               <ellipse cx="32" cy="27" rx="8" ry="9.5" /><ellipse cx="48" cy="27" rx="8" ry="9.5" />
               <ellipse cx="62" cy="35" rx="8.5" ry="10" />
@@ -208,29 +216,35 @@ export function CustomerAppointmentsTab({
           <select
             value={petFilter}
             onChange={e => { setPetFilter(e.target.value); setAppointmentsPage(1); }}
-            className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold focus:border-cyan-400 focus:outline-none"
+            className="h-full appearance-none bg-transparent pl-8 pr-7 text-xs font-semibold text-slate-600 focus:outline-none"
           >
             <option value="all">Tất cả thú cưng</option>
             {pets.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
           </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <ChevronDown size={11} className="pointer-events-none absolute right-2 text-slate-400" />
         </div>
 
-        {/* Service type */}
-        <div className="relative min-w-[160px] flex-1">
-          <Stethoscope size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cyan-500" />
+        {/* Separator */}
+        <div className="w-px bg-slate-100 my-1.5" />
+
+        {/* Service type filter */}
+        <div className="relative flex items-center">
+          <Stethoscope size={12} className="pointer-events-none absolute left-3 text-cyan-500" />
           <select
             value={serviceTypeFilter}
             onChange={e => { setServiceTypeFilter(e.target.value as ServiceType | "all"); setAppointmentsPage(1); }}
-            className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-sm font-semibold focus:border-cyan-400 focus:outline-none"
+            className="h-full appearance-none bg-transparent pl-8 pr-7 text-xs font-semibold text-slate-600 focus:outline-none"
           >
             {serviceFilterOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <ChevronDown size={11} className="pointer-events-none absolute right-2 text-slate-400" />
         </div>
 
+        {/* Separator */}
+        <div className="w-px bg-slate-100 my-1.5" />
+
         {/* Result count */}
-        <div className="flex items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-500 whitespace-nowrap">
+        <div className="flex items-center px-4 text-xs font-semibold text-slate-400 whitespace-nowrap">
           {appointmentSummary.filtered} kết quả
         </div>
       </div>
