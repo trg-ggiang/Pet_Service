@@ -231,6 +231,20 @@ async function getCustomerPetDashboard(customerId) {
   const appointmentsByPetId = Object.fromEntries(
     appointments.map((appointment) => [appointment.id, appointment.pet_id]),
   );
+  const appointmentIds = appointments.map((appointment) => appointment.id);
+  const medicalVisitsResult =
+    appointmentIds.length > 0
+      ? await supabase
+          .from("medical_visits")
+          .select(
+            "id, appointment_id, symptoms, clinical_exam, diagnosis_note, next_visit_date, created_at, updated_at",
+          )
+          .in("appointment_id", appointmentIds)
+          .order("created_at", { ascending: false })
+      : { data: [], error: null };
+
+  if (medicalVisitsResult.error)
+    throw new Error(medicalVisitsResult.error.message);
 
   const speciesMap = new Map(species.map((entry) => [entry.id, entry]));
   const breedMap = new Map(breeds.map((entry) => [entry.id, entry]));
@@ -245,7 +259,7 @@ async function getCustomerPetDashboard(customerId) {
         speciesMap,
         breedMap,
         vaccinationsResult.data ?? [],
-        appointmentsResult.data ?? [],
+        medicalVisitsResult.data ?? [],
         appointmentsByPetId,
       ),
     ),
@@ -396,16 +410,6 @@ async function createCustomerPet(input, customerId) {
     throw new Error("Thiếu thông tin khách hàng");
   }
 
-  // Debug: log parsed values to trace missing/invalid speciesId
-  console.debug("[service] createCustomerPet parsed:", {
-    effectiveCustomerId,
-    speciesId,
-    breedId,
-    rawSpecies,
-    rawBreed,
-    name: input?.name,
-  });
-
   if (!Number.isFinite(speciesId)) {
     const candidateName =
       typeof input?.species === "string"
@@ -519,16 +523,6 @@ async function updateCustomerPet(petId, input, customerId) {
   if (!Number.isFinite(effectiveCustomerId)) {
     throw new Error("Thiếu thông tin khách hàng");
   }
-
-  console.debug("[service] updateCustomerPet parsed:", {
-    petIdNumber,
-    effectiveCustomerId,
-    speciesId,
-    breedId,
-    rawSpecies,
-    rawBreed,
-    name: input?.name,
-  });
 
   if (!Number.isFinite(speciesId)) {
     const candidateName =

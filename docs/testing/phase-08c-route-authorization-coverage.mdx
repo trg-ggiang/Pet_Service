@@ -1,0 +1,194 @@
+---
+title: "Phase 08C Route Authorization Coverage"
+description: "Bao cao kiem thu phan quyen route theo role customer, staff, doctor va admin."
+---
+
+# Phase 08C Route Authorization Coverage
+
+Phase 8C tap trung vao route authorization theo role. Muc tieu la dam bao cac route customer/staff/doctor/admin chi cho role phu hop di qua, va role sai bi chan `403` truoc khi service layer duoc goi.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Customer role duoc truy cap `GET /api/customer/appointments`.
+- Staff role bi chan khi truy cap customer-only route.
+- Staff role duoc truy cap `GET /api/staff/appointments`.
+- Customer role bi chan khi truy cap staff-only route.
+- Doctor role co `doctorId` duoc truy cap `GET /api/doctor/appointments`.
+- Admin role bi chan khi truy cap doctor-only route.
+- Admin role duoc truy cap `GET /api/admin/dashboard`.
+- Doctor role bi chan khi truy cap admin-only route.
+- Cac forbidden cases khong goi service layer.
+
+Ngoai pham vi Phase 8C:
+
+- Auth middleware duoc mock de tap trung route role guard, chua dung JWT signing/verifying that.
+- Chua test moi endpoint trong tung route file.
+- Chua test database RLS/cross-role data leak voi DB test.
+- Chua test frontend route guard/UI navigation.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/routes/routeAuthorization.test.js
+```
+
+Production routes duoc cover:
+
+```text
+backend/src/routes/customerPetsRoutes.js
+backend/src/routes/staffRoutes.js
+backend/src/routes/doctorAppointmentRoutes.js
+backend/src/routes/adminRoutes.js
+backend/src/middleware/authMiddleware.js
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8C theo AAA.
+
+Example:
+
+```js
+test("blocks doctor users from admin-only dashboard routes", async () => {
+  // Arrange
+  setAuthUser("doctor", { doctorId: 30 });
+
+  // Act
+  const response = await request(app).get("/api/admin/dashboard");
+
+  // Assert
+  expect(response.status).toBe(403);
+  expect(response.body).toEqual(expect.objectContaining({ ok: false }));
+  expect(getAdminDashboard).not.toHaveBeenCalled();
+});
+```
+
+## 4. Mock data
+
+Phase 8C dung `mockAuthUser` dong:
+
+- `customer`: co `customerId`.
+- `staff`: co `staffId`.
+- `doctor`: co `doctorId`.
+- `admin`: khong can domain id rieng cho dashboard route.
+
+Backend tests mock:
+
+- `authMiddleware`: gan `req.auth.user` va `req.auth.rawUser`.
+- Appointment/customer service cho customer route.
+- Staff portal service cho staff route.
+- Doctor appointment service cho doctor route.
+- Admin service cho admin route.
+
+`requireRole(...)` van dung implementation that tu `authMiddleware.js`.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Route authorization suite | 8 passed / 8 total |
+| Test suites | 18 passed / 18 total |
+| Test cases | 118 passed / 118 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend regression:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 56 passed / 56 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- routeAuthorization
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8C:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 43.72% |
+| Branches | 43.03% |
+| Functions | 39.39% |
+| Lines | 43.72% |
+
+Authorization/route-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/middleware/authMiddleware.js` | 91.78% | 70.37% | 100% | 91.78% |
+| `backend/src/routes/customerPetsRoutes.js` | 45.92% | 40% | 100% | 45.92% |
+| `backend/src/routes/staffRoutes.js` | 28.20% | 50% | 2.94% | 28.20% |
+| `backend/src/routes/doctorAppointmentRoutes.js` | 13.41% | 33.33% | 1.53% | 13.41% |
+| `backend/src/routes/adminRoutes.js` | 25.78% | 50% | 100% | 25.78% |
+
+Frontend coverage khong thay doi ve scope Phase 8C:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 80.31% |
+| Branches | 64.13% |
+| Functions | 75% |
+| Lines | 80.47% |
+
+## 7. He thong da lam tot
+
+- Role guard dung chung `requireRole` chan role sai truoc khi service layer chay.
+- Customer/staff/doctor/admin route group deu co representative route duoc test allow va deny.
+- Forbidden response tra HTTP `403` va `{ ok: false }`.
+- Happy path route mapping van truyen dung domain id tu auth context: `customerId`, `staffId`, `doctorId`.
+- Admin dashboard khong cho doctor role truy cap.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Phase 8C chua test JWT real signing/verifying o route group vi auth middleware duoc mock.
+- Chua test moi endpoint trong staff/doctor/admin route file.
+- Chua test DB-level RLS hoac cross-role data leak.
+- Chua test frontend navigation guard khi user doi role/session het han.
+- `doctorAppointmentRoutes.js` va `staffRoutes.js` van co route file coverage thap vi file rat lon va Phase 8C chi cover role boundary.
+
+## 9. Danh gia Phase 8C
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Route authorization tests pass | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend regression pass rate | Dat, 100% |
+| Customer/staff/doctor/admin role boundary | Dat co ban |
+| Service-not-called on forbidden | Dat |
+| Real JWT integration | Chua dat |
+| DB cross-role leak coverage | Chua dat |
+| Rui ro con lai | Trung binh-thap cho route boundary, trung binh cho JWT/DB |
+
+## 10. Follow-up
+
+Phase tiep theo nen tiep tuc mot trong cac huong:
+
+- `Phase 8B-4 Real DB Appointment Concurrency`: duplicate doctor slot voi database test rieng.
+- `Phase 8D Customer Core UI And PDF Coverage`: customer UI/PDF.
+- JWT integration tests khong mock `authMiddleware` cho route groups quan trong.
+- Staff/doctor/admin route-level tests sau hon cho tung module.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi production code can sua trong Phase 8C. Test moi xac nhan `requireRole` dang chan dung role sai tren cac route group chinh.

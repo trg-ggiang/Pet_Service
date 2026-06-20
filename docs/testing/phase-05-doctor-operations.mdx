@@ -1,0 +1,247 @@
+---
+title: "Phase 05 Doctor Operations Testing"
+description: "Bao cao kiem thu Phase 5 cho doctor portal appointments, exam draft, exam completion, notifications va specialist service orders."
+---
+
+# Phase 05 Doctor Operations Testing
+
+Phase 5 tap trung vao doctor operations: danh sach lich kham cua bac si, luu nhap phieu kham, hoan tat phieu kham, notifications va frontend API contract cho service orders chuyen khoa. Day la nhom flow quan trong vi bac si la vai tro tao medical visit, prescription, invoice item va dong trang thai lich kham.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Doctor portal appointment list: map appointment row thanh card/schedule row, tinh summary va room metadata.
+- Guard doctor profile: chan load portal khi user chua lien ket voi doctor profile.
+- Exam draft: chi cho luu phieu kham khi appointment dang `IN_PROGRESS`.
+- Exam draft: luu symptoms, clinical note va prescription theo medical visit.
+- Exam completion: chuyen appointment sang `COMPLETED`, tao invoice line, complete appointment service va dong schedule slot sang `DONE`.
+- Frontend doctor appointment API: fetch appointments, fallback summary/meta, auth header.
+- Frontend doctor notifications: fetch, mark one read, mark all read.
+- Frontend doctor exam API: start exam, fetch exam detail, save draft, complete with record.
+- Frontend urgent alert va specialist service orders: list services, list orders, create order, cancel order.
+- Frontend doctor API reject truoc khi fetch neu khong co auth session.
+
+Ngoai pham vi Phase 5:
+
+- Chua test route-level doctor API bang Supertest.
+- Chua test UI component cua doctor portal/exam screen bang React Testing Library.
+- Chua test follow-up appointment creation thanh cong khi bac si hen tai kham.
+- Chua test conflict follow-up slot va race condition khi slot vua bi dat.
+- Chua test invoice da `PAID` va update invoice item cu.
+- Chua test specialist service order backend route/service chi tiet.
+- Chua test full Prisma integration voi database test that.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/doctorAppointmentService.test.js
+backend/tests/unit/doctorExamCompletionService.test.js
+backend/tests/mocks/doctorOperations.mock.js
+```
+
+Frontend:
+
+```text
+frontend/src/features/doctor/services/doctorAppointments.test.ts
+frontend/src/tests/mocks/doctorOperations.mock.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 5 dung AAA.
+
+Backend example:
+
+```js
+test("completes exam, creates invoice line and closes the schedule slot", async () => {
+  // Arrange
+  const tx = createTx();
+  mockPrismaTx(tx);
+
+  // Act
+  const result = await completeDoctorExam({
+    appointmentId: prismaExamAppointment.id,
+    doctorId,
+    record: doctorExamRecord,
+  });
+
+  // Assert
+  expect(result).toEqual({ followUpAppointment: null });
+  expect(tx.appointment.updateMany).toHaveBeenCalledWith({
+    where: { id: prismaExamAppointment.id, doctorId, status: "IN_PROGRESS" },
+    data: { status: "COMPLETED" },
+  });
+});
+```
+
+Frontend example:
+
+```ts
+test("fetches exam detail and sends draft/complete record payloads", async () => {
+  // Arrange
+  mockFetchJson({ ok: true, detail: mockDoctorExamDetail, message: "saved" });
+
+  // Act
+  const detail = await doctorAppointmentsService.fetchExamDetail(502);
+  const draftMessage = await doctorAppointmentsService.saveExamDraft(502, mockDoctorExamRecord);
+
+  // Assert
+  expect(detail).toEqual(mockDoctorExamDetail);
+  expect(draftMessage).toBe("saved");
+});
+```
+
+## 4. Mock data
+
+Mock data duoc tach rieng:
+
+```text
+backend/tests/mocks/doctorOperations.mock.js
+frontend/src/tests/mocks/doctorOperations.mock.ts
+```
+
+Du lieu mock bao gom:
+
+- Doctor id.
+- Supabase appointment rows cho portal doctor.
+- Prisma appointment dang `IN_PROGRESS`.
+- Doctor exam record gom chief complaint, symptoms, vitals, systems, clinical note va prescription.
+- Frontend doctor appointment, summary, metadata, notification, exam detail, specialist service va service order.
+
+Backend tests mock:
+
+- Supabase client cho `doctorAppointmentService`.
+- Prisma client va `$transaction` cho `doctorExamCompletionService`.
+
+Frontend tests mock:
+
+- `fetch`.
+- Auth session trong `localStorage`.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 12 passed / 12 total |
+| Test cases | 69 passed / 69 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 10 passed / 10 total |
+| Test cases | 48 passed / 48 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- doctorAppointmentService doctorExamCompletionService
+npm --prefix frontend run test:run -- doctorAppointments
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 26.51% |
+| Branches | 40.53% |
+| Functions | 21.21% |
+| Lines | 26.51% |
+
+Backend doctor-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/doctor/doctorAppointmentService.js` | 81.72% | 47.05% | 77.77% | 81.72% |
+| `backend/src/services/doctor/doctorExamCompletionService.js` | 66.76% | 34% | 71.42% | 66.76% |
+| `backend/src/services/doctor/doctorService.js` | 6.52% | 100% | 0% | 6.52% |
+
+Frontend covered-file coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 74.07% |
+| Branches | 65.33% |
+| Functions | 66.66% |
+| Lines | 74.78% |
+
+Frontend doctor-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/features/doctor/services/doctorAppointments.ts` | 94.28% | 65.21% | 93.75% | 97.05% |
+
+## 7. He thong da lam tot
+
+- Doctor portal mapping gom day du thong tin can thiet: appointment id, pet, owner, room, service, status view va schedule row.
+- Doctor portal summary uu tien lich `IN_PROGRESS`, giup bac si nhin ca dang kham truoc.
+- Backend chan luu phieu kham neu user chua co doctor profile hop le.
+- Backend chan luu draft khi appointment chua vao `IN_PROGRESS`, tranh tao medical visit som.
+- Exam draft ghi lai symptoms, clinical note va prescription theo medical visit.
+- Exam completion dung update co dieu kien `id + doctorId + status`, giam rui ro complete nham appointment.
+- Exam completion dong bo nhieu trang thai trong transaction: appointment, medical visit, prescription, invoice item, appointment service va schedule slot.
+- Frontend doctor service co auth guard truoc khi goi API.
+- Frontend API contract dung endpoint, method va body cho cac thao tac quan trong cua doctor flow.
+
+## 8. Khuyet diem va rui ro con lai
+
+- `doctorService.js` coverage con rat thap vi Phase 5 chua test dashboard stats, settings va exam context mapping.
+- Chua test route-level doctor API, nen chua xac minh middleware role/doctorId binding o lop HTTP.
+- Chua test follow-up appointment creation thanh cong, conflict slot, schedule slot unavailable va reservation race.
+- Chua test invoice da co san hoac da paid, nen con rui ro update tong tien va invoice item cu.
+- Chua test prescription rong/nhieu prescription va duration invalid.
+- Chua test urgent alert backend va specialist service order backend.
+- Chua test UI doctor exam form: loading, error, validation, dirty draft va complete modal.
+
+## 9. Danh gia Phase 5
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Critical doctor tests pass | Dat |
+| Backend Phase 5 pass rate | Dat, 100% |
+| Frontend Phase 5 pass rate | Dat, 100% |
+| Doctor appointment portal coverage | Dat tot |
+| Doctor exam completion coverage | Dat co ban |
+| Frontend doctor API coverage | Dat rat tot |
+| Doctor route/API integration coverage | Chua dat |
+| Follow-up scheduling coverage | Chua dat |
+| Rui ro doctor portal mapping | Thap |
+| Rui ro exam completion invoice/follow-up | Trung binh |
+
+## 10. Follow-up
+
+Phase 5 du dieu kien chuyen sang phase tiep theo, nhung doctor operations chua nen dong hoan toan. Can tao backlog follow-up rieng cho cac test sau:
+
+- Supertest route tests cho `/api/doctor/appointments` va cac action start/draft/complete/urgent-alert.
+- Unit test cho `doctorService.js`: stats, settings, exam context, history mapping.
+- Follow-up appointment success path: tao appointment, reserve slot, tao notification.
+- Follow-up conflict path: doctor da co appointment cung gio, slot khong available, slot vua bi dat.
+- Invoice path: invoice da co item cu, invoice da `PAID`, appointment co nhieu service.
+- Specialist service order backend: create/cancel guard theo appointment/doctor/status.
+- React component tests cho doctor appointment list va exam form.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi nghiep vu can sua trong production code Phase 5. Co hai dieu chinh trong test:
+
+- Doi ten mock Prisma function sang `mockGetPrismaClient` de phu hop rule hoisting cua Jest.
+- Chinh expectation frontend fallback room label theo chuoi Unicode thuc te `Phong 1`.

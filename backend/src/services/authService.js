@@ -59,15 +59,11 @@ async function getUserAuthContext(user) {
   }
 
   if (role === "doctor") {
-    console.log("[AUTH] Looking for doctor with user_id:", user.id, "type:", typeof user.id);
-
     const { data: doctor, error: doctorError } = await supabase
       .from("doctors")
       .select("id, full_name, room_name, user_id")
       .eq("user_id", user.id)
       .maybeSingle();
-
-    console.log("[AUTH] Doctor lookup result:", doctor, "error:", doctorError);
 
     return buildBaseUser(user, {
       fullName: doctor?.full_name ?? user.email,

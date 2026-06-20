@@ -1,0 +1,190 @@
+---
+title: "Testing Follow-up Backlog"
+description: "Backlog cac follow-up con lai sau Phase 1-7 va cac phase mo rong coverage."
+---
+
+# Testing Follow-up Backlog
+
+Tai lieu nay gom cac follow-up con lai sau Phase 1-7 va trang thai dong/moi sau Phase 8A-8F. Muc tieu la tranh de cac ghi chu follow-up nam rai rac trong tung report phase.
+
+## Trang thai tong quan
+
+| Area | Trang thai | Ghi chu |
+| --- | --- | --- |
+| Auth UI/JWT integration | Da cai thien trong Phase 8C | Co route role-boundary Supertest cho customer/staff/doctor/admin; con UI va JWT real signing/verifying integration. |
+| Customer pet dashboard/PDF | Da cai thien trong Phase 8D | Pet dashboard/detail aggregation va PDF download contract da co test; con component/E2E/PDF content. |
+| Customer appointment deep flow | Da cai thien trong Phase 8B den 8B-3 | `customerAppointmentsService.js` tang len 73.52%; routes co Supertest coverage; concurrency contract co mocked stateful test; con UI va real DB concurrency. |
+| Staff boarding deep coverage | Da cai thien trong Phase 8A | `boardingService.js` tang len 90.46% statement/line coverage. |
+| Staff grooming invoice follow-up | Mot phan da co | Phase 7 va 8A da co duplicate invoice item guard o mock layer; can route/integration DB. |
+| Doctor route/follow-up scheduling | Da cai thien trong Phase 8E | `doctorService.js` tang len 90.92%; doctor route mapping co Supertest; con follow-up/specialist/urgent route sau. |
+| Admin route/settings/health trends | Da cai thien trong Phase 8F | `adminService.js` tang len 73.55%; admin route contract/settings/health trends/staff-service management co test; con UI, audit, email/schedule routes. |
+| Cross-feature E2E | Con lai | Phase 7 la mocked integration, chua phai Playwright/browser E2E. |
+
+## Phase 1 Follow-up
+
+Da dong trong Phase 8C:
+
+- Representative route authorization tests cho customer/staff/doctor/admin route groups.
+- Role sai bi chan `403` truoc khi service layer chay.
+- Role dung di qua route va truyen domain id tu auth context vao service.
+
+Con lai:
+
+- Auth form component tests: login, register, forgot password, loading/error states.
+- JWT integration test khong mock `jwt.js`.
+- Route tests sau hon cho tung endpoint quan trong, neu can coverage chi tiet hon.
+
+De xuat phase:
+
+- `Phase 8C-2 JWT Route Integration Coverage`
+
+## Phase 2 Follow-up
+
+Da dong trong Phase 8D:
+
+- Pet dashboard summary gom species, breed, latest vaccination va latest medical visit.
+- Backend dashboard fix de `latestMedicalVisit` lay tu `medical_visits`.
+- Pet detail gom invoice items theo invoice.
+- Frontend customer invoice PDF download contract.
+- UTF-8 filename, fallback latest invoice, matching invoice query params va error message cho PDF download.
+
+Con lai:
+
+- Customer route tests cho profile/pets/history.
+- Component tests cho customer pet/profile screens.
+- Route-level invoice PDF endpoints.
+- Playwright/PDF content smoke test neu can xac minh file download thuc te.
+
+De xuat phase:
+
+- `Phase 8D-2 Customer Components And PDF E2E`
+
+## Phase 3 Follow-up
+
+Da dong trong Phase 8B:
+
+- Create appointment success path voi doctor slot reservation.
+- Rollback khi `appointment_services` insert fail sau khi reserve slot.
+- Provider lookup cho medical service theo doctor slot kha dung.
+- Pending reschedule reserve slot moi, release slot cu va notify doctor.
+- Pending cancel release slot va notify doctor.
+
+Da dong trong Phase 8B-2:
+
+- Supertest route tests cho `/api/customer/appointment-options`.
+- Supertest route tests cho `/api/customer/appointment-provider-options`.
+- Supertest route tests cho `/api/customer/appointments` list/create.
+- Supertest route tests cho confirm/reschedule/cancel appointment actions.
+- Route-level service error mapping va non-customer role guard.
+
+Da dong trong Phase 8B-3:
+
+- `reserveDoctorScheduleSlot` chi reserve slot khi `status = AVAILABLE`.
+- Mocked stateful concurrency contract: hai request cung slot thi request dau tien thanh cong, request thu hai nhan `null`.
+- `createCustomerAppointment` reject `409` khi slot vua bi request khac reserve mat.
+- Khi slot conflict, appointment/email insert khong chay.
+
+Con lai:
+
+- Concurrent booking cung slot bang real DB integration test.
+- Rollback khi appointment insert fail sau khi reserve slot.
+- Staff provider success path cho grooming/boarding appointment.
+- Component tests cho booking/reschedule/cancel modals.
+
+De xuat phase:
+
+- `Phase 8B-4 Real DB Appointment Concurrency`
+
+## Phase 4 Follow-up
+
+Da dong mot phan trong Phase 8A:
+
+- Boarding approve/check-in/checkout core service.
+- Boarding invoice paid guard.
+- Boarding room active delete guard.
+- Customer boarding list va staff pending/confirmed list mapping.
+
+Con lai:
+
+- Staff route tests cho `/api/staff/*`.
+- StaffPortal component tests.
+- Complete grooming invoice with real route/integration shape.
+- Boarding daily photo upload with Supabase Storage mock.
+- Walk-in appointment route/service tests.
+
+De xuat phase:
+
+- `Phase 8A-2 Staff Routes And Boarding Photo Coverage`
+
+## Phase 5 Follow-up
+
+Da dong trong Phase 8E:
+
+- Unit test cho `doctorService.js`: stats, settings, exam context, history mapping.
+- Supertest route tests cho `/api/doctor/appointments`, `/api/doctor/stats`, `/api/doctor/records`, `/api/doctor/exam/:id`, `/api/doctor/settings`.
+- Settings patch save flow.
+- Doctor route guard khi thieu `doctorId`.
+
+Con lai:
+
+- Follow-up appointment success path.
+- Follow-up appointment conflict: busy doctor, unavailable slot, race.
+- Invoice path: existing item, paid invoice, multiple services.
+- Specialist service order backend.
+- Doctor portal/exam form component tests.
+- Urgent alert route/backend chi tiet.
+
+De xuat phase:
+
+- `Phase 8E-2 Doctor Follow-up And Specialist Routes`
+
+## Phase 6 Follow-up
+
+Da dong trong Phase 8F:
+
+- Supertest route tests cho `/api/admin/dashboard`, `/services`, `/health-trends`, `/settings`, `/staff` va staff profile update.
+- Non-admin role bi chan `403` truoc khi admin service layer chay.
+- Backend success tests cho `createAdminService`, `updateAdminService`, `deleteAdminService`.
+- `createAdminStaffMember` voi Supabase Auth Admin mock.
+- `updateAdminUserProfile`, `getAdminHealthTrends`, `getAdminSettings`, `updateAdminSettings`.
+- Supabase query helper ho tro `upsert` de mock settings flow dung production contract.
+
+Con lai:
+
+- Admin UI components: users, services, appointments, reports.
+- Audit/logging strategy cho destructive admin actions.
+- Admin email template routes.
+- Admin doctor schedule/profile legacy routes.
+- Report edge cases va error branches sau hon.
+
+De xuat phase:
+
+- `Phase 8F-2 Admin Email Schedule And Audit Coverage`
+
+## Phase 7 Follow-up
+
+Con lai:
+
+- Playwright E2E cho `TC-E2E-01` den `TC-E2E-04`.
+- Database integration test voi database test rieng.
+- PDF invoice content/download test.
+- Email delivery smoke test tren test provider hoac mocked transport integration.
+- Supabase Storage upload integration.
+- Cross-role data leak tests tren DB test.
+
+De xuat phase:
+
+- `Phase 9 Playwright And Database Integration`
+
+## Uu tien tiep theo
+
+Thu tu nen lam tiep:
+
+1. `Phase 8B-4 Real DB Appointment Concurrency`
+2. `Phase 8E-2 Doctor Follow-up And Specialist Routes`
+3. `Phase 8F-2 Admin Email Schedule And Audit Coverage`
+4. `Phase 8D-2 Customer Components And PDF E2E`
+5. `Phase 8C-2 JWT Route Integration Coverage`
+6. `Phase 9 Playwright And Database Integration`
+
+Ly do: admin route/settings baseline da co trong Phase 8F; rui ro lon tiep theo la real DB concurrency, doctor follow-up/specialist routes va admin email/schedule/audit routes.

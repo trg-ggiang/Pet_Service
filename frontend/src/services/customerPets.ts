@@ -68,13 +68,6 @@ export async function createCustomerPet(input: CreateCustomerPetInput): Promise<
     species_id: speciesId,
   };
 
-  // Debug: log the outgoing payload to help trace species_id issues
-  try {
-    // eslint-disable-next-line no-console
-    console.debug("createCustomerPet payloadBody:", payloadBody);
-  } catch (e) {
-    // ignore
-  }
   const payload = await requestJson<{ ok: true; pet: { id: number } }>(
     "/api/customer/pets",
     {

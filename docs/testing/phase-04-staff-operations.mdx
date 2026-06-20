@@ -1,0 +1,236 @@
+---
+title: "Phase 04 Staff Operations Testing"
+description: "Bao cao kiem thu Phase 4 cho staff profile, appointments, grooming, boarding daily status va payments."
+---
+
+# Phase 04 Staff Operations Testing
+
+Phase 4 tap trung vao staff operations: staff profile, appointment confirm/check-in, grooming status, boarding daily status API va payment marking. Day la nhom flow quan trong vi staff la vai tro dieu phoi trang thai nghiep vu giua customer, doctor, grooming/boarding va thanh toan.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Staff profile mapping: full name, initials, role label, email.
+- Confirm appointment: chi cho appointment `PENDING`, gan `staff_id` hien tai.
+- Confirm appointment bi chan neu appointment da gan staff khac.
+- Check-in appointment: chi cho appointment `CONFIRMED`, chuyen sang `IN_PROGRESS`.
+- Check-in appointment bi chan neu appointment khong o trang thai hop le.
+- Grooming status: reject status khong hop le, update grooming/service/appointment sang `IN_PROGRESS`.
+- Payment: invoice da `PAID` thi skip update, invoice chua paid thi mark paid va gui email xac nhan.
+- Frontend staff API contract: profile, summary, pending appointments, confirm, check-in, grooming status, boarding daily status, payments va mark paid.
+- Frontend staff API reject truoc khi fetch neu khong co auth session.
+
+Ngoai pham vi Phase 4:
+
+- Chua test boarding approve/check-in/checkout backend trong `boardingService`.
+- Chua test boarding room CRUD.
+- Chua test complete grooming tao invoice end-to-end.
+- Chua test specialist queue/service orders.
+- Chua test walk-in appointment flow.
+- Chua test StaffPortal UI component bang React Testing Library.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/staffPortalService.test.js
+backend/tests/mocks/staffOperations.mock.js
+backend/tests/helpers/supabaseQuery.js
+```
+
+Frontend:
+
+```text
+frontend/src/features/staff/services/staffAppointments.test.ts
+frontend/src/tests/mocks/staffOperations.mock.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 4 dung AAA.
+
+Backend example:
+
+```js
+test("confirms a pending appointment and assigns the current staff member", async () => {
+  // Arrange
+  const updateQuery = createSupabaseQuery({ data: null, error: null });
+  supabase.from
+    .mockReturnValueOnce(createSupabaseQuery({ data: pendingAppointment, error: null }))
+    .mockReturnValueOnce(updateQuery);
+
+  // Act
+  await confirmAppointment(pendingAppointment.id, staffId);
+
+  // Assert
+  expect(updateQuery.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      status: "CONFIRMED",
+      staff_id: staffId,
+    }),
+  );
+});
+```
+
+Frontend example:
+
+```ts
+test("updates grooming status with PATCH payload", async () => {
+  // Arrange
+  mockFetchJson({ ok: true, message: "ok" });
+
+  // Act
+  await staffAppointmentsService.updateGroomingStatus(900, "IN_PROGRESS");
+
+  // Assert
+  expect(fetch).toHaveBeenCalledWith(
+    "http://localhost:5050/api/staff/grooming/900/status",
+    expect.objectContaining({
+      method: "PATCH",
+      body: JSON.stringify({ status: "IN_PROGRESS" }),
+    }),
+  );
+});
+```
+
+## 4. Mock data
+
+Mock data duoc tach rieng:
+
+```text
+backend/tests/mocks/staffOperations.mock.js
+frontend/src/tests/mocks/staffOperations.mock.ts
+```
+
+Du lieu mock bao gom:
+
+- Staff profile row.
+- Appointment `PENDING`, `CONFIRMED`, `COMPLETED`.
+- Grooming record.
+- Paid/unpaid invoice.
+- Frontend staff profile, appointment, summary, payment va boarding daily status.
+
+Backend tests mock:
+
+- Supabase client.
+- Email service.
+- Settings service.
+- Doctor schedule service.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 10 passed / 10 total |
+| Test cases | 63 passed / 63 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 9 passed / 9 total |
+| Test cases | 41 passed / 41 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 23.51% |
+| Branches | 40.25% |
+| Functions | 16.51% |
+| Lines | 23.51% |
+
+Backend staff-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/staff/staffPortalService.js` | 24.53% | 45% | 20% | 24.53% |
+
+Frontend covered-file coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 69.5% |
+| Branches | 65.35% |
+| Functions | 60.56% |
+| Lines | 69.68% |
+
+Frontend staff-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/features/staff/services/staffAppointments.ts` | 38.88% | 34.37% | 32.25% | 39.62% |
+
+## 7. He thong da lam tot
+
+- Staff profile mapping co thong tin can thiet cho portal: full name, initials, role label va contact.
+- Staff confirm appointment co guard ownership: appointment da gan staff khac bi chan bang 403.
+- Appointment confirm/check-in co guard theo status, tranh chuyen trang thai sai luong.
+- Grooming status chi chap nhan `IN_PROGRESS` va `COMPLETED`.
+- Khi grooming update sang in-progress, service va appointment cung duoc dong bo trang thai.
+- Payment paid co idempotency co ban: invoice da paid thi khong update lai va khong gui email lai.
+- Frontend staff service chan request khi mat auth session, tranh goi API voi session rong.
+- Frontend staff API contract dung method/body cho cac thao tac quan trong.
+
+## 8. Khuyet diem va rui ro con lai
+
+- `staffPortalService.js` rat lon, coverage Phase 4 con thap vi moi phu cac guard/status/payment co ban.
+- Chua test complete grooming tao invoice de dam bao khong tao invoice/item trung.
+- Chua test boarding checkout tao invoice va tinh phi phong/food/service.
+- Chua test boarding daily status backend voi photo upload va notification.
+- Chua test boarding room CRUD va approve/check-in boarding booking.
+- Chua test walk-in appointment flow.
+- Chua test route-level staff API bang Supertest.
+- Chua test StaffPortal UI states: loading, error, empty table, modal actions.
+
+## 9. Danh gia Phase 4
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Critical staff tests pass | Dat |
+| Backend Phase 4 pass rate | Dat, 100% |
+| Frontend Phase 4 pass rate | Dat, 100% |
+| Staff appointment guard coverage | Dat co ban |
+| Payment idempotency coverage | Dat co ban |
+| Grooming in-progress coverage | Dat co ban |
+| Boarding coverage | Chua dat, can follow-up |
+| Rui ro staff status transition | Thap den trung binh |
+| Rui ro boarding/payment invoice integration | Trung binh den cao |
+
+Ket luan: Phase 4 da xac nhan cac guard va API contract co ban cua staff operations. Co the chuyen sang Phase 5, nhung can follow-up rieng cho boarding checkout, complete grooming invoice, route tests va StaffPortal component tests.
+
+## 10. Follow-up truoc demo/E2E
+
+- Backend test cho `completeGroomingAppointment` tao invoice va khong tao trung.
+- Backend test cho boarding approve/check-in/checkout trong `boardingService`.
+- Backend test cho `updateBoardingDailyStatusWithPhoto` gom upload anh va notification.
+- Route tests cho `/api/staff/*` bang Supertest voi role guard.
+- Frontend tests cho boarding rooms, checkout, walk-in helpers va specialist queue/service order endpoints.
+- Component tests cho StaffPortal table actions va modal confirmation.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi nghiep vu can sua trong Phase 4. Chi co mot dieu chinh expectation trong test profile: role label thuc te cua staff la `Nhan vien cham soc`, nen test duoc cap nhat theo behavior hien tai.

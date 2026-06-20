@@ -1,0 +1,199 @@
+---
+title: "Phase 08E Doctor Service And Route Coverage"
+description: "Bao cao kiem thu mo rong doctor service va doctor routes."
+---
+
+# Phase 08E Doctor Service And Route Coverage
+
+Phase 8E tiep tuc follow-up cua Phase 5. Muc tieu la tang coverage cho `doctorService.js` va them Supertest route coverage cho cac endpoint doctor quan trong.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- `getDoctorStats`: tinh KPI, completion rate, average rating, top services, recent patients tu appointments/reviews.
+- `getDoctorSettings`: map doctor profile, group contiguous schedule slots, persist default settings khi chua co stored setting.
+- `getDoctorExamContext`: build appointment, pet, vaccination, visit history va initial form cho man hinh kham.
+- `listDoctorRecords`: map medical records voi diagnosis, disease rows, services va prescription items.
+- `saveDoctorSettings`: merge notification/security patch vao stored settings.
+- `GET /api/doctor/appointments`: route goi doctor appointment portal service.
+- `GET /api/doctor/stats`, `/records`, `/exam/:appointmentId`, `/settings` va `PUT /settings`: route mapping service/body/query/user-agent.
+- Doctor appointment route reject `403` khi auth context khong co `doctorId`.
+
+Ngoai pham vi Phase 8E:
+
+- Chua test follow-up appointment success/conflict trong route `exam-complete`.
+- Chua test urgent alert backend chi tiet.
+- Chua test specialist service order backend chi tiet.
+- Chua test React component doctor portal/exam form.
+- Chua test real Prisma/Supabase DB integration.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/doctorService.test.js
+backend/tests/routes/doctorRoutes.test.js
+```
+
+Production code lien quan:
+
+```text
+backend/src/services/doctor/doctorService.js
+backend/src/routes/doctorProfileRoutes.js
+backend/src/routes/doctorAppointmentRoutes.js
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8E theo AAA.
+
+Example:
+
+```js
+test("GET /api/doctor/records forwards filters to doctor record service", async () => {
+  // Arrange
+  listDoctorRecords.mockResolvedValueOnce(records);
+
+  // Act
+  const response = await request(app)
+    .get("/api/doctor/records")
+    .query({ search: "milo", species: "Dog" });
+
+  // Assert
+  expect(response.status).toBe(200);
+  expect(listDoctorRecords).toHaveBeenCalledWith(doctorId, {
+    search: "milo",
+    species: "Dog",
+  });
+});
+```
+
+## 4. Mock data
+
+Backend unit tests mock:
+
+- Supabase client.
+- Settings service.
+- Doctor appointment rows.
+- Doctor profile, schedules, appointments, vaccinations, medical visits, diseases, prescriptions, prescription items and services.
+
+Backend route tests mock:
+
+- `authMiddleware` voi doctor auth context.
+- `doctorAppointmentService`.
+- `doctorService`.
+- Real `requireRole("doctor")` van duoc dung qua route stack.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Targeted suites | 2 passed / 2 total |
+| Targeted tests | 12 passed / 12 total |
+| Test suites | 20 passed / 20 total |
+| Test cases | 132 passed / 132 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend regression:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 60 passed / 60 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- doctorService doctorRoutes
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8E:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 52.21% |
+| Branches | 42.23% |
+| Functions | 48.91% |
+| Lines | 52.21% |
+
+Doctor-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/doctor/doctorService.js` | 90.92% | 36.76% | 87.5% | 90.92% |
+| `backend/src/services/doctor/doctorAppointmentService.js` | 81.72% | 47.05% | 77.77% | 81.72% |
+| `backend/src/services/doctor/doctorExamCompletionService.js` | 66.76% | 34% | 71.42% | 66.76% |
+| `backend/src/routes/doctorProfileRoutes.js` | 50.33% | 31.25% | 0% | 50.33% |
+| `backend/src/routes/doctorAppointmentRoutes.js` | 13.66% | 75% | 1.53% | 13.66% |
+
+Frontend coverage khong thay doi ve scope Phase 8E:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 87.61% |
+| Branches | 67.39% |
+| Functions | 79.31% |
+| Lines | 88.01% |
+
+## 7. He thong da lam tot
+
+- Doctor stats co the tong hop appointments thanh KPI, trend, service ranking, species pie va recent patients.
+- Doctor settings co default profile/schedule/notifications/security va co co che persist default preferences.
+- Lich lam viec doctor duoc group tu cac slot lien tiep thanh mot window de UI hien thi gon hon.
+- Exam context gom du thong tin appointment, pet, vaccination, history va initial form.
+- Doctor records map duoc diagnosis, disease/system results, service va prescription items.
+- Route layer truyen dung doctor id, query params, body patch va user-agent vao service layer.
+- Route appointment doctor chan user doctor thieu `doctorId` bang `403`.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Branch coverage cua `doctorService.js` con thap do chua test nhieu fallback/mojibake/error branches.
+- `doctorAppointmentRoutes.js` van rat lon va route coverage con thap, do Phase 8E moi cover root appointment route va profile-route group.
+- Chua test backend specialist service order routes.
+- Chua test urgent alert route chi tiet.
+- Chua test follow-up appointment success/conflict trong `exam-complete`.
+- Chua test React doctor portal/exam form.
+
+## 9. Danh gia Phase 8E
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Doctor service deep tests pass | Dat |
+| Doctor route tests pass | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend regression pass rate | Dat, 100% |
+| `doctorService.js` statement coverage | Tang len 90.92% |
+| Doctor route mapping coverage | Dat co ban |
+| Follow-up scheduling coverage | Chua dat |
+| Specialist/urgent route coverage | Chua dat |
+| Rui ro con lai | Trung binh |
+
+## 10. Follow-up
+
+Follow-up con lai:
+
+- `Phase 8E-2 Doctor Follow-up And Specialist Routes`: follow-up appointment success/conflict, urgent alert va specialist service orders.
+- Doctor exam form/component tests bang React Testing Library.
+- Real DB integration cho exam completion/follow-up appointment.
+- Paid/existing invoice item branches trong doctor exam completion.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi production code can sua trong Phase 8E. Phase nay chi bo sung test va tai lieu.

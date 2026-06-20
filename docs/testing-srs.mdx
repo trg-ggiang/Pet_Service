@@ -1,0 +1,438 @@
+---
+title: "Yêu cầu kiểm thử hệ thống"
+description: "Đặc tả phạm vi, kịch bản và tiêu chí kiểm thử cho Pet Service."
+---
+
+# Yêu cầu kiểm thử hệ thống Pet Service
+
+## 1. Mục đích
+
+Tài liệu này mô tả các yêu cầu kiểm thử ở mức SRS cho hệ thống Pet Service. Mục tiêu là xác minh các chức năng chính hoạt động đúng theo vai trò, dữ liệu được bảo vệ, trạng thái nghiệp vụ chuyển đổi hợp lệ và các luồng xuyên suốt không làm sai lệch dữ liệu.
+
+Tài liệu hiện được trình bày dưới dạng kịch bản kiểm thử văn bản. Việc lựa chọn công cụ, viết mã kiểm thử tự động và tổ chức chạy kiểm thử sẽ được mô tả trong Test Plan riêng khi cần.
+
+## 2. Phạm vi kiểm thử
+
+| Mã phạm vi | Phân hệ | Nội dung chính | Mức ưu tiên |
+| --- | --- | --- | --- |
+| TS-01 | Xác thực và phân quyền | Đăng ký, đăng nhập, đặt lại mật khẩu, token và quyền theo vai trò | Rất cao |
+| TS-02 | Hồ sơ khách hàng | Xem và cập nhật thông tin chủ nuôi | Cao |
+| TS-03 | Hồ sơ thú cưng | Thêm, xem, cập nhật và giới hạn quyền sở hữu | Rất cao |
+| TS-04 | Lịch hẹn | Đặt lịch, đổi lịch, hủy lịch, giữ khung giờ và chuyển trạng thái | Rất cao |
+| TS-05 | Khám bệnh | Tiếp tục khám sau check-in, lưu bệnh án, đơn thuốc và hoàn thành khám | Rất cao |
+| TS-06 | Grooming | Tiếp nhận, thực hiện, hoàn thành và tạo hóa đơn | Cao |
+| TS-07 | Boarding | Đặt phòng, check-in, chăm sóc hằng ngày và checkout | Cao |
+| TS-08 | Hóa đơn và thanh toán | Tạo hóa đơn, chống trùng, thanh toán và tải PDF | Rất cao |
+| TS-09 | Thông báo | Xem, đánh dấu đã đọc, xóa và giới hạn theo người dùng | Trung bình |
+| TS-10 | Quản trị | Người dùng, dịch vụ, lịch bác sĩ, báo cáo và cài đặt | Cao |
+
+## 3. Vai trò tham gia
+
+| Vai trò | Trách nhiệm trong hệ thống |
+| --- | --- |
+| Customer | Quản lý hồ sơ, thú cưng, lịch hẹn, boarding, thông báo và lịch sử dịch vụ |
+| Staff | Tiếp nhận lịch hẹn, thực hiện grooming, chăm sóc boarding và thu tiền |
+| Doctor | Xem lịch đã được staff check-in, tiếp tục khám, lập bệnh án, kê đơn và hoàn thành khám |
+| Admin | Quản lý người dùng, nhân sự, dịch vụ, lịch làm việc, báo cáo và cài đặt |
+
+## 4. Quy ước và điều kiện chung
+
+- Mỗi test case phải có mã duy nhất và liên kết với một yêu cầu chức năng.
+- Kết quả thực tế phải được đối chiếu với kết quả mong đợi và ghi nhận `Pass` hoặc `Fail`.
+- Dữ liệu kiểm thử phải dùng tài khoản và thông tin giả lập, không dùng thông tin bí mật hoặc dữ liệu cá nhân thật.
+- Kiểm thử quyền sở hữu phải sử dụng ít nhất hai customer khác nhau.
+- Kiểm thử lịch bác sĩ phải có cả khung giờ `AVAILABLE` và khung giờ đã `BOOKED`.
+- Các thao tác tạo hóa đơn phải được chạy lặp lại để xác minh hệ thống không tạo hóa đơn hoặc dòng hóa đơn trùng.
+- Ngày giờ sử dụng trong test phải căn cứ theo múi giờ vận hành của hệ thống.
+
+## 5. Dữ liệu kiểm thử tối thiểu
+
+| Mã dữ liệu | Dữ liệu cần chuẩn bị |
+| --- | --- |
+| TD-01 | Một tài khoản hoạt động cho mỗi vai trò Customer, Staff, Doctor và Admin |
+| TD-02 | Một tài khoản Customer bị khóa |
+| TD-03 | Hai customer, mỗi người có ít nhất một thú cưng |
+| TD-04 | Một bác sĩ có khung giờ trống và một khung giờ đã được đặt |
+| TD-05 | Dịch vụ MEDICAL, GROOMING và BOARDING đang hoạt động |
+| TD-06 | Một phòng boarding khả dụng, một phòng bảo trì và một phòng đã bị đặt trùng thời gian |
+| TD-07 | Một lịch hẹn ở mỗi trạng thái cần kiểm tra: PENDING, CONFIRMED, IN_PROGRESS và COMPLETED |
+| TD-08 | Một hóa đơn UNPAID và một hóa đơn PAID |
+
+## 6. Ma trận trạng thái chính
+
+| Đối tượng | Luồng trạng thái hợp lệ cần kiểm thử |
+| --- | --- |
+| Appointment | `PENDING -> CONFIRMED -> CHECKED_IN/IN_PROGRESS -> COMPLETED` |
+| Appointment hủy | `PENDING/CONFIRMED -> CANCELLED` |
+| Doctor schedule slot | `AVAILABLE -> BOOKED -> IN_PROGRESS -> DONE` |
+| Grooming | `PENDING -> IN_PROGRESS -> COMPLETED` |
+| Boarding | `BOOKED -> CHECKED_IN -> STAYING/CHECKED_OUT` |
+| Invoice | `DRAFT/PENDING + UNPAID -> PAID + PAID` |
+
+## 7. Kịch bản kiểm thử xác thực và phân quyền
+
+| ID | Yêu cầu | Tiền điều kiện | Bước/Dữ liệu kiểm thử | Kết quả mong đợi | Ưu tiên |
+| --- | --- | --- | --- | --- | --- |
+| TC-AUTH-01 | Người dùng đăng nhập bằng thông tin hợp lệ | Tài khoản ACTIVE tồn tại | Nhập đúng email và mật khẩu | Đăng nhập thành công, trả về thông tin người dùng và phiên xác thực | Cao |
+| TC-AUTH-02 | Từ chối mật khẩu sai | Tài khoản tồn tại | Nhập đúng email, sai mật khẩu | Không tạo phiên; hiển thị thông báo email hoặc mật khẩu không đúng | Cao |
+| TC-AUTH-03 | Từ chối tài khoản bị khóa | Tài khoản có trạng thái LOCKED | Đăng nhập bằng thông tin đúng | Không đăng nhập; hiển thị thông báo tài khoản bị khóa/chưa kích hoạt | Cao |
+| TC-AUTH-04 | Kiểm tra trường bắt buộc khi đăng nhập | Không có | Bỏ trống email hoặc mật khẩu | Yêu cầu bị từ chối và thông báo nhập đủ dữ liệu | Trung bình |
+| TC-AUTH-05 | Đăng ký customer mới | Email chưa tồn tại, mật khẩu hợp lệ | Gửi thông tin đăng ký hợp lệ | Tạo User vai trò CUSTOMER và hồ sơ Customer tương ứng | Cao |
+| TC-AUTH-06 | Không cho đăng ký email trùng | Email đã tồn tại | Đăng ký lại cùng email | Không tạo thêm tài khoản; trả thông báo email đã được sử dụng | Cao |
+| TC-AUTH-07 | Đặt lại mật khẩu bằng OTP hợp lệ | Email tồn tại và OTP chưa hết hạn | Yêu cầu OTP, xác minh và đặt mật khẩu mới từ 8 ký tự | Mật khẩu được cập nhật; phiên đăng nhập cũ mất hiệu lực | Cao |
+| TC-AUTH-08 | Từ chối OTP sai hoặc hết hạn | Có yêu cầu đặt lại mật khẩu | Gửi OTP sai/hết hạn | Không đổi mật khẩu; trả thông báo mã không hợp lệ hoặc hết hạn | Cao |
+| TC-AUTH-09 | API bảo vệ yêu cầu Bearer token | Không gửi token | Gọi một API customer/doctor/staff/admin | Trả HTTP 401; dữ liệu không bị thay đổi | Cao |
+| TC-AUTH-10 | Phân quyền theo vai trò | Customer đã đăng nhập | Customer gọi API `/api/admin`, `/api/doctor` hoặc `/api/staff` | Trả HTTP 403; không lộ dữ liệu của vai trò khác | Cao |
+
+## 8. Kịch bản kiểm thử hồ sơ khách hàng và thú cưng
+
+| ID | Yêu cầu | Tiền điều kiện | Bước/Dữ liệu kiểm thử | Kết quả mong đợi | Ưu tiên |
+| --- | --- | --- | --- | --- | --- |
+| TC-PRO-01 | Customer xem hồ sơ của mình | Customer đã đăng nhập | Mở trang hồ sơ hoặc gọi GET profile | Hiển thị đúng họ tên, email, điện thoại, địa chỉ, ngày sinh, giới tính và tuổi | Cao |
+| TC-PRO-02 | Customer cập nhật hồ sơ hợp lệ | Customer đã đăng nhập | Sửa họ tên, điện thoại, địa chỉ, ngày sinh và giới tính | Dữ liệu được lưu và hiển thị lại đúng | Cao |
+| TC-PRO-03 | Email không được sửa qua hồ sơ | Customer đã đăng nhập | Gửi email mới trong yêu cầu PATCH profile | Email đăng nhập không thay đổi | Cao |
+| TC-PRO-04 | Kiểm tra ngày sinh không hợp lệ | Customer đã đăng nhập | Nhập ngày sai định dạng hoặc ngày tương lai | Không cập nhật; hiển thị lỗi kiểm tra dữ liệu | Trung bình |
+| TC-PET-01 | Customer tạo thú cưng | Customer đã đăng nhập | Nhập dữ liệu thú cưng hợp lệ | Tạo hồ sơ và liên kết đúng customer | Cao |
+| TC-PET-02 | Kiểm tra dữ liệu bắt buộc của thú cưng | Customer đã đăng nhập | Bỏ trống tên hoặc dữ liệu bắt buộc | Không tạo hồ sơ; hiển thị lỗi trường tương ứng | Cao |
+| TC-PET-03 | Customer cập nhật thú cưng của mình | Thú cưng thuộc customer | Sửa thông tin hợp lệ | Dữ liệu được cập nhật và giữ nguyên chủ sở hữu | Cao |
+| TC-PET-04 | Customer không xem thú cưng của người khác | Có customer A, B và pet của B | Customer A gọi chi tiết pet của B | Yêu cầu bị từ chối hoặc trả không tìm thấy; không lộ dữ liệu | Cao |
+| TC-PET-05 | Customer không sửa thú cưng của người khác | Có customer A, B và pet của B | Customer A gửi PUT cho pet của B | Không cập nhật dữ liệu; trả lỗi quyền truy cập | Cao |
+
+## 9. Kịch bản kiểm thử lịch hẹn
+
+| ID | Yêu cầu | Tiền điều kiện | Bước/Dữ liệu kiểm thử | Kết quả mong đợi | Ưu tiên |
+| --- | --- | --- | --- | --- | --- |
+| TC-APT-01 | Customer đặt lịch khám hợp lệ | Pet thuộc customer; bác sĩ có slot AVAILABLE trong tương lai | Chọn MEDICAL, pet, bác sĩ, ngày và giờ hợp lệ | Tạo appointment PENDING và chuyển slot sang BOOKED | Rất cao |
+| TC-APT-02 | Không đặt lịch cho pet của người khác | Có pet thuộc customer khác | Gửi yêu cầu đặt lịch bằng pet đó | Không tạo lịch; trả lỗi quyền sở hữu/không tìm thấy | Rất cao |
+| TC-APT-03 | Không đặt lịch trong quá khứ | Customer đã đăng nhập | Chọn ngày hoặc giờ đã qua | Không tạo lịch; hiển thị lỗi thời gian | Cao |
+| TC-APT-04 | Không đặt slot bác sĩ đã bận | Slot đã BOOKED hoặc bác sĩ có lịch cùng giờ | Gửi yêu cầu đặt lịch vào slot đó | Không tạo lịch; yêu cầu chọn khung giờ khác | Rất cao |
+| TC-APT-05 | Xử lý hai yêu cầu đặt cùng slot | Slot ban đầu AVAILABLE | Gửi gần đồng thời hai yêu cầu vào cùng slot | Chỉ một yêu cầu thành công; không có hai lịch cùng slot | Rất cao |
+| TC-APT-06 | Customer xem danh sách lịch của mình | Customer có nhiều lịch | Lọc theo trạng thái, pet, loại dịch vụ và phân trang | Chỉ trả lịch thuộc pet của customer; tổng và bộ lọc chính xác | Cao |
+| TC-APT-07 | Customer đổi lịch PENDING/CONFIRMED | Có lịch hợp lệ và slot mới AVAILABLE | Chọn thời gian mới trong tương lai | Lịch chuyển sang slot mới; slot cũ AVAILABLE, slot mới BOOKED | Rất cao |
+| TC-APT-08 | Không đổi lịch đã bắt đầu/hoàn thành | Lịch IN_PROGRESS hoặc COMPLETED | Gửi yêu cầu đổi lịch | Yêu cầu bị từ chối; lịch và slot không thay đổi | Cao |
+| TC-APT-09 | Customer hủy lịch PENDING | Lịch PENDING có slot bác sĩ | Gửi lý do hủy | Lịch thành CANCELLED; lưu lý do; slot được trả về AVAILABLE | Rất cao |
+| TC-APT-10 | Không hủy lịch đã bắt đầu/hoàn thành | Lịch IN_PROGRESS hoặc COMPLETED | Gửi yêu cầu hủy | Yêu cầu bị từ chối; trạng thái không thay đổi | Cao |
+| TC-APT-11 | Staff xác nhận/check-in lịch chờ | Lịch PENDING | Staff thực hiện check-in/xác nhận | Lịch chuyển sang trạng thái nghiệp vụ tiếp theo và gán staff phù hợp | Cao |
+| TC-APT-12 | Không check-in lặp lại sai trạng thái | Lịch không còn PENDING | Staff gọi lại thao tác check-in | Yêu cầu bị từ chối; không ghi đè dữ liệu | Cao |
+
+## 10. Kịch bản kiểm thử khám bệnh
+
+| ID | Yêu cầu | Tiền điều kiện | Bước/Dữ liệu kiểm thử | Kết quả mong đợi | Ưu tiên |
+| --- | --- | --- | --- | --- | --- |
+| TC-MED-01 | Doctor chỉ xem lịch được phân công | Có lịch của doctor A và B | Doctor A truy cập lịch của B | Yêu cầu bị từ chối hoặc trả không tìm thấy | Rất cao |
+| TC-MED-02 | Doctor chỉ tiếp tục khám sau check-in | Lịch thuộc doctor | Thử mở/lưu phiếu khi CONFIRMED, sau đó để staff check-in và thử lại | Trước check-in bị từ chối; sau check-in appointment đã IN_PROGRESS và doctor lưu được phiếu khám | Rất cao |
+| TC-MED-03 | Doctor tải ngữ cảnh khám | Lịch thuộc doctor | Mở màn hình khám | Hiển thị đúng pet, chủ nuôi, vaccine, lịch sử và dữ liệu ban đầu | Cao |
+| TC-MED-04 | Lưu và hoàn thành bệnh án | Lịch IN_PROGRESS | Nhập triệu chứng, chỉ số, chẩn đoán, kết luận và đơn thuốc hợp lệ | Lưu medical visit/prescription; appointment COMPLETED; slot DONE | Rất cao |
+| TC-MED-05 | Không hoàn thành lịch sai trạng thái | Lịch PENDING hoặc COMPLETED | Gọi hoàn thành khám trực tiếp | Yêu cầu bị từ chối hoặc không tạo bản ghi trùng | Cao |
+| TC-MED-06 | Hoàn thành khám tạo hóa đơn | Có dịch vụ khám trên lịch | Hoàn thành khám | Tạo/cập nhật đúng một hóa đơn UNPAID với số tiền dịch vụ | Rất cao |
+| TC-MED-07 | Gửi cảnh báo khẩn cấp | Lịch thuộc doctor và có chủ nuôi | Doctor gửi nội dung cảnh báo | Tạo thông báo cho đúng customer; customer khác không nhận được | Cao |
+
+## 11. Kịch bản kiểm thử grooming và boarding
+
+| ID | Yêu cầu | Tiền điều kiện | Bước/Dữ liệu kiểm thử | Kết quả mong đợi | Ưu tiên |
+| --- | --- | --- | --- | --- | --- |
+| TC-GRM-01 | Staff bắt đầu grooming | Grooming PENDING | Chuyển sang IN_PROGRESS | Grooming, appointment và service liên quan được đồng bộ trạng thái | Cao |
+| TC-GRM-02 | Staff hoàn thành grooming | Grooming IN_PROGRESS | Chuyển sang COMPLETED | Grooming và appointment hoàn thành; thời điểm hoàn thành được lưu | Cao |
+| TC-GRM-03 | Hoàn thành grooming tạo một hóa đơn | Grooming IN_PROGRESS có dịch vụ | Thực hiện hoàn thành hai lần | Chỉ tồn tại một hóa đơn/dòng hóa đơn tương ứng | Rất cao |
+| TC-BRD-01 | Customer đặt phòng hợp lệ | Pet thuộc customer; phòng khả dụng | Chọn check-in tương lai và check-out sau check-in | Tạo appointment PENDING và boarding BOOKED | Cao |
+| TC-BRD-02 | Không đặt ngày boarding sai | Customer đã đăng nhập | Check-in quá khứ hoặc check-out không sau check-in | Không tạo booking; hiển thị lỗi ngày | Cao |
+| TC-BRD-03 | Không đặt phòng bảo trì hoặc trùng thời gian | Phòng MAINTENANCE hoặc đã có booking giao nhau | Gửi yêu cầu đặt phòng | Không tạo booking; yêu cầu chọn phòng/thời gian khác | Rất cao |
+| TC-BRD-04 | Staff check-in boarding | Boarding BOOKED/đã được duyệt | Thực hiện check-in | Boarding CHECKED_IN; cage OCCUPIED; appointment IN_PROGRESS | Cao |
+| TC-BRD-05 | Cập nhật chăm sóc hằng ngày | Boarding CHECKED_IN/STAYING | Cập nhật bữa ăn, vận động, kiểm tra sức khỏe, ghi chú và ảnh | Chỉ bản ghi của ngày hiện tại được tạo/cập nhật; lịch sử ngày trước giữ nguyên | Cao |
+| TC-BRD-06 | Checklist sang ngày mới | Có daily update của ngày trước | Mở portal vào ngày tiếp theo | Checklist hiện tại được đặt lại; vẫn xem được lịch sử cũ | Cao |
+| TC-BRD-07 | Checkout boarding hợp lệ | Boarding CHECKED_IN/STAYING | Staff thực hiện checkout | Boarding CHECKED_OUT; phòng được giải phóng theo luồng; tạo/cập nhật hóa đơn | Rất cao |
+| TC-BRD-08 | Không checkout sai trạng thái | Boarding BOOKED hoặc CHECKED_OUT | Thực hiện checkout | Yêu cầu bị từ chối; không tạo hóa đơn sai | Cao |
+
+## 12. Kịch bản kiểm thử hóa đơn, thông báo và quản trị
+
+| ID | Yêu cầu | Tiền điều kiện | Bước/Dữ liệu kiểm thử | Kết quả mong đợi | Ưu tiên |
+| --- | --- | --- | --- | --- | --- |
+| TC-INV-01 | Staff xem danh sách hóa đơn cần thu | Có hóa đơn UNPAID và PAID | Mở tab thanh toán | Hiển thị đúng hóa đơn, customer, dịch vụ, tổng tiền và trạng thái | Cao |
+| TC-INV-02 | Staff xác nhận thanh toán | Hóa đơn UNPAID | Chọn phương thức và xác nhận | paymentStatus và invoice status thành PAID; lưu thời điểm thanh toán | Rất cao |
+| TC-INV-03 | Thanh toán lặp lại không làm sai dữ liệu | Hóa đơn đã PAID | Gọi lại thao tác thanh toán | Không thu tiền/tạo bản ghi lần hai; trạng thái giữ nguyên | Rất cao |
+| TC-INV-04 | Customer chỉ tải hóa đơn của mình | Có hóa đơn thuộc customer A và B | A yêu cầu PDF hóa đơn của B | Yêu cầu bị từ chối hoặc trả không tìm thấy | Rất cao |
+| TC-INV-05 | PDF hóa đơn chứa dữ liệu đúng | Hóa đơn thuộc customer, có item | Tải PDF | PDF tải thành công; đúng mã, pet, dịch vụ, số tiền và trạng thái | Cao |
+| TC-NOT-01 | Customer xem thông báo của mình | Có thông báo cho hai customer | Customer A mở danh sách | Chỉ hiển thị thông báo của A; tổng chưa đọc chính xác | Cao |
+| TC-NOT-02 | Đánh dấu và xóa thông báo | Có thông báo chưa đọc thuộc customer | Đánh dấu một/tất cả đã đọc, sau đó xóa một thông báo | Trạng thái và số lượng cập nhật chính xác | Trung bình |
+| TC-NOT-03 | Không thao tác thông báo người khác | Customer A biết ID thông báo của B | A gửi read/delete cho ID của B | Không thay đổi thông báo của B | Cao |
+| TC-ADM-01 | Admin khóa/mở khóa tài khoản | Admin đăng nhập; user mục tiêu tồn tại | Thay đổi trạng thái khóa | Trạng thái cập nhật; tài khoản khóa không đăng nhập được | Cao |
+| TC-ADM-02 | Admin quản lý dịch vụ | Admin đăng nhập | Tạo, sửa và vô hiệu hóa dịch vụ | Danh mục cập nhật; dịch vụ vô hiệu hóa không xuất hiện trong lựa chọn đặt lịch | Cao |
+| TC-ADM-03 | Admin tạo lịch làm việc bác sĩ | Doctor profile tồn tại | Lưu khoảng làm việc hợp lệ | Sinh các slot 30 phút đúng thời gian và không tạo slot trùng | Cao |
+| TC-ADM-04 | Báo cáo phản ánh dữ liệu nghiệp vụ | Có lịch COMPLETED/CANCELLED và hóa đơn PAID/UNPAID | Mở báo cáo | Tổng lịch, doanh thu, dịch vụ và hiệu suất được tính đúng theo dữ liệu | Cao |
+
+## 13. Kịch bản kiểm thử xuyên suốt
+
+| ID | Luồng | Các bước chính | Tiêu chí đạt |
+| --- | --- | --- | --- |
+| TC-E2E-01 | Khám bệnh hoàn chỉnh | Customer đăng nhập -> tạo pet -> đặt lịch khám -> staff tiếp nhận/check-in -> doctor tiếp tục khám -> lập bệnh án và hoàn thành -> staff thu tiền -> customer xem lịch sử và tải PDF | Mọi trạng thái chuyển đúng; slot không bị đặt trùng; bệnh án, hóa đơn và lịch sử liên kết cùng appointment |
+| TC-E2E-02 | Grooming hoàn chỉnh | Customer đặt grooming -> staff tiếp nhận -> bắt đầu -> hoàn thành -> thu tiền -> customer xem lịch sử | Chỉ tạo một grooming record và một hóa đơn; số tiền đúng dịch vụ |
+| TC-E2E-03 | Boarding hoàn chỉnh | Customer đặt phòng -> staff duyệt/check-in -> cập nhật chăm sóc nhiều ngày -> checkout -> thu tiền | Không trùng phòng; nhật ký tách theo ngày; hóa đơn tính đúng; phòng được giải phóng |
+| TC-E2E-04 | Hủy/đổi lịch | Customer đặt lịch -> đổi sang slot mới -> hủy lịch | Slot cũ và slot cuối cùng đều được giải phóng đúng; không còn appointment hoạt động tại slot đã hủy |
+
+## 14. Kiểm thử phi chức năng
+
+| ID | Nhóm | Yêu cầu kiểm thử | Tiêu chí chấp nhận đề xuất |
+| --- | --- | --- | --- |
+| TC-NFR-01 | Hiệu năng | Tải danh sách lịch hẹn, pet, hóa đơn và báo cáo | Phản hồi thông thường trong tối đa 3 giây với dữ liệu demo |
+| TC-NFR-02 | Đồng thời | Nhiều customer đặt cùng slot/phòng | Không phát sinh đặt trùng hoặc dữ liệu mồ côi |
+| TC-NFR-03 | Bảo mật | Thay đổi ID trên URL/body để truy cập dữ liệu người khác | Mọi API nhạy cảm kiểm tra vai trò và quyền sở hữu ở backend |
+| TC-NFR-04 | Phiên đăng nhập | Token sai, hết hạn hoặc bị vô hiệu sau đổi mật khẩu | Trả 401 và yêu cầu đăng nhập lại |
+| TC-NFR-05 | Khả dụng | Form hiển thị lỗi dữ liệu | Thông báo lỗi rõ ràng, gắn với thao tác và không làm mất dữ liệu hợp lệ đã nhập |
+| TC-NFR-06 | Tương thích | Giao diện trên desktop và mobile | Các luồng chính dùng được, không che nút thao tác hoặc tràn nội dung |
+| TC-NFR-07 | Toàn vẹn dữ liệu | Lỗi xảy ra giữa thao tác giữ slot và tạo lịch | Slot được rollback về AVAILABLE; không còn bản ghi một phần |
+
+## 15. Tiêu chí bắt đầu và kết thúc
+
+### Tiêu chí bắt đầu
+
+- Môi trường frontend, backend và PostgreSQL/Supabase hoạt động.
+- Schema và dữ liệu kiểm thử đã được chuẩn bị.
+- Có tài khoản cho đủ bốn vai trò.
+- Các API thuộc phạm vi kiểm thử đã được triển khai và truy cập được.
+
+### Tiêu chí kết thúc
+
+- 100% test case ưu tiên Rất cao đã được thực hiện.
+- Không còn lỗi nghiêm trọng làm sai quyền truy cập, đặt trùng lịch/phòng, mất bệnh án hoặc sai thanh toán.
+- Ít nhất 95% test case ưu tiên Cao đạt; các lỗi còn lại có đánh giá ảnh hưởng và kế hoạch xử lý.
+- Các luồng `TC-E2E-01` đến `TC-E2E-04` đều đạt.
+- Kết quả kiểm thử và bằng chứng được lưu cùng phiên bản build đã kiểm tra.
+
+## 16. Mẫu ghi nhận kết quả
+
+| Test Case ID | Ngày chạy | Người kiểm thử | Môi trường/Build | Kết quả thực tế | Trạng thái | Mã lỗi |
+| --- | --- | --- | --- | --- | --- | --- |
+| TC-XXX-00 | YYYY-MM-DD | Tên người kiểm thử | Local/Staging + version | Mô tả kết quả quan sát được | Pass/Fail/Blocked | BUG-XXX hoặc N/A |
+
+## 17. Bộ dữ liệu demo chuẩn
+
+### 17.1 Nguyên tắc sử dụng
+
+- Bộ dữ liệu dưới đây là dữ liệu giả lập dành cho demo và kiểm thử, không phải thông tin đăng nhập sản xuất.
+- Các mã `USR-*`, `PET-*`, `SVC-*` và `SLOT-*` là mã tham chiếu trong tài liệu, không bắt buộc trùng với khóa chính tự tăng trong PostgreSQL.
+- Trước buổi demo, nhóm kiểm thử cần tạo hoặc đặt lại mật khẩu các tài khoản thành `Demo@12345`. Không đưa mật khẩu này vào môi trường production.
+- Các ngày demo được chọn sau ngày soạn tài liệu 13/06/2026. Nếu chạy sau tháng 7/2026, thay toàn bộ ngày bằng ngày tương lai tương đương.
+- Khi một case làm thay đổi dữ liệu, cần khôi phục trạng thái ban đầu hoặc dùng bản ghi mới trước khi chạy case tiếp theo.
+
+### 17.2 Tài khoản demo
+
+| Mã | Vai trò | Email | Mật khẩu demo | Họ tên | Trạng thái | Mục đích |
+| --- | --- | --- | --- | --- | --- | --- |
+| USR-ADM-01 | ADMIN | `admin@petservice.local` | `Demo@12345` | Quản trị hệ thống | ACTIVE | Quản lý toàn hệ thống |
+| USR-CUS-01 | CUSTOMER | `minh.nguyen@example.com` | `Demo@12345` | Nguyễn Văn Minh | ACTIVE | Customer chính, sở hữu Milo và Miu |
+| USR-CUS-02 | CUSTOMER | `lan.tran@example.com` | `Demo@12345` | Trần Ngọc Lan | ACTIVE | Kiểm thử phân quyền, sở hữu Bắp |
+| USR-CUS-03 | CUSTOMER | `hoa.pham@example.com` | `Demo@12345` | Phạm Minh Hòa | ACTIVE | Sở hữu Kem và Bông |
+| USR-CUS-04 | CUSTOMER | `locked.customer@example.com` | `Demo@12345` | Khách hàng bị khóa | LOCKED | Kiểm thử tài khoản khóa |
+| USR-DOC-01 | DOCTOR | `doctor.an@example.com` | `Demo@12345` | BS. Lê Hoàng An | ACTIVE | Bác sĩ nội khoa, phòng 01 |
+| USR-DOC-02 | DOCTOR | `doctor.binh@example.com` | `Demo@12345` | BS. Phạm Quang Bình | ACTIVE | Bác sĩ da liễu, phòng 02 |
+| USR-STF-01 | STAFF | `staff.thao@example.com` | `Demo@12345` | Võ Thu Thảo | ACTIVE | Tiếp nhận và grooming |
+| USR-STF-02 | STAFF | `staff.long@example.com` | `Demo@12345` | Đỗ Thanh Long | ACTIVE | Boarding và thanh toán |
+
+### 17.3 Hồ sơ customer và thú cưng
+
+| Mã | Chủ sở hữu | Tên | Loài/Giống | Giới tính | Ngày sinh | Cân nặng | Ghi chú |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PET-01 | USR-CUS-01 | Milo | Chó/Poodle | MALE | 2021-03-12 | 5.4 kg | Dị ứng nhẹ hải sản, sợ tiếng động lớn |
+| PET-02 | USR-CUS-01 | Miu | Mèo/British Shorthair | FEMALE | 2022-06-05 | 4.1 kg | Cần vệ sinh mắt hằng ngày |
+| PET-03 | USR-CUS-02 | Bắp | Chó/Corgi | MALE | 2020-10-20 | 10.2 kg | Dễ tăng cân |
+| PET-04 | USR-CUS-03 | Kem | Mèo/Persian | FEMALE | 2023-01-18 | 3.8 kg | Không dùng sữa bò |
+| PET-05 | USR-CUS-03 | Bông | Thỏ/Holland Lop | UNKNOWN | 2023-09-01 | 1.7 kg | Ăn cỏ khô mỗi ngày |
+| PET-NEW-01 | USR-CUS-01 | Đậu | Chó/Poodle | FEMALE | 2024-02-15 | 3.2 kg | Dữ liệu dùng cho thao tác tạo mới |
+
+### 17.4 Dịch vụ, phòng và lịch bác sĩ
+
+| Mã | Loại | Tên | Đơn giá | Trạng thái |
+| --- | --- | --- | ---: | --- |
+| SVC-MED-01 | MEDICAL | Khám tổng quát | 250.000 VND | ACTIVE |
+| SVC-VAC-01 | VACCINE | Tiêm vaccine 5 bệnh | 350.000 VND | ACTIVE |
+| SVC-GRM-01 | GROOMING | Tắm và cắt tỉa lông | 300.000 VND | ACTIVE |
+| SVC-BRD-01 | BOARDING | Lưu trú pet hotel 1 ngày | 180.000 VND/ngày | ACTIVE |
+| SVC-FOOD-01 | FOOD | Pate bổ sung | 45.000 VND | ACTIVE |
+| SVC-OFF-01 | OTHER | Dịch vụ thử đã tắt | 100.000 VND | INACTIVE |
+
+| Mã | Đối tượng | Dữ liệu demo | Trạng thái ban đầu |
+| --- | --- | --- | --- |
+| CAGE-01 | Phòng nhỏ | Dành cho mèo/chó nhỏ | AVAILABLE |
+| CAGE-02 | Phòng tiêu chuẩn | Dùng kiểm thử đặt trùng | AVAILABLE |
+| CAGE-03 | Phòng vệ sinh/bảo trì | Không cho đặt | MAINTENANCE |
+| CAGE-04 | Phòng rộng | Dành cho thú cưng trung bình | AVAILABLE |
+| SLOT-01 | BS. Lê Hoàng An | 2026-07-06, 09:00-09:30, Phòng 01 | AVAILABLE |
+| SLOT-02 | BS. Lê Hoàng An | 2026-07-06, 09:30-10:00, Phòng 01 | AVAILABLE |
+| SLOT-03 | BS. Phạm Quang Bình | 2026-07-07, 14:00-14:30, Phòng 02 | BOOKED |
+| SLOT-04 | BS. Phạm Quang Bình | 2026-07-07, 14:30-15:00, Phòng 02 | AVAILABLE |
+
+### 17.5 Bản ghi nghiệp vụ chuẩn bị trước
+
+| Mã | Dữ liệu | Trạng thái/giá trị ban đầu |
+| --- | --- | --- |
+| APT-PEN-01 | PET-01, SVC-MED-01, USR-DOC-01, SLOT-01 | PENDING |
+| APT-CON-01 | PET-04, SVC-MED-01, USR-DOC-02, SLOT-03 | CONFIRMED |
+| APT-MED-01 | PET-01, SVC-MED-01, USR-DOC-01 | IN_PROGRESS |
+| APT-DONE-01 | PET-01, SVC-MED-01, USR-DOC-01 | COMPLETED |
+| APT-GRM-01 | PET-02, SVC-GRM-01, USR-STF-01 | PENDING; grooming PENDING |
+| APT-BRD-01 | PET-03, CAGE-02, 2026-07-10 đến 2026-07-13 | CONFIRMED; boarding BOOKED |
+| BRD-ACT-01 | PET-03, CAGE-02 | CHECKED_IN; 3 ngày; đơn giá 180.000 VND |
+| INV-UNP-01 | Hóa đơn khám PET-01 | Tổng 250.000 VND; UNPAID/PENDING |
+| INV-PAID-01 | Hóa đơn grooming PET-02 | Tổng 300.000 VND; PAID/PAID |
+| NOT-01 | Thông báo lịch hẹn của USR-CUS-01 | Chưa đọc |
+| NOT-02 | Thông báo thanh toán của USR-CUS-02 | Chưa đọc |
+
+## 18. Danh mục yêu cầu chức năng
+
+| Requirement ID | Yêu cầu |
+| --- | --- |
+| FR-AUTH-01 | Hệ thống xác thực tài khoản bằng email và mật khẩu, đồng thời kiểm tra trạng thái tài khoản |
+| FR-AUTH-02 | Hệ thống cho phép customer đăng ký và đặt lại mật khẩu bằng OTP |
+| FR-AUTH-03 | Hệ thống bảo vệ API bằng token và phân quyền theo vai trò |
+| FR-PRO-01 | Customer xem và cập nhật hồ sơ chủ nuôi nhưng không đổi email qua API hồ sơ |
+| FR-PET-01 | Customer tạo, xem và cập nhật thú cưng thuộc quyền sở hữu |
+| FR-APT-01 | Customer đặt lịch cho pet của mình vào thời gian và nhà cung cấp hợp lệ |
+| FR-APT-02 | Customer lọc, đổi và hủy lịch theo trạng thái cho phép |
+| FR-APT-03 | Staff tiếp nhận lịch hẹn và hệ thống ngăn đặt trùng tài nguyên |
+| FR-MED-01 | Doctor chỉ thao tác lịch được phân công và lập hồ sơ khám |
+| FR-MED-02 | Hoàn thành khám tạo/cập nhật hóa đơn và thông báo liên quan |
+| FR-GRM-01 | Staff thực hiện grooming theo đúng chuỗi trạng thái và tạo hóa đơn |
+| FR-BRD-01 | Customer đặt boarding với phòng và khoảng ngày hợp lệ |
+| FR-BRD-02 | Staff check-in, ghi nhật ký hằng ngày và checkout boarding |
+| FR-INV-01 | Staff thu tiền; customer chỉ xem/tải hóa đơn của mình |
+| FR-NOT-01 | Customer quản lý thông báo thuộc tài khoản của mình |
+| FR-ADM-01 | Admin quản lý tài khoản, dịch vụ, lịch bác sĩ và báo cáo |
+
+## 19. Kịch bản thực thi chi tiết
+
+Quy ước bước chung: bước đầu tiên của mỗi case là đăng nhập bằng tài khoản được chỉ định; bước cuối cùng là tải lại trang hoặc gọi lại API GET để xác minh dữ liệu đã lưu. Với case API, cần ghi cả HTTP status và response body.
+
+### 19.1 Xác thực và phân quyền
+
+| Test Case | Requirement | Dữ liệu | Các bước thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- | --- |
+| TC-AUTH-01 | FR-AUTH-01 | USR-CUS-01 | 1. Mở Login. 2. Nhập email và `Demo@12345`. 3. Chọn đăng nhập. | HTTP 200; chuyển đến customer portal; hiển thị Nguyễn Văn Minh. |
+| TC-AUTH-02 | FR-AUTH-01 | USR-CUS-01, mật khẩu `Sai@12345` | Đăng nhập bằng email đúng và mật khẩu sai. | HTTP 400; báo email hoặc mật khẩu không đúng; không lưu token. |
+| TC-AUTH-03 | FR-AUTH-01 | USR-CUS-04 | Đăng nhập bằng đúng email và mật khẩu demo. | HTTP 400; báo tài khoản bị khóa/chưa kích hoạt; không vào portal. |
+| TC-AUTH-04 | FR-AUTH-01 | Email rỗng; mật khẩu rỗng | Thử lần lượt bỏ trống email, mật khẩu và cả hai. | Mỗi lần đều bị từ chối; không gửi hoặc không chấp nhận yêu cầu thiếu dữ liệu. |
+| TC-AUTH-05 | FR-AUTH-02 | `demo.new.customer@example.com`, `Demo@12345`, Demo Customer | Mở Register, nhập dữ liệu hợp lệ và gửi. | HTTP 201; tạo User CUSTOMER ACTIVE và Customer profile; đăng nhập được. |
+| TC-AUTH-06 | FR-AUTH-02 | Email của USR-CUS-01 | Đăng ký bằng email đã tồn tại. | HTTP 400; báo email đã được sử dụng; số user không tăng. |
+| TC-AUTH-07 | FR-AUTH-02 | USR-CUS-01, OTP hợp lệ, mật khẩu mới `Demo@54321` | Yêu cầu OTP, nhập mã nhận được, đặt mật khẩu mới, thử token cũ và đăng nhập lại. | Đổi mật khẩu thành công; token cũ trả 401; mật khẩu mới đăng nhập được. Khôi phục `Demo@12345` sau test. |
+| TC-AUTH-08 | FR-AUTH-02 | OTP `000000` hoặc OTP đã hết hạn | Gửi xác minh/đặt lại bằng OTP sai. | HTTP 400; mật khẩu không đổi; báo mã sai hoặc hết hạn. |
+| TC-AUTH-09 | FR-AUTH-03 | Không có Authorization header | Gọi `GET /api/customer/profile`. | HTTP 401; `ok=false`; không trả dữ liệu profile. |
+| TC-AUTH-10 | FR-AUTH-03 | Token USR-CUS-01 | Gọi `GET /api/admin/dashboard`, `GET /api/doctor/profile`, `GET /api/staff/profile`. | Cả ba yêu cầu trả 403; không lộ dữ liệu nội bộ. |
+
+### 19.2 Hồ sơ khách hàng và thú cưng
+
+| Test Case | Requirement | Dữ liệu | Các bước thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- | --- |
+| TC-PRO-01 | FR-PRO-01 | USR-CUS-01 | Mở tab Hồ sơ. | Hiển thị Nguyễn Văn Minh, email đúng, điện thoại, địa chỉ, ngày sinh, giới tính và tuổi tính đúng. |
+| TC-PRO-02 | FR-PRO-01 | Điện thoại `0901888999`, địa chỉ `20 Nguyễn Huệ, Quận 1`, DOB `1990-02-18`, MALE | Cập nhật hồ sơ rồi tải lại trang. | HTTP 200; dữ liệu mới được giữ nguyên sau tải lại; header dùng tên profile hiện tại. |
+| TC-PRO-03 | FR-PRO-01 | Email thay thế `changed@example.com` | Gửi PATCH profile có thêm trường email. | Các trường cho phép được xử lý nhưng email tài khoản vẫn là `minh.nguyen@example.com`. |
+| TC-PRO-04 | FR-PRO-01 | DOB `2030-01-01` và `not-a-date` | Thử cập nhật từng giá trị. | Yêu cầu bị từ chối; ngày sinh cũ không đổi; có thông báo dữ liệu không hợp lệ. |
+| TC-PET-01 | FR-PET-01 | PET-NEW-01 | Chọn Thêm thú cưng, nhập đủ dữ liệu và lưu. | Tạo pet Đậu dưới USR-CUS-01; pet xuất hiện trong danh sách và trang chi tiết. |
+| TC-PET-02 | FR-PET-01 | Tên rỗng; loài rỗng; DOB sai | Thử tạo pet với từng dữ liệu thiếu/sai. | Không tạo bản ghi; form chỉ rõ trường lỗi; danh sách pet không tăng. |
+| TC-PET-03 | FR-PET-01 | PET-NEW-01, cân nặng 3.5 kg, ghi chú `Đã tiêm phòng` | Mở chi tiết, sửa và lưu. | Dữ liệu cập nhật đúng; `customer_id` không đổi. |
+| TC-PET-04 | FR-PET-01 | Token USR-CUS-01, ID PET-03 | Gọi `GET /api/customer/pets/:petId` với pet của USR-CUS-02. | HTTP 403/404; response không chứa hồ sơ Bắp. |
+| TC-PET-05 | FR-PET-01 | Token USR-CUS-01, ID PET-03, tên `Bắp bị sửa` | Gọi PUT pet của USR-CUS-02. | Bị từ chối; PET-03 vẫn tên Bắp và vẫn thuộc USR-CUS-02. |
+
+### 19.3 Lịch hẹn
+
+| Test Case | Requirement | Dữ liệu | Các bước thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- | --- |
+| TC-APT-01 | FR-APT-01 | USR-CUS-01, PET-01, SVC-MED-01, SLOT-01 | Mở Đặt lịch, chọn dữ liệu và xác nhận. | Tạo appointment PENDING; doctor là USR-DOC-01; SLOT-01 thành BOOKED. |
+| TC-APT-02 | FR-APT-01 | USR-CUS-01, PET-03, SLOT-02 | Gửi yêu cầu đặt lịch dùng pet của USR-CUS-02. | HTTP 403/404; không tạo appointment; SLOT-02 vẫn AVAILABLE. |
+| TC-APT-03 | FR-APT-01 | Ngày `2026-06-01`, giờ `09:00` | Thử tìm provider và đặt lịch trong quá khứ. | Bị từ chối trước khi tạo lịch; thông báo phải chọn thời gian tương lai. |
+| TC-APT-04 | FR-APT-03 | SLOT-03 đã BOOKED | Chọn đúng bác sĩ/ngày/giờ của SLOT-03. | Slot không xuất hiện hoặc API từ chối; không tạo lịch thứ hai. |
+| TC-APT-05 | FR-APT-03 | USR-CUS-01 và USR-CUS-02 cùng chọn SLOT-02 | Chuẩn bị hai trình duyệt, gửi xác nhận gần đồng thời. | Chỉ một appointment được tạo; yêu cầu còn lại báo slot vừa được đặt; SLOT-02 BOOKED. |
+| TC-APT-06 | FR-APT-02 | USR-CUS-01 có nhiều lịch | Lọc `upcoming`, PET-01, MEDICAL; đổi page/pageSize. | Chỉ lịch thuộc Milo và customer hiện tại; count, totalPages và dữ liệu trang chính xác. |
+| TC-APT-07 | FR-APT-02 | APT-PEN-01 từ SLOT-01 sang SLOT-02 | Chọn Đổi lịch và xác nhận giờ mới. | Appointment giữ ID, chuyển sang SLOT-02; SLOT-01 AVAILABLE; SLOT-02 BOOKED. |
+| TC-APT-08 | FR-APT-02 | APT-MED-01 và APT-DONE-01 | Gửi reschedule cho từng lịch. | HTTP 409; ngày giờ và slot không đổi. |
+| TC-APT-09 | FR-APT-02 | APT-PEN-01, lý do `Không thể đến đúng lịch` | Chọn Hủy lịch và xác nhận. | Appointment CANCELLED; lưu lý do; slot liên kết AVAILABLE. |
+| TC-APT-10 | FR-APT-02 | APT-MED-01 và APT-DONE-01 | Gửi cancel cho từng lịch. | HTTP 409; trạng thái vẫn IN_PROGRESS/COMPLETED. |
+| TC-APT-11 | FR-APT-03 | USR-STF-01, một appointment PENDING | Staff mở Lịch hẹn và chọn tiếp nhận/check-in. | Appointment chuyển CONFIRMED theo luồng hiện tại và gán staff; hiển thị ở danh sách đang xử lý. |
+| TC-APT-12 | FR-APT-03 | Appointment đã CONFIRMED/IN_PROGRESS | Lặp lại thao tác tiếp nhận. | Bị từ chối; không thay đổi staff, thời gian hoặc trạng thái ngoài luồng. |
+
+### 19.4 Khám bệnh
+
+| Test Case | Requirement | Dữ liệu | Các bước thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- | --- |
+| TC-MED-01 | FR-MED-01 | Token USR-DOC-01, APT-CON-01 thuộc USR-DOC-02 | Mở/gọi exam context của APT-CON-01. | HTTP 403/404; không trả thông tin pet hoặc chủ nuôi. |
+| TC-MED-02 | FR-MED-01 | USR-DOC-01, APT-CON-01 và một lịch IN_PROGRESS sau staff check-in | Gọi `/start` và lưu nháp khi lịch CONFIRMED; sau đó staff check-in rồi doctor mở và lưu phiếu. | Hai thao tác trước check-in trả HTTP 409 và không đổi dữ liệu; sau check-in doctor mở/lưu phiếu thành công. |
+| TC-MED-03 | FR-MED-01 | APT-MED-01 của PET-01 | Mở hồ sơ khám. | Hiển thị Milo, Nguyễn Văn Minh, dị ứng hải sản, lịch sử khám/vaccine và form hiện tại. |
+| TC-MED-04 | FR-MED-01 | Nhiệt độ 38.5, cân nặng 5.4, triệu chứng ngứa/đỏ da, chẩn đoán viêm da nhẹ, thuốc Cetirizine 5 mg x 5 ngày | Nhập form và chọn Hoàn thành. | Tạo/cập nhật medical visit, prescription và item; appointment COMPLETED; slot DONE. |
+| TC-MED-05 | FR-MED-01 | APT-PEN-01 chưa start; APT-DONE-01 | Gọi hoàn thành trực tiếp cho cả hai trạng thái. | Lịch chưa IN_PROGRESS bị từ chối; lịch đã hoàn thành không sinh medical visit hoặc prescription trùng. |
+| TC-MED-06 | FR-MED-02 | APT-MED-01, SVC-MED-01 | Hoàn thành khám rồi mở Staff Payments. | Có đúng một invoice UNPAID/PENDING, một item 250.000 VND liên kết appointment. |
+| TC-MED-07 | FR-MED-02 | APT-MED-01, nội dung `Milo cần được theo dõi hô hấp ngay.` | Doctor gửi cảnh báo khẩn. | USR-CUS-01 nhận một notification chưa đọc; USR-CUS-02 không nhận. |
+
+### 19.5 Grooming và boarding
+
+| Test Case | Requirement | Dữ liệu | Các bước thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- | --- |
+| TC-GRM-01 | FR-GRM-01 | USR-STF-01, APT-GRM-01 | Mở Grooming, chọn Bắt đầu. | Grooming, appointment service và appointment chuyển IN_PROGRESS; lưu `started_at`. |
+| TC-GRM-02 | FR-GRM-01 | APT-GRM-01 đã IN_PROGRESS | Chọn Hoàn thành. | Grooming/service/appointment COMPLETED; lưu `completed_at`. |
+| TC-GRM-03 | FR-GRM-01 | APT-GRM-01, SVC-GRM-01 | Gửi hoàn thành hai lần hoặc tải lại rồi thao tác lại. | Chỉ một invoice và một item 300.000 VND; lần hai không làm tăng tổng tiền. |
+| TC-BRD-01 | FR-BRD-01 | USR-CUS-01, PET-02, CAGE-01, 2026-07-15 đến 2026-07-17 | Chọn phòng, nhập hướng dẫn ăn và đặt phòng. | Tạo appointment PENDING, boarding BOOKED, quantity 2 ngày; CAGE-01 được giữ cho khoảng ngày. |
+| TC-BRD-02 | FR-BRD-01 | `2026-06-01 -> 2026-06-03`, `2026-07-17 -> 2026-07-15`, ngày bằng nhau | Thử đặt với từng khoảng ngày. | Mỗi yêu cầu bị từ chối; không tạo appointment/boarding. |
+| TC-BRD-03 | FR-BRD-01 | CAGE-03; hoặc CAGE-02 trong 2026-07-11 đến 2026-07-12 trùng APT-BRD-01 | Thử đặt từng trường hợp. | Báo phòng bảo trì/đã được đặt; không tạo booking mới. |
+| TC-BRD-04 | FR-BRD-02 | USR-STF-02, APT-BRD-01 | Staff chọn Check-in. | Boarding CHECKED_IN; appointment IN_PROGRESS; CAGE-02 OCCUPIED; lưu thời điểm check-in. |
+| TC-BRD-05 | FR-BRD-02 | BRD-ACT-01; breakfast=true, lunch=true, dinner=false, exercised=true, healthCheck=true; ghi chú `Bắp ăn tốt`; ảnh JPG dưới giới hạn | Lưu nhật ký ngày hiện tại, tải lại và mở lịch sử. | Một daily update của ngày hiện tại được upsert; ảnh/ghi chú/checklist hiển thị; customer nhận notification khi phù hợp. |
+| TC-BRD-06 | FR-BRD-02 | Daily update ngày trước đã hoàn tất | Chuyển ngày hệ thống test sang ngày kế tiếp hoặc dùng dữ liệu hai ngày. | Checklist ngày mới rỗng; lịch sử ngày cũ vẫn đầy đủ và không bị sao chép. |
+| TC-BRD-07 | FR-BRD-02 | BRD-ACT-01 sau 3 ngày | Staff chọn Checkout. | Boarding CHECKED_OUT; appointment COMPLETED; hóa đơn 540.000 VND trước phụ phí; phòng không còn guest hoạt động. |
+| TC-BRD-08 | FR-BRD-02 | Boarding BOOKED chưa check-in và boarding đã CHECKED_OUT | Gọi checkout cho từng bản ghi. | Bị từ chối; không tạo/cập nhật hóa đơn ngoài luồng; trạng thái phòng giữ đúng. |
+
+### 19.6 Hóa đơn, thông báo và quản trị
+
+| Test Case | Requirement | Dữ liệu | Các bước thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- | --- |
+| TC-INV-01 | FR-INV-01 | USR-STF-01, INV-UNP-01, INV-PAID-01 | Mở Payments và lọc trạng thái. | Hiển thị đúng customer, pet, dịch vụ, 250.000/300.000 VND và trạng thái tương ứng. |
+| TC-INV-02 | FR-INV-01 | INV-UNP-01, CASH | Chọn Thu tiền, phương thức tiền mặt và xác nhận. | `payment_status=PAID`, `status=PAID`, lưu `paid_at`; UI chuyển sang Đã thanh toán. |
+| TC-INV-03 | FR-INV-01 | INV-PAID-01 | Gửi lại thao tác pay hai lần. | Không tạo payment/invoice item mới; tổng vẫn 300.000 VND; trạng thái giữ PAID. |
+| TC-INV-04 | FR-INV-01 | Token USR-CUS-01, invoice của USR-CUS-02 | Gọi endpoint PDF bằng ID hóa đơn người khác. | HTTP 403/404; không tải được nội dung PDF. |
+| TC-INV-05 | FR-INV-01 | Invoice của PET-01 | Tải PDF từ lịch sử hoặc endpoint latest/match. | File PDF hợp lệ; đúng chủ nuôi, Milo, Khám tổng quát, 250.000 VND và trạng thái. |
+| TC-NOT-01 | FR-NOT-01 | USR-CUS-01, NOT-01 và NOT-02 | Mở Notifications. | Chỉ thấy NOT-01 và thông báo của USR-CUS-01; unread count đúng. |
+| TC-NOT-02 | FR-NOT-01 | Hai notification chưa đọc của USR-CUS-01 | Đánh dấu một đã đọc, sau đó Read all, rồi xóa một. | Count giảm đúng 1, sau đó về 0; notification bị xóa không còn trong danh sách. |
+| TC-NOT-03 | FR-NOT-01 | Token USR-CUS-01, ID NOT-02 | Gọi read và delete cho notification của USR-CUS-02. | Bị từ chối/không tìm thấy; NOT-02 vẫn chưa đọc và tồn tại. |
+| TC-ADM-01 | FR-ADM-01 | USR-ADM-01, USR-CUS-02 | Khóa USR-CUS-02, thử đăng nhập, sau đó mở khóa. | Khi LOCKED không đăng nhập được; sau ACTIVE đăng nhập lại được. |
+| TC-ADM-02 | FR-ADM-01 | Dịch vụ `Vệ sinh răng miệng`, GROOMING, 200.000 VND | Tạo dịch vụ, sửa giá thành 220.000, vô hiệu hóa, mở customer booking. | CRUD thành công; dịch vụ inactive không xuất hiện trong option đặt lịch. |
+| TC-ADM-03 | FR-ADM-01 | USR-DOC-01, 2026-07-20, 08:00-10:00, Phòng 01 | Lưu lịch lần đầu rồi lưu lại cùng khoảng. | Sinh bốn slot 30 phút; lần lưu lại không tạo slot trùng. |
+| TC-ADM-04 | FR-ADM-01 | 2 COMPLETED, 1 CANCELLED; invoice PAID 250.000 + 300.000, UNPAID 180.000 | Mở Reports và đối chiếu dữ liệu nguồn. | Completed=2, Cancelled=1; doanh thu đã thu=550.000 VND; UNPAID không cộng vào doanh thu đã thu. |
+
+### 19.7 Luồng xuyên suốt
+
+| Test Case | Dữ liệu | Chuỗi thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- |
+| TC-E2E-01 | USR-CUS-01, PET-NEW-01, SVC-MED-01, USR-DOC-01, USR-STF-01 | Customer tạo Đậu và đặt khám -> Staff tiếp nhận/check-in -> Doctor tiếp tục khám, lập bệnh án, hoàn thành -> Staff thu CASH -> Customer xem lịch sử và PDF. | Một chuỗi dữ liệu liên kết cùng appointment; trạng thái cuối COMPLETED/PAID/DONE; lịch sử và PDF đúng 250.000 VND. |
+| TC-E2E-02 | USR-CUS-01, PET-02, SVC-GRM-01, USR-STF-01 | Customer đặt grooming -> Staff tiếp nhận, start, complete -> thu tiền -> Customer xem lịch sử. | Grooming và appointment COMPLETED; một invoice PAID 300.000 VND. |
+| TC-E2E-03 | USR-CUS-02, PET-03, CAGE-04, 3 ngày | Customer đặt phòng -> Staff duyệt/check-in -> ghi journal 3 ngày -> checkout -> thu tiền. | Không trùng phòng; có ba daily update; một invoice 540.000 VND; boarding CHECKED_OUT. |
+| TC-E2E-04 | USR-CUS-01, PET-01, SLOT-01 và SLOT-02 | Đặt SLOT-01 -> đổi sang SLOT-02 -> hủy với lý do hợp lệ. | Appointment CANCELLED; cả SLOT-01 và SLOT-02 AVAILABLE; không còn lịch hoạt động giữ hai slot. |
+
+### 19.8 Phi chức năng
+
+| Test Case | Dữ liệu/Công cụ | Cách thực hiện | Kết quả demo mong đợi |
+| --- | --- | --- | --- |
+| TC-NFR-01 | 100 pet, 500 appointment, 500 invoice; DevTools/Postman | Đo 10 lần các API list và report sau một lần warm-up. | 95% request không quá 3 giây; không có lỗi 5xx. |
+| TC-NFR-02 | 10 request đồng thời vào SLOT-02 và một khoảng CAGE-01 | Dùng runner gửi đồng thời các request hợp lệ. | Mỗi tài nguyên chỉ có một booking thắng; các request còn lại bị từ chối rõ ràng. |
+| TC-NFR-03 | Token đủ bốn vai trò, ID chéo owner | Thử truy cập chéo pet, appointment, invoice, notification và role API. | Không API nào trả dữ liệu trái quyền; response là 401/403/404 phù hợp. |
+| TC-NFR-04 | Token sai chữ ký, token hết hạn, token trước reset password | Gọi `/api/auth/me` và API bảo vệ. | Tất cả token không hợp lệ trả 401; client xóa phiên hoặc yêu cầu đăng nhập lại. |
+| TC-NFR-05 | Form profile, pet, appointment, exam | Nhập một trường sai trong khi các trường khác hợp lệ. | Lỗi hiển thị rõ; dữ liệu hợp lệ đã nhập không bị mất; nút gửi không tạo bản ghi sai. |
+| TC-NFR-06 | Chrome/Edge desktop 1366x768; mobile 390x844 | Chạy Login, booking, exam, boarding journal và payment. | Không tràn ngang bất thường; modal/nút chính nhìn thấy và thao tác được. |
+| TC-NFR-07 | Mô phỏng lỗi insert appointment sau khi giữ slot | Làm request thất bại ở bước tạo appointment trong môi trường test. | Slot rollback AVAILABLE; không có appointment service hoặc dữ liệu mồ côi. |
+
+## 20. Thứ tự chạy demo đề xuất
+
+1. Chạy `TC-AUTH-01`, `TC-PRO-01` và `TC-PET-01` để giới thiệu customer.
+2. Chạy `TC-APT-01`, `TC-APT-07` và `TC-APT-09` để chứng minh quản lý slot.
+3. Chạy toàn bộ `TC-E2E-01` làm luồng demo chính.
+4. Chạy `TC-E2E-02` và `TC-E2E-03` cho grooming và boarding.
+5. Chạy `TC-AUTH-10`, `TC-PET-04`, `TC-INV-04` và `TC-NOT-03` để chứng minh phân quyền.
+6. Chạy `TC-ADM-01` đến `TC-ADM-04` để kết thúc phần quản trị và báo cáo.
+
+## 21. Kết quả tổng hợp mẫu sau demo
+
+| Chỉ số | Giá trị cần ghi |
+| --- | --- |
+| Tổng test case chức năng | 61 |
+| Tổng test case E2E | 4 |
+| Tổng test case phi chức năng | 7 |
+| Tổng cộng | 72 |
+| Pass | Điền sau khi chạy |
+| Fail | Điền sau khi chạy |
+| Blocked/Not Run | Điền sau khi chạy |
+| Tỷ lệ Pass | `Pass / (Pass + Fail) x 100%` |
+| Kết luận | Đạt/Không đạt điều kiện kết thúc tại mục 15 |

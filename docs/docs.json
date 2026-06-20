@@ -56,6 +56,35 @@
         ]
       },
       {
+        "tab": "Testing",
+        "groups": [
+          {
+            "group": "Strategy",
+            "pages": [
+              "testing/strategy",
+              "testing/phase-01-auth",
+              "testing/phase-02-customer-core",
+              "testing/phase-03-appointment-flow",
+              "testing/phase-04-staff-operations",
+              "testing/phase-05-doctor-operations",
+              "testing/phase-06-admin-management-reporting",
+              "testing/phase-07-cross-feature-critical-flows",
+              "testing/phase-08a-boarding-deep-coverage",
+              "testing/phase-08b-customer-appointment-deep-coverage",
+              "testing/phase-08b-2-customer-appointment-route-coverage",
+              "testing/phase-08b-3-customer-appointment-concurrency",
+              "testing/phase-08c-route-authorization-coverage",
+              "testing/phase-08d-customer-core-ui-pdf-coverage",
+              "testing/phase-08e-doctor-service-route-coverage",
+              "testing/phase-08f-admin-routes-settings-health-trends",
+              "testing/testing-handoff",
+              "testing/follow-up-backlog",
+              "testing-srs"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "AI Workflow",
         "groups": [
           {

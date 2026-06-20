@@ -3,6 +3,230 @@ title: "Session Log"
 description: "Ongoing development session notes."
 ---
 
+## 2026-06-20 - Phase 4 Staff Operations Testing
+
+### Goal
+
+Implement Phase 4 automated tests for staff operations using AAA tests and mock data.
+
+### Work Completed
+
+- Added backend unit tests for `staffPortalService` covering staff profile mapping, appointment confirm/check-in guards, grooming status validation/update, payment paid idempotency, and payment confirmation email behavior.
+- Added frontend API tests for `staffAppointmentsService` covering auth guard, profile, summary, pending appointments, confirm/check-in, grooming status, boarding daily status, payments, and mark-paid requests.
+- Added reusable backend and frontend staff operation mock data.
+- Added `docs/testing/phase-04-staff-operations.mdx` with scope, AAA examples, metrics, coverage, strengths, risks, and follow-up notes.
+- Added the Phase 4 staff operations report to Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run`: 10 suites passed, 63 tests passed.
+- `npm --prefix frontend run test:run`: 9 files passed, 41 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 23.51% statements, 40.25% branches, 16.51% functions, and 23.51% lines.
+- Backend staff-specific coverage: `staffPortalService.js` 24.53% statements, 45% branches, 20% functions, and 24.53% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 69.5% statements, 65.35% branches, 60.56% functions, and 69.68% lines.
+- Frontend staff-specific coverage: `staffAppointments.ts` 38.88% statements, 34.37% branches, 32.25% functions, and 39.62% lines.
+- `npm run docs:check` still could not complete because `mint` is not installed or not available on PATH in this environment.
+
+### Notes
+
+- Phase 4 pass rate is 100% for both backend and frontend test suites.
+- Staff service coverage remains below target because `staffPortalService.js` includes broad appointment, grooming, boarding, payment, walk-in, upload, and notification flows.
+- Suggested follow-ups are complete grooming invoice tests, boarding checkout tests, daily photo update tests, staff route tests, and StaffPortal component tests.
+
+## 2026-06-20 - Phase 3 Appointment Flow Testing
+
+### Goal
+
+Implement Phase 3 automated tests for the customer appointment flow using AAA tests and mock data.
+
+### Work Completed
+
+- Added backend unit tests for `customerAppointmentsService` covering appointment options, empty appointment lists, provider lookup guard, create validation, pet ownership, confirm status guard, confirm notification behavior, cancel status guard, and reschedule status guard.
+- Added frontend API tests for `customerAppointmentsApi` covering options, filtered appointment list queries, provider lookup, create, confirm, reschedule, and cancel requests.
+- Added reusable backend and frontend appointment mock data.
+- Extended the Supabase test helper to support direct `await query` style used by appointment service.
+- Added `docs/testing/phase-03-appointment-flow.mdx` with scope, AAA examples, metrics, coverage, strengths, risks, and follow-up notes.
+- Added the Phase 3 appointment flow report to Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run`: 9 suites passed, 54 tests passed.
+- `npm --prefix frontend run test:run`: 8 files passed, 33 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 21.87% statements, 39.67% branches, 14.28% functions, and 21.87% lines.
+- Backend appointment-specific coverage: `customerAppointmentsService.js` 37.76% statements, 32.23% branches, 46.8% functions, and 37.76% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 79.43% statements, 74.73% branches, 82.5% functions, and 80.76% lines.
+- Frontend appointment-specific coverage: `customerAppointmentsApi.ts` 100% statements, 65% branches, 100% functions, and 100% lines.
+- `npm run docs:check` still could not complete because `mint` is not installed or not available on PATH in this environment.
+
+### Notes
+
+- Phase 3 pass rate is 100% for both backend and frontend test suites.
+- Backend appointment service coverage remains below target because the service has broad slot, provider, mapping, email, rollback, and boarding-pricing branches.
+- Suggested follow-ups are create-success integration tests, slot rollback tests, concurrent booking tests, Supertest route tests, and appointment modal component tests.
+
+## 2026-06-20 - Phase 2 Customer Core Testing
+
+### Goal
+
+Implement Phase 2 automated tests for customer profile, pets, notifications, and service history using AAA tests and mock data.
+
+### Work Completed
+
+- Added backend unit tests for `customerProfileService`, `customerPetsService`, `customerNotificationsService`, and `customerServiceHistoryService`.
+- Added frontend API client tests for customer pets, profile, notifications, and service history.
+- Added reusable customer mock data under backend and frontend test folders.
+- Extended the Supabase test helper to support terminal chain methods such as `.eq()`, `.in()`, and `.order()`.
+- Removed noisy `console.debug` calls from customer pet backend/frontend service code.
+- Added `docs/testing/phase-02-customer-core.mdx` with scope, AAA examples, file map, metrics, coverage, strengths, risks, and follow-up notes.
+- Added the Phase 2 customer core report to Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run`: 8 suites passed, 45 tests passed.
+- `npm --prefix frontend run test:run`: 7 files passed, 26 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 19.65% statements, 42.06% branches, 9.37% functions, and 19.65% lines.
+- Backend customer-specific coverage: `customerProfileService.js` 95.95% statements, `customerServiceHistoryService.js` 91.68%, `customerNotificationsService.js` 85.04%, and `customerPetsService.js` 34.58%.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 73.87% statements, 77.33% branches, 78.78% functions, and 76.19% lines.
+- `npm run docs:check` still could not complete because `mint` is not installed or not available on PATH in this environment.
+
+### Notes
+
+- Phase 2 pass rate is 100% for both backend and frontend test suites.
+- Customer pet service coverage remains low because the file includes broad dashboard/detail aggregation; Phase 2 focused on validation and ownership checks first.
+- Suggested follow-ups are customer route tests with Supertest, customer portal component tests, invoice PDF download tests, and deeper pet dashboard summary tests.
+
+## 2026-06-20 - Phase 1 Auth Testing
+
+### Goal
+
+Implement the next testing phase for authentication, session handling, and role authorization using AAA tests and mock data.
+
+### Work Completed
+
+- Added backend auth service unit tests for successful login, missing credentials, locked users, wrong passwords, customer registration, duplicate email, and weak passwords.
+- Added backend middleware tests for missing tokens, invalid token subjects, valid auth context attachment, stale `auth_version`, and `requireRole` allow/deny behavior.
+- Added reusable backend auth mock data and a Supabase chain helper for database-free unit tests.
+- Added frontend auth session tests for local/session storage behavior, auth headers, clearing sessions, and malformed stored JSON.
+- Added frontend auth service tests for login, registration, session restore, rejected token cleanup, and forgot-password endpoint calls.
+- Added `docs/testing/phase-01-auth.mdx` with Phase 1 scope, AAA examples, test file map, metrics, coverage, system strengths, known gaps, and risk assessment.
+- Added the Phase 1 testing report to Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run`: 3 suites passed, 14 tests passed.
+- `npm --prefix frontend run test:run`: 3 files passed, 12 tests passed.
+- `npm --prefix backend run test:coverage`: 3 suites passed, 14 tests passed; all-source coverage 13.62% statements, 56.92% branches, 1.78% functions, and 13.62% lines.
+- Backend auth-specific coverage: `authMiddleware.js` 91.78% statements and `authService.js` 51% statements.
+- `npm --prefix frontend run test:coverage`: 3 files passed, 12 tests passed; covered-file coverage 92.85% statements, 80.76% branches, 93.75% functions, and 96.22% lines.
+- Frontend auth-specific coverage: `auth.ts` 89.47% statements and `authSession.ts` 95.45% statements.
+- `npm run docs:check` could not complete because `mint` is not installed or not available on PATH in this environment.
+
+### Notes
+
+- Phase 1 pass rate is 100% for both backend and frontend test suites.
+- Backend total coverage remains low because the coverage command measures all backend source files, while Phase 1 intentionally focuses on auth.
+- Remaining Phase 1 gaps are backend password reset OTP branches, auth route tests with Supertest, role-specific auth contexts for doctor/staff/admin, and UI form tests.
+
+### Follow-up Completion
+
+- Expanded Phase 1 backend coverage with doctor/staff/admin auth context tests, password reset request/verify/reset tests, and Supertest route coverage for auth endpoints.
+- Expanded frontend auth coverage with login failure and no-session restore tests.
+- Removed noisy doctor-context debug `console.log` statements from `backend/src/services/authService.js`.
+- Rewrote `docs/testing/phase-01-auth.mdx` as the final Phase 1 report with updated metrics, strengths, risks, and the fix note.
+
+### Final Verification
+
+- `npm --prefix backend run test:run`: 4 suites passed, 27 tests passed.
+- `npm --prefix frontend run test:run`: 3 files passed, 14 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 14.81% statements, 50.4% branches, 2.9% functions, and 14.81% lines.
+- Backend auth-specific coverage: `authMiddleware.js` 91.78% statements, `authService.js` 91.54% statements, and `authRoutes.js` 87.09% statements.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 94.64% statements, 84.61% branches, 93.75% functions, and 98.11% lines.
+- Frontend auth-specific coverage: `auth.ts` 94.73% statements and `authSession.ts` 95.45% statements.
+- `npm run docs:check` still could not complete because `mint` is not installed or not available on PATH in this environment.
+
+## 2026-06-20 - Automated Testing Strategy Setup
+
+### Goal
+
+Set up the first automated testing infrastructure and document a phased testing strategy for the feature-critical Pet Service flows.
+
+### Work Completed
+
+- Added backend Jest and Supertest setup with `test`, `test:run`, and `test:coverage` scripts.
+- Added frontend Vitest, jsdom, Testing Library, and V8 coverage setup with matching test scripts.
+- Added smoke tests for the backend health route and frontend API URL helper using AAA structure.
+- Added `docs/testing/strategy.mdx` with framework choices, mock data rules, phase plan, coverage targets, metrics, and a test session report template.
+- Added the new testing strategy page to Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run`: 1 suite passed, 1 test passed.
+- `npm --prefix frontend run test:run`: 1 file passed, 2 tests passed.
+- `npm --prefix backend run test:coverage`: pass rate 100% for the smoke suite; baseline all-source coverage is 12.13% statements, 25% branches, 0.22% functions, and 12.13% lines.
+- `npm --prefix frontend run test:coverage`: pass rate 100% for the smoke suite; covered files report 100% statements, 83.33% branches, 100% functions, and 100% lines.
+- `npm run docs:check` could not complete because `mint` is not installed or not available on PATH in this environment.
+
+### Notes
+
+- Backend coverage is intentionally low at this setup phase because only a smoke route test exists and coverage currently scans all backend source files.
+- Dependency installation reported npm audit warnings and a Prisma-related engine warning under Node v20.19.6; no audit fix was run.
+
+## 2026-06-20 - Doctor Specialist Service User Stories
+
+### Goal
+
+Review the new Excel user story workbook and add missing Doctor-side stories for specialist/deep services.
+
+### Work Completed
+
+- Checked `docs/01_User Story.xlsx` structure and confirmed the role sheets use the expected user story columns and repeated 10-criteria blocks.
+- Added DOC-11, DOC-12, and DOC-13 to `docs/doctor-user-stories.mdx` for ordering specialist services, processing specialist queues/results, and using specialist results when completing medical records.
+- Added matching concise rows to the `User Story Doctor` sheet in `docs/01_User Story.xlsx`.
+- Verified the workbook ZIP structure and the newly added UTF-8 Vietnamese text in the Doctor sheet.
+
+### Verification
+
+- Parsed `docs/01_User Story.xlsx` directly from the XLSX XML and confirmed DOC-11, DOC-12, and DOC-13 are present with correct Vietnamese text.
+- `rg -n "DOC-1[123]|Dịch vụ chuyên sâu|chuyên sâu" docs\doctor-user-stories.mdx`
+- `npm run docs:check` could not complete because `mint` is not installed or not available on PATH in this environment.
+
+## 2026-06-20 - Specialist Work Assignment And Planning Workbooks
+
+### Goal
+
+Update the team work-assignment document and fill the planning, WBS, and dashboard Excel files with project data from early April to early June.
+
+### Work Completed
+
+- Added a specialist-service work-assignment section to `docs/Chia việc.docx` for DOC-11, DOC-12, and DOC-13.
+- Assigned the new Doctor specialist scope primarily to Hiếu, with support from Khải, Trường Giang, Hiệp, and Nam Anh.
+- Added `Pet Service Agile Plan` to the Agile project plan workbook with sprint data from April 1, 2026 through June 7, 2026.
+- Added `Pet Service WBS` to the work breakdown workbook with sprint/module/story-level ownership.
+- Added `Pet Service Dashboard` to the dashboard workbook with team SP summary, task table, status summary, priority summary, and pending items.
+
+### Verification
+
+- Parsed `docs/Chia việc.docx` and confirmed DOC-11, DOC-12, DOC-13 plus all five member names are present.
+- Loaded workbooks 02, 03, and 04 with `openpyxl` and confirmed the new sheets exist with DOC-11, DOC-12, DOC-13 and all five member names.
+
+### Follow-up Adjustment
+
+- Updated the schedule so code-related work ends on June 7, 2026.
+- Added the June 8, 2026 through June 14, 2026 phase for SRS/specification docs, dashboard reporting, demo data/scripts, acceptance, handoff, and retrospective.
+- Restyled the filled Excel sheets with stronger color coding by owner/status/sprint and added charts similar to the provided templates:
+  - `Pet Service Agile Plan`: 4 charts.
+  - `Pet Service WBS`: 2 charts.
+  - `Pet Service Dashboard`: 5 charts, including a Code vs Docs/Demo phase chart.
+
+### Final Sheet Cleanup
+
+- Removed freeze/split panes from the filled planning sheets so scrolling is no longer divided into separate panes.
+- Marked every task as `Complete` because the current date is after the June 14, 2026 documentation/demo phase.
+- Rebalanced task-level story point ownership to Nam Anh 81, Trường Giang 82, Hiếu 82, Hiệp 82, and Khải 83.
+- Reordered the filled sheets so summary tables and charts appear before detailed task tables, with consistent chart numbering, color coding, and wrapped text.
+- Updated `docs/Chia việc.docx` with the final balanced assignment note.
+- Reordered the filled workbook sheets again so the task/work-assignment tables appear first, followed by summary tables and charts below the data instead of leaving a large visual gap at the top.
+
 ## 2026-06-16 - Customer Sidebar Collapse
 
 ### Goal
@@ -3934,3 +4158,307 @@ Resolve merge/stash conflicts across appointment scheduling files without droppi
 - `npm run docs:check`
 - `npx prisma migrate status --schema prisma/schema.prisma` from `backend/`
 - Service smoke checks for doctor, customer, staff, and admin appointment flows.
+## 2026-06-20 - Phase 5 Doctor Operations Testing
+
+### Goal
+
+Continue the structured testing plan with Phase 5 for doctor operations.
+
+### Work Completed
+
+- Added backend doctor portal tests for appointment mapping, summary and room metadata.
+- Added backend doctor exam transaction tests for draft save, invalid doctor guard, invalid appointment status guard and exam completion.
+- Added frontend doctor service tests for appointments, notifications, exam detail/draft/complete, urgent alert and specialist service order API contracts.
+- Added Phase 5 mock data for backend and frontend.
+- Added `docs/testing/phase-05-doctor-operations.mdx` and linked it in Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run -- doctorAppointmentService doctorExamCompletionService`
+- `npm --prefix frontend run test:run -- doctorAppointments`
+- `npm --prefix backend run test:run`
+- `npm --prefix frontend run test:run`
+- `npm --prefix backend run test:coverage`
+- `npm --prefix frontend run test:coverage`
+## 2026-06-20 - Phase 6 Admin Management And Reporting Testing
+
+### Goal
+
+Continue the structured testing plan with Phase 6 for admin management and reporting.
+
+### Work Completed
+
+- Added backend admin service tests for users, services, appointments, dashboard and reports.
+- Added frontend admin service tests for dashboard, users, services CRUD, appointments, staff, schedules, reports, health trends and settings API contracts.
+- Added Phase 6 admin mock data for backend and frontend.
+- Added `docs/testing/phase-06-admin-management-reporting.mdx` and linked it in Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run -- adminService`
+- `npm --prefix frontend run test:run -- admin`
+- `npm --prefix backend run test:run`
+- `npm --prefix frontend run test:run`
+- `npm --prefix backend run test:coverage`
+- `npm --prefix frontend run test:coverage`
+## 2026-06-20 - Phase 7 Cross Feature Critical Flows Testing
+
+### Goal
+
+Complete the current structured testing strategy with Phase 7 cross-feature critical flows.
+
+### Work Completed
+
+- Added backend integration-style tests for medical, grooming and boarding critical flows with mocked Supabase/Prisma.
+- Added frontend journey contract tests for customer, staff, doctor, payment, history, grooming, boarding, reschedule and cancel API calls.
+- Added Phase 7 cross-flow mock data.
+- Added `docs/testing/phase-07-cross-feature-critical-flows.mdx` and linked it in Mintlify navigation.
+
+### Verification
+
+- `npm --prefix backend run test:run -- crossFeatureCriticalFlows`
+- `npm --prefix frontend run test:run -- crossFeatureCriticalFlows`
+- `npm --prefix backend run test:run`
+- `npm --prefix frontend run test:run`
+- `npm --prefix backend run test:coverage`
+- `npm --prefix frontend run test:coverage`
+## 2026-06-20 - Phase 8A Boarding Deep Coverage
+
+### Goal
+
+Improve backend coverage by deepening tests around `boardingService.js`.
+
+### Work Completed
+
+- Added boarding unit tests for room availability, create booking, overlap guard, approve, check-in, checkout, paid invoice guard, customer care update and extension conflict.
+- Added follow-up boarding tests for pending/confirmed lists, customer boarding daily updates, extend success, room CRUD guard and boarding reschedule.
+- Added `backend/tests/mocks/boardingOperations.mock.js` for focused boarding mock data.
+- Extended `backend/tests/helpers/supabaseQuery.js` with `.lt()` support for Supabase overlap queries.
+- Added `docs/testing/phase-08a-boarding-deep-coverage.mdx` and linked it in Mintlify navigation.
+- Added `docs/testing/follow-up-backlog.mdx` to consolidate remaining Phase 1-7 follow-ups.
+
+### Verification
+
+- `npm --prefix backend run test:run -- boardingService`
+- `npm --prefix backend run test:run`
+- `npm --prefix frontend run test:run`
+- `npm --prefix backend run test:coverage`
+- `npm --prefix frontend run test:coverage`
+
+## 2026-06-20 - Phase 8B Customer Appointment Deep Coverage
+
+### Goal
+
+Improve backend coverage for `customerAppointmentsService.js` and close the highest-risk Phase 3 service-level follow-ups.
+
+### Work Completed
+
+- Added customer appointment unit tests for medical provider slot listing, create appointment success, service-link rollback, pending reschedule and pending cancel.
+- Covered doctor slot reservation, old-slot release, rollback slot release, appointment service insert, doctor notification and email confirmation behavior with mock data.
+- Kept tests in AAA style inside `backend/tests/unit/customerAppointmentsService.test.js`.
+- Added `docs/testing/phase-08b-customer-appointment-deep-coverage.mdx` and linked it in Mintlify navigation.
+- Updated `docs/testing/follow-up-backlog.mdx` to mark Phase 3 service-level appointment follow-ups that Phase 8B closed.
+
+### Verification
+
+- `npm --prefix backend run test:run -- customerAppointmentsService`: 14 tests passed.
+- `npm --prefix backend run test:run`: 15 suites passed, 98 tests passed.
+- `npm --prefix frontend run test:run`: 12 files passed, 56 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 42.74% statements, 42.99% branches, 37.66% functions, and 42.74% lines.
+- Backend appointment-specific coverage: `customerAppointmentsService.js` 73.14% statements, 42.22% branches, 76.59% functions, and 73.14% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 80.31% statements, 64.13% branches, 75% functions, and 80.47% lines.
+
+### Notes
+
+- Phase 8B pass rate is 100% for backend and frontend regression suites.
+- Remaining appointment risks are DB concurrency for duplicate slot booking, route-level Supertest coverage, appointment insert rollback, staff provider success path and UI modal component tests.
+
+## 2026-06-20 - Phase 8B-2 Customer Appointment Route Coverage
+
+### Goal
+
+Add Supertest coverage for customer appointment routes and close the route-level follow-up from Phase 8B.
+
+### Work Completed
+
+- Added `backend/tests/routes/customerAppointmentsRoutes.test.js` with route tests for options, provider options, list, create, confirm, reschedule and cancel.
+- Verified route mapping for query string, request body, appointment id path params and authenticated `customerId`.
+- Added route-level service error mapping coverage and non-customer role guard coverage.
+- Added `docs/testing/phase-08b-2-customer-appointment-route-coverage.mdx` and linked it in Mintlify navigation.
+- Updated `docs/testing/follow-up-backlog.mdx` to mark customer appointment Supertest route coverage as done.
+
+### Verification
+
+- `npm --prefix backend run test:run -- customerAppointmentsRoutes`: 9 tests passed.
+- `npm --prefix backend run test:run`: 16 suites passed, 107 tests passed.
+- `npm --prefix frontend run test:run`: 12 files passed, 56 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 43.16% statements, 43.03% branches, 37.66% functions, and 43.16% lines.
+- Backend route-specific coverage: `customerPetsRoutes.js` 45.92% statements, 40% branches, 100% functions, and 45.92% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 80.31% statements, 64.13% branches, 75% functions, and 80.47% lines.
+
+### Notes
+
+- Phase 8B-2 pass rate is 100% for backend and frontend regression suites.
+- Remaining appointment risks are DB concurrency for duplicate slot booking, appointment insert rollback after slot reservation, staff provider success path and UI modal component tests.
+
+## 2026-06-20 - Phase 8B-3 Customer Appointment Concurrency
+
+### Goal
+
+Add service-level concurrency contract tests for customer appointment doctor slot reservation.
+
+### Work Completed
+
+- Added `backend/tests/unit/doctorScheduleService.test.js` covering 30-minute slot generation and stateful duplicate reservation behavior.
+- Added a customer appointment creation guard test for the case where `reserveDoctorScheduleSlot` returns `null` because another request just booked the slot.
+- Verified duplicate slot reservation returns one success and one `null`, with the slot ending in `BOOKED`.
+- Added `docs/testing/phase-08b-3-customer-appointment-concurrency.mdx` and linked it in Mintlify navigation.
+- Updated `docs/testing/follow-up-backlog.mdx` to separate mocked concurrency contract coverage from remaining real DB concurrency coverage.
+
+### Verification
+
+- `npm --prefix backend run test:run -- doctorScheduleService customerAppointmentsService`: 2 suites passed, 17 tests passed.
+- `npm --prefix backend run test:run`: 17 suites passed, 110 tests passed.
+- `npm --prefix frontend run test:run`: 12 files passed, 56 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 43.60% statements, 43.03% branches, 38.96% functions, and 43.60% lines.
+- Backend appointment-specific coverage: `customerAppointmentsService.js` 73.52% statements, 42.80% branches, 76.59% functions, and 73.52% lines.
+- Backend schedule-specific coverage: `doctorScheduleService.js` 36.19% statements, 36.36% branches, 60% functions, and 36.19% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 80.31% statements, 64.13% branches, 75% functions, and 80.47% lines.
+
+### Notes
+
+- Phase 8B-3 pass rate is 100% for backend and frontend regression suites.
+- Remaining appointment risks are real DB concurrency with parallel transactions, appointment insert rollback after slot reservation, staff provider success path and UI modal component tests.
+
+## 2026-06-20 - Phase 8C Route Authorization Coverage
+
+### Goal
+
+Add role-boundary route authorization coverage for customer, staff, doctor and admin route groups.
+
+### Work Completed
+
+- Added `backend/tests/routes/routeAuthorization.test.js` with allow/deny route tests for customer, staff, doctor and admin.
+- Mocked `authMiddleware` with a dynamic auth user while keeping the real `requireRole` implementation.
+- Verified forbidden role requests return `403` before service layer calls.
+- Verified allowed role requests pass domain ids from auth context into service calls.
+- Added `docs/testing/phase-08c-route-authorization-coverage.mdx` and linked it in Mintlify navigation.
+- Updated `docs/testing/follow-up-backlog.mdx` to mark route authorization baseline coverage as done.
+
+### Verification
+
+- `npm --prefix backend run test:run -- routeAuthorization`: 8 tests passed.
+- `npm --prefix backend run test:run`: 18 suites passed, 118 tests passed.
+- `npm --prefix frontend run test:run`: 12 files passed, 56 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 43.72% statements, 43.03% branches, 39.39% functions, and 43.72% lines.
+- Backend auth-specific coverage: `authMiddleware.js` 91.78% statements, 70.37% branches, 100% functions, and 91.78% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 80.31% statements, 64.13% branches, 75% functions, and 80.47% lines.
+
+### Notes
+
+- Phase 8C pass rate is 100% for backend and frontend regression suites.
+- Remaining auth risks are real JWT route integration, auth UI component states and DB-level cross-role data leak checks.
+
+## 2026-06-20 - Phase 8D Customer Core UI And PDF Coverage
+
+### Goal
+
+Improve customer core coverage for pet dashboard/detail aggregation and customer invoice PDF download contracts.
+
+### Work Completed
+
+- Updated `getCustomerPetDashboard` to load `medical_visits` for appointment ids so `latestMedicalVisit` uses real visit data.
+- Added backend customer pet tests for dashboard species/breed/latest vaccination/latest medical visit mapping.
+- Added backend pet detail test for grouping invoice items under each invoice.
+- Added frontend customer pets service tests for invoice PDF download, UTF-8 filenames, latest invoice fallback, matching invoice query params and error handling.
+- Added `docs/testing/phase-08d-customer-core-ui-pdf-coverage.mdx` and linked it in Mintlify navigation.
+- Updated `docs/testing/follow-up-backlog.mdx` to mark customer pet dashboard/detail and PDF API contract coverage as improved.
+
+### Verification
+
+- `npm --prefix backend run test:run -- customerPetsService`: 8 tests passed.
+- `npm --prefix frontend run test:run -- customerPets`: 8 tests passed.
+- `npm --prefix backend run test:run`: 18 suites passed, 120 tests passed.
+- `npm --prefix frontend run test:run`: 12 files passed, 60 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 45.75% statements, 43.30% branches, 41.34% functions, and 45.75% lines.
+- Backend customer pets coverage: `customerPetsService.js` 78.46% statements, 41.05% branches, 100% functions, and 78.46% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 87.61% statements, 67.39% branches, 79.31% functions, and 88.01% lines.
+- Frontend customer pets coverage: `customerPets.ts` 92.10% statements, 83.33% branches, 90% functions, and 94.44% lines.
+
+### Notes
+
+- Phase 8D pass rate is 100% for backend and frontend regression suites.
+- Remaining customer core risks are React component coverage, route-level invoice PDF endpoint coverage and Playwright/PDF content smoke tests.
+
+## 2026-06-20 - Phase 8E Doctor Service And Route Coverage
+
+### Goal
+
+Improve doctor backend coverage for `doctorService.js` and add route-level coverage for key doctor endpoints.
+
+### Work Completed
+
+- Added `backend/tests/unit/doctorService.test.js` covering doctor stats, settings, exam context, record mapping and settings patch persistence.
+- Added `backend/tests/routes/doctorRoutes.test.js` covering `/api/doctor/appointments`, `/api/doctor/stats`, `/api/doctor/records`, `/api/doctor/exam/:appointmentId`, and `/api/doctor/settings`.
+- Verified doctor appointment route rejects missing `doctorId` before calling the service layer.
+- Added `docs/testing/phase-08e-doctor-service-route-coverage.mdx` and linked it in Mintlify navigation.
+- Updated `docs/testing/follow-up-backlog.mdx` to mark doctor service/route baseline coverage as improved.
+
+### Verification
+
+- `npm --prefix backend run test:run -- doctorService doctorRoutes`: 2 suites passed, 12 tests passed.
+- `npm --prefix backend run test:run`: 20 suites passed, 132 tests passed.
+- `npm --prefix frontend run test:run`: 12 files passed, 60 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 52.21% statements, 42.23% branches, 48.91% functions, and 52.21% lines.
+- Backend doctor service coverage: `doctorService.js` 90.92% statements, 36.76% branches, 87.5% functions, and 90.92% lines.
+- Backend doctor route coverage: `doctorProfileRoutes.js` 50.33% statements and `doctorAppointmentRoutes.js` 13.66% statements.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 87.61% statements, 67.39% branches, 79.31% functions, and 88.01% lines.
+
+### Notes
+
+- Phase 8E pass rate is 100% for backend and frontend regression suites.
+- Remaining doctor risks are follow-up appointment success/conflict, specialist service order backend routes, urgent alert route details, paid/existing invoice item branches and doctor UI component tests.
+
+## 2026-06-20 - Phase 8F Admin Routes Settings And Health Trends
+
+### Goal
+
+Improve admin backend coverage for route contracts, settings, health trends, staff creation and service management.
+
+### Work Completed
+
+- Added `backend/tests/routes/adminRoutes.test.js` covering admin dashboard, service list/create/update/delete, health trends, settings get/update, staff creation, staff profile update and non-admin rejection.
+- Extended `backend/tests/unit/adminService.test.js` coverage for create/update/delete admin services, health trends, settings merge/persist, user profile update and Supabase Auth Admin staff creation.
+- Updated `backend/tests/helpers/supabaseQuery.js` so the Supabase query mock supports `upsert`.
+- Added `docs/testing/phase-08f-admin-routes-settings-health-trends.mdx` and linked it in Mintlify navigation.
+- Updated `docs/testing/follow-up-backlog.mdx` to mark admin route/settings/health trends baseline coverage as improved.
+
+### Verification
+
+- `npm --prefix backend run test:run -- adminRoutes adminService`: 2 suites passed, 24 tests passed.
+- `npm --prefix backend run test:run`: 21 suites passed, 149 tests passed.
+- `npm --prefix frontend run test:run`: 12 files passed, 60 tests passed.
+- `npm --prefix backend run test:coverage`: all-source coverage 55.32% statements, 42.49% branches, 51.82% functions, and 55.32% lines.
+- Backend admin-specific coverage: `adminService.js` 73.55% statements, 51.1% branches, 79.68% functions, and 73.55% lines; `adminRoutes.js` 34.38% statements, 40% branches, 100% functions, and 34.38% lines.
+- `npm --prefix frontend run test:coverage`: covered-file coverage 87.61% statements, 67.39% branches, 79.31% functions, and 88.01% lines.
+
+### Notes
+
+- Phase 8F pass rate is 100% for backend and frontend regression suites.
+- Remaining admin risks are email template routes, doctor schedule/profile legacy admin routes, destructive action audit strategy, report edge cases and admin UI component tests.
+
+## 2026-06-20 - Testing Handoff Document
+
+### Goal
+
+Create a concise handoff document so another developer can continue the phased testing work without losing context.
+
+### Work Completed
+
+- Added `docs/testing/testing-handoff.mdx` with current test strategy, completed phases, important test files, verification commands, latest metrics, next phase priorities and cautions for shared mocks.
+- Linked the handoff page in Mintlify testing navigation.
+
+### Verification
+
+- `node -e "JSON.parse(require('fs').readFileSync('docs/docs.json','utf8')); console.log('docs.json ok')"` passed.
+- `git diff --check` had no whitespace errors; Windows line-ending warnings remain.

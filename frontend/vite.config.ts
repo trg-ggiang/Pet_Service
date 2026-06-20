@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import tailwindcss from '@tailwindcss/vite'
@@ -22,6 +22,16 @@ function figmaAssetResolver() {
 
 export default defineConfig({
   envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+  test: {
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: 'coverage',
+      reporter: ['text', 'html', 'json-summary'],
+    },
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/tests/setupTests.ts',
+  },
   server: {
     proxy: {
       '/api': 'http://127.0.0.1:5050',

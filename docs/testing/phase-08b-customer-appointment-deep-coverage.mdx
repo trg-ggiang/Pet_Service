@@ -1,0 +1,232 @@
+---
+title: "Phase 08B Customer Appointment Deep Coverage"
+description: "Bao cao kiem thu mo rong Phase 8B de tang backend coverage cho customer appointment flow va doctor slot reservation."
+---
+
+# Phase 08B Customer Appointment Deep Coverage
+
+Phase 8B la phase mo rong sau Phase 3. Muc tieu la dong cac follow-up rui ro cao cua customer appointment flow: provider slot, create appointment thanh cong, doctor slot reservation, rollback khi tao service link loi, pending reschedule va pending cancel.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu them:
+
+- List provider cho medical service: tra ve doctor co slot kha dung, phong, schedule id va service type.
+- Create medical appointment thanh cong: validate pet ownership, reserve doctor slot, insert appointment, insert appointment service, gui email va reload appointment.
+- Create medical appointment rollback: khi insert `appointment_services` loi, xoa appointment vua tao va release doctor slot ve `AVAILABLE`.
+- Pending reschedule: reserve slot moi, update requested date/time, release slot cu va notify doctor.
+- Pending cancel: update status `CANCELLED`, release doctor slot va notify doctor.
+
+Phan da ke thua tu Phase 3:
+
+- Appointment options va service filtering.
+- Empty appointment view khi customer chua co pet.
+- Provider lookup guard khi thieu customer id.
+- Create validation cho missing pet va pet ownership.
+- Confirm/cancel/reschedule status guards.
+- Confirm pending appointment notify doctor.
+- Frontend customer appointment API contract tests.
+
+Ngoai pham vi Phase 8B:
+
+- Chua test concurrent booking cung doctor slot voi database test rieng.
+- Chua co Supertest route tests cho `/api/customer/appointments`.
+- Chua co React component tests cho booking/reschedule/cancel modals.
+- Chua test CONFIRMED reschedule/cancel request approval path o route/staff integration level.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/customerAppointmentsService.test.js
+backend/tests/mocks/customerAppointments.mock.js
+backend/tests/helpers/supabaseQuery.js
+```
+
+Frontend regression:
+
+```text
+frontend/src/services/customer/customerAppointmentsApi.test.ts
+frontend/src/tests/mocks/customerAppointments.mock.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8B theo AAA.
+
+Example rollback:
+
+```js
+test("rolls back appointment and doctor slot when service link creation fails", async () => {
+  // Arrange
+  ensureDoctorScheduleSlot.mockResolvedValue({
+    id: pendingAppointment.doctor_schedule_slot_id,
+    doctor_id: pendingAppointment.doctor_id,
+  });
+  reserveDoctorScheduleSlot.mockResolvedValue({ id: pendingAppointment.doctor_schedule_slot_id });
+
+  // Act
+  const action = () => createCustomerAppointment(input, appointmentCustomerId);
+
+  // Assert
+  await expect(action()).rejects.toThrow("service insert failed");
+  expect(appointmentDelete.delete).toHaveBeenCalled();
+  expect(setDoctorScheduleSlotStatus).toHaveBeenCalledWith(
+    pendingAppointment.doctor_schedule_slot_id,
+    "AVAILABLE",
+  );
+});
+```
+
+Example pending reschedule:
+
+```js
+test("reschedules a pending medical appointment, reserves the new slot and releases the old slot", async () => {
+  // Arrange
+  ensureDoctorScheduleSlot.mockResolvedValue(newSlot);
+  reserveDoctorScheduleSlot.mockResolvedValue(newSlot);
+
+  // Act
+  const appointment = await rescheduleCustomerAppointment(appointmentCode, input, appointmentCustomerId);
+
+  // Assert
+  expect(reserveDoctorScheduleSlot).toHaveBeenCalledWith(newSlot.id);
+  expect(setDoctorScheduleSlotStatus).toHaveBeenCalledWith(oldSlotId, "AVAILABLE");
+  expect(appointment).toEqual(expect.objectContaining({ time: "10:00" }));
+});
+```
+
+## 4. Mock data
+
+Mock data tap trung trong:
+
+```text
+backend/tests/mocks/customerAppointments.mock.js
+```
+
+Du lieu mock gom:
+
+- Customer id va pet thuoc customer.
+- Appointment `PENDING` va `COMPLETED`.
+- Doctor actor de tao notification.
+- Medical va grooming service.
+- Doctor schedule slot mock cho provider/create/reschedule/cancel.
+
+Backend tests mock:
+
+- Supabase client.
+- `doctorScheduleService`: `ensureDoctorScheduleSlot`, `reserveDoctorScheduleSlot`, `setDoctorScheduleSlotStatus`.
+- Email service: `sendAppointmentEventEmail`.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Customer appointment suite | 14 passed / 14 total |
+| Test suites | 15 passed / 15 total |
+| Test cases | 98 passed / 98 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 56 passed / 56 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- customerAppointmentsService
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8B:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 42.74% |
+| Branches | 42.99% |
+| Functions | 37.66% |
+| Lines | 42.74% |
+
+Backend appointment-specific coverage:
+
+| File | Truoc Phase 8B | Sau Phase 8B |
+| --- | --- | --- |
+| `backend/src/services/customer/customerAppointmentsService.js` statements | 37.76% | 73.14% |
+| `backend/src/services/customer/customerAppointmentsService.js` branches | 32.23% | 42.22% |
+| `backend/src/services/customer/customerAppointmentsService.js` functions | 46.8% | 76.59% |
+| `backend/src/services/customer/customerAppointmentsService.js` lines | 37.76% | 73.14% |
+
+Frontend coverage khong thay doi ve scope Phase 8B:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 80.31% |
+| Branches | 64.13% |
+| Functions | 75% |
+| Lines | 80.47% |
+
+## 7. He thong da lam tot
+
+- Provider lookup cho medical appointment co the tra ve doctor theo slot cu the, khong chi theo doctor id chung chung.
+- Create appointment dong bo duoc `appointments`, `appointment_services`, doctor slot va email confirmation.
+- Khi `appointment_services` insert loi, service co rollback ca appointment va doctor slot, tranh giu slot ao.
+- Pending reschedule co reserve slot moi truoc khi release slot cu, giup tranh mat lich neu slot moi khong kha dung.
+- Pending cancel release doctor slot va notify doctor, giup slot quay lai pool booking.
+- Appointment mapper sau create/reschedule/cancel van tra ve du lieu hien thi co pet, doctor, room, service fee va status.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Branch coverage cua `customerAppointmentsService.js` con 42.22% vi file co nhieu fallback/error branches chua test.
+- Chua co DB integration test de xac minh race condition khi hai customer dat cung mot doctor slot cung luc.
+- Chua test rollback khi appointment insert loi sau khi da reserve slot.
+- Chua test staff provider path cho grooming/boarding trong Phase 8B.
+- Chua co Supertest route tests de xac minh middleware auth + route handler + service integration.
+- Chua co component tests cho modal dat lich, doi lich, huy lich va appointment detail.
+
+## 9. Danh gia Phase 8B
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Customer appointment deep tests pass | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend regression pass rate | Dat, 100% |
+| Appointment service statement coverage | Tang tu 37.76% len 73.14% |
+| Appointment service function coverage | Tang tu 46.8% len 76.59% |
+| Slot reservation success path | Dat |
+| Slot release on service-link rollback | Dat |
+| Pending reschedule/cancel slot release | Dat |
+| Real DB concurrency coverage | Chua dat |
+| Route/component coverage | Chua dat |
+| Rui ro con lai | Trung binh |
+
+## 10. Follow-up
+
+Phase 8B da dong cac follow-up quan trong nhat cua Phase 3 o service level. Follow-up con lai nen tach thanh cac phase sau:
+
+- `Phase 8B-2 Customer Appointment Route Coverage`: Supertest cho `/api/customer/appointments`.
+- `Phase 8B-3 Customer Appointment Concurrency`: DB integration test voi database test rieng cho duplicate doctor slot.
+- `Phase 8D Customer Appointment UI`: component tests cho booking/reschedule/cancel modals.
+- Test appointment insert rollback sau slot reservation.
+- Test staff provider success path cho grooming/boarding appointment.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi nghiep vu can sua trong production code Phase 8B. Co mot dieu chinh trong test: assertion reschedule duoc can chinh theo response shape hien tai cua mapper, dung field `time` thay vi `appointmentTime`.

@@ -1,0 +1,199 @@
+---
+title: "Phase 08B-2 Customer Appointment Route Coverage"
+description: "Bao cao kiem thu route-level cho customer appointment endpoints bang Supertest."
+---
+
+# Phase 08B-2 Customer Appointment Route Coverage
+
+Phase 8B-2 tiep tuc sau Phase 8B. Muc tieu la kiem thu route-level cho customer appointment flow bang Supertest, dam bao Express route, auth context, role guard, request mapping va response/error mapping hoat dong dung truoc khi service duoc goi.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- `GET /api/customer/appointment-options` goi `listCustomerAppointmentOptions` voi `customerId` tu auth context.
+- `POST /api/customer/appointment-provider-options` chuyen body va `customerId` vao provider lookup service.
+- `GET /api/customer/appointments` chuyen query filter va pagination vao `listCustomerAppointmentsView`.
+- `POST /api/customer/appointments` tao appointment va tra ve HTTP `201`.
+- `PATCH /api/customer/appointments/:appointmentId/confirm` chuyen appointment id vao confirm service.
+- `PATCH /api/customer/appointments/:appointmentId/reschedule` chuyen appointment id, body va `customerId` vao reschedule service.
+- `PATCH /api/customer/appointments/:appointmentId/cancel` chuyen appointment id, body va `customerId` vao cancel service.
+- Route error mapping: service error co `statusCode` duoc map thanh HTTP status va `{ ok: false, message }`.
+- Role guard: user khong phai `customer` bi chan `403` truoc khi goi appointment service.
+
+Ngoai pham vi Phase 8B-2:
+
+- Chua dung JWT signing/verifying that; auth middleware duoc mock de tap trung route contract.
+- Chua goi Supabase/DB that.
+- Chua test tat ca customer route khac trong `customerPetsRoutes.js`.
+- Chua test DB concurrency cho duplicate doctor slot.
+- Chua test UI modal booking/reschedule/cancel.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/routes/customerAppointmentsRoutes.test.js
+```
+
+Route duoc kiem thu:
+
+```text
+backend/src/routes/customerPetsRoutes.js
+```
+
+Service duoc mock:
+
+```text
+backend/src/services/customer/customerAppointmentsService.js
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8B-2 theo AAA.
+
+Example:
+
+```js
+test("POST /api/customer/appointments creates an appointment and returns 201", async () => {
+  // Arrange
+  createCustomerAppointment.mockResolvedValueOnce(appointment);
+
+  // Act
+  const response = await request(app)
+    .post("/api/customer/appointments")
+    .send(input);
+
+  // Assert
+  expect(response.status).toBe(201);
+  expect(response.body).toEqual({ ok: true, appointment });
+  expect(createCustomerAppointment).toHaveBeenCalledWith(input, customerId);
+});
+```
+
+## 4. Mock data
+
+Mock data nam truc tiep trong route test vi scope nho va chi can route contract:
+
+- `mockAuthUser` voi role `customer` va `customerId`.
+- Appointment request body cho create/reschedule/cancel.
+- Appointment response payload.
+- Provider/options/list response payload.
+- Service error co `statusCode`.
+
+Backend route tests mock:
+
+- `authMiddleware`: gan `req.auth.user`.
+- `customerAppointmentsService`: mock tat ca function appointment route su dung.
+- `requireRole("customer")` van dung implementation that tu middleware de test role guard.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Customer appointment route suite | 9 passed / 9 total |
+| Test suites | 16 passed / 16 total |
+| Test cases | 107 passed / 107 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend regression:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 56 passed / 56 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- customerAppointmentsRoutes
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8B-2:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 43.16% |
+| Branches | 43.03% |
+| Functions | 37.66% |
+| Lines | 43.16% |
+
+Route-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/routes/customerPetsRoutes.js` | 45.92% | 40% | 100% | 45.92% |
+
+Appointment service coverage khong doi so voi Phase 8B vi Phase 8B-2 mock service:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/customer/customerAppointmentsService.js` | 73.14% | 42.22% | 76.59% | 73.14% |
+
+Frontend coverage khong thay doi ve scope Phase 8B-2:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 80.31% |
+| Branches | 64.13% |
+| Functions | 75% |
+| Lines | 80.47% |
+
+## 7. He thong da lam tot
+
+- Appointment routes lay `customerId` tu auth context, khong tin vao client body.
+- Create route tra dung `201` khi tao appointment thanh cong.
+- List route giu nguyen filter/pagination tu query string de service xu ly.
+- Confirm/reschedule/cancel routes truyen dung appointment id path param.
+- Reschedule/cancel routes truyen dung body reason/date/time vao service.
+- Error tu service duoc route map dung theo `statusCode`, giup UI nhan dung conflict/validation status.
+- Role guard chan non-customer truoc khi service appointment duoc goi.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Auth middleware dang duoc mock, nen chua xac minh JWT real verification trong route appointment.
+- Route test chua cham Supabase/DB, nen chua bat duoc loi schema/RLS/concurrency.
+- `customerPetsRoutes.js` gom nhieu endpoint customer khac, nen file route coverage van con nhieu uncovered lines.
+- Chua co Supertest test cho boarding/customer pet/service-history endpoints trong cung route file.
+- Chua co UI component test cho modal dat lich, doi lich, huy lich.
+
+## 9. Danh gia Phase 8B-2
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Customer appointment route tests pass | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend regression pass rate | Dat, 100% |
+| Route contract coverage | Dat co ban |
+| Role guard coverage | Dat co ban |
+| Real JWT coverage | Chua dat |
+| Real DB concurrency coverage | Chua dat |
+| Rui ro con lai | Trung binh-thap cho route contract, trung binh cho auth/DB |
+
+## 10. Follow-up
+
+Phase tiep theo nen la:
+
+- `Phase 8B-3 Customer Appointment Concurrency`: DB integration test cho duplicate doctor slot.
+- `Phase 8C Route Authorization Coverage`: JWT/role coverage that hon tren nhieu role endpoint.
+- `Phase 8D Customer Appointment UI`: component tests cho booking/reschedule/cancel modals.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi production code can sua trong Phase 8B-2. Co mot ghi chu nho: route test khi require `server.js` co log dotenv trong output targeted test, nhung khong anh huong ket qua test.

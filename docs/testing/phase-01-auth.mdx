@@ -1,0 +1,241 @@
+---
+title: "Phase 01 Auth Testing"
+description: "Bao cao kiem thu Phase 1 cho xac thuc, phien dang nhap va phan quyen."
+---
+
+# Phase 01 Auth Testing
+
+Phase 1 tap trung vao xac thuc va phan quyen, vi day la lop bao ve truoc khi nguoi dung truy cap cac flow quan trong nhu dat lich, kham benh, grooming, boarding, thanh toan va quan tri.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Dang nhap bang email va mat khau.
+- Tu choi dang nhap khi thieu input, tai khoan bi khoa hoac sai mat khau.
+- Dang ky tai khoan customer moi.
+- Tu choi email trung va mat khau yeu.
+- Middleware xac thuc Bearer token.
+- Kiem tra `auth_version` de vo hieu hoa phien cu.
+- Role guard bang `requireRole`.
+- Role context cho customer, doctor, staff va admin.
+- Password reset backend: request code, verify code, reset password va tang `auth_version`.
+- Auth route Express: login, register, `/me`, forgot-password request/verify/reset.
+- Luu, khoi phuc va xoa session o frontend.
+- Frontend auth service goi dung endpoint login, register, restore session va forgot password.
+- Frontend auth failure: login that bai khong luu session, restore khi khong co session khong goi API.
+
+Ngoai pham vi Phase 1:
+
+- Chua kiem thu UI form login/register/forgot password bang React Testing Library.
+- Chua kiem thu JWT that voi `jsonwebtoken`; Phase nay mock `signAuthToken` va `verifyAuthToken` de co lap service/middleware logic.
+- Chua kiem thu SMTP production failure va rollback khi tao customer profile that bai.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/authService.test.js
+backend/tests/middleware/authMiddleware.test.js
+backend/tests/routes/authRoutes.test.js
+backend/tests/mocks/auth.mock.js
+backend/tests/helpers/supabaseQuery.js
+```
+
+Frontend:
+
+```text
+frontend/src/services/auth.test.ts
+frontend/src/utils/authSession.test.ts
+frontend/src/tests/mocks/auth.mock.ts
+```
+
+Smoke test tu Phase 0 van duoc giu:
+
+```text
+backend/tests/routes/health.test.js
+frontend/src/utils/apiUrl.test.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test moi deu theo cau truc AAA.
+
+Backend service:
+
+```js
+test("returns a signed customer session when credentials are valid", async () => {
+  // Arrange
+  supabase.from
+    .mockReturnValueOnce(createSupabaseQuery({ data: activeCustomerUser, error: null }))
+    .mockReturnValueOnce(createSupabaseQuery({ data: customerProfile, error: null }));
+
+  // Act
+  const result = await loginWithCredentials(" CUSTOMER@example.test ", "PetService@123");
+
+  // Assert
+  expect(result).toEqual({
+    token: "signed-test-token",
+    user: expect.objectContaining({
+      role: "customer",
+      customerId: customerProfile.id,
+    }),
+  });
+});
+```
+
+Frontend service:
+
+```ts
+test("restoreSession clears storage when the server rejects the token", async () => {
+  // Arrange
+  writeStorage(localStorage, mockAuthSession);
+  mockFetchJson({ ok: false, message: "Unauthorized" }, false, 401);
+
+  // Act
+  const session = await restoreSession();
+
+  // Assert
+  expect(session).toBeNull();
+  expect(getStoredSession()).toBeNull();
+});
+```
+
+## 4. Mock data
+
+Mock data duoc dat rieng de tai su dung:
+
+```text
+backend/tests/mocks/auth.mock.js
+frontend/src/tests/mocks/auth.mock.ts
+```
+
+Du lieu mock bao gom:
+
+- Customer active.
+- Customer locked.
+- Customer profile.
+- Register input hop le.
+- Doctor profile.
+- Staff profile.
+- Reset token hash.
+- Frontend auth user/session.
+
+Database access duoc mock bang helper:
+
+```text
+backend/tests/helpers/supabaseQuery.js
+```
+
+Helper nay mo phong Supabase chain nhu `.from().select().eq().single()` hoac `.from().insert().select().single()` de unit test khong can database that.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 4 passed / 4 total |
+| Test cases | 27 passed / 27 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 3 passed / 3 total |
+| Test cases | 14 passed / 14 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 14.81% |
+| Branches | 50.4% |
+| Functions | 2.9% |
+| Lines | 14.81% |
+
+Backend auth-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/middleware/authMiddleware.js` | 91.78% | 68% | 100% | 91.78% |
+| `backend/src/services/authService.js` | 91.54% | 46.34% | 100% | 91.54% |
+| `backend/src/routes/authRoutes.js` | 87.09% | 53.84% | 100% | 87.09% |
+
+Frontend covered-file coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 94.64% |
+| Branches | 84.61% |
+| Functions | 93.75% |
+| Lines | 98.11% |
+
+Frontend auth-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/services/auth.ts` | 94.73% | 75% | 100% | 94.73% |
+| `frontend/src/utils/authSession.ts` | 95.45% | 87.5% | 100% | 100% |
+
+## 7. He thong da lam tot
+
+- Login chuan hoa email truoc khi query, giup tranh loi do khoang trang hoac chu hoa/chu thuong.
+- Tai khoan khong `ACTIVE` bi chan truoc khi tao token.
+- Sai mat khau khong tao token.
+- Dang ky customer kiem tra email trung va mat khau yeu truoc khi tao user.
+- Middleware bat buoc Bearer token va tu choi token thieu hoac sai `sub`.
+- Middleware kiem tra `auth_version`, vi vay token cu co the bi vo hieu hoa sau reset password hoac thay doi phien.
+- Backend password reset tang `auth_version`, giup vo hieu hoa token cu sau khi doi mat khau.
+- `requireRole` chan role khong phu hop bang HTTP 403.
+- Auth routes tra status code phu hop cho login/register/forgot-password flow.
+- Doctor/staff/admin auth context duoc map dung theo role va profile tuong ung.
+- Frontend tach ro session nho lau o `localStorage` va session tam o `sessionStorage`.
+- Khi `/api/auth/me` bi server tu choi, frontend tu xoa session cu de tranh trang thai dang nhap gia.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Backend `authService.js` van con nhanh chua duoc test: SMTP production failure, database error branches va rollback khi tao customer profile loi.
+- Chua co component test cho Login/Register/Forgot Password UI, nen chua chung minh loi form hien thi dung voi nguoi dung.
+- Mot so thong bao loi tieng Viet trong source hien bi loi encoding; test Phase 1 tranh assert nguyen chuoi day du de khong khoa test vao noi dung bi mojibake.
+- Coverage backend tong the van thap vi Phase 1 chi tap trung auth, trong khi coverage config dang do toan bo backend source.
+- JWT signing/verifying that chua duoc kiem thu trong Phase 1 vi unit test dang mock JWT de co lap service/middleware.
+
+## 9. Danh gia Phase 1
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Critical auth tests pass | Dat |
+| Backend Phase 1 pass rate | Dat, 100% |
+| Frontend Phase 1 pass rate | Dat, 100% |
+| Auth middleware coverage | Dat tot |
+| Auth service coverage | Dat target, 91.54% statements |
+| Auth route coverage | Dat tot, 87.09% statements |
+| Rui ro phan quyen co ban | Thap |
+| Rui ro forgot password/backend OTP | Thap den trung binh |
+
+Ket luan: Phase 1 da xac nhan nen tang xac thuc, phien dang nhap, reset password va phan quyen co ban hoat dong dung o cap unit/route test. Phase nay du dieu kien chuyen sang Phase 2, voi follow-up rieng cho UI auth forms va JWT integration test neu can.
+
+## 10. Fix trong qua trinh kiem thu
+
+Trong khi mo rong Phase 1, test output phat hien `authService.js` con hai dong `console.log` debug trong nhanh doctor context. Cac dong nay khong lam sai nghiep vu nhung gay nhieu log khi chay test va khi van hanh backend. Da xoa log debug de output sach hon.

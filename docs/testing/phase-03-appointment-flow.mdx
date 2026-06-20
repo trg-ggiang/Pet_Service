@@ -1,0 +1,231 @@
+---
+title: "Phase 03 Appointment Flow Testing"
+description: "Bao cao kiem thu Phase 3 cho luong appointment cua customer."
+---
+
+# Phase 03 Appointment Flow Testing
+
+Phase 3 tap trung vao appointment flow cua customer: lay options, loc danh sach, tim provider, tao lich, xac nhan, doi lich va huy lich. Day la flow co rui ro cao vi lien quan den pet ownership, service/provider compatibility, slot thoi gian va transition trang thai.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Lay danh sach service co the booking cho customer.
+- Loai bo service khong nam trong nhom booking customer.
+- Appointment list empty state khi customer chua co pet.
+- Provider lookup reject khi thieu customer id.
+- Create appointment reject khi thieu pet id.
+- Create appointment reject khi pet khong thuoc customer.
+- Confirm appointment reject khi appointment khong o trang thai `PENDING`.
+- Confirm appointment thanh cong se update status va tao notification cho doctor.
+- Cancel appointment reject khi appointment da `COMPLETED`.
+- Reschedule appointment reject khi appointment da `COMPLETED`.
+- Frontend appointment API goi dung endpoint, method, auth header, body va query string cho options/list/providers/create/confirm/reschedule/cancel.
+
+Ngoai pham vi Phase 3:
+
+- Chua test thanh cong full create appointment do flow nay di qua slot reservation, service insert, email event va reload appointment maps.
+- Chua test thanh cong pending reschedule/cancel voi slot rollback.
+- Chua test concurrent booking cung slot.
+- Chua test customer appointment UI modals bang React Testing Library.
+- Chua test route-level `/api/customer/appointments` bang Supertest.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/customerAppointmentsService.test.js
+backend/tests/mocks/customerAppointments.mock.js
+backend/tests/helpers/supabaseQuery.js
+```
+
+Frontend:
+
+```text
+frontend/src/services/customer/customerAppointmentsApi.test.ts
+frontend/src/tests/mocks/customerAppointments.mock.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 3 dung AAA.
+
+Backend status-transition example:
+
+```js
+test("rejects confirming appointments that are not pending", async () => {
+  // Arrange
+  supabase.from
+    .mockReturnValueOnce(createSupabaseQuery({ data: completedAppointment, error: null }))
+    .mockReturnValueOnce(createSupabaseQuery({ data: appointmentPet, error: null }));
+
+  // Act
+  const action = () => confirmCustomerAppointment(`APT-${completedAppointment.id}`, appointmentCustomerId);
+
+  // Assert
+  await expect(action()).rejects.toMatchObject({ statusCode: 409 });
+});
+```
+
+Frontend request-contract example:
+
+```ts
+test("reschedules an appointment with requested date and reason", async () => {
+  // Arrange
+  const input = { date: "2099-07-21", time: "10:00", reason: "Change time" };
+  mockFetchJson({ ok: true, appointment: mockAppointment });
+
+  // Act
+  await rescheduleCustomerAppointment("APT-000200", input);
+
+  // Assert
+  expect(fetch).toHaveBeenCalledWith(
+    "http://localhost:5050/api/customer/appointments/APT-000200/reschedule",
+    expect.objectContaining({
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  );
+});
+```
+
+## 4. Mock data
+
+Mock data duoc tach rieng:
+
+```text
+backend/tests/mocks/customerAppointments.mock.js
+frontend/src/tests/mocks/customerAppointments.mock.ts
+```
+
+Du lieu mock bao gom:
+
+- Customer id va pet thuoc customer.
+- Appointment `PENDING` va `COMPLETED`.
+- Appointment actors de tao notification cho doctor.
+- Medical va grooming service.
+- Frontend appointment, options, list payload va provider.
+
+Backend appointment tests mock:
+
+- Supabase client.
+- Email event service.
+- Doctor schedule service.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 9 passed / 9 total |
+| Test cases | 54 passed / 54 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 8 passed / 8 total |
+| Test cases | 33 passed / 33 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 21.87% |
+| Branches | 39.67% |
+| Functions | 14.28% |
+| Lines | 21.87% |
+
+Backend appointment-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/customer/customerAppointmentsService.js` | 37.76% | 32.23% | 46.8% | 37.76% |
+
+Frontend covered-file coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 79.43% |
+| Branches | 74.73% |
+| Functions | 82.5% |
+| Lines | 80.76% |
+
+Frontend appointment-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/services/customer/customerAppointmentsApi.ts` | 100% | 65% | 100% | 100% |
+
+## 7. He thong da lam tot
+
+- Appointment options chi tra ve cac service ma customer duoc booking: MEDICAL, GROOMING va BOARDING.
+- Customer appointment list co empty state an toan khi customer chua co pet.
+- Appointment creation chan ngay khi thieu pet id hoac pet khong thuoc customer.
+- Confirm/cancel/reschedule deu kiem tra status truoc khi thay doi du lieu.
+- Confirm appointment tao notification cho doctor khi customer xac nhan lich.
+- Frontend appointment API contract ro rang: dung endpoint, method, body, query string va auth header.
+- Appointment id duoc encode khi goi action endpoint, giam rui ro loi URL voi id co ky tu dac biet.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Backend `customerAppointmentsService.js` con coverage thap vi file rat lon va gom nhieu flow: slot detection, provider lookup, create success, email, appointment maps, prescriptions, boarding pricing.
+- Chua co test cho concurrent booking cung slot, day la rui ro quan trong cua appointment flow.
+- Chua co integration test cho create appointment thanh cong voi doctor slot reservation va rollback khi insert appointment/service that bai.
+- Chua co route test Supertest cho customer appointment endpoints.
+- Chua co component test cho modal dat lich, doi lich, huy lich va detail appointment.
+- Chua test service type/provider mismatch thanh cong that bai o duong create sau khi resolve service.
+
+## 9. Danh gia Phase 3
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Critical appointment tests pass | Dat |
+| Backend Phase 3 pass rate | Dat, 100% |
+| Frontend Phase 3 pass rate | Dat, 100% |
+| Frontend appointment API coverage | Dat rat tot |
+| Backend appointment service coverage | Chua dat target, can mo rong |
+| Rui ro ownership co ban | Thap |
+| Rui ro slot/concurrency | Trung binh den cao |
+| Rui ro UI appointment modal | Trung binh |
+
+Ket luan: Phase 3 da xac nhan cac guard quan trong cua appointment flow: ownership, input validation, status transition va API contract. Phase nay co the chuyen tiep, nhung nen co follow-up rieng cho create success, slot rollback, concurrent booking va route/component tests.
+
+## 10. Follow-up truoc demo/E2E
+
+Phase 3 du dieu kien chuyen sang Phase 4, nhung appointment flow chua nen dong hoan toan. Can tao backlog follow-up rieng cho cac test sau:
+
+- Integration test cho create appointment thanh cong voi doctor slot reservation.
+- Rollback test khi insert appointment hoac appointment service that bai sau khi da reserve slot.
+- Concurrent booking test cho hai request cung slot.
+- Supertest route tests cho `/api/customer/appointments` va cac action confirm/reschedule/cancel.
+- Component tests cho modal dat lich, doi lich, huy lich va appointment detail.
+- Provider mismatch va slot conflict test o nhanh create thuc te sau khi resolve service.
+
+Muc tieu cua follow-up nay la giam rui ro slot/concurrency tu trung binh-cao xuong thap truoc demo cuoi hoac truoc khi chay E2E.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi nghiep vu can sua trong Phase 3. Co mot thay doi ho tro test: `backend/tests/helpers/supabaseQuery.js` duoc mo rong de gia lap Supabase query dang `await query` truc tiep, vi appointment service dung ca chain terminal `.single()` va await query object.

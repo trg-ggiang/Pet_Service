@@ -1,0 +1,219 @@
+---
+title: "Phase 08A Boarding Deep Coverage"
+description: "Bao cao kiem thu mo rong Phase 8A de tang backend coverage cho boardingService va cac luong boarding rui ro cao."
+---
+
+# Phase 08A Boarding Deep Coverage
+
+Phase 8A la phase mo rong sau strategy chinh Phase 1-7. Muc tieu la cai thien backend coverage theo rui ro, bat dau tu `boardingService.js` vi day la service lien quan booking phong, tinh tien, invoice, trang thai phong va notification.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Room availability: reject date range khong hop le truoc khi query.
+- Room availability: danh dau phong unavailable khi bi overlap hoac dang maintenance.
+- Create boarding booking: validate pet ownership, cage, overlap, tao appointment, appointment service va boarding record.
+- Create boarding booking: reject khi cage da co active stay overlap.
+- Approve boarding booking: chuyen appointment sang `CONFIRMED` va notify customer.
+- Check-in boarding: chuyen boarding `CHECKED_IN`, cage `OCCUPIED`, appointment `IN_PROGRESS`.
+- Checkout boarding: reject khi invoice da `PAID`.
+- Checkout boarding: tao invoice, rebuild invoice items, chuyen boarding `CHECKED_OUT`, cage `CLEANING`, appointment `COMPLETED`.
+- Customer care update: owner update feeding/special note va notify staff users.
+- Extend boarding stay: reject khi extension range bi overlap voi active stay khac.
+- Pending/confirmed boarding lists: map room, owner, pet va nights.
+- Customer boarding history: map daily updates va sort newest first.
+- Extend boarding stay: success path update pickup date va notify staff.
+- Boarding room CRUD: create/update va block delete khi co active boarding.
+- Reschedule booked boarding: update boarding dates va appointment timestamp.
+
+Ngoai pham vi Phase 8A:
+
+- Chua test upload anh daily boarding qua Supabase Storage.
+- Chua test route-level staff/customer boarding APIs bang Supertest.
+- Chua test real DB constraint/RLS hoac concurrent booking.
+- Chua test frontend boarding UI/component.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/boardingService.test.js
+backend/tests/mocks/boardingOperations.mock.js
+backend/tests/helpers/supabaseQuery.js
+```
+
+Thay doi helper:
+
+```text
+backend/tests/helpers/supabaseQuery.js
+```
+
+Da bo sung chain method `.lt()` de mock duoc overlap query cua Supabase.
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8A dung AAA.
+
+Example:
+
+```js
+test("checks out boarding with invoice items and final state updates", async () => {
+  // Arrange
+  const invoiceInsert = createSupabaseQuery({ data: { id: invoiceId }, error: null });
+  const itemInsert = createSupabaseQuery({ data: null, error: null });
+
+  // Act
+  const result = await checkOutBoarding(boardingId, staffId, {
+    foodFeePerDay: 20000,
+    extraServiceFee: 50000,
+  });
+
+  // Assert
+  expect(result).toEqual(expect.objectContaining({ invoiceId }));
+  expect(itemInsert.insert).toHaveBeenCalledWith(
+    expect.arrayContaining([
+      expect.objectContaining({ source_type: "BOARDING" }),
+    ]),
+  );
+});
+```
+
+## 4. Mock data
+
+Mock data duoc tach rieng:
+
+```text
+backend/tests/mocks/boardingOperations.mock.js
+```
+
+Du lieu mock bao gom:
+
+- Customer, pet, cage, appointment, boarding, staff, invoice ids.
+- Available cage, maintenance cage, booked cage.
+- Pending boarding row.
+- Checked-in boarding row.
+- Customer-owned boarding row.
+- Boarding service catalog row.
+
+Backend tests mock:
+
+- Supabase client.
+- Email service.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 15 passed / 15 total |
+| Test cases | 93 passed / 93 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 56 passed / 56 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- boardingService
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8A:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 37.53% |
+| Branches | 42.09% |
+| Functions | 34.63% |
+| Lines | 37.53% |
+
+Backend boarding-specific coverage:
+
+| File | Truoc Phase 8A | Sau Phase 8A |
+| --- | --- | --- |
+| `backend/src/services/boardingService.js` statements | 24.41% | 90.46% |
+| `backend/src/services/boardingService.js` branches | 20.83% | 28.57% |
+| `backend/src/services/boardingService.js` functions | 20.83% | 91.66% |
+| `backend/src/services/boardingService.js` lines | 24.41% | 90.46% |
+
+Frontend coverage khong thay doi ve scope Phase 8A:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 80.31% |
+| Branches | 64.13% |
+| Functions | 75% |
+| Lines | 80.47% |
+
+## 7. He thong da lam tot
+
+- Booking phong co guard ngay thang va overlap, tranh dat trung phong trong cung khoang ngay.
+- Maintenance room khong duoc xem la available.
+- Create booking tao day du appointment, appointment service va boarding record voi so dem/price tu cage.
+- Approve/check-in dong bo status giua boarding, cage va appointment.
+- Checkout co guard invoice da `PAID`, tranh sua hoa don da thu tien.
+- Checkout rebuild invoice items theo room/food/extra service, giam rui ro item cu bi cong don sai.
+- Customer care update co ownership guard va notify staff.
+- Extend stay co overlap guard, giam rui ro phong bi dat trung trong phan ngay gia han.
+- Pending/confirmed/customer boarding lists da co mapping test, giup giam rui ro sai du lieu hien thi.
+- Room CRUD co guard khong xoa phong dang co active boarding.
+
+## 8. Khuyet diem va rui ro con lai
+
+- `boardingService.js` da vuot target 70% statement/line coverage, nhung branch coverage con thap vi chua test nhieu error/fallback branches.
+- Chua test fallback migration columns, Supabase error paths va empty states day du.
+- Chua co route-level tests cho staff/customer boarding endpoints.
+- Chua co DB integration test de xac minh race condition khi hai booking cung phong cung luc.
+- Chua test Supabase Storage upload anh boarding daily status.
+- Chua test UI boarding modal/list/daily history.
+
+## 9. Danh gia Phase 8A
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Boarding tests pass | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend regression pass rate | Dat, 100% |
+| Boarding service statement coverage | Tang tu 24.41% len 90.46% |
+| Duplicate/paid invoice guard | Dat co ban |
+| Room overlap guard | Dat co ban |
+| Route-level coverage | Chua dat |
+| Real DB concurrency coverage | Chua dat |
+| Rui ro con lai | Trung binh |
+
+## 10. Follow-up
+
+Phase tiep theo nen la **Phase 8B: Customer Appointment Deep Coverage** hoac tiep tuc **Phase 8A-2 Boarding Route/UI Coverage**.
+
+Neu tiep tuc boarding, backlog con lai nen gom:
+
+- Supabase error paths cho room availability, create booking, checkout, room CRUD.
+- Fallback path khi `requested_check_in/requested_check_out` columns chua migrate.
+- Empty states cho customer boardings, pending boardings va confirmed boardings.
+- Ownership/status/date guard chi tiet cho `rescheduleBoardingBooking`.
+- Supabase Storage mock cho daily photo upload.
+- Supertest route tests cho `/api/staff/boarding/*` va customer boarding endpoints.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi nghiep vu can sua trong production code Phase 8A. Co mot thay doi ho tro test: `backend/tests/helpers/supabaseQuery.js` duoc bo sung `.lt()` de gia lap Supabase overlap query.

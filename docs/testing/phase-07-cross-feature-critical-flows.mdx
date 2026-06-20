@@ -1,0 +1,267 @@
+---
+title: "Phase 07 Cross Feature Critical Flows Testing"
+description: "Bao cao kiem thu Phase 7 cho cac luong critical lien vai tro: medical, grooming, boarding, payment va customer history."
+---
+
+# Phase 07 Cross Feature Critical Flows Testing
+
+Phase 7 la phase cuoi cua strategy hien tai. Muc tieu la kiem tra cac luong critical lien vai tro thay vi chi kiem tra tung service rieng le. Phase nay dung integration nhe voi mocked DB/API de xac minh contract giua customer, staff, doctor, payment va customer history.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Medical flow backend: staff confirm appointment, staff check-in, doctor complete exam, staff mark payment paid, customer xem service history.
+- Medical flow backend: appointment di qua cac trang thai `PENDING` -> `CONFIRMED` -> `IN_PROGRESS` -> `COMPLETED`.
+- Medical flow backend: doctor completion tao medical visit, prescription, invoice item va dong schedule slot.
+- Medical flow backend: payment confirmation chuyen invoice sang `PAID` va gui email confirmation.
+- Medical flow backend: customer service history doc lai dung appointment, invoice, medical visit va prescription.
+- Grooming flow backend: complete grooming update grooming/service/appointment thanh `COMPLETED`.
+- Grooming flow backend: invoice item da ton tai thi update lai, giam rui ro duplicate invoice item.
+- Boarding flow backend: check-in chuyen boarding, cage va appointment sang trang thai dang thuc hien.
+- Boarding flow backend: checkout tao invoice items, chuyen boarding `CHECKED_OUT`, cage `CLEANING`, appointment `COMPLETED`.
+- Frontend journey contract: customer appointment API, staff operations API, doctor exam API, payment API, customer service history API.
+- Frontend grooming/boarding/reschedule/cancel journey endpoints.
+
+Ngoai pham vi Phase 7:
+
+- Chua chay Playwright E2E tren browser that.
+- Chua chay voi database test that hoac transaction rollback that.
+- Chua xac minh UI rendering, modal validation, loading/error states.
+- Chua test real-time/concurrent booking cung slot.
+- Chua test PDF invoice render/download thuc te.
+- Chua test email delivery thuc te.
+- Chua test file upload boarding photo thuc te voi Supabase Storage.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/integration/crossFeatureCriticalFlows.test.js
+backend/tests/mocks/crossFeatureFlows.mock.js
+```
+
+Frontend:
+
+```text
+frontend/src/tests/integration/crossFeatureCriticalFlows.test.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 7 dung AAA. Do day la flow lien vai tro, moi test co Arrange lon hon cac unit test truoc do, nhung van giu cau truc ro rang.
+
+Backend example:
+
+```js
+test("runs the medical flow contract across staff, doctor, payment and customer history services", async () => {
+  // Arrange
+  const confirmUpdate = createSupabaseQuery({ data: null, error: null });
+  const doctorTx = createDoctorTx();
+  mockPrismaTx(doctorTx);
+
+  // Act
+  await confirmAppointment(appointmentId, staffId);
+  await checkInAppointment(appointmentId, staffId);
+  await completeDoctorExam({ appointmentId, doctorId, record });
+  await markPaymentPaid(invoiceId, "cash");
+  const history = await listCustomerServiceHistoryView(customerId, { type: "medical" });
+
+  // Assert
+  expect(confirmUpdate.update).toHaveBeenCalledWith(expect.objectContaining({ status: "CONFIRMED" }));
+  expect(history.history[0]).toEqual(expect.objectContaining({ status: "completed" }));
+});
+```
+
+Frontend example:
+
+```ts
+test("keeps the medical journey API contract across customer, staff, doctor and history clients", async () => {
+  // Arrange
+  mockFetchJson({ ok: true, message: "ok", history: [], summary: { total: 1, filtered: 1 } });
+
+  // Act
+  await createCustomerAppointment(input);
+  await staffAppointmentsService.confirmAppointment(30);
+  await doctorAppointmentsService.completeExamWithRecord(30, record);
+
+  // Assert
+  expect(fetch).toHaveBeenCalledWith(
+    "http://localhost:5050/api/doctor/appointments/30/exam-complete",
+    expect.objectContaining({ method: "PUT" }),
+  );
+});
+```
+
+## 4. Mock data
+
+Mock data duoc tach rieng:
+
+```text
+backend/tests/mocks/crossFeatureFlows.mock.js
+frontend/src/tests/mocks/doctorOperations.mock.ts
+```
+
+Du lieu mock bao gom:
+
+- Customer id, pet id, appointment id, doctor id, staff id.
+- Medical service, appointment service, medical visit, prescription.
+- Invoice va invoice item da thanh toan cho customer history.
+- Grooming service, grooming record va existing invoice item.
+- Boarding id, cage id, invoice checkout data.
+
+Backend tests mock:
+
+- Supabase client.
+- Prisma client va `$transaction`.
+- Email service.
+- Settings service.
+- Doctor schedule service.
+
+Frontend tests mock:
+
+- `fetch`.
+- Auth session trong `localStorage`.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 14 passed / 14 total |
+| Test cases | 79 passed / 79 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 56 passed / 56 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- crossFeatureCriticalFlows
+npm --prefix frontend run test:run -- crossFeatureCriticalFlows
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 34.94% |
+| Branches | 44.34% |
+| Functions | 30.95% |
+| Lines | 34.94% |
+
+Backend cross-flow related coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/staff/staffPortalService.js` | 34.7% | 47.95% | 28% | 34.7% |
+| `backend/src/services/boardingService.js` | 24.41% | 20.83% | 20.83% | 24.41% |
+| `backend/src/services/doctor/doctorExamCompletionService.js` | 66.76% | 34% | 71.42% | 66.76% |
+| `backend/src/services/customer/customerServiceHistoryService.js` | 96.24% | 42.65% | 100% | 96.24% |
+
+Frontend covered-file coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 80.31% |
+| Branches | 64.13% |
+| Functions | 75% |
+| Lines | 80.47% |
+
+Frontend cross-flow related coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/features/staff/services/staffAppointments.ts` | 48.14% | 34.37% | 45.16% | 49.05% |
+| `frontend/src/features/doctor/services/doctorAppointments.ts` | 94.28% | 65.21% | 93.75% | 97.05% |
+| `frontend/src/services/customer/customerAppointmentsApi.ts` | 100% | 65% | 100% | 100% |
+
+## 7. He thong da lam tot
+
+- Medical flow giu duoc chuoi trang thai quan trong tu staff den doctor den payment.
+- Doctor complete exam tao/cap nhat dung medical visit va prescription trong transaction.
+- Payment confirmation co email event va chuyen invoice sang `PAID`.
+- Customer history co the doc lai du lieu tu invoice, invoice item, medical visit va prescription theo cung appointment.
+- Grooming completion co co che update invoice item cu thay vi tao item moi, giam rui ro duplicate invoice.
+- Boarding check-in/checkout dong bo boarding, cage, appointment va invoice items.
+- Frontend service clients da goi dung endpoint/method/body cho luong lien vai tro.
+- Critical flow pass rate dat 100% tren mocked integration layer.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Phase 7 chua phai E2E that; mock khong bat duoc loi database constraint, RLS, network, latency hoac UI.
+- Backend all-source coverage van thap do nhieu service/route lon chua duoc phu het.
+- Chua test concurrent booking/slot race, day van la rui ro cao cua appointment flow.
+- Chua test PDF invoice download va noi dung PDF.
+- Chua test email delivery that va Supabase Storage upload that.
+- Chua test browser UI cho full journey customer/staff/doctor/admin.
+- Chua test du lieu multi-tenant tren DB that de xac minh khong ro ri du lieu giua customer/doctor/staff.
+
+## 9. Danh gia Phase 7
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Critical flow pass rate | Dat, 100% |
+| Backend Phase 7 pass rate | Dat, 100% |
+| Frontend Phase 7 pass rate | Dat, 100% |
+| Regression failures | 0 |
+| Data leak failures | 0 trong mock layer |
+| Medical cross-role flow | Dat co ban |
+| Grooming duplicate invoice guard | Dat co ban |
+| Boarding checkout invoice flow | Dat co ban |
+| Real browser E2E coverage | Chua dat |
+| Real DB integration coverage | Chua dat |
+| Rui ro con lai | Trung binh |
+
+## 10. Ket luan toan bo strategy
+
+Tu Phase 1 den Phase 7, bo test hien tai da tao nen baseline tu dong cho cac khu vuc chinh:
+
+- Auth va authorization.
+- Customer profile, pets, notifications, service history.
+- Customer appointment flow.
+- Staff operations.
+- Doctor operations.
+- Admin management va reporting.
+- Cross-feature critical flows.
+
+Ket qua tong hop sau Phase 7:
+
+| Khu vuc | Ket qua |
+| --- | --- |
+| Backend total | 14 suites, 79 tests, 100% pass |
+| Frontend total | 12 files, 56 tests, 100% pass |
+| Backend all-source line coverage | 34.94% |
+| Frontend line coverage | 80.47% |
+| Critical flow failures | 0 |
+
+Bo test nay du tot de lam regression baseline cho dev flow hien tai. Buoc tiep theo nen la:
+
+- Them Playwright E2E cho `TC-E2E-01` den `TC-E2E-04`.
+- Them test database integration voi database test rieng.
+- Nang coverage backend cho cac service lon: `adminService`, `staffPortalService`, `boardingService`, `customerAppointmentsService`.
+- Them route-level Supertest cho admin, staff, doctor va customer appointment endpoints.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi nghiep vu can sua trong production code Phase 7. Tat ca thay doi la integration tests, mock data va documentation.

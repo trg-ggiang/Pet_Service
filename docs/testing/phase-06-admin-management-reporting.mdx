@@ -1,0 +1,252 @@
+---
+title: "Phase 06 Admin Management And Reporting Testing"
+description: "Bao cao kiem thu Phase 6 cho admin users, services, appointments, dashboard, reports va frontend admin API contract."
+---
+
+# Phase 06 Admin Management And Reporting Testing
+
+Phase 6 tap trung vao admin management va reporting: quan ly users, services, appointments, dashboard totals, reports va API contract cua frontend admin service. Day la nhom flow quan trong vi admin co quyen thay doi cau hinh van hanh, trang thai lich hen, dich vu va xem so lieu doanh thu.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Admin users: map customer/doctor/staff tu `users` va profile tuong ung.
+- Admin users summary: tong customer/doctor/staff, locked count, active doctors/staff.
+- Customer spend: chi cong invoice `PAID`.
+- Doctor rating: tinh diem trung binh tu ratings.
+- Admin services: map category, status, bookings va revenue tu appointment services.
+- Admin services: reject status khong hop le truoc khi update database.
+- Admin appointments: map appointment rows, filter theo status/search, tinh amount summary.
+- Admin appointment status: cancel appointment va release doctor schedule slot.
+- Admin dashboard: tinh totals, status buckets, revenue va boarding room occupancy.
+- Admin reports: tinh revenue, bookings, top services, appointment stats va staff performance.
+- Frontend admin API contract: dashboard, users, services CRUD, appointments, staff, doctor schedules, reports, health trends va settings.
+
+Ngoai pham vi Phase 6:
+
+- Chua test `adminRoutes.js` bang Supertest voi role admin.
+- Chua test React components: tables, filters, modals, confirmations.
+- Chua test `createAdminService`, `updateAdminService`, `deleteAdminService` backend success path.
+- Chua test `createAdminStaffMember`, `updateAdminUserProfile`, `updateAdminSettings`, `getAdminHealthTrends` backend.
+- Chua test email templates va send test email.
+- Chua test doctor schedule route/service integration.
+- Chua test destructive admin actions voi audit trail.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/adminService.test.js
+backend/tests/mocks/adminOperations.mock.js
+```
+
+Frontend:
+
+```text
+frontend/src/features/admin/services/admin.test.ts
+frontend/src/tests/mocks/adminOperations.mock.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 6 dung AAA.
+
+Backend example:
+
+```js
+test("builds admin reports revenue, appointment stats and staff performance", async () => {
+  // Arrange
+  mockTableQueues({
+    invoices: adminInvoices,
+    invoice_items: adminInvoiceItems,
+    services: adminServices,
+    appointments: adminAppointments,
+    users: adminUsers,
+    doctors: adminDoctors,
+    staffs: adminStaffs,
+  });
+
+  // Act
+  const reports = await getAdminReports();
+
+  // Assert
+  expect(reports.summary).toEqual({
+    revenue: 430000,
+    customers: 1,
+    bookings: 2,
+    avgRevenue: 215000,
+  });
+});
+```
+
+Frontend example:
+
+```ts
+test("uses correct service CRUD endpoints and payloads", async () => {
+  // Arrange
+  mockFetchJson({ ok: true, services: [mockAdminService], summary: mockAdminServiceSummary });
+
+  // Act
+  await adminService.createService(mockAdminServicePayload);
+
+  // Assert
+  expect(fetch).toHaveBeenCalledWith(
+    "http://localhost:5050/api/admin/services",
+    expect.objectContaining({ method: "POST" }),
+  );
+});
+```
+
+## 4. Mock data
+
+Mock data duoc tach rieng:
+
+```text
+backend/tests/mocks/adminOperations.mock.js
+frontend/src/tests/mocks/adminOperations.mock.ts
+```
+
+Du lieu mock bao gom:
+
+- Users customer/doctor/staff.
+- Customer/doctor/staff profiles.
+- Pets, appointments, invoices, invoice items.
+- Services va appointment services.
+- Cages va boarding records cho dashboard occupancy.
+- Frontend dashboard, reports, service, appointment, staff, settings payloads.
+
+Backend tests mock:
+
+- Supabase client theo table queue.
+- Settings service.
+- Doctor schedule service.
+
+Frontend tests mock:
+
+- `fetch`.
+- Auth session trong `localStorage`.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 13 passed / 13 total |
+| Test cases | 76 passed / 76 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 11 passed / 11 total |
+| Test cases | 54 passed / 54 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- adminService
+npm --prefix frontend run test:run -- admin
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 32.57% |
+| Branches | 44.18% |
+| Functions | 29% |
+| Lines | 32.57% |
+
+Backend admin-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/adminService.js` | 51.86% | 53.04% | 59.01% | 51.86% |
+| `backend/src/routes/adminRoutes.js` | 24.94% | 100% | 100% | 24.94% |
+
+Frontend covered-file coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 78.73% |
+| Branches | 64.13% |
+| Functions | 71.55% |
+| Lines | 78.76% |
+
+Frontend admin-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/features/admin/services/admin.ts` | 93.1% | 58.82% | 86.2% | 91.66% |
+
+## 7. He thong da lam tot
+
+- Admin user list gom du thong tin tu `users`, customer/doctor/staff profile va related data.
+- Customer spend chi tinh invoice da `PAID`, tranh cong doanh thu chua thu vao tong chi tieu cua customer.
+- Doctor rating duoc tong hop tu ratings va lam tron 1 chu so.
+- Service summary tinh bookings va revenue tu appointment services.
+- Service status update co validation truoc khi cham database.
+- Appointment list map dung status domain (`CONFIRMED` -> `scheduled`, `COMPLETED` -> `completed`) va tinh amount tu appointment services.
+- Cancel appointment release doctor schedule slot ve `AVAILABLE`.
+- Dashboard tong hop duoc users, services, appointments, revenue, cages va occupied boarding rooms.
+- Reports tinh revenue, top services, appointment stats va completion rate theo nhan su.
+- Frontend admin service dung query trim, encoded id, method va body cho cac endpoint quan trong.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Backend `adminService.js` chua dat target 70% coverage cua Phase 6; hien moi dat 51.86% vi file gom rat nhieu flow.
+- `adminRoutes.js` chua duoc test o lop HTTP, nen middleware/admin role guard chua duoc xac minh trong Phase 6.
+- Chua test success/error paths cho service CRUD backend.
+- Chua test create staff/customer/doctor backend voi Supabase Auth Admin.
+- Chua test settings, email templates va health trends backend.
+- Chua test admin UI components: table filters, modal validation, confirm dialogs va empty/error states.
+- Chua test destructive operations voi audit/logging hoac confirm UX.
+- Dashboard/report calculations moi dung mock dataset nho, chua co case thang rong, invoice khong co item, service khong ton tai.
+
+## 9. Danh gia Phase 6
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Critical admin tests pass | Dat |
+| Backend Phase 6 pass rate | Dat, 100% |
+| Frontend Phase 6 pass rate | Dat, 100% |
+| Frontend admin API coverage | Dat rat tot |
+| Backend admin reporting coverage | Dat co ban |
+| Backend admin service coverage target 70% | Chua dat |
+| Admin route authorization coverage | Chua dat |
+| Report calculation failures | 0 trong mock dataset |
+| Rui ro admin API contract | Thap |
+| Rui ro backend admin edge cases | Trung binh |
+
+## 10. Follow-up
+
+Phase 6 du dieu kien chuyen sang Phase 7, nhung admin management chua nen dong hoan toan. Can tao backlog follow-up rieng cho cac test sau:
+
+- Supertest route tests cho `/api/admin/*` voi admin token va non-admin token.
+- Backend success/error tests cho `createAdminService`, `updateAdminService`, `deleteAdminService`.
+- Backend tests cho `createAdminStaffMember` voi Supabase Auth Admin mock.
+- Backend tests cho `updateAdminUserProfile`, `getAdminHealthTrends`, `getAdminSettings`, `updateAdminSettings`.
+- More report cases: invoice khong item, invoice unpaid excluded/included tuy metric, service missing, cancelled appointments.
+- Component tests cho AdminUsersView, AdminServicesView, AdminAppointmentsView va AdminReportsView.
+- Audit/logging strategy cho destructive admin actions.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi nghiep vu can sua trong production code Phase 6. Tat ca thay doi la test code, mock data va documentation.

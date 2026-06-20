@@ -1,0 +1,411 @@
+---
+title: "Testing Strategy"
+description: "Chiến lược kiểm thử tự động theo feature, phase, mock data và AAA cho Pet Service."
+---
+
+# Testing Strategy
+
+Trang này mô tả cách vận hành kiểm thử tự động cho Pet Service. Phạm vi chi tiết của từng test case nghiệp vụ nằm ở `docs/testing-srs.mdx`; trang này tập trung vào framework, phase triển khai, quy ước AAA, mock data, metrics và mẫu báo cáo.
+
+## 1. Mục tiêu
+
+- Kiểm thử theo các feature và flow quan trọng thay vì chỉ test theo file.
+- Ưu tiên business logic ở backend service, vì phần lớn nghiệp vụ hiện nằm trong `backend/src/services`.
+- Không dùng dữ liệu production hoặc database thật trong unit test.
+- Mỗi test case phải theo cấu trúc AAA: Arrange, Act, Assert.
+- Mỗi phiên kiểm thử phải ghi nhận pass rate, coverage, số test, lỗi còn lại và rủi ro.
+
+## 2. Stack kiểm thử
+
+| Khu vực | Framework | Mục đích |
+| --- | --- | --- |
+| Backend unit test | Jest | Test service, helper, validation, mapping dữ liệu |
+| Backend route test | Supertest | Test Express route, status code, response shape |
+| Frontend unit test | Vitest | Test API client, utility, state logic |
+| Frontend component test | React Testing Library | Test component theo hành vi người dùng |
+| DOM test environment | jsdom | Giả lập browser cho frontend test |
+
+## 3. Lệnh vận hành
+
+Backend:
+
+```powershell
+npm --prefix backend run test:run
+npm --prefix backend run test:coverage
+```
+
+Frontend:
+
+```powershell
+npm --prefix frontend run test:run
+npm --prefix frontend run test:coverage
+```
+
+Build kiểm tra sau khi test quan trọng:
+
+```powershell
+npm --prefix frontend run build
+```
+
+## 4. Quy tắc AAA
+
+Mỗi test case nên giữ ba phần rõ ràng:
+
+```js
+test("creates a pet when input is valid", async () => {
+  // Arrange
+  const input = mockValidPetInput();
+  mockSupabaseInsertSuccess();
+
+  // Act
+  const result = await createCustomerPet(input, 1);
+
+  // Assert
+  expect(result.id).toBe(10);
+});
+```
+
+Quy ước:
+
+- `Arrange`: tạo input, mock user/session, mock Supabase hoặc Prisma.
+- `Act`: gọi đúng function, route hoặc thao tác UI cần kiểm thử.
+- `Assert`: kiểm tra output, error, HTTP status, response body và mock calls.
+
+## 5. Mock data
+
+Unit test phải dùng mock data thay vì database thật.
+
+Backend mock data đề xuất:
+
+```text
+backend/tests/mocks/
+  users.mock.js
+  customers.mock.js
+  pets.mock.js
+  appointments.mock.js
+  services.mock.js
+  invoices.mock.js
+  supabase.mock.js
+  prisma.mock.js
+```
+
+Frontend mock data đề xuất:
+
+```text
+frontend/src/tests/mocks/
+  auth.mock.ts
+  customerPets.mock.ts
+  appointments.mock.ts
+  notifications.mock.ts
+```
+
+Nguyên tắc:
+
+- Có ít nhất một case hợp lệ, một case empty state và một case lỗi.
+- Có ít nhất hai customer khác nhau để test quyền sở hữu dữ liệu.
+- Mock phải dùng tên, email, token và ID giả lập.
+- Không commit `.env`, token thật, URL database thật hoặc dữ liệu production.
+
+## 6. Metrics của một phiên kiểm thử
+
+Mỗi phiên test cần ghi lại:
+
+| Chỉ số | Cách tính hoặc nguồn |
+| --- | --- |
+| Total suites | Output từ Jest/Vitest |
+| Total tests | Output từ Jest/Vitest |
+| Passed | Output từ Jest/Vitest |
+| Failed | Output từ Jest/Vitest |
+| Skipped | Output từ Jest/Vitest |
+| Pass rate | `Passed / (Passed + Failed) * 100%` |
+| Statement coverage | Coverage report |
+| Branch coverage | Coverage report |
+| Function coverage | Coverage report |
+| Line coverage | Coverage report |
+| Execution time | Output từ test runner |
+| Critical failures | Lỗi ở Auth, quyền dữ liệu, thanh toán, invoice hoặc appointment |
+| Risk level | Low, Medium, High |
+
+Mục tiêu tổng thể giai đoạn đầu:
+
+| Khu vực | Target |
+| --- | --- |
+| Critical flow pass rate | 100% |
+| Overall pass rate | >= 90% |
+| Backend line coverage | >= 75% |
+| Frontend line coverage | >= 65% |
+| Backend service coverage cho feature ưu tiên | >= 80% |
+
+## 7. Phase plan
+
+### Phase 0: Test infrastructure
+
+Mục tiêu:
+
+- Cài Jest, Supertest, Vitest, jsdom và Testing Library.
+- Thêm scripts `test`, `test:run`, `test:coverage`.
+- Thêm smoke test cho backend và frontend.
+- Xác nhận test runner chạy được không cần database thật.
+
+Deliverables:
+
+- `backend/jest.config.cjs`
+- `backend/tests/setup.js`
+- `backend/tests/routes/health.test.js`
+- `frontend/src/tests/setupTests.ts`
+- `frontend/src/utils/apiUrl.test.ts`
+
+Exit criteria:
+
+- Backend smoke test pass.
+- Frontend smoke test pass.
+- Coverage command chạy được.
+
+### Phase 1: Auth và authorization
+
+Feature scope:
+
+- Login, register, restore session, forgot password.
+- Middleware xác thực token.
+- Role guard cho customer, staff, doctor, admin.
+
+Files ưu tiên:
+
+- `backend/src/services/authService.js`
+- `backend/src/routes/authRoutes.js`
+- `backend/src/middleware/authMiddleware.js`
+- `frontend/src/services/auth.ts`
+- `frontend/src/utils/authSession.ts`
+
+Test types:
+
+- Backend unit test cho auth service.
+- Backend route test cho protected route.
+- Frontend unit test cho session storage.
+
+Metrics target:
+
+| Metric | Target |
+| --- | --- |
+| Pass rate | >= 95% |
+| Backend auth coverage | >= 80% |
+| Critical auth failures | 0 |
+
+### Phase 2: Customer core
+
+Feature scope:
+
+- Customer profile.
+- Pet dashboard, pet detail, create pet, update pet.
+- Notifications.
+- Service history.
+
+Files ưu tiên:
+
+- `backend/src/services/customerPetsService.js`
+- `backend/src/services/customer/customerProfileService.js`
+- `backend/src/services/customer/customerServiceHistoryService.js`
+- `backend/src/services/customerNotificationsService.js`
+- `frontend/src/services/customerPets.ts`
+- `frontend/src/services/customer/customerServiceHistoryApi.ts`
+
+Test types:
+
+- Backend service unit test với mock Supabase.
+- Frontend API client unit test với mock `fetch`.
+- Một số route test cho response shape.
+
+Metrics target:
+
+| Metric | Target |
+| --- | --- |
+| Pass rate | >= 90% |
+| Customer service coverage | >= 85% |
+| Data ownership failures | 0 |
+
+### Phase 3: Appointment flow
+
+Feature scope:
+
+- Customer tạo lịch, đổi lịch, hủy lịch, confirm.
+- Provider options.
+- Slot validation.
+- Appointment list filter, paging.
+
+Files ưu tiên:
+
+- `backend/src/services/customer/customerAppointmentsService.js`
+- `backend/src/routes/customerPetsRoutes.js`
+- Frontend appointment APIs/components.
+
+Test types:
+
+- Backend unit test cho validation và status transition.
+- Route test cho các endpoint appointment chính.
+- Frontend API client test cho query params và payload.
+
+Metrics target:
+
+| Metric | Target |
+| --- | --- |
+| Pass rate | >= 90% |
+| Appointment service coverage | >= 75% |
+| Invalid state transition failures | 0 |
+
+### Phase 4: Staff operations
+
+Feature scope:
+
+- Staff profile, summary.
+- Confirm/check-in appointment.
+- Grooming start/complete.
+- Boarding approve/check-in/daily status/checkout.
+- Payment mark paid.
+
+Files ưu tiên:
+
+- `backend/src/routes/staffRoutes.js`
+- `backend/src/services/staff/staffPortalService.js`
+- `backend/src/services/boardingService.js`
+- `frontend/src/features/staff/services/staffAppointments.ts`
+
+Test types:
+
+- Backend service unit test cho nghiệp vụ.
+- Route test với mocked role staff.
+- Frontend service test cho staff API payload.
+
+Metrics target:
+
+| Metric | Target |
+| --- | --- |
+| Pass rate | >= 85% |
+| Staff service coverage | >= 70% |
+| Duplicate invoice failures | 0 |
+
+### Phase 5: Doctor operations
+
+Feature scope:
+
+- Doctor schedule.
+- Exam context.
+- Start/complete exam.
+- Medical visit, prescription, invoice generation.
+- Doctor ownership guard.
+
+Files ưu tiên:
+
+- `backend/src/services/doctor/doctorService.js`
+- `backend/src/services/doctor/doctorExamCompletionService.js`
+- `backend/src/routes/doctorAppointmentRoutes.js`
+- `frontend/src/features/doctor/services`
+
+Test types:
+
+- Backend service unit test với mock Prisma hoặc Supabase.
+- Route test cho doctor endpoint chính.
+- Component test nhẹ cho form khám nếu cần.
+
+Metrics target:
+
+| Metric | Target |
+| --- | --- |
+| Pass rate | >= 85% |
+| Doctor service coverage | >= 75% |
+| Exam completion duplicate failures | 0 |
+
+### Phase 6: Admin management và reporting
+
+Feature scope:
+
+- User/staff management.
+- Service CRUD.
+- Doctor schedule management.
+- Appointment management.
+- Dashboard/reporting.
+
+Files ưu tiên:
+
+- `backend/src/routes/adminRoutes.js`
+- `backend/src/services/adminService.js`
+- `frontend/src/features/admin/services/admin.ts`
+- `frontend/src/components/admin/*`
+
+Test types:
+
+- Backend service unit test.
+- Route test cho role admin.
+- Frontend service/component test cho table, modal, filter.
+
+Metrics target:
+
+| Metric | Target |
+| --- | --- |
+| Pass rate | >= 85% |
+| Admin service coverage | >= 70% |
+| Report calculation failures | 0 |
+
+### Phase 7: Cross-feature critical flows
+
+Feature scope:
+
+- Customer tạo pet và đặt lịch khám.
+- Staff check-in.
+- Doctor hoàn tất khám.
+- Staff thu tiền.
+- Customer xem lịch sử và tải PDF.
+- Grooming end-to-end.
+- Boarding end-to-end.
+
+Test types:
+
+- Integration test nhẹ với mocked DB.
+- Sau này có thể bổ sung Playwright E2E trên môi trường test thật.
+
+Metrics target:
+
+| Metric | Target |
+| --- | --- |
+| Critical flow pass rate | 100% |
+| Regression failures | 0 |
+| Data leak failures | 0 |
+
+## 8. Mẫu test session report
+
+```text
+Test session ID:
+Date/time:
+Branch/commit:
+Environment:
+Scope:
+Runner:
+
+Suites:
+Tests:
+Passed:
+Failed:
+Skipped:
+Pass rate:
+Execution time:
+
+Statement coverage:
+Branch coverage:
+Function coverage:
+Line coverage:
+
+Critical failures:
+Known issues:
+Risk level:
+Next actions:
+```
+
+## 9. Điều kiện kết thúc một phase
+
+Một phase được xem là đạt khi:
+
+- Tất cả critical test pass.
+- Pass rate đạt target của phase.
+- Coverage đạt target hoặc có lý do chấp nhận được.
+- Không có lỗi phân quyền, rò rỉ dữ liệu, trùng hóa đơn hoặc sai trạng thái nghiệp vụ.
+- Kết quả được ghi vào session log hoặc work log.
+

@@ -1,0 +1,229 @@
+---
+title: "Phase 02 Customer Core Testing"
+description: "Bao cao kiem thu Phase 2 cho customer profile, pets, notifications va service history."
+---
+
+# Phase 02 Customer Core Testing
+
+Phase 2 tap trung vao cac chuc nang cot loi cua customer portal: ho so khach hang, ho so thu cung, thong bao va lich su dich vu. Day la nhom feature co rui ro cao ve quyen so huu du lieu, validation input va mapping du lieu hien thi.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Customer profile: xem profile, update cac truong cho phep, bo qua email input, validate ten rong va ngay sinh tuong lai.
+- Customer pets: tao pet, normalize optional fields, validate customer id, validate ten pet, chan xem/sua pet khong thuoc customer.
+- Customer notifications: list notifications, tinh unread summary, mark read, mark all read, dismiss, chan thao tac notification khong thuoc user.
+- Customer service history: empty state khi khong co pet, build history tu invoice/appointment/item/medical visit, filter type, reject missing customer id.
+- Frontend API clients: customer pets, profile, notifications va service history goi dung endpoint, method, auth header, payload va query string.
+
+Ngoai pham vi Phase 2:
+
+- Chua test UI component customer portal bang React Testing Library.
+- Chua test route-level customer endpoints bang Supertest cho toan bo customer core.
+- Chua test full dashboard pet summary voi vaccination/latest visit do service nay con nhieu nhánh format va aggregation.
+- Chua test PDF invoice download vi can mock Blob, object URL va DOM click flow rieng.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/customerProfileService.test.js
+backend/tests/unit/customerPetsService.test.js
+backend/tests/unit/customerNotificationsService.test.js
+backend/tests/unit/customerServiceHistoryService.test.js
+backend/tests/mocks/customerCore.mock.js
+backend/tests/helpers/supabaseQuery.js
+```
+
+Frontend:
+
+```text
+frontend/src/services/customerPets.test.ts
+frontend/src/services/customerNotifications.test.ts
+frontend/src/services/customer/customerProfileApi.test.ts
+frontend/src/services/customer/customerServiceHistoryApi.test.ts
+frontend/src/tests/mocks/customerCore.mock.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 2 dung AAA.
+
+Backend ownership example:
+
+```js
+test("rejects viewing a pet owned by another customer", async () => {
+  // Arrange
+  supabase.from
+    .mockReturnValueOnce(createSupabaseQuery({ data: petRow, error: null }))
+    .mockReturnValueOnce(
+      createSupabaseQuery({ data: [], error: null }, { resolveMethods: ["order"] }),
+    );
+
+  // Act
+  const action = () => getPetDetail(petRow.id, 999);
+
+  // Assert
+  await expect(action()).rejects.toThrow();
+});
+```
+
+Frontend API example:
+
+```ts
+test("adds a type filter when a specific history type is requested", async () => {
+  // Arrange
+  mockFetchJson({ ok: true, ...mockServiceHistoryPayload });
+
+  // Act
+  await fetchCustomerServiceHistory({ type: "medical" });
+
+  // Assert
+  expect(fetch).toHaveBeenCalledWith(
+    "http://localhost:5050/api/customer/service-history?type=medical",
+    expect.objectContaining({
+      headers: expect.objectContaining({
+        Authorization: `Bearer ${mockAuthSession.token}`,
+      }),
+    }),
+  );
+});
+```
+
+## 4. Mock data
+
+Mock data duoc tach rieng:
+
+```text
+backend/tests/mocks/customerCore.mock.js
+frontend/src/tests/mocks/customerCore.mock.ts
+```
+
+Du lieu mock bao gom:
+
+- Customer profile row co nested user email.
+- Pet row thuoc customer hien tai.
+- Create pet input hop le.
+- Notification read/unread.
+- Customer pet dashboard payload.
+- Customer service history payload.
+- Invoice, appointment, invoice item va medical visit cho backend history service.
+
+Database access tiep tuc duoc mock bang:
+
+```text
+backend/tests/helpers/supabaseQuery.js
+```
+
+Helper da duoc mo rong them `resolveMethods` de mo phong cac Supabase chain ket thuc bang `.eq()`, `.in()` hoac `.order()`.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 8 passed / 8 total |
+| Test cases | 45 passed / 45 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 7 passed / 7 total |
+| Test cases | 26 passed / 26 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 19.65% |
+| Branches | 42.06% |
+| Functions | 9.37% |
+| Lines | 19.65% |
+
+Backend customer-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/customer/customerProfileService.js` | 95.95% | 40% | 100% | 95.95% |
+| `backend/src/services/customer/customerServiceHistoryService.js` | 91.68% | 39.2% | 100% | 91.68% |
+| `backend/src/services/customerNotificationsService.js` | 85.04% | 43.75% | 100% | 85.04% |
+| `backend/src/services/customerPetsService.js` | 34.58% | 34.17% | 30.76% | 34.58% |
+
+Frontend covered-file coverage:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 73.87% |
+| Branches | 77.33% |
+| Functions | 78.78% |
+| Lines | 76.19% |
+
+Frontend customer-related coverage observed:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/services/customerPets.ts` | 31.57% | 69.04% | 40% | 33.33% |
+
+Note: Vitest coverage output chi hien thi cac file duoc instrument trong tap lenh hien tai. Cac nested customer API files da co test pass, nhung coverage text summary khong liet ke rieng tung file trong output nay.
+
+## 7. He thong da lam tot
+
+- Customer profile chi update cac truong duoc phep; email van la read-only tu bang user.
+- Validation profile chan full name rong va ngay sinh tuong lai truoc khi query database.
+- Pet create/update rang buoc theo `customer_id`, giup giam rui ro sua pet cua nguoi khac.
+- Optional pet fields duoc normalize ve `null`, tranh luu cac gia tri nhu `none`, `khong co`, chuoi rong.
+- Notification mutations luon filter theo `user_id`, han che thao tac tren notification cua user khac.
+- Service history build duoc record tu nhieu nguon: pet, appointment, invoice, invoice item va medical visit.
+- Frontend customer APIs gui auth header va dung method/query string cho cac thao tac doc, tao, sua, mark read, delete.
+
+## 8. Khuyet diem va rui ro con lai
+
+- `customerPetsService.js` van co coverage thap vi file nay gom nhieu logic aggregation/detail/PDF-adjacent data; Phase 2 moi uu tien validation va ownership.
+- Chua co route test Supertest cho `/api/customer/profile`, `/api/customer/pets`, `/api/customer/notifications`, `/api/customer/service-history`.
+- Chua co UI/component test cho customer portal, nen chua xac nhan loading/error/empty states tren giao dien.
+- Chua test download invoice PDF flow o frontend.
+- Chua test day du dashboard pet summary voi vaccination, latest medical visit va invoices co item.
+- Backend branch coverage customer services con thap do nhieu nhanh error DB va format fallback chua duoc phu.
+
+## 9. Danh gia Phase 2
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Critical customer tests pass | Dat |
+| Backend Phase 2 pass rate | Dat, 100% |
+| Frontend Phase 2 pass rate | Dat, 100% |
+| Profile service coverage | Dat tot |
+| Notifications service coverage | Dat tot |
+| Service history service coverage | Dat tot |
+| Pets service coverage | Chua dat, can mo rong trong follow-up |
+| Rui ro ownership co ban | Thap |
+| Rui ro UI/customer portal | Trung binh |
+
+Ket luan: Phase 2 da xac nhan customer core o cap service/API client hoat dong dung voi cac luong validation, ownership va mapping chinh. Phase nay du dieu kien chuyen sang Phase 3 Appointment Flow, nhung nen co follow-up rieng cho pet dashboard detail va customer route/component tests.
+
+## 10. Fix trong qua trinh kiem thu
+
+Trong qua trinh tao Phase 2, da xoa cac `console.debug` payload/debug trong `customerPetsService.js` va `frontend/src/services/customerPets.ts`. Cac log nay khong lam sai nghiep vu nhung gay nhieu khi chay test va khong phu hop voi API/client code on dinh.

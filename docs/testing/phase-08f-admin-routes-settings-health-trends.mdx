@@ -1,0 +1,208 @@
+---
+title: "Phase 08F Admin Routes Settings And Health Trends"
+description: "Bao cao kiem thu mo rong admin routes, settings, health trends va staff/service management."
+---
+
+# Phase 08F Admin Routes Settings And Health Trends
+
+Phase 8F tiep tuc follow-up cua Phase 6. Muc tieu la tang coverage cho admin backend, dac biet la route contract cua `/api/admin/*`, settings, health trends, service CRUD va tao nhan su.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- `createAdminService`: tao service moi voi payload admin va tra ve service da map.
+- `updateAdminService`: update service theo display id `SV-*` va refresh list sau khi cap nhat.
+- `deleteAdminService`: xoa service theo display id.
+- `getAdminHealthTrends`: tong hop pet age group, species, disease va prescription trend.
+- `getAdminSettings`: merge default settings voi stored settings va profile admin hien tai.
+- `updateAdminSettings`: luu settings patch vao settings store.
+- `updateAdminUserProfile`: cap nhat profile customer/staff tu man hinh admin.
+- `createAdminStaffMember`: tao Supabase Auth Admin user va insert profile nhan su.
+- `GET /api/admin/dashboard`: route goi dashboard service va tra ve payload.
+- `GET /api/admin/services`: route forward `category`, `status`, `search`.
+- `POST /api/admin/services`, `PATCH /services/:id`, `DELETE /services/:id`: route mapping body/id/status code.
+- `GET /api/admin/health-trends`: route tra ve aggregated health trends.
+- `GET /api/admin/settings`, `PUT /api/admin/settings`: route truyen authenticated admin vao settings service.
+- `POST /api/admin/staff`: route tao nhan su va tra ve `201`.
+- `PATCH /api/admin/staff/:id/profile`: route map staff display id vao `updateAdminUserProfile`.
+- Non-admin role bi chan `403` truoc khi admin service chay.
+
+Ngoai pham vi Phase 8F:
+
+- Chua test admin React components.
+- Chua test destructive action audit log.
+- Chua test email template admin routes.
+- Chua test legacy doctor profile admin routes trong `adminRoutes.js`.
+- Chua test real Supabase Auth Admin integration.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/adminService.test.js
+backend/tests/routes/adminRoutes.test.js
+backend/tests/helpers/supabaseQuery.js
+```
+
+Production code lien quan:
+
+```text
+backend/src/services/adminService.js
+backend/src/routes/adminRoutes.js
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8F theo AAA.
+
+Example:
+
+```js
+test("PUT /api/admin/settings persists settings patch for authenticated admin", async () => {
+  // Arrange
+  updateAdminSettings.mockResolvedValueOnce(settings);
+
+  // Act
+  const response = await request(app)
+    .put("/api/admin/settings")
+    .send(input);
+
+  // Assert
+  expect(response.status).toBe(200);
+  expect(updateAdminSettings).toHaveBeenCalledWith(input, mockAuthUser);
+});
+```
+
+## 4. Mock data
+
+Backend unit tests mock:
+
+- Supabase query chain helper.
+- Supabase Auth Admin `createUser`.
+- Settings service `getStoredSetting` va `saveStoredSetting`.
+- Service rows, appointment service rows, pets, medical visits, diseases, prescriptions va staff profile rows.
+
+Backend route tests mock:
+
+- `authMiddleware` voi dynamic admin/non-admin auth context.
+- Real `requireRole("admin")` de kiem tra authorization boundary.
+- `adminService` functions.
+- `emailService` va `doctorScheduleService` de server load route stack on dinh.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend targeted:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Targeted suites | 2 passed / 2 total |
+| Targeted tests | 24 passed / 24 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Backend regression:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 21 passed / 21 total |
+| Test cases | 149 passed / 149 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend regression:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 60 passed / 60 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- adminRoutes adminService
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8F:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 55.32% |
+| Branches | 42.49% |
+| Functions | 51.82% |
+| Lines | 55.32% |
+
+Admin-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/adminService.js` | 73.55% | 51.1% | 79.68% | 73.55% |
+| `backend/src/routes/adminRoutes.js` | 34.38% | 40% | 100% | 34.38% |
+
+Frontend coverage khong thay doi ve scope Phase 8F:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 87.61% |
+| Branches | 67.39% |
+| Functions | 79.31% |
+| Lines | 88.01% |
+
+## 7. He thong da lam tot
+
+- Admin service co the tao, sua, xoa service qua display id va map payload ve shape phu hop UI.
+- Health trends gom du nhieu nguon du lieu: pets, visits, diseases va prescriptions.
+- Settings flow co default config, stored config va profile admin hien tai.
+- Route layer truyen dung query params, body, path params va auth user vao service layer.
+- Tao nhan su di qua Supabase Auth Admin truoc khi insert profile.
+- Admin route boundary chan non-admin bang `403` truoc khi service layer bi goi.
+
+## 8. Khuyet diem va rui ro con lai
+
+- `adminRoutes.js` van co coverage statement thap vi file gom nhieu endpoint legacy doctor profile, doctor schedules va email templates chua duoc test trong Phase 8F.
+- Chua co test audit/logging cho destructive admin action nhu delete service, lock user.
+- Chua co real Supabase Auth Admin integration, hien tai chi mock contract.
+- Chua co UI component tests cho admin users/services/appointments/reports/settings.
+- Chua test report edge cases va error branches sau hon.
+
+## 9. Danh gia Phase 8F
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Admin service deep tests pass | Dat |
+| Admin route contract tests pass | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend regression pass rate | Dat, 100% |
+| `adminService.js` statement coverage | Tang len 73.55% |
+| `adminRoutes.js` baseline route coverage | Dat co ban |
+| Settings/health trends coverage | Dat |
+| Admin UI coverage | Chua dat |
+| Rui ro con lai | Trung binh |
+
+## 10. Follow-up
+
+Follow-up con lai:
+
+- `Phase 8F-2 Admin Email Schedule And Audit Coverage`: email templates, doctor schedule admin routes, lock/delete audit strategy.
+- Admin React component tests cho users, services, appointments, reports va settings.
+- Real Supabase Auth Admin integration test voi test project hoac local auth adapter.
+- Report edge cases cho date range, empty revenue, top services va status breakdown.
+
+## 11. Fix trong qua trinh kiem thu
+
+- Bo sung `upsert` vao Supabase query chain helper de settings/admin service tests co the mock dung shape production.
+- Khong phat hien loi production code can sua trong Phase 8F.

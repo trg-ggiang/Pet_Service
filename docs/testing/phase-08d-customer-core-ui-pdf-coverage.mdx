@@ -1,0 +1,202 @@
+---
+title: "Phase 08D Customer Core UI And PDF Coverage"
+description: "Bao cao kiem thu mo rong customer core cho pet dashboard, pet detail invoice items va invoice PDF download contract."
+---
+
+# Phase 08D Customer Core UI And PDF Coverage
+
+Phase 8D tiep tuc follow-up cua Phase 2. Muc tieu la cai thien customer core coverage cho pet dashboard/detail aggregation va invoice PDF download flow.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- Pet dashboard summary map species, breed, latest vaccination va latest medical visit.
+- Pet dashboard lay `latestMedicalVisit` tu `medical_visits` that theo appointment ids.
+- Pet detail gom invoice items theo tung invoice.
+- Frontend invoice PDF download goi dung endpoint va auth header.
+- PDF filename doc tu `Content-Disposition` UTF-8 header.
+- Latest invoice PDF dung fallback endpoint.
+- Matching invoice PDF encode query params.
+- PDF download failure tra readable error message.
+
+Ngoai pham vi Phase 8D:
+
+- Chua render React component customer pet dashboard/modal bang Testing Library.
+- Chua parse noi dung binary PDF.
+- Chua test browser E2E download thuc te.
+- Chua test Supabase Storage/image upload trong customer pet UI.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/customerPetsService.test.js
+```
+
+Frontend:
+
+```text
+frontend/src/services/customerPets.test.ts
+```
+
+Production code lien quan:
+
+```text
+backend/src/services/customerPetsService.js
+frontend/src/services/customerPets.ts
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8D theo AAA.
+
+Example:
+
+```js
+test("returns pet detail with invoice items grouped by invoice", async () => {
+  // Arrange
+  supabase.from
+    .mockReturnValueOnce(createSupabaseQuery({ data: petRow, error: null }))
+    .mockReturnValueOnce(createSupabaseQuery({ data: [appointment], error: null }));
+
+  // Act
+  const detail = await getPetDetail(petRow.id, customerRow.id);
+
+  // Assert
+  expect(detail.invoices).toEqual([
+    expect.objectContaining({ id: invoice.id, items: [invoiceItem] }),
+  ]);
+});
+```
+
+## 4. Mock data
+
+Backend mock data:
+
+- Customer, pet, species, breed.
+- Appointment medical da completed.
+- Vaccination moi nhat.
+- Medical visit moi nhat.
+- Invoice va invoice item.
+
+Frontend mock data:
+
+- Auth session token.
+- PDF `Blob`.
+- `Content-Disposition` header.
+- `URL.createObjectURL`, `URL.revokeObjectURL` va anchor click trong jsdom.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Customer pets suite | 8 passed / 8 total |
+| Test suites | 18 passed / 18 total |
+| Test cases | 120 passed / 120 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Customer pets API suite | 8 passed / 8 total |
+| Test files | 12 passed / 12 total |
+| Test cases | 60 passed / 60 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- customerPetsService
+npm --prefix frontend run test:run -- customerPets
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8D:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 45.75% |
+| Branches | 43.30% |
+| Functions | 41.34% |
+| Lines | 45.75% |
+
+Backend customer pets coverage:
+
+| File | Truoc Phase 8D | Sau Phase 8D |
+| --- | --- | --- |
+| `backend/src/services/customerPetsService.js` statements | 34.58% | 78.46% |
+| `backend/src/services/customerPetsService.js` branches | 34.17% | 41.05% |
+| `backend/src/services/customerPetsService.js` functions | 30.76% | 100% |
+| `backend/src/services/customerPetsService.js` lines | 34.58% | 78.46% |
+
+Frontend coverage sau Phase 8D:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 87.61% |
+| Branches | 67.39% |
+| Functions | 79.31% |
+| Lines | 88.01% |
+
+Frontend customer pets coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `frontend/src/services/customerPets.ts` | 92.10% | 83.33% | 90% | 94.44% |
+
+## 7. He thong da lam tot
+
+- Pet dashboard co the map thong tin species/breed, vaccine va medical visit moi nhat cho tung pet.
+- Pet detail gom invoice items vao dung invoice, giup UI hien thi chi tiet chi phi tot hon.
+- PDF download dung auth header va cleanup object URL sau khi click.
+- Filename PDF uu tien `filename*=UTF-8''...`, giam rui ro ten file bi sai dau.
+- Matching invoice PDF encode search params, giam loi voi ten dich vu co dau.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Phase 8D moi test service/API contract, chua test React components cua customer pet dashboard/detail modal.
+- Chua parse PDF binary de xac minh noi dung hien thi tren file.
+- Chua test browser download behavior bang Playwright.
+- Chua co route-level tests rieng cho invoice PDF endpoints.
+
+## 9. Danh gia Phase 8D
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Customer core deep tests pass | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend pass rate | Dat, 100% |
+| Pet dashboard latest visit/vaccine | Dat |
+| Pet detail invoice items | Dat |
+| PDF download API contract | Dat |
+| Component/E2E PDF coverage | Chua dat |
+| Rui ro con lai | Trung binh-thap |
+
+## 10. Follow-up
+
+Follow-up con lai:
+
+- Customer pet dashboard/detail component tests bang React Testing Library.
+- Route-level tests cho invoice PDF endpoints.
+- Playwright test PDF download flow.
+- PDF content smoke test neu can xac minh noi dung file.
+
+## 11. Fix trong qua trinh kiem thu
+
+Co mot fix production trong Phase 8D: `getCustomerPetDashboard` duoc bo sung query `medical_visits` theo appointment ids de `latestMedicalVisit` lay dung nguon du lieu y te, thay vi suy luan tu appointment row.

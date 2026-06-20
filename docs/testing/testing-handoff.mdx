@@ -1,0 +1,210 @@
+---
+title: "Testing Handoff"
+description: "Tai lieu ban giao nhanh de nguoi code tiep hieu bo test hien tai va tiep tuc cac phase con lai."
+---
+
+# Testing Handoff
+
+Tai lieu nay la ban giao cho nguoi tiep tuc phien kiem thu tu dong cua project Pet Service. Muc tieu la giup tiep tuc dung flow hien tai, khong lam mat ngu canh va khong vo cac test da on dinh.
+
+## 1. Muc tieu cua chuoi kiem thu
+
+Chuoi phase hien tai dang xay mot bo test bai ban cho backend/frontend theo feature quan trong:
+
+- Backend: Jest + Supertest.
+- Frontend: Vitest + Testing Library/jsdom.
+- Pattern test: AAA, gom `Arrange`, `Act`, `Assert` ro rang.
+- Data: dung mock data, Supabase/Prisma/email/storage deu mock o unit/route level.
+- Bao cao: moi phase co mot file `.mdx` rieng trong `docs/testing/`.
+- Metrics: pass rate, failed/skipped, coverage all-source, coverage theo file/module trong phase.
+
+Nguyen tac quan trong:
+
+- Khong goi database that trong unit/route tests hien tai.
+- Khong hardcode secret/token thật.
+- Khi them phase moi, them test truoc, chay targeted, sau do chay regression va coverage.
+- Sau khi xong phase, cap nhat docs phase, `follow-up-backlog.mdx`, `docs/docs.json`, va `docs/dev/session-log.mdx`.
+
+## 2. Trang thai moi nhat
+
+Trang thai sau Phase 8F, ngay 2026-06-20:
+
+| Suite | Ket qua |
+| --- | --- |
+| Backend full regression | 21 suites passed, 149 tests passed |
+| Frontend full regression | 12 files passed, 60 tests passed |
+| Backend pass rate | 100% |
+| Frontend pass rate | 100% |
+| Backend all-source statements | 55.32% |
+| Backend all-source branches | 42.49% |
+| Backend all-source functions | 51.82% |
+| Backend all-source lines | 55.32% |
+| Frontend statements | 87.61% |
+| Frontend branches | 67.39% |
+| Frontend functions | 79.31% |
+| Frontend lines | 88.01% |
+
+Lenh docs check hien tai chua chay duoc vi may chua co Mintlify CLI:
+
+```text
+'mint' is not recognized as an internal or external command
+```
+
+Day la blocker moi truong, khong phai loi noi dung docs da duoc phat hien.
+
+## 3. Phase da hoan thanh
+
+| Phase | File report | Noi dung chinh |
+| --- | --- | --- |
+| Strategy | `docs/testing/strategy.mdx` | Framework, phase plan, metrics, quy tac AAA/mock data. |
+| Phase 1 | `docs/testing/phase-01-auth.mdx` | Auth service, middleware, auth routes, frontend auth session/API. |
+| Phase 2 | `docs/testing/phase-02-customer-core.mdx` | Customer profile, pets, notifications, service history. |
+| Phase 3 | `docs/testing/phase-03-appointment-flow.mdx` | Customer appointment baseline flow. |
+| Phase 4 | `docs/testing/phase-04-staff-operations.mdx` | Staff portal baseline operations. |
+| Phase 5 | `docs/testing/phase-05-doctor-operations.mdx` | Doctor appointment/exam baseline operations. |
+| Phase 6 | `docs/testing/phase-06-admin-management-reporting.mdx` | Admin management/reporting baseline. |
+| Phase 7 | `docs/testing/phase-07-cross-feature-critical-flows.mdx` | Mocked cross-feature critical flows. |
+| Phase 8A | `docs/testing/phase-08a-boarding-deep-coverage.mdx` | Boarding service deep coverage. |
+| Phase 8B | `docs/testing/phase-08b-customer-appointment-deep-coverage.mdx` | Appointment service deep coverage. |
+| Phase 8B-2 | `docs/testing/phase-08b-2-customer-appointment-route-coverage.mdx` | Customer appointment route coverage. |
+| Phase 8B-3 | `docs/testing/phase-08b-3-customer-appointment-concurrency.mdx` | Mocked slot concurrency contract. |
+| Phase 8C | `docs/testing/phase-08c-route-authorization-coverage.mdx` | Role boundary Supertest coverage. |
+| Phase 8D | `docs/testing/phase-08d-customer-core-ui-pdf-coverage.mdx` | Pet dashboard/detail and PDF API contract. |
+| Phase 8E | `docs/testing/phase-08e-doctor-service-route-coverage.mdx` | Doctor service and doctor route coverage. |
+| Phase 8F | `docs/testing/phase-08f-admin-routes-settings-health-trends.mdx` | Admin routes, settings, health trends, staff/service management. |
+
+Tong hop follow-up song nam tai:
+
+```text
+docs/testing/follow-up-backlog.mdx
+```
+
+## 4. File test quan trong
+
+Backend helpers:
+
+```text
+backend/tests/helpers/supabaseQuery.js
+backend/tests/setup.js
+backend/jest.config.cjs
+```
+
+Backend mock data:
+
+```text
+backend/tests/mocks/auth.mock.js
+backend/tests/mocks/customerCore.mock.js
+backend/tests/mocks/customerAppointments.mock.js
+backend/tests/mocks/staffOperations.mock.js
+backend/tests/mocks/boardingOperations.mock.js
+backend/tests/mocks/doctorOperations.mock.js
+backend/tests/mocks/adminOperations.mock.js
+backend/tests/mocks/crossFeatureFlows.mock.js
+```
+
+Backend unit/route/integration tests:
+
+```text
+backend/tests/unit/
+backend/tests/routes/
+backend/tests/integration/
+```
+
+Frontend test setup and tests:
+
+```text
+frontend/src/tests/
+frontend/src/services/*.test.ts
+frontend/src/services/customer/*.test.ts
+frontend/src/features/*/services/*.test.ts
+frontend/src/utils/*.test.ts
+```
+
+## 5. Lenh nen chay khi tiep tuc
+
+Targeted backend cho phase dang lam:
+
+```powershell
+npm --prefix backend run test:run -- tenFileHoacPattern
+```
+
+Targeted frontend cho phase dang lam:
+
+```powershell
+npm --prefix frontend run test:run -- tenFileHoacPattern
+```
+
+Regression sau khi xong phase:
+
+```powershell
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+```
+
+Coverage de lay so lieu report:
+
+```powershell
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+Kiem tra docs/navigation:
+
+```powershell
+node -e "JSON.parse(require('fs').readFileSync('docs/docs.json','utf8')); console.log('docs.json ok')"
+npm run docs:check
+```
+
+Luu y: `npm run docs:check` hien dang fail neu `mint` chua duoc cai hoac chua co trong PATH.
+
+## 6. Phase nen lam tiep
+
+Uu tien hien tai tu backlog:
+
+1. `Phase 8B-4 Real DB Appointment Concurrency`
+2. `Phase 8E-2 Doctor Follow-up And Specialist Routes`
+3. `Phase 8F-2 Admin Email Schedule And Audit Coverage`
+4. `Phase 8D-2 Customer Components And PDF E2E`
+5. `Phase 8C-2 JWT Route Integration Coverage`
+6. `Phase 9 Playwright And Database Integration`
+
+Neu tiep tuc ngay, nen bat dau bang `Phase 8B-4 Real DB Appointment Concurrency`, vi appointment slot booking la flow co rui ro cao nhat ve duplicate booking. Tuy nhien phase nay co the can database test rieng; neu chua san sang DB test, co the lam `Phase 8E-2` hoac `Phase 8F-2` truoc vi van theo mock/route pattern hien tai.
+
+## 7. Template khi them phase moi
+
+Moi phase moi nen co cac buoc:
+
+1. Doc report phase lien quan va `follow-up-backlog.mdx`.
+2. Doc source service/routes lien quan.
+3. Them hoac mo rong mock data neu can.
+4. Viet test theo AAA.
+5. Chay targeted test.
+6. Fix loi test hoac production bug neu test phat hien bug that.
+7. Chay backend/frontend regression.
+8. Chay coverage.
+9. Tao file `docs/testing/phase-xx-*.mdx` gom scope, file test, mock data, ket qua, coverage, diem tot, khuyet diem, follow-up.
+10. Them file docs vao `docs/docs.json`.
+11. Cap nhat `docs/testing/follow-up-backlog.mdx`.
+12. Cap nhat `docs/dev/session-log.mdx`.
+
+## 8. Can than khi sua test hien tai
+
+- Khong xoa mock helper cu neu chua kiem tra tat ca suites dung no.
+- `backend/tests/helpers/supabaseQuery.js` la helper dung chung; sua o day co the anh huong nhieu phase.
+- Route tests thuong mock `authMiddleware` nhung giu real `requireRole` de test authorization boundary.
+- Service tests dang mock Supabase theo queue/table; neu test fail bat thuong, kiem tra thu tu `.from()` va thu tu query chain truoc.
+- Khong chay command destructive hoac reset git vi worktree dang co nhieu thay doi testing phase chua commit.
+
+## 9. Suggested commit khi muon luu moc hien tai
+
+Neu muon commit moc testing hien tai, co the dung message:
+
+```text
+test: add phased backend and frontend coverage reports
+```
+
+Neu chi commit Phase 8F va handoff:
+
+```text
+docs: add testing handoff for phased coverage work
+```

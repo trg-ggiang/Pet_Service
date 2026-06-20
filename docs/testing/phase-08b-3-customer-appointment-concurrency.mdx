@@ -1,0 +1,184 @@
+---
+title: "Phase 08B-3 Customer Appointment Concurrency"
+description: "Bao cao kiem thu concurrency contract cho customer appointment doctor slot reservation."
+---
+
+# Phase 08B-3 Customer Appointment Concurrency
+
+Phase 8B-3 tap trung vao rui ro hai request cung dat mot doctor slot. Muc tieu la xac minh slot reservation co guard theo trang thai `AVAILABLE` va customer appointment creation se reject request thu hai khi slot vua bi request khac dat mat.
+
+## 1. Pham vi
+
+Chuc nang da kiem thu:
+
+- `doctorScheduleService.reserveDoctorScheduleSlot` update slot sang `BOOKED` voi dieu kien `id` va `status = AVAILABLE`.
+- Hai request cung reserve mot slot: request dau tien thanh cong, request thu hai nhan `null`.
+- Slot sau khi request dau tien thanh cong chuyen sang `BOOKED`.
+- `customerAppointmentsService.createCustomerAppointment` reject khi `reserveDoctorScheduleSlot` tra `null`.
+- Khi reserve slot that bai, appointment service khong insert appointment va khong gui email confirmation.
+- `buildScheduleSlots` tao cac slot 30 phut tu work window cua bac si.
+
+Ngoai pham vi Phase 8B-3:
+
+- Chua dung database PostgreSQL/Supabase test that.
+- Chua test unique constraint cua `appointments.doctor_schedule_slot_id` bang DB integration.
+- Chua test hai HTTP request thuc su song song qua Supertest voi DB.
+- Chua test retry/backoff hoac user-facing recovery UI khi gap slot conflict.
+
+## 2. File kiem thu
+
+Backend:
+
+```text
+backend/tests/unit/doctorScheduleService.test.js
+backend/tests/unit/customerAppointmentsService.test.js
+```
+
+Production code duoc cover:
+
+```text
+backend/src/services/doctorScheduleService.js
+backend/src/services/customer/customerAppointmentsService.js
+```
+
+## 3. Quy tac AAA
+
+Tat ca test Phase 8B-3 theo AAA.
+
+Example:
+
+```js
+test("allows only one reservation when two requests target the same available slot", async () => {
+  // Arrange
+  const slotState = { id: 400, status: "AVAILABLE" };
+
+  // Act
+  const [firstReservation, secondReservation] = await Promise.all([
+    reserveDoctorScheduleSlot(slotState.id),
+    reserveDoctorScheduleSlot(slotState.id),
+  ]);
+
+  // Assert
+  expect(firstReservation).toEqual({ id: slotState.id });
+  expect(secondReservation).toBeNull();
+  expect(slotState.status).toBe("BOOKED");
+});
+```
+
+## 4. Mock data
+
+Phase 8B-3 dung mock data nho, co state:
+
+- Slot state: `{ id: 400, status: "AVAILABLE" }`.
+- Query mock doc/ghi state khi `.maybeSingle()` duoc goi.
+- Customer appointment mock data tu `customerAppointments.mock.js`.
+- Doctor schedule mock service trong appointment test tra `null` de gia lap slot vua bi request khac lay mat.
+
+Backend tests mock:
+
+- Supabase client cho `doctorScheduleService`.
+- Doctor schedule service trong `customerAppointmentsService` unit test.
+- Email service de assert khong gui email khi slot conflict.
+
+## 5. Ket qua chay test
+
+Ngay chay: 2026-06-20
+
+Backend:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Targeted suites | 2 passed / 2 total |
+| Targeted tests | 17 passed / 17 total |
+| Test suites | 17 passed / 17 total |
+| Test cases | 110 passed / 110 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Frontend regression:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 12 passed / 12 total |
+| Test cases | 56 passed / 56 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- doctorScheduleService customerAppointmentsService
+npm --prefix backend run test:run
+npm --prefix frontend run test:run
+npm --prefix backend run test:coverage
+npm --prefix frontend run test:coverage
+```
+
+## 6. Coverage
+
+Backend all-source coverage sau Phase 8B-3:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 43.60% |
+| Branches | 43.03% |
+| Functions | 38.96% |
+| Lines | 43.60% |
+
+Backend appointment/schedule-specific coverage:
+
+| File | Statements | Branches | Functions | Lines |
+| --- | --- | --- | --- | --- |
+| `backend/src/services/customer/customerAppointmentsService.js` | 73.52% | 42.80% | 76.59% | 73.52% |
+| `backend/src/services/doctorScheduleService.js` | 36.19% | 36.36% | 60% | 36.19% |
+
+Frontend coverage khong thay doi ve scope Phase 8B-3:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 80.31% |
+| Branches | 64.13% |
+| Functions | 75% |
+| Lines | 80.47% |
+
+## 7. He thong da lam tot
+
+- Slot reservation khong chi update theo `id`; no con bat buoc `status = AVAILABLE`, day la guard quan trong de tranh double booking.
+- Khi mot request da doi slot sang `BOOKED`, request tiep theo cho cung slot nhan `null` thay vi thanh cong gia.
+- Appointment creation hieu `null` tu reservation nhu mot conflict va tra error `409`.
+- Khi slot conflict, flow dung truoc khi insert appointment, appointment service va email confirmation.
+- Slot 30 phut duoc tao tu work window, giup unique booking nam tren concrete slot thay vi ca work window dai.
+
+## 8. Khuyet diem va rui ro con lai
+
+- Day la mocked stateful concurrency test, chua thay the cho DB integration test that.
+- Chua xac minh unique index/constraint trong PostgreSQL khi hai transaction gan dong thoi insert `appointments.doctor_schedule_slot_id`.
+- Chua test transaction rollback voi appointment insert loi sau khi reserve thanh cong.
+- Chua co Supertest song song goi route create appointment voi DB test.
+- Chua co UI test cho thong bao slot vua bi dat mat va flow chon slot khac.
+
+## 9. Danh gia Phase 8B-3
+
+| Tieu chi | Ket qua |
+| --- | --- |
+| Schedule reservation conflict contract | Dat |
+| Appointment conflict guard | Dat |
+| Backend pass rate | Dat, 100% |
+| Frontend regression pass rate | Dat, 100% |
+| Real DB concurrency | Chua dat |
+| Rui ro con lai | Trung binh |
+
+## 10. Follow-up
+
+Phase 8B-3 dong duoc concurrency contract o service/mock layer. Follow-up nen gom:
+
+- Real DB integration test voi database test rieng va transaction song song.
+- Supertest song song `POST /api/customer/appointments` voi seed slot duy nhat.
+- Test DB unique constraint/failure message cho duplicate `doctor_schedule_slot_id`.
+- UI test cho slot conflict message va hanh dong chon slot khac.
+
+## 11. Fix trong qua trinh kiem thu
+
+Khong phat hien loi production code can sua trong Phase 8B-3. Test moi xac nhan logic hien co cua `reserveDoctorScheduleSlot` da dung optimistic guard `status = AVAILABLE`.
