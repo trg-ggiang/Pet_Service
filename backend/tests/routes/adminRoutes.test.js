@@ -52,6 +52,10 @@ jest.mock("../../src/services/doctorScheduleService", () => ({
   saveDoctorScheduleSlots: jest.fn(),
 }));
 
+jest.mock("../../src/services/adminAuditService", () => ({
+  recordAdminAudit: jest.fn().mockResolvedValue(null),
+}));
+
 const app = require("../../src/server");
 const {
   getAdminDashboard,
@@ -65,6 +69,13 @@ const {
   updateAdminService,
   updateAdminUserProfile,
 } = require("../../src/services/adminService");
+const {
+  getEmailTemplates,
+  updateEmailTemplates,
+  sendCustomEmail,
+} = require("../../src/services/emailService");
+const { saveDoctorScheduleSlots } = require("../../src/services/doctorScheduleService");
+const { recordAdminAudit } = require("../../src/services/adminAuditService");
 
 describe("admin routes", () => {
   beforeEach(() => {
@@ -165,6 +176,12 @@ describe("admin routes", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: true, deleted: true });
     expect(deleteAdminService).toHaveBeenCalledWith("SV-702");
+    expect(recordAdminAudit).toHaveBeenCalledWith({
+      actor: mockAuthUser,
+      action: "DELETE_SERVICE",
+      targetType: "service",
+      targetId: "SV-702",
+    });
   });
 
   test("GET /api/admin/health-trends returns aggregated health trends", async () => {
@@ -273,5 +290,86 @@ describe("admin routes", () => {
     expect(response.status).toBe(403);
     expect(response.body).toEqual(expect.objectContaining({ ok: false }));
     expect(getAdminDashboard).not.toHaveBeenCalled();
+  });
+
+  test("GET /api/admin/email-templates returns configured templates", async () => {
+    // Arrange
+    const templates = { appointment_confirmation: { subject: "Appointment" } };
+    getEmailTemplates.mockResolvedValueOnce(templates);
+
+    // Act
+    const response = await request(app).get("/api/admin/email-templates");
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, templates });
+    expect(getEmailTemplates).toHaveBeenCalledTimes(1);
+  });
+
+  test("PUT /api/admin/email-templates persists only the templates payload", async () => {
+    // Arrange
+    const templates = { custom: { subject: "Clinic update", heading: "Hello", message: "News" } };
+    updateEmailTemplates.mockResolvedValueOnce(templates);
+
+    // Act
+    const response = await request(app)
+      .put("/api/admin/email-templates")
+      .send({ templates, ignored: "value" });
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, templates });
+    expect(updateEmailTemplates).toHaveBeenCalledWith(templates);
+  });
+
+  test("POST /api/admin/email-templates/test forwards a custom email request", async () => {
+    // Arrange
+    sendCustomEmail.mockResolvedValueOnce({ sent: true, messageId: "test-message" });
+    const payload = {
+      to: "recipient@example.test",
+      subject: "SMTP check",
+      heading: "Test",
+      message: "It works",
+    };
+
+    // Act
+    const response = await request(app)
+      .post("/api/admin/email-templates/test")
+      .send(payload);
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, sent: true, messageId: "test-message" });
+    expect(sendCustomEmail).toHaveBeenCalledWith(payload);
+  });
+
+  test("POST /api/admin/email-templates/test maps delivery errors to 400", async () => {
+    // Arrange
+    sendCustomEmail.mockRejectedValueOnce(new Error("SMTP unavailable"));
+
+    // Act
+    const response = await request(app)
+      .post("/api/admin/email-templates/test")
+      .send({ to: "recipient@example.test" });
+
+    // Assert
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ ok: false, message: "SMTP unavailable" });
+  });
+
+  test("PUT /api/admin/doctors/:id/schedules saves normalized doctor slots", async () => {
+    // Arrange
+    const rows = [{ date: "2099-08-01", from: "08:00", to: "10:00" }];
+    saveDoctorScheduleSlots.mockResolvedValueOnce({ scheduleCount: 1, slotCount: 4 });
+
+    // Act
+    const response = await request(app)
+      .put("/api/admin/doctors/DOC-300/schedules")
+      .send({ rows, slotDuration: 30 });
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(expect.objectContaining({ ok: true, scheduleCount: 1, slotCount: 4 }));
+    expect(saveDoctorScheduleSlots).toHaveBeenCalledWith(300, rows, { slotDuration: 30 });
   });
 });

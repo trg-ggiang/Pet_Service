@@ -17,6 +17,8 @@ build/
 coverage/
 backend/dist/
 frontend/dist/
+playwright-report/
+test-results/
 
 # logs
 *.log

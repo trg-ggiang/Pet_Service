@@ -27,22 +27,22 @@ Nguyen tac quan trong:
 
 ## 2. Trang thai moi nhat
 
-Trang thai sau Phase 8F, ngay 2026-06-20:
+Trang thai sau dot follow-up 8A-2 den Phase 9 foundation, ngay 2026-06-20:
 
 | Suite | Ket qua |
 | --- | --- |
-| Backend full regression | 21 suites passed, 149 tests passed |
-| Frontend full regression | 12 files passed, 60 tests passed |
+| Backend full regression | 29 suites passed, 205 tests passed |
+| Frontend full regression | 14 files passed, 66 tests passed |
 | Backend pass rate | 100% |
 | Frontend pass rate | 100% |
-| Backend all-source statements | 55.32% |
-| Backend all-source branches | 42.49% |
-| Backend all-source functions | 51.82% |
-| Backend all-source lines | 55.32% |
-| Frontend statements | 87.61% |
-| Frontend branches | 67.39% |
-| Frontend functions | 79.31% |
-| Frontend lines | 88.01% |
+| Backend all-source statements | 62.56% |
+| Backend all-source branches | 44.12% |
+| Backend all-source functions | 64.31% |
+| Backend all-source lines | 62.56% |
+| Frontend statements | 87.23% |
+| Frontend branches | 69.77% |
+| Frontend functions | 79.86% |
+| Frontend lines | 88.20% |
 
 Lenh docs check hien tai chua chay duoc vi may chua co Mintlify CLI:
 
@@ -68,10 +68,17 @@ Day la blocker moi truong, khong phai loi noi dung docs da duoc phat hien.
 | Phase 8B | `docs/testing/phase-08b-customer-appointment-deep-coverage.mdx` | Appointment service deep coverage. |
 | Phase 8B-2 | `docs/testing/phase-08b-2-customer-appointment-route-coverage.mdx` | Customer appointment route coverage. |
 | Phase 8B-3 | `docs/testing/phase-08b-3-customer-appointment-concurrency.mdx` | Mocked slot concurrency contract. |
+| Phase 8B-4 ready | `docs/testing/phase-08b-4-real-db-appointment-concurrency.mdx` | Fail-closed multi-round DB runner, fixture validation and 7 runner tests; cho disposable DB execution. |
 | Phase 8C | `docs/testing/phase-08c-route-authorization-coverage.mdx` | Role boundary Supertest coverage. |
 | Phase 8D | `docs/testing/phase-08d-customer-core-ui-pdf-coverage.mdx` | Pet dashboard/detail and PDF API contract. |
 | Phase 8E | `docs/testing/phase-08e-doctor-service-route-coverage.mdx` | Doctor service and doctor route coverage. |
 | Phase 8F | `docs/testing/phase-08f-admin-routes-settings-health-trends.mdx` | Admin routes, settings, health trends, staff/service management. |
+| Phase 8A-2 | `docs/testing/phase-08a-2-staff-routes-boarding-photo.mdx` | Staff route contracts and mocked boarding photo Storage. |
+| Phase 8C-2 | `docs/testing/phase-08c-2-jwt-route-integration.mdx` | Real JWT signing/verification and LoginView tests. |
+| Phase 8D-2 | `docs/testing/phase-08d-2-customer-components-pdf-e2e.mdx` | Customer/PDF routes and profile component tests. |
+| Phase 8E-2 | `docs/testing/phase-08e-2-doctor-follow-up-specialist-routes.mdx` | Follow-up/invoice and specialist/urgent route tests. |
+| Phase 8F-2 mock complete | `docs/testing/phase-08f-2-admin-email-schedule-audit.mdx` | Email, schedule-save and structured audit contract; DB persistence remains open. |
+| Phase 9 foundation | `docs/testing/phase-09-playwright-database-integration.mdx` | Playwright smoke and guarded DB runner; business E2E remains blocked. |
 
 Tong hop follow-up song nam tai:
 
@@ -161,12 +168,10 @@ Luu y: `npm run docs:check` hien dang fail neu `mint` chua duoc cai hoac chua co
 
 Uu tien hien tai tu backlog:
 
-1. `Phase 8B-4 Real DB Appointment Concurrency`
-2. `Phase 8E-2 Doctor Follow-up And Specialist Routes`
-3. `Phase 8F-2 Admin Email Schedule And Audit Coverage`
-4. `Phase 8D-2 Customer Components And PDF E2E`
-5. `Phase 8C-2 JWT Route Integration Coverage`
-6. `Phase 9 Playwright And Database Integration`
+1. Cap disposable seeded Supabase project va chay `Phase 8B-4 Real DB Appointment Concurrency`.
+2. Cap dedicated role accounts va chay `TC-E2E-01` den `TC-E2E-04`.
+3. Chot schema/retention neu can luu admin audit log ben vung trong database.
+4. Bo sung doctor/staff/customer component coverage con lai.
 
 Neu tiep tuc ngay, nen bat dau bang `Phase 8B-4 Real DB Appointment Concurrency`, vi appointment slot booking la flow co rui ro cao nhat ve duplicate booking. Tuy nhien phase nay co the can database test rieng; neu chua san sang DB test, co the lam `Phase 8E-2` hoac `Phase 8F-2` truoc vi van theo mock/route pattern hien tai.
 
@@ -208,3 +213,15 @@ Neu chi commit Phase 8F va handoff:
 ```text
 docs: add testing handoff for phased coverage work
 ```
+
+## 10. Bo ho so dac ta kiem thu
+
+Da tao bo ho so tong hop trong `bao_cao_kiem_thu/` dua tren template bao cao va ket qua test hien tai:
+
+- `Tai_lieu_dac_ta_kiem_thu_PetService.docx`: tai lieu dac ta kiem thu, gom pham vi, chien luoc, ky thuat, quy trinh, ket qua regression/coverage va 14 vi tri chen anh ma nguon co ghi ro file cung khoang dong.
+- `UnitTest_TestCases_PetService.xlsx`: workbook 14 sheet, quan ly 271 automated test case theo flow scope, technique, test case, decision/boundary analysis, traceability, execution, coverage, evidence va integration.
+- `GHI_CHU_TRICH_XUAT_CODE.md`: danh sach nhanh cac doan ma nen chup va chu thich de doi chieu khi chen anh.
+
+Baseline ghi trong bo ho so: backend 205/205 pass, frontend 66/66 pass; tong catalog 271 test. Backend coverage 62.56% statements, 44.12% branches, 64.31% functions, 62.56% lines. Frontend coverage 87.23% statements, 69.77% branches, 79.86% functions, 88.20% lines.
+
+Khi them, xoa hoac doi ten test, can cap nhat workbook trong cung thay doi de giu Test Case ID, file/dong code va ket qua thuc thi dong bo voi ma nguon.

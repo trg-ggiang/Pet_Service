@@ -1,0 +1,24 @@
+---
+title: "Phase 9 Playwright And Database Integration"
+description: "Playwright foundation and external test-environment requirements."
+---
+
+# Phase 9 Playwright And Database Integration
+
+## Status
+
+Foundation complete; business E2E environment blocked.
+
+Added Playwright configuration, Chromium setup, managed frontend/backend servers, artifact ignores and a browser/API smoke test. The smoke test found and fixed the default page title.
+
+## Result
+
+- `npm run test:e2e`: 1 Chromium smoke test passed.
+- Backend regression: 29 suites, 205 tests passed.
+- Frontend regression: 14 files, 66 tests passed.
+- Backend all-source coverage: 62.56% statements/lines, 44.12% branches, 64.31% functions.
+- Frontend coverage: 87.23% statements, 69.77% branches, 79.86% functions, 88.20% lines.
+
+## Remaining
+
+Mocked contracts now cover `TC-E2E-01` through `TC-E2E-04`, including final slot release after reschedule/cancel. Browser execution, real email delivery, real Storage and cross-role DB leak checks still require a disposable seeded database plus dedicated customer/staff/doctor credentials. See `e2e/README.md`.

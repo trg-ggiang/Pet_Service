@@ -1,0 +1,276 @@
+---
+title: "Phase 8B-4 Real DB Appointment Concurrency"
+description: "Repeatable and fail-closed real database verification for atomic doctor slot reservation."
+---
+
+# Phase 8B-4 Real DB Appointment Concurrency
+
+## 1. Muc tieu
+
+Phase nay xac minh contract quan trong nhat cua appointment booking tren database that:
+
+> Khi nhieu request cung dat mot doctor schedule slot dang `AVAILABLE`, chi mot request duoc chuyen slot sang `BOOKED`; tat ca request con lai phai thua ma khong ghi de ket qua.
+
+Phase 8B-3 da xac minh contract nay bang stateful mock. Phase 8B-4 bo sung runner danh cho PostgreSQL/Supabase test project de phat hien cac van de ma mock khong the mo phong day du, nhu PostgREST conditional update, transaction isolation, network timing va row-level policy.
+
+## 2. Trang thai
+
+| Hang muc | Trang thai |
+| --- | --- |
+| Fail-closed configuration | Hoan thanh |
+| Local/remote project safety guard | Hoan thanh |
+| Dedicated fixture validation | Hoan thanh |
+| Concurrent reservation, nhieu contenders | Hoan thanh |
+| Lap lai nhieu round | Hoan thanh |
+| Xac minh final `BOOKED` moi round | Hoan thanh |
+| Cleanup trong `finally` | Hoan thanh |
+| Xac minh final `AVAILABLE` | Hoan thanh |
+| Runner unit tests | 7 tests passed |
+| Chay tren Supabase/PostgreSQL test that | Dang cho disposable test project |
+
+Khong co request nao duoc gui den `.env` hien tai. Lenh real DB van bi khoa cho den khi nguoi chay khai bao day du bien test va opt-in ro rang.
+
+## 3. File lien quan
+
+```text
+backend/tests/real-db/appointmentConcurrency.integration.js
+backend/tests/unit/realDbAppointmentConcurrencyRunner.test.js
+backend/package.json
+```
+
+Runner duoc tach thanh hai lop:
+
+1. Supabase adapter: thuc hien select/update tren `doctor_schedule_slots` va select tren `appointments`.
+2. Concurrency contract: khong phu thuoc Supabase SDK, co the unit test bang stateful adapter.
+
+Cach tach nay giup test safety/cleanup tren moi truong local ma khong can database that, trong khi van dung cung contract khi ket noi Supabase test.
+
+## 4. Database fixture bat buoc
+
+Can mot slot danh rieng cho automated test voi cac dieu kien:
+
+- Ton tai trong `doctor_schedule_slots`.
+- `status = AVAILABLE` truoc khi chay.
+- Khong co row nao trong `appointments` tham chieu `doctor_schedule_slot_id` cua slot.
+- Doctor, schedule va ngay gio cua slot thuoc du lieu test, khong phai production.
+- Khong co app/server/nguoi test khac cung su dung slot trong luc runner chay.
+
+Runner se dung ngay tai preflight neu slot khong ton tai, khong `AVAILABLE`, hoac da lien ket appointment. Runner khong tu tao/xoa doctor, schedule hay appointment, vi lam vay se mo rong pham vi destructive mutation.
+
+Co the kiem tra fixture bang SQL read-only:
+
+```sql
+select id, doctor_id, slot_date, start_time, end_time, status
+from doctor_schedule_slots
+where id = <TEST_DOCTOR_SLOT_ID>;
+
+select id, status
+from appointments
+where doctor_schedule_slot_id = <TEST_DOCTOR_SLOT_ID>;
+```
+
+Ket qua truy van thu hai phai rong.
+
+## 5. Bien moi truong
+
+| Bien | Bat buoc | Mac dinh | Y nghia |
+| --- | --- | --- | --- |
+| `RUN_REAL_DB_TESTS` | Co | Khong | Phai bang chuoi `true` de mo khoa runner. |
+| `TEST_SUPABASE_URL` | Co | Khong | URL cua Supabase test project. |
+| `TEST_SUPABASE_SERVICE_ROLE_KEY` | Co | Khong | Service-role key cua test project; khong commit. |
+| `TEST_DOCTOR_SLOT_ID` | Co | Khong | ID slot fixture danh rieng. |
+| `ALLOW_REMOTE_TEST_DB` | Chi remote | Khong | Phai bang `true` neu URL khong phai localhost. |
+| `TEST_CONCURRENCY_ROUNDS` | Khong | `5` | So round lap lai. |
+| `TEST_CONCURRENCY_CONTENDERS` | Khong | `10` | So request tranh slot trong moi round. |
+
+Tat ca gia tri count va ID phai la so nguyen duong. URL remote bi chan mac dinh ngay ca khi `RUN_REAL_DB_TESTS=true`.
+
+## 6. Cach chay
+
+Vi du PowerShell cho Supabase local:
+
+```powershell
+$env:RUN_REAL_DB_TESTS = "true"
+$env:TEST_SUPABASE_URL = "http://127.0.0.1:54321"
+$env:TEST_SUPABASE_SERVICE_ROLE_KEY = "<local-test-service-role-key>"
+$env:TEST_DOCTOR_SLOT_ID = "<dedicated-slot-id>"
+$env:TEST_CONCURRENCY_ROUNDS = "5"
+$env:TEST_CONCURRENCY_CONTENDERS = "10"
+npm --prefix backend run test:db-concurrency
+```
+
+Neu dung remote disposable project, can them:
+
+```powershell
+$env:ALLOW_REMOTE_TEST_DB = "true"
+```
+
+Khong dat cac bien nay trong file env duoc commit.
+
+## 7. Flow cua moi lan chay
+
+### Preflight
+
+1. Xac minh explicit opt-in.
+2. Chan remote URL neu thieu second opt-in.
+3. Validate slot ID, rounds va contenders.
+4. Doc slot fixture va yeu cau `AVAILABLE`.
+5. Xac minh khong co appointment lien ket slot.
+
+### Moi concurrency round
+
+1. Dat fixture ve `AVAILABLE`.
+2. Gui dong thoi `N` conditional updates:
+
+```text
+UPDATE doctor_schedule_slots
+SET status = BOOKED
+WHERE id = fixtureId AND status = AVAILABLE
+```
+
+3. Yeu cau dung mot response tra ve slot `BOOKED`.
+4. Yeu cau `N - 1` response con lai tra `null`.
+5. Doc lai database va xac minh slot dang `BOOKED`.
+
+### Cleanup
+
+Cleanup nam trong `finally`, nen van chay neu assertion, network call hoac mot round bi loi:
+
+1. Dat slot ve `AVAILABLE`.
+2. Doc lai va xac minh final status.
+3. Xac minh runner khong tao appointment.
+
+## 8. Scenarios duoc test local
+
+`realDbAppointmentConcurrencyRunner.test.js` gom:
+
+1. Tu choi chay khi thieu `RUN_REAL_DB_TESTS=true`.
+2. Chan remote project khi thieu `ALLOW_REMOTE_TEST_DB=true`.
+3. Parse local config va default load dung.
+4. Tu choi fixture da lien ket appointment.
+5. Dung mot winner khi 10 contenders cung reserve.
+6. Lap lai ba round va cleanup thanh cong.
+7. Cleanup van chay khi mot contender throw loi.
+
+Lenh targeted:
+
+```powershell
+npm --prefix backend run test:run -- realDbAppointmentConcurrencyRunner.test.js
+```
+
+Ket qua hien tai:
+
+```text
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+```
+
+## 9. Ket qua chay test
+
+Ngay chay: 2026-06-21
+
+### Targeted runner tests
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 1 passed / 1 total |
+| Test cases | 7 passed / 7 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+| Execution time | 0.767 giay |
+
+### Backend full regression
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test suites | 29 passed / 29 total |
+| Test cases | 205 passed / 205 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+| Execution time | 9.418 giay |
+
+### Frontend regression
+
+Frontend khong bi thay doi trong lan hardening Phase 8B-4. Regression gan nhat cua cung testing session:
+
+| Chi so | Gia tri |
+| --- | --- |
+| Test files | 14 passed / 14 total |
+| Test cases | 66 passed / 66 total |
+| Pass rate | 100% |
+| Failed | 0 |
+| Skipped | 0 |
+
+### Real database execution
+
+| Chi so | Gia tri |
+| --- | --- |
+| Trang thai | Not run |
+| Ly do | Workspace chua co disposable Supabase/PostgreSQL test project va dedicated slot fixture |
+| Request gui den database hien tai | 0 |
+| Safety check | Passed: CLI tu choi chay khi thieu `RUN_REAL_DB_TESTS=true` |
+| Real DB pass rate | N/A, khong tao so lieu gia |
+
+Lenh da chay:
+
+```powershell
+npm --prefix backend run test:run -- realDbAppointmentConcurrencyRunner.test.js
+npm --prefix backend run test:run
+npm --prefix backend run test:db-concurrency
+```
+
+Lenh thu ba tra exit code `1` dung theo thiet ke fail-closed:
+
+```text
+Error: Refusing to run: set RUN_REAL_DB_TESTS=true for a disposable test database
+```
+
+### Coverage
+
+Backend all-source coverage gan nhat sau cac testing phase:
+
+| Metric | Gia tri |
+| --- | --- |
+| Statements | 62.56% |
+| Branches | 44.12% |
+| Functions | 64.31% |
+| Lines | 62.56% |
+
+Runner nam trong `backend/tests/`, trong khi Jest chi collect production source `backend/src/**/*.js`; vi vay 7 runner tests khong lam tang gia tao production coverage. Gia tri cua Phase 8B-4 nam o concurrency contract, safety guard va cleanup behavior.
+
+## 10. Output khi chay that
+
+Runner in mot dong cho moi round va mot JSON summary o cuoi:
+
+```text
+Round 1/5: 1 winner, 9 rejected
+...
+{"ok":true,"slotId":401,"rounds":5,"contendersPerRound":10,"totalAttempts":50,"finalStatus":"AVAILABLE"}
+```
+
+Phase dat real-DB gate khi:
+
+- Tat ca round co dung mot winner.
+- Tat ca loser tra `null`, khong phai ghi de `BOOKED`.
+- Moi round doc lai duoc status `BOOKED`.
+- Final status la `AVAILABLE`.
+- Khong co appointment nao duoc tao/lien ket.
+- Full backend regression van pass sau runner.
+
+## 11. Pham vi khong bao gom
+
+Runner nay co chu dich chi test atomic slot reservation. No khong tao appointment that va khong test UI.
+
+Rollback khi `appointments.insert` hoac `appointment_services.insert` loi da duoc test bang fault-injected mock trong `customerAppointmentsService.test.js`. De test rollback do tren DB that mot cach deterministic can transaction/RPC test hook hoac disposable fixture co kha nang inject failure. Khong nen pha schema, chen foreign key sai, hoac dung production data de tao loi.
+
+## 12. Rui ro con lai
+
+- Chua co disposable Supabase project trong workspace nen real-DB gate chua duoc chay.
+- Service booking hien ket hop nhieu PostgREST request, khong phai mot PostgreSQL transaction/RPC duy nhat. Cleanup o application layer van co the bi gian doan neu process bi kill giua flow.
+- Neu can atomicity cho toan bo reserve-slot + create-appointment + link-service, huong ben vung la mot database transaction/RPC co idempotency key; day la thay doi kien truc, khong chi la them test.
+
+## 13. Ket luan
+
+Phase 8B-4 khong con la mot probe mot lan. Runner hien co repeat load, state verification, fail-closed guards, fixture ownership checks, deterministic cleanup va unit coverage. Trang thai phase van la **ready to execute**, chua phai **real DB passed**, cho den khi duoc chay tren mot Supabase/PostgreSQL test project tach biet.

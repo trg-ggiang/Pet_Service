@@ -26,6 +26,7 @@ const {
   sendCustomEmail,
 } = require("../services/emailService");
 const { saveDoctorScheduleSlots } = require("../services/doctorScheduleService");
+const { recordAdminAudit } = require("../services/adminAuditService");
 
 const router = express.Router();
 
@@ -56,6 +57,13 @@ router.get("/users", async function(req, res) {
 router.patch("/users/:role/:id/lock", async function(req, res) {
   try {
     const user = await updateAdminUserLock(req.params.role, req.params.id, Boolean(req.body?.locked));
+    await recordAdminAudit({
+      actor: req.auth?.user,
+      action: req.body?.locked ? "LOCK_USER" : "UNLOCK_USER",
+      targetType: req.params.role,
+      targetId: req.params.id,
+      metadata: { locked: Boolean(req.body?.locked) },
+    });
     res.json({ ok: true, user });
   } catch (error) {
     res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái khóa tài khoản" });
@@ -114,6 +122,12 @@ router.patch("/services/:id/status", async function(req, res) {
 router.delete("/services/:id", async function(req, res) {
   try {
     const result = await deleteAdminService(req.params.id);
+    await recordAdminAudit({
+      actor: req.auth?.user,
+      action: "DELETE_SERVICE",
+      targetType: "service",
+      targetId: req.params.id,
+    });
     res.json({ ok: true, ...result });
   } catch (error) {
     res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể xoá dịch vụ" });
@@ -135,6 +149,13 @@ router.get("/appointments", async function(req, res) {
 router.patch("/appointments/:id/status", async function(req, res) {
   try {
     const appointment = await updateAdminAppointmentStatus(req.params.id, req.body?.status);
+    await recordAdminAudit({
+      actor: req.auth?.user,
+      action: "UPDATE_APPOINTMENT_STATUS",
+      targetType: "appointment",
+      targetId: req.params.id,
+      metadata: { status: req.body?.status || null },
+    });
     res.json({ ok: true, appointment });
   } catch (error) {
     res.status(error.statusCode || 500).json({ ok: false, message: error.message || "Không thể cập nhật trạng thái lịch hẹn" });

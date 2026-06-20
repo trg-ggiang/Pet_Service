@@ -1,0 +1,19 @@
+---
+title: "Phase 8F-2 Admin Email Schedule And Audit"
+description: "Admin email-template and schedule-save route coverage."
+---
+
+# Phase 8F-2 Admin Email Schedule And Audit
+
+Extended admin route tests for loading/updating email templates, custom email delivery success/error and doctor schedule persistence. Added a structured application audit event for user lock, service deletion and appointment status changes without storing request secrets.
+
+## Result
+
+- Admin route suite: 16 passed.
+- Admin audit service: 2 passed.
+- Email service mocked SMTP suite: 6 passed.
+- No SMTP message was sent; email delivery is mocked.
+
+## Remaining
+
+Doctor schedule listing/profile legacy routes, durable audit persistence and deeper report branches remain open. Database persistence requires a retention/schema decision.

@@ -13,6 +13,13 @@ const {
   prescriptionRow,
   prismaMedicalAppointment,
 } = require("../mocks/crossFeatureFlows.mock");
+const {
+  appointmentActors,
+  appointmentCustomerId,
+  appointmentPet,
+  medicalService: appointmentMedicalService,
+  pendingAppointment,
+} = require("../mocks/customerAppointments.mock");
 
 const mockGetPrismaClient = jest.fn();
 
@@ -36,6 +43,7 @@ jest.mock("../../src/services/settingsService", () => ({
 
 jest.mock("../../src/services/doctorScheduleService", () => ({
   ensureDoctorScheduleSlot: jest.fn(),
+  reserveDoctorScheduleSlot: jest.fn(),
   setDoctorScheduleSlotStatus: jest.fn(),
 }));
 
@@ -53,6 +61,15 @@ const {
 const {
   listCustomerServiceHistoryView,
 } = require("../../src/services/customer/customerServiceHistoryService");
+const {
+  cancelCustomerAppointment,
+  rescheduleCustomerAppointment,
+} = require("../../src/services/customer/customerAppointmentsService");
+const {
+  ensureDoctorScheduleSlot,
+  reserveDoctorScheduleSlot,
+  setDoctorScheduleSlotStatus,
+} = require("../../src/services/doctorScheduleService");
 const {
   checkInBoarding,
   checkOutBoarding,
@@ -392,5 +409,92 @@ describe("cross-feature critical flows", () => {
     expect(appointmentCompletedUpdate.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: "COMPLETED" }),
     );
+  });
+
+  test("reschedules then cancels an appointment while releasing both doctor slots", async () => {
+    // Arrange
+    const oldSlotId = pendingAppointment.doctor_schedule_slot_id;
+    const newSlot = { id: 401, doctor_id: pendingAppointment.doctor_id };
+    const rescheduleUpdate = createSupabaseQuery({ data: null, error: null });
+    ensureDoctorScheduleSlot.mockResolvedValueOnce(newSlot);
+    reserveDoctorScheduleSlot.mockResolvedValueOnce(newSlot);
+    supabase.from
+      .mockReturnValueOnce(createSupabaseQuery({ data: [], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: pendingAppointment, error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: appointmentPet, error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [], error: null }))
+      .mockReturnValueOnce(rescheduleUpdate)
+      .mockReturnValueOnce(createSupabaseQuery({ data: appointmentActors, error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: null, error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [appointmentPet], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({
+        data: [{ ...pendingAppointment, doctor_schedule_slot_id: newSlot.id, requested_date: "2099-07-21", requested_time: "10:00:00" }],
+        error: null,
+      }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [appointmentPet], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [{ id: 300, full_name: "Dr. Nguyen" }], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({
+        data: [{ id: newSlot.id, slot_date: "2099-07-21", start_time: "10:00:00", schedule: { room_name: "Room 3" } }],
+        error: null,
+      }))
+      .mockReturnValueOnce(createSupabaseQuery({
+        data: [{ id: 701, appointment_id: pendingAppointment.id, quantity: 1, unit_price: appointmentMedicalService.price, service: appointmentMedicalService }],
+        error: null,
+      }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [], error: null }));
+
+    // Act: reschedule releases the original slot.
+    await rescheduleCustomerAppointment(
+      `APT-${pendingAppointment.id}`,
+      { date: "2099-07-21", time: "10:00", reason: "Change slot" },
+      appointmentCustomerId,
+    );
+
+    // Arrange cancellation with the newly reserved slot as the active slot.
+    const movedAppointment = {
+      ...pendingAppointment,
+      doctor_schedule_slot_id: newSlot.id,
+      requested_date: "2099-07-21",
+      requested_time: "10:00:00",
+    };
+    const cancelUpdate = createSupabaseQuery({ data: null, error: null });
+    supabase.from.mockReset();
+    supabase.from
+      .mockReturnValueOnce(createSupabaseQuery({ data: movedAppointment, error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: appointmentPet, error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: appointmentActors, error: null }))
+      .mockReturnValueOnce(cancelUpdate)
+      .mockReturnValueOnce(createSupabaseQuery({ data: null, error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [appointmentPet], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [{ ...movedAppointment, status: "CANCELLED", cancel_reason: "Customer request" }], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [appointmentPet], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [{ id: 300, full_name: "Dr. Nguyen" }], error: null }))
+      .mockReturnValueOnce(createSupabaseQuery({
+        data: [{ id: newSlot.id, slot_date: "2099-07-21", start_time: "10:00:00", schedule: { room_name: "Room 3" } }],
+        error: null,
+      }))
+      .mockReturnValueOnce(createSupabaseQuery({
+        data: [{ id: 702, appointment_id: pendingAppointment.id, quantity: 1, unit_price: appointmentMedicalService.price, service: appointmentMedicalService }],
+        error: null,
+      }))
+      .mockReturnValueOnce(createSupabaseQuery({ data: [], error: null }));
+
+    // Act: cancellation releases the new slot.
+    const cancelled = await cancelCustomerAppointment(
+      `APT-${pendingAppointment.id}`,
+      { reason: "Customer request" },
+      appointmentCustomerId,
+    );
+
+    // Assert
+    expect(rescheduleUpdate.update).toHaveBeenCalledWith(expect.objectContaining({
+      doctor_schedule_slot_id: newSlot.id,
+    }));
+    expect(cancelUpdate.update).toHaveBeenCalledWith(expect.objectContaining({
+      status: "CANCELLED",
+    }));
+    expect(setDoctorScheduleSlotStatus).toHaveBeenNthCalledWith(1, oldSlotId, "AVAILABLE");
+    expect(setDoctorScheduleSlotStatus).toHaveBeenNthCalledWith(2, newSlot.id, "AVAILABLE");
+    expect(cancelled).toEqual(expect.objectContaining({ status: "CANCELLED" }));
   });
 });

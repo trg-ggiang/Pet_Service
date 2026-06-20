@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "test": "jest",
     "test:run": "jest --runInBand",
-    "test:coverage": "jest --coverage --runInBand"
+    "test:coverage": "jest --coverage --runInBand",
+    "test:db-concurrency": "node tests/real-db/appointmentConcurrency.integration.js"
   },
   "keywords": [],
   "author": "",

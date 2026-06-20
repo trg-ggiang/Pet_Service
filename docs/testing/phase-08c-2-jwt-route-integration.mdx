@@ -1,0 +1,14 @@
+---
+title: "Phase 8C-2 JWT Route Integration"
+description: "Real JWT signing and login component coverage."
+---
+
+# Phase 8C-2 JWT Route Integration
+
+Added real `jsonwebtoken` integration coverage without mocking `jwt.js`: valid signing, wrong secret, expired token and stale `auth_version`. Added LoginView behavior tests for credentials, actions, loading and errors.
+
+## Result
+
+- JWT integration: 4 passed.
+- LoginView: 3 passed.
+- Database lookup remains mocked and uses synthetic users.

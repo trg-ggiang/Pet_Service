@@ -4462,3 +4462,51 @@ Create a concise handoff document so another developer can continue the phased t
 
 - `node -e "JSON.parse(require('fs').readFileSync('docs/docs.json','utf8')); console.log('docs.json ok')"` passed.
 - `git diff --check` had no whitespace errors; Windows line-ending warnings remain.
+
+## 2026-06-20 - Testing Follow-up Coverage And Playwright Foundation
+
+### Work Completed
+
+- Added doctor follow-up/invoice and specialist/urgent route coverage.
+- Added admin email-template and schedule-save route coverage.
+- Added staff route, walk-in, boarding photo Storage and payment coverage.
+- Added customer core/PDF route and CustomerProfileTab coverage.
+- Added real JWT integration and LoginView coverage.
+- Added a fail-closed real DB concurrency runner.
+- Added Playwright Chromium smoke infrastructure and corrected the frontend page title.
+- Added phase reports and Mintlify navigation entries for the follow-up work.
+
+### Verification
+
+- Backend regression: 29 suites and 205 tests passed.
+- Frontend regression: 14 files and 66 tests passed.
+- Backend coverage: 62.56% statements/lines, 44.12% branches, 64.31% functions.
+- Frontend coverage: 87.23% statements, 69.77% branches, 79.86% functions, 88.20% lines.
+- Playwright Chromium smoke: 1 passed.
+- Real DB runner: safely refused execution because no disposable test environment was configured.
+
+### Remaining Risks
+
+- Real DB concurrency execution and `TC-E2E-01` through `TC-E2E-04` need a disposable seeded test project and dedicated role accounts.
+- Admin audit persistence needs a product/schema decision.
+
+## 2026-06-21 - Phase 8B-4 Real DB Concurrency Hardening
+
+### Work Completed
+
+- Rebuilt the real DB runner around a testable slot adapter.
+- Added configurable repeated rounds and concurrent contenders.
+- Added preflight fixture ownership checks, final-state verification and cleanup in `finally`.
+- Added local/remote fail-closed guards and a non-secret environment template.
+- Added seven runner unit tests, including cleanup after a simulated connection failure.
+- Rewrote the Phase 8B-4 report with setup, fixture, execution, acceptance and risk details.
+
+### Verification
+
+- Phase 8B-4 runner unit tests: 7 passed.
+- Backend regression: 29 suites and 205 tests passed.
+- Real DB CLI safely refused execution without explicit test-environment opt-in.
+
+### Remaining
+
+- Execute the runner against a disposable Supabase/PostgreSQL project; the current application database was not touched.
