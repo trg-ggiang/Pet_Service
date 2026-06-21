@@ -3,6 +3,33 @@ title: "Session Log"
 description: "Ongoing development session notes."
 ---
 
+## 2026-06-20 - Backend Domain Module Refactor
+
+### Goal
+
+Reorganize the Express backend into domain modules without changing frontend API
+URLs or response contracts.
+
+### Work Completed
+
+- Split Express application construction into `src/app.js` and process startup
+  into `src/server.js`.
+- Added centralized environment and CORS configuration under `src/config/`.
+- Moved routes and business services into domain folders under `src/modules/`.
+- Renamed the shared auth middleware location to `src/middlewares/`.
+- Added module public exports and a central API composition root while preserving
+  every existing `/api/*` mount prefix.
+- Updated architecture and backend documentation for the new paths.
+
+### Verification
+
+- Checked every backend JavaScript file with `node --check`.
+- Required `src/app.js` and all mounted module routers successfully.
+- Smoke-tested health, auth-protected route groups, and the 404 fallback.
+- `npm --prefix backend run prisma:generate`
+- `npm --prefix frontend run build`
+- `npm run docs:check`
+
 ## 2026-06-16 - Customer Sidebar Collapse
 
 ### Goal

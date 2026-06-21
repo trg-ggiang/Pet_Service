@@ -26,13 +26,24 @@ Vite proxies `/api` requests to `http://localhost:5050` during development. Shar
 
 ## Backend
 
-The backend lives in `backend/`. `backend/src/server.js` configures Express, CORS, JSON parsing, auth routes, customer routes, and the health endpoint. It exports the Express app for Vercel while keeping `app.listen` for local development.
+The backend is a modular Express application. `backend/src/app.js` creates the
+HTTP application and mounts domain modules, while `backend/src/server.js` only
+starts the local listener and optional reminder scheduler. Keeping application
+construction separate from process startup lets Vercel and tests import the same
+Express app without opening a port.
+
+Runtime code is grouped by business domain under `backend/src/modules/`.
+Each module exposes its public router or services through an `index.js` file.
+Cross-cutting infrastructure remains under `config/`, `middlewares/`, and
+`lib/`.
 
 Current route groups:
 
 - `/api/auth`
 - `/api/admin`
 - `/api/customer`
+- `/api/staff`
+- `/api/doctor`
 - `/api/health`
 
 ## Data

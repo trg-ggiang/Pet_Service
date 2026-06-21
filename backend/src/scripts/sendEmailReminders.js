@@ -1,8 +1,8 @@
 require("dotenv").config();
 
 const { supabase } = require("../lib/supabaseClient");
-const { safeSendTemplateEmail } = require("../services/emailService");
-const { getStoredSetting, saveStoredSetting } = require("../services/settingsService");
+const { safeSendTemplateEmail } = require("../modules/notifications/email.service");
+const { getStoredSetting, saveStoredSetting } = require("../modules/users/settings.service");
 
 function dateString(date) {
   return date.toISOString().slice(0, 10);

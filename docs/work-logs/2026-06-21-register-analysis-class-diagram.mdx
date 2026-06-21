@@ -1,0 +1,30 @@
+---
+title: "Biểu đồ lớp phân tích UC Đăng ký tài khoản"
+description: "Nhật ký tạo biểu đồ Boundary–Control–Entity bằng Astah cho Pet Service."
+---
+
+## Phạm vi
+
+- Đối chiếu luồng đăng ký từ `RegisterPage`, `RegisterView`, frontend auth service và backend auth module.
+- Đối chiếu hai thực thể `User` và `Customer` với Prisma schema.
+- Tạo biểu đồ lớp phân tích theo mẫu Boundary–Control–Entity trong Astah UML.
+
+## Thành phần biểu đồ
+
+- `RegisterScreen` (`boundary`)
+- `RegisterController` (`control`)
+- `AuthService` (`control`)
+- `User` (`entity`)
+- `Customer` (`entity`)
+
+## Kết quả
+
+- File Astah: `output/diagrams/Bieu_do_lop_phan_tich_UC_Dang_ky_tai_khoan_Hoan_chinh.asta`
+- Ảnh kiểm tra: `output/diagrams/Bieu_do_lop_phan_tich_UC_Dang_ky_tai_khoan.png`
+
+## Kiểm tra
+
+- Xuất ảnh bằng công cụ dòng lệnh chính thức của Astah.
+- Kiểm tra trực quan bố cục, stereotype, thuộc tính, phương thức và quan hệ.
+- Kiểm tra hướng phụ thuộc: giao diện → controller → service → entity.
+- Quan hệ `User` – `Customer` có lực lượng `1` – `1`.

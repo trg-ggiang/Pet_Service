@@ -18,7 +18,7 @@ Runtime data access is owned by backend services. Customer appointments use the 
 
 Persisted workflows include password reset under `/api/auth/forgot-password/*`, admin settings under `/api/admin/settings`, and the staff KPI summary under `/api/staff/summary`.
 
-Transactional email workflows use `backend/src/services/emailService.js` and Gmail SMTP. Appointment confirmation, exam result, payment confirmation, and boarding updates send from their corresponding business workflows. Appointment, follow-up, and vaccination reminders run through `npm --prefix backend run email:reminders` or the optional in-process scheduler.
+Transactional email workflows use `backend/src/modules/notifications/email.service.js` and Gmail SMTP. Appointment confirmation, exam result, payment confirmation, and boarding updates send from their corresponding business workflows. Appointment, follow-up, and vaccination reminders run through `npm --prefix backend run email:reminders` or the optional in-process scheduler.
 
 Admin email templates are persisted in `app_settings` and editable from Admin Settings. Supported templates cover password reset, appointment confirmation/reminder, exam results, payment confirmation, follow-up reminders, vaccination reminders, boarding updates, and custom test emails.
 
@@ -26,15 +26,36 @@ Admin email templates are persisted in `app_settings` and editable from Admin Se
 backend/
   src/
     server.js
-    routes/
-    services/
-    middleware/
+    app.js
+    config/
+    middlewares/
+    modules/
+      auth/
+      users/
+      customers/
+      pets/
+      services/
+      appointments/
+      staff/
+      doctors/
+      medical/
+      grooming/
+      boarding/
+      billing/
+      notifications/
+      reports/
     lib/
+    utils/
+    scripts/
   prisma/
     schema.prisma
     migrations/
     seed.js
 ```
+
+`modules/index.js` is the API composition root. Module moves must preserve the
+existing mount prefixes and response contracts because the frontend consumes
+those URLs directly.
 
 ## Commands
 
@@ -127,11 +148,11 @@ SUPABASE_SERVICE_ROLE_KEY=
 ## Rules
 
 - Keep route handlers focused on HTTP concerns.
-- Put business logic in `backend/src/services/`.
+- Put business logic in the owning `backend/src/modules/<domain>/` service.
 - Keep database access behind Prisma or existing backend libraries.
 - Update API and database docs when contracts change.
 
-Doctor appointment portal schedule shaping lives in `backend/src/services/doctor/doctorAppointmentService.js`; routes should call the service and return its payload.
-Doctor records, stats, exam context, and settings shaping lives in `backend/src/services/doctor/doctorService.js`; frontend role pages should render those payloads without rebuilding business-facing rows locally.
-Staff portal shaping lives in `backend/src/services/staff/staffPortalService.js`; staff routes should stay thin and return render-ready appointments, grooming tasks, boarding guests, payments, and profile payloads.
-Admin dashboard, report, settings, user, service, appointment, and staff-management shaping lives in `backend/src/services/adminService.js`; admin routes should stay thin and return backend-shaped payloads for role pages. Admin staff management accepts `department`, `status`, and `search` query parameters and returns `staff` plus `summary` so the frontend does not rebuild filters or KPI counts locally.
+Doctor appointment portal schedule shaping lives in `backend/src/modules/medical/medical.service.js`; routes should call the service and return its payload.
+Doctor records, stats, exam context, and settings shaping lives in `backend/src/modules/doctors/doctor.service.js`; frontend role pages should render those payloads without rebuilding business-facing rows locally.
+Staff portal shaping lives in `backend/src/modules/staff/staff.service.js`; staff routes should stay thin and return render-ready appointments, grooming tasks, boarding guests, payments, and profile payloads.
+Admin dashboard, report, settings, user, service, appointment, and staff-management shaping currently lives in `backend/src/modules/users/admin.service.js`; its report API is exposed through the reports module boundary. Admin routes should stay thin and return backend-shaped payloads for role pages. Admin staff management accepts `department`, `status`, and `search` query parameters and returns `staff` plus `summary` so the frontend does not rebuild filters or KPI counts locally.

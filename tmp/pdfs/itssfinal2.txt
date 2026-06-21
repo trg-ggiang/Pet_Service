@@ -1,0 +1,9506 @@
+     ĐẠI  HỌC  BÁCH  KHOA  HÀ  NỘI     TRƯỜNG  CÔNG  NGHỆ  THÔNG  TIN  VÀ  TRUYỀN  THÔNG        --------------------------------------------------------------------------     
+               Hệ  thống  quản  lý  chăm  sóc  thú  cưng    Học  phần:  Phát  triển  phần  mềm  theo  chuẩn  kỹ  năng  ITSS       GVHD:  ThS.  Nguyễn  Mạnh  Tuấn     Nhóm   1.  Trần  Đức  Nam  Anh               2.  Triệu  Trường  Giang          3.  Đinh  Hoàng  Hiệp    4.  Nguyễn  Đức  Hiếu  5.  Nguyễn  Đức  Khải                
+
+
+       
+     
+
+     
+Nội  dung  LỜI  NÓI  ĐẦU  6 CHƯƠNG  1.  KHẢO  SÁT  BÀI  TOÁN  8 　 1.1.  Mô  tả  yêu  cầu  bài  toán  8 　 1.2.  Khảo  sát  bài  toán  9 　 1.3.  Xác  định  thông  tin  cơ  bản  cho  nghiệp  vụ  của  bài  toán  9 CHƯƠNG  2.  ĐẶC  TẢ  YÊU  CẦU  11 2.1.  Giới  thiệu  chung  11 2.2.  Biểu  đồ  Usecase  và  phân  rã  14 2.3.  Đặc  tả  usecase  26 2.4.   Biểu  đồ  hoạt  động  52 UC001:Đăng  nhập  52 UC002:Đăng  ký  52 UC003:Quản  lý  hồ  sơ  thú  cưng  54 UC004:Thanh  toán  55 UC005:Quản  lý  lịch  làm  việc  57 UC006:Quản  lý  tài  khoản  cá  nhân  59 UC007:Đặt  lịch  khám  và  làm  đẹp  60 UC008:Sử  dụng  lưu  trú  60 UC009:Nhận  thông  báo  62 UC010:Xem  thống  kê  63 UC011:Danh  sách  lịch  hẹn  64 UC012:Quản  lý  dịch  vụ  chăm  sóc,  làm  đẹp  và  lưu  trú  65 UC013:Quản  lý  lưu  trú  66 UC014:Xác  nhận  thanh  toán  67 UC015:Quản  lý  hồ  sơ  bệnh  án  67 Đặc  tả  use  case  UC016  “Khám  chữa  bệnh   ”  69 Đặc  tả  use  case  UC017  “Gửi  thông  báo  đến  người  dùng    ”  70 Đặc  tả  use  case  UC018  “Phân  lịch  làm  việc  cho  bác  sĩ  và  nhân  viên    ”  71 Đặc  tả  use  case  UC019  “Quản  lý  dịch  vụ   ”  72 2.5.   Các  yêu  cầu  phi  chức  năng  72 CHƯƠNG  3.  PHÂN  TÍCH  YÊU  CẦU  77 　 3.1.  Xác  định  các  lớp  phân  tích  77 3.2.  Biểu  đồ  trình  tự  80 CHƯƠNG  4.  THIẾT  KẾ  CHƯƠNG  TRÌNH  95 　 4.1.  Thiết  kế  kiến  trúc  95      
+
+     　 4.2.  Thiết  kế  cơ  sở  dữ  liệu  96 CHƯƠNG  5.  XÂY  DỰNG  CHƯƠNG  TRÌNH  MINH  HỌA  123 　 5.1.  Công  nghệ  sử  dụng  123 　 5.2.  Cấu  trúc  thư  mục  123 　 5.3.  Sơ  đồ  dịch  chuyển  màn  hình  129 　 5.4.  Giao  diện  minh  họa  132 CHƯƠNG  6.  KIỂM  THỬ  161 6.1  Bảng  Kiểm  thử  Đăng  nhập  &  Phân  quyền  162 6.2  Bảng  Kiểm  thử  Hồ  sơ  &  Thú  cưng  164 6.3  Bảng  Kiểm  thử  Lịch  hẹn  165 6.4  Bảng  Kiểm  thử  Khám  bệnh  166 6.5  Bảng  Kiểm  thử  Grooming  167 6.6  Bảng  Kiểm  thử  Boarding  167 6.7  Bảng  Kiểm  thử  Thanh  toán  168 6.8  Bảng  Kiểm  thử  Notification  169 6.9  Bảng  Kiểm  thử  Admin  169 6.10  Bảng  Kiểm  thử  End-to-End  170 6.11  Bảng  Tổng  hợp  Kết  quả  170 CHƯƠNG  7.  NGUYÊN  LÝ  THIẾT  KẾ  172 CHƯƠNG  8.  HƯỚNG  DẪN  SỬ  DỤNG  175 8.1.  Frontend:  175 8.2.  Backend:  175 TÀI  LIỆU  THAM  KHẢO  176            
+     
+
+                  
+     
+
+                                             LỜI  NÓI  ĐẦU    Trong  một  xã  hội  phát  triển  thì  việc  nuôi  và  chăm  sóc  thú  cưng  đang  là  một  xu  
+hướng
+ 
+vô
+ 
+cùng
+ 
+được
+ 
+ưa
+ 
+chuộng.
+ 
+Người
+ 
+người,
+ 
+nhà
+ 
+nhà
+ 
+đều
+ 
+tìm
+ 
+kiếm
+ 
+những
+ 
+dịch
+ 
+vụ
+ 
+tốt
+ 
+nhất
+ 
+để
+ 
+làm
+ 
+đẹp,
+ 
+chữa
+ 
+bệnh
+ 
+cũng
+ 
+như
+ 
+lưu
+ 
+trú
+ 
+cho
+ 
+thú
+ 
+cưng
+ 
+của
+ 
+mình.
+ 
+Cộng
+ 
+thêm
+ 
+việc
+ 
+Internet
+ 
+phát
+ 
+triển
+ 
+khiến
+ 
+mọi
+ 
+người
+ 
+có
+ 
+thể
+ 
+dễ
+ 
+dàng
+ 
+tiếp
+ 
+cận,
+ 
+đặt
+ 
+lịch
+ 
+hẹn
+ 
+và
+ 
+mua
+ 
+sắm
+ 
+các
+ 
+dịch
+ 
+vụ
+ 
+cho
+ 
+thú
+ 
+cưng
+ 
+trực
+ 
+tuyến.
+ 
+Tuy
+ 
+nhiên,
+ 
+không
+ 
+phải
+ 
+hệ
+ 
+thống
+ 
+hay
+ 
+trang
+ 
+web
+ 
+của
+ 
+trung
+ 
+tâm
+ 
+thú
+ 
+cưng
+ 
+nào
+ 
+cũng
+ 
+có
+ 
+được
+ 
+một
+ 
+thiết
+ 
+kế
+ 
+tốt,
+ 
+dễ
+ 
+dàng
+ 
+sử
+ 
+dụng
+ 
+và
+ 
+thân
+ 
+thiện
+ 
+với
+ 
+người
+ 
+dùng.
+ 
+Chính
+ 
+vì
+ 
+vậy,
+ 
+nhóm
+ 
+chúng
+ 
+em
+ 
+quyết
+ 
+định
+ 
+tiến
+ 
+hành
+ 
+xây
+ 
+dựng
+ 
+Hệ
+ 
+thống
+ 
+quản
+ 
+lý
+ 
+trung
+ 
+tâm
+ 
+chăm
+ 
+sóc
+ 
+thú
+ 
+cưng
+ 
+với
+ 
+giao
+ 
+diện
+ 
+đẹp,
+ 
+tính
+ 
+năng
+ 
+đầy
+ 
+đủ
+ 
+và
+ 
+dễ
+ 
+dàng
+ 
+sử
+ 
+dụng.
+ Hệ  thống  cung  cấp  cho  người  dùng  các  tính  năng  cơ  bản  của  một  nền  tảng  quản  
+lý
+ 
+và
+ 
+chăm
+ 
+sóc
+ 
+thú
+ 
+cưng
+ 
+như
+ 
+đặt
+ 
+lịch
+ 
+khám
+ 
+bệnh,
+ 
+sử
+ 
+dụng
+ 
+dịch
+ 
+vụ
+ 
+lưu
+ 
+trú
+ 
+(khách
+ 
+sạn
+ 
+thú
+ 
+cưng),
+ 
+dịch
+ 
+vụ
+ 
+làm
+ 
+đẹp.
+ 
+Ngoài
+ 
+ra,
+ 
+hệ
+ 
+thống
+ 
+còn
+ 
+cho
+ 
+phép
+ 
+bạn
+ 
+có
+ 
+thể
+ 
+yêu
+ 
+cầu
+ 
+thức
+ 
+ăn
+ 
+riêng
+ 
+cho
+ 
+thú
+ 
+cưng
+ 
+khi
+ 
+đăng
+ 
+ký
+ 
+lưu
+ 
+trú
+ 
+hoặc
+ 
+chủ
+ 
+động
+ 
+đặt
+ 
+mua
+ 
+đồ
+ 
+ăn
+ 
+cho
+ 
+thú
+ 
+cưng
+ 
+online.
+ 
+Người
+ 
+dùng
+ 
+cũng
+ 
+có
+ 
+thể
+ 
+dễ
+ 
+dàng
+ 
+theo
+ 
+dõi
+ 
+chi
+ 
+tiết
+ 
+hồ
+ 
+sơ
+ 
+sức
+ 
+khỏe,
+ 
+lịch
+ 
+sử
+ 
+tiêm
+ 
+chủng
+ 
+và
+ 
+các
+ 
+hóa
+ 
+đơn
+ 
+thanh
+ 
+toán
+ 
+dịch
+ 
+vụ
+ 
+của
+ 
+thú
+ 
+cưng
+ 
+ngay
+ 
+trên
+ 
+hệ
+ 
+thống.
+ Nhờ  việc  xây  dựng  hệ  thống  này,  chúng  em  đã  biết  cách  phân  tích  và  phát  triển  
+một
+ 
+phần
+ 
+mềm
+ 
+hoàn
+ 
+chỉnh,
+ 
+làm
+ 
+quen
+ 
+với
+ 
+các
+ 
+quy
+ 
+trình
+ 
+nghiệp
+ 
+vụ
+ 
+thực
+ 
+tế.
+ 
+Ngoài
+ 
+ra,
+ 
+chúng
+ 
+em
+ 
+cũng
+ 
+được
+ 
+nâng
+ 
+cao
+ 
+khả
+ 
+năng
+ 
+làm
+ 
+việc
+ 
+nhóm,
+ 
+biết
+ 
+cách
+ 
+phân
+ 
+công
+ 
+công
+ 
+việc
+ 
+hợp
+ 
+lý
+ 
+giữa
+ 
+các
+ 
+thành
+ 
+viên
+ 
+và
+ 
+hỗ
+ 
+trợ
+ 
+lẫn
+ 
+nhau
+ 
+để
+ 
+hoàn
+ 
+thành
+ 
+sản
+ 
+phẩm
+ 
+tốt
+ 
+nhất.
+ Do  giới  hạn  về  mặt  thời  gian  và  kiến  thức  thực  tế,  bài  báo  cáo  và  sản  phẩm  chắc  
+chắn
+ 
+không
+ 
+tránh
+ 
+khỏi
+ 
+những
+ 
+thiếu
+ 
+sót.
+ 
+Nhóm
+ 
+chúng
+ 
+em
+ 
+rất
+ 
+mong
+ 
+nhận
+ 
+được
+ 
+những
+ 
+ý
+ 
+kiến
+ 
+đóng
+ 
+góp
+ 
+quý
+ 
+báu
+ 
+từ
+ 
+thầy
+ 
+và
+ 
+các
+ 
+bạn
+ 
+để
+ 
+hệ
+ 
+thống
+ 
+được
+ 
+hoàn
+ 
+thiện
+ 
+hơn.
+ Chúng  em  xin  chân  thành  cảm  ơn!               
+
+     
+     
+Họ  và  tên   MSSV   Công  việc  thực  hiện   Đánh  giá,  đóng  góp   
+Trần  Đức  Nam  Anh     
+Triệu  Trường  Giang      
+Đinh  Hoàng  Hiệp        
+Nguyễn  Đức  Hiếu     
+Nguyễn  Đức  Khải     
+
+     CHƯƠNG  1.  KHẢO  SÁT  BÀI  TOÁN    　 1.1.  Mô  tả  yêu  cầu  bài  toán     
+Yêu  cầu  nghiệp  vụ   Tạo  ra  hệ  thống  quản  lý  chăm  sóc  thú  cưng  với  các  chức  năng  mà  người  dùng  /  vai  trò  người  dùng  có  thể  sử  dụng  tại  thời  điểm  chạy.  Một  người  dùng  có  thể  có  nhiều  vai  trò  trong  phần  mềm.  Mỗi  vai  trò  người  dùng  được  thiết  lập  để  có  thể  sử  dụng  một  số  chức  năng  nào  đó.  Mỗi  chức  năng  có  thể  được  nhiều  vai  trò  người  dùng  sử  dụng.  Sau  khi  một  người  dùng  đăng  nhập  thành  công,  tuỳ  thuộc  vào  các  vai  trò  người  dùng  mà  người  đó  có,  phần  mềm  sẽ  tự  động  tạo  menu  chứa  các  chức  năng  mà  các  vai  trò  người  dùng  đó  được  phép  sử  dụng.  Mỗi  khi  người  dùng  chọn  một  chức  năng  trên  menu,  giao  diện  tương  ứng  với  chức  năng  sẽ  được  đưa  ra.   
+Phân  rã  chức  năng   -  Đăng  nhập  -  Tạo  menu  -  Đăng  ký  -  CRUD  chức  năng  -  Đặt  lịch  -  Xem  thông  tin  dịch  vụ  -  CRUD  cung  cấp  chế  độ  ăn  uống  -  Check-in  khách   -  Xem  thông  tin  lịch  khám  -  Khám  và  kê  đơn  thuốc  -  Chỉ  định  bác  sĩ  khám  bệnh  -  Xem  thông  tin  đăng  lý  lịch  sử  dụng  dịch  vụ  -  Cập  nhật  tình  trạng  sức  khỏe  thú  cưng                                                Các  nghiệp  vụ  cơ  bản  của  bài  toán        
+
+     　 1.2.  Khảo  sát  bài  toán    Trong  xã  hội  hiện  đại  ngày  nay,  nhịp  sống  ngày  càng  trở  nên  bận  rộn  và  áp  lực  
+hơn.
+ 
+Chính
+ 
+vì
+ 
+vậy,
+ 
+nhiều
+ 
+người
+ 
+lựa
+ 
+chọn
+ 
+nuôi
+ 
+thú
+ 
+cưng
+ 
+như
+ 
+một
+ 
+cách
+ 
+để
+ 
+giải
+ 
+tỏa
+ 
+căng
+ 
+thẳng,
+ 
+tìm
+ 
+kiếm
+ 
+niềm
+ 
+vui
+ 
+và
+ 
+sự
+ 
+gắn
+ 
+bó
+ 
+trong
+ 
+cuộc
+ 
+sống
+ 
+hằng
+ 
+ngày.
+ 
+Đối
+ 
+với
+ 
+nhiều
+ 
+người,
+ 
+thú
+ 
+cưng
+ 
+không
+ 
+chỉ
+ 
+đơn
+ 
+thuần
+ 
+là
+ 
+động
+ 
+vật
+ 
+nuôi
+ 
+mà
+ 
+còn
+ 
+được
+ 
+xem
+ 
+như
+ 
+một
+ 
+người
+ 
+bạn
+ 
+thân
+ 
+thiết,
+ 
+thậm
+ 
+chí
+ 
+là
+ 
+một
+ 
+thành
+ 
+viên
+ 
+trong
+ 
+gia
+ 
+đình.
+ 
+Vì
+ 
+thế,
+ 
+nhu
+ 
+cầu
+ 
+chăm
+ 
+sóc
+ 
+sức
+ 
+khỏe,
+ 
+làm
+ 
+đẹp,
+ 
+theo
+ 
+dõi
+ 
+tình
+ 
+trạng
+ 
+sinh
+ 
+hoạt
+ 
+và
+ 
+đảm
+ 
+bảo
+ 
+môi
+ 
+trường
+ 
+sống
+ 
+tốt
+ 
+cho
+ 
+thú
+ 
+cưng
+ 
+cũng
+ 
+ngày
+ 
+càng
+ 
+tăng
+ 
+cao.
+ Để  đáp  ứng  nhu  cầu  đó,  hệ  thống  quản  lý  trung  tâm  chăm  sóc  thú  cưng  được  
+xây
+ 
+dựng
+ 
+nhằm
+ 
+hỗ
+ 
+trợ
+ 
+việc
+ 
+quản
+ 
+lý
+ 
+toàn
+ 
+diện
+ 
+các
+ 
+hoạt
+ 
+động
+ 
+tại
+ 
+trung
+ 
+tâm.
+ 
+Hệ
+ 
+thống
+ 
+đóng
+ 
+vai
+ 
+trò
+ 
+là
+ 
+cầu
+ 
+nối
+ 
+giữa
+ 
+chủ
+ 
+nuôi,
+ 
+nhân
+ 
+viên
+ 
+trung
+ 
+tâm
+ 
+và
+ 
+bác
+ 
+sĩ
+ 
+thú
+ 
+y,
+ 
+giúp
+ 
+các
+ 
+bên
+ 
+dễ
+ 
+dàng
+ 
+trao
+ 
+đổi
+ 
+thông
+ 
+tin,
+ 
+theo
+ 
+dõi
+ 
+tình
+ 
+trạng
+ 
+thú
+ 
+cưng
+ 
+và
+ 
+sử
+ 
+dụng
+ 
+các
+ 
+dịch
+ 
+vụ
+ 
+một
+ 
+cách
+ 
+thuận
+ 
+tiện
+ 
+hơn.
+ 
+Thay
+ 
+vì
+ 
+quản
+ 
+lý
+ 
+bằng
+ 
+sổ
+ 
+sách
+ 
+hoặc
+ 
+giấy
+ 
+tờ
+ 
+rời
+ 
+rạc,
+ 
+mọi
+ 
+thông
+ 
+tin
+ 
+đều
+ 
+được
+ 
+lưu
+ 
+trữ
+ 
+tập
+ 
+trung
+ 
+trên
+ 
+hệ
+ 
+thống,
+ 
+giúp
+ 
+việc
+ 
+tra
+ 
+cứu,
+ 
+cập
+ 
+nhật
+ 
+và
+ 
+theo
+ 
+dõi
+ 
+trở
+ 
+nên
+ 
+nhanh
+ 
+chóng,
+ 
+chính
+ 
+xác
+ 
+và
+ 
+hiệu
+ 
+quả
+ 
+hơn.
+ Hệ  thống  cho  phép  trung  tâm  quản  lý  thông  tin  chi  tiết  của  từng  thú  cưng  đã  
+đăng
+ 
+ký,
+ 
+bao
+ 
+gồm
+ 
+hồ
+ 
+sơ
+ 
+cá
+ 
+nhân,
+ 
+lịch
+ 
+sử
+ 
+bệnh
+ 
+án,
+ 
+lịch
+ 
+sử
+ 
+tiêm
+ 
+chủng,
+ 
+chế
+ 
+độ
+ 
+ăn
+ 
+uống,
+ 
+các
+ 
+dịch
+ 
+vụ
+ 
+đã
+ 
+sử
+ 
+dụng
+ 
+và
+ 
+những
+ 
+lưu
+ 
+ý
+ 
+đặc
+ 
+biệt
+ 
+trong
+ 
+quá
+ 
+trình
+ 
+chăm
+ 
+sóc.
+ 
+Bên
+ 
+cạnh
+ 
+đó,
+ 
+hệ
+ 
+thống
+ 
+còn
+ 
+hỗ
+ 
+trợ
+ 
+nhiều
+ 
+nghiệp
+ 
+vụ
+ 
+quan
+ 
+trọng
+ 
+như
+ 
+đặt
+ 
+lịch
+ 
+khám
+ 
+bệnh,
+ 
+theo
+ 
+dõi
+ 
+kết
+ 
+quả
+ 
+điều
+ 
+trị,
+ 
+sử
+ 
+dụng
+ 
+dịch
+ 
+vụ
+ 
+làm
+ 
+đẹp,
+ 
+đăng
+ 
+ký
+ 
+lưu
+ 
+trú,
+ 
+quản
+ 
+lý
+ 
+thanh
+ 
+toán
+ 
+và
+ 
+gửi
+ 
+thông
+ 
+báo
+ 
+nhắc
+ 
+lịch
+ 
+tái
+ 
+khám
+ 
+hoặc
+ 
+chăm
+ 
+sóc
+ 
+định
+ 
+kỳ
+ 
+cho
+ 
+chủ
+ 
+nuôi.
+ 
+Nhờ
+ 
+vậy,
+ 
+trung
+ 
+tâm
+ 
+có
+ 
+thể
+ 
+nâng
+ 
+cao
+ 
+chất
+ 
+lượng
+ 
+phục
+ 
+vụ,
+ 
+còn
+ 
+chủ
+ 
+nuôi
+ 
+cũng
+ 
+yên
+ 
+tâm
+ 
+hơn
+ 
+khi
+ 
+thú
+ 
+cưng
+ 
+của
+ 
+mình
+ 
+được
+ 
+theo
+ 
+dõi
+ 
+và
+ 
+chăm
+ 
+sóc
+ 
+một
+ 
+cách
+ 
+bài
+ 
+bản.
+ 
+ 
+　 1.3.  Xác  định  thông  tin  cơ  bản  cho  nghiệp  vụ  của  bài  toán     
+Case  Process  Output  Điều  kiện  
+     
+
+     
+CRUD  chức  năng  
+U:  sửa  các  trường  thông  tin  tương  ứng  rồi  ấn  lưu  C:  chọn  thêm  và  điền  các  thông  tin  theo  hướng  dẫn  rồi  lưu  
+Đưa  đến  trang  CRUD  tương  ứng  với  chức  năng  được  chọn,  bao  gồm  thông  tin  thú  cưng,  dịch  vụ  làm  đẹp,  dịch  vụ  khách  sạn,  chế  độ  ăn,…  để  người  dùng  thực  hiện  thao  tác  
+Đăng  nhập  thành  công  ở  vai  trò  tương  ứng  
+Đặt  lịch  Chọn  chức  năng  Đặt  lịch  rồi  điền  thông  tin  trong  form  rồi  ấn  đặt  lịch  hẹn  
+Đưa  đến  form  điền  thông  tin  đặt  lịch  
+Đăng  nhập  thành  công  ở  vai  trò  người  dùng/nhân  viên  
+Xem  thông  tin  dịch  vụ  
+Chọn  dịch  vụ  muốn  xem  chi  tiết  bằng  cách  nhấp  vào  tên  dịch  vụ  tương  ứng  trên  màn  hình  
+đưa  đến  trang  chủ,  các  dịch  vụ  được  hiển  thi  theo  dạng  liệt  kê  thông  tin  sơ  lược  với  hình  ảnh  minh  họa  đi  kèm.  Chọn  dịch  vụ  tương  ứng  để  xem  thông  tin  chi  tiết  
+Không  
+Xem  thông  tin  lịch  khám  
+  đưa  đến  trang  Thông  tin  đặt  lịch,  các  lịch  khám  được  hiển  thị  theo  dạng  bảng  danh  sách.  Chọn  lịch  tương  ứng  để  xem  thông  tin  chi  tiết  
+Đăng  nhập  thành  công  
+Cập  nhật  tình  trạng  thú  cưng  
+  Đưa  đến  trang  thông  tin  thú  cưng  để  cập  nhật  hồ  sơ  bệnh  án,  điền  các  thông  tin  cập  nhật  thêm  về  tình  trạng  sức  khỏe,  bệnh  tình  của  Thú  cưng  và  các  lưu  ý  
+Đăng  nhập  thành  công  với  vai  trò  bác  sĩ  
+ 
+     
+
+     CHƯƠNG  2.  ĐẶC  TẢ  YÊU  CẦU    2.1.  Giới  thiệu  chung    Các  tác  nhân  hệ  thống:   
+STT  Tên  tác  nhân                         Mô  tả  ngắn  
+1  
+Chủ  nuôi  thú  cưng  Chủ  nuôi  là  người  trực  tiếp  sử  dụng  hệ  thống  để  đăng  ký  tài  khoản,  khai  báo  thông  tin  thú  cưng  và  theo  dõi  toàn  bộ  quá  trình  chăm  sóc  thú  cưng  tại  trung  tâm.  Chủ  nuôi  có  thể  đặt  lịch  khám  bệnh,  đặt  lịch  làm  đẹp,  đăng  ký  lưu  trú,  xem  thông  tin  về  sức  khỏe,  lịch  sử  dịch  vụ,  đơn  thuốc  và  các  thông  báo  từ  trung  tâm.  Ngoài  ra,  chủ  nuôi  cũng  có  thể  nhận  thông  báo  nhắc  lịch  tái  khám,  nhắc  tiêm  phòng  hoặc  các  lưu  ý  đặc  biệt  liên  quan  đến  thú  cưng  của  mình  
+2  
+Nhân  viên  trung  tâm  chăm  sóc  thú  cưng  
+Nhân  viên  trung  tâm  là  người  tiếp  nhận  thông  tin  từ  chủ  nuôi,  xác  nhận  lịch  hẹn,  hỗ  trợ  làm  thủ  tục  check-in  khi  thú  cưng  đến  trung  tâm  và  cập  nhật  tiến  độ  các  dịch  vụ  đang  thực  hiện.  Nhân  viên  có  thể  quản  lý  hồ  sơ  thú  cưng,  kiểm  tra  lịch  hẹn  trong  ngày,  theo  dõi  tình  trạng  lưu  trú,  cập  nhật  thông  tin  ăn  uống,  vệ  sinh,  chăm  sóc  và  hỗ  trợ  chủ  nuôi  trong  quá  trình  sử  dụng  dịch  vụ.  Đối  với  các  dịch  vụ  như  làm  đẹp  hoặc  trông  giữ,  nhân  viên  cũng  là  người  trực  tiếp  cập  nhật  trạng  thái  thực  hiện  lên  hệ  thống  
+3  
+Bác  sĩ  thú  y  Bác  sĩ  thú  y  sử  dụng  hệ  thống  để  tra  cứu  hồ  sơ  thú  cưng,  theo  dõi  tiền  sử  bệnh,  cập  nhật  kết  quả  khám  lâm  sàng,  chẩn  đoán,  xét  nghiệm,  kê  đơn  thuốc  và  chỉ  định  tái  khám.  Đây  là  nhóm  đối  tượng  có  vai  trò  quan  trọng  trong  việc  đảm  bảo  dữ  liệu  về  sức  khỏe  của  thú  cưng  được  ghi  nhận  đầy  đủ  và  chính  xác.  Thông  qua  hệ  thống,  bác  sĩ  có  thể  dễ  dàng  xem  lại  lịch  sử  điều  trị  của  từng  thú  cưng  để  đưa  ra  phương  án  chăm  sóc  phù  hợp  hơn.  
+     
+
+     
+4  
+Quản  trị  viên  hệ  thống  Quản  trị  viên  là  người  quản  lý  tổng  thể  hoạt  động  của  hệ  thống.  Người  này  có  nhiệm  vụ  tạo  và  phân  quyền  tài  khoản,  theo  dõi  hoạt  động  của  các  nhóm  người  dùng,  thống  kê  số  lượng  thú  cưng,  số  lượt  khám  bệnh,  số  dịch  vụ  đã  sử  dụng,  doanh  thu  và  các  báo  cáo  cần  thiết  khác.  Ngoài  ra,  quản  trị  viên  còn  đảm  bảo  hệ  thống  vận  hành  ổn  định,  xử  lý  các  vấn  đề  kỹ  thuật  cơ  bản  và  tối  ưu  hệ  thống  khi  cần  thiết.   
+ Xác  định  các  ca  sử  dụng:   
+STT  Ca  sử  dụng  Mô  tả  ngắn  Tác  nhân  
+1  Đăng  nhập  Đăng  nhập  bằng  username  và  password  đã  đăng  ký  để  có  thể  sử  dụng  được  các  chức  năng  của  ứng  dụng  
+Khách  hàng,  nhân  viên,  bác  sĩ,  
+2  Đăng  ký  Đăng  ký  một  tài  khoản  mới  với  các  thông  tin  tương  ứng  trong  form  đăng  ký,  lưu  trữ  vào  database  
+Khách  hàng,  nhân  viên,  bác  sĩ  
+3  CRUD  chức  năng  
+Xem/sửa/xóa/thêm  các  chức  năng  tương  ứng  như  thông  tin  thú  cưng,  dịch  vụ  làm  đẹp,  dịch  vụ  khách  sạn,  chế  độ  ăn…ở  trang  tương  ứng  
+Khách  hàng/nhân  viên/bác  sĩ  
+4  Đặt  lịch  Đặt  lịch  khám,  khách  hàng  có  thể  đặt  lịch  trực  tuyến  trước  hoặc  nhân  viên  có  thể  đặt  lịch  cho  khách  hàng  tại  quầy  
+Khách  hàng/nhân  viên  
+     
+
+     
+5  Xem  thông  tin  dịch  vụ  
+Hiển  thị  thông  tin  về  các  dịch  vụ  của  trung  tâm  
+chủ  nuôi  thú  cưng  
+6  Xem  thông  tin  lịch  khám  
+Xem  thông  tin  về  lịch  khám  cùng  với  các  thông  tin  cơ  bản  của  thú  cưng  đính  kèm  
+Người  dùng,  bác  sĩ,  nhân  viên  
+7  Xem  thông  tin  đăng  ký  lịch  sử  dụng  dịch  vụ  
+Hiển  thị  giao  diện  Xem  thông  tin  đặt  lịch  sử  dụng  dịch  vụ  bao  gồm  danh  sách  các  lịch  đã  đặt  
+Nhân  viên  
+8  Cập  nhật  tình  trạng  sức  khỏe  thú  cưng  
+Điền  các  thông  tin  cập  nhật  thêm  về  tình  trạng  sức  khỏe,  bệnh  tình  của  Thú  cưng  và  các  lưu  ý  
+Bác  sĩ  
+ 
+     
+
+      2.2.  Biểu  đồ  Usecase  và  phân  rã              Biểu  đồ  use  case  tổng  quan  
+  
+     
+
+
+                    Biểu  đồ  use  case  phân  rã  
+ Tác  nhân  "Chủ  nuôi"  tương  tác  trực  tiếp  với  5  chức  năng  chính  trong  Use  
+Case
+ 
+Quản
+ 
+lý
+ 
+hồ
+ 
+sơ
+ 
+thú
+ 
+cưng
+ 
+như
+ 
+sau:
+ 1.  Thêm  hồ  sơ  thú  cưng:  Cho  phép  chủ  nuôi  tạo  mới  thông  tin  cho  một  thú  cưng  (ví  
+dụ:
+ 
+tên,
+ 
+giống,
+ 
+tuổi,
+ 
+cân
+ 
+nặng,
+ 
+đặc
+ 
+điểm
+ 
+nhận
+ 
+dạng).
+ 2.  Xem  hồ  sơ  thú  cưng:  Cho  phép  chủ  nuôi  truy  xuất  và  xem  lại  các  thông  tin  cơ  
+bản
+ 
+của
+ 
+thú
+ 
+cưng
+ 
+đã
+ 
+được
+ 
+lưu
+ 
+trữ
+ 
+trên
+ 
+hệ
+ 
+thống.
+ 3.  Cập  nhật  hồ  sơ  thú  cưng:  Cho  phép  chủ  nuôi  chỉnh  sửa,  bổ  sung  hoặc  thay  đổi  
+các
+ 
+thông
+ 
+tin
+ 
+trong
+ 
+hồ
+ 
+sơ
+ 
+thú
+ 
+cưng
+ 
+hiện
+ 
+tại
+ 
+khi
+ 
+có
+ 
+sự
+ 
+thay
+ 
+đổi.
+ 
+     
+
+
+     4.  Xem  lịch  sử  khám  bệnh:  Cung  cấp  chức  năng  để  chủ  nuôi  theo  dõi  các  lần  thăm  
+khám
+ 
+thú
+ 
+y,
+ 
+tình
+ 
+trạng
+ 
+sức
+ 
+khỏe,
+ 
+hồ
+ 
+sơ
+ 
+bệnh
+ 
+án,
+ 
+hoặc
+ 
+tiêm
+ 
+phòng
+ 
+trước
+ 
+đó
+ 
+của
+ 
+thú
+ 
+cưng.
+ 5.  Xem  lịch  sử  dịch  vụ:  Cho  phép  chủ  nuôi  tra  cứu  lại  các  dịch  vụ  chăm  sóc  khác  
+(như
+ 
+tắm/spa,
+ 
+cắt
+ 
+tỉa
+ 
+lông,
+ 
+lưu
+ 
+chuồng...)
+ 
+mà
+ 
+thú
+ 
+cưng
+ 
+đã
+ 
+từng
+ 
+sử
+ 
+dụng
+ 
+tại
+ 
+cơ
+ 
+sở.
+  
+ Tác  nhân  "Chủ  nuôi"  tương  tác  trực  tiếp  với  5  chức  năng  chính  trong  Use  
+Case
+ 
+Quản
+ 
+lý
+ 
+lịch
+ 
+khám/làm
+ 
+đẹp
+ 
+như
+ 
+sau:
+ 1.  Xem  danh  sách  lịch  hẹn:  Cho  phép  Chủ  nuôi  truy  cập  và  theo  dõi  toàn  bộ  các  
+lịch
+ 
+hẹn
+ 
+(bao
+ 
+gồm
+ 
+cả
+ 
+khám
+ 
+bệnh
+ 
+và
+ 
+làm
+ 
+đẹp)
+ 
+mà
+ 
+họ
+ 
+đã
+ 
+tạo
+ 
+trên
+ 
+hệ
+ 
+thống,
+ 
+giúp
+ 
+họ
+ 
+nắm
+ 
+bắt
+ 
+thời
+ 
+gian
+ 
+và
+ 
+trạng
+ 
+thái
+ 
+của
+ 
+từng
+ 
+lịch.
+ 2.  Đặt  lịch  khám  &  làm  đẹp:  Chủ  nuôi  sử  dụng  chức  năng  này  để  đăng  ký  ngày,  
+giờ,
+ 
+và
+ 
+có
+ 
+thể
+ 
+chọn
+ 
+bác
+ 
+sĩ
+ 
+thú
+ 
+y
+ 
+cụ
+ 
+thể
+ 
+hoặc
+ 
+nhân
+ 
+viên
+ 
+(đối
+ 
+với
+ 
+các
+ 
+dịch
+ 
+vụ
+ 
+grooming)
+ 
+để
+ 
+đưa
+ 
+vật
+ 
+nuôi
+ 
+đến
+ 
+khám
+ 
+sức
+ 
+khỏe
+ 
+hoặc
+ 
+làm
+ 
+đẹp.
+ 
+     
+
+
+     3.  Đặt  lịch  lưu  trú:  Chức  năng  dành  riêng  cho  việc  đặt  các  dịch  vụ  lưu  trú.  Chủ  nuôi  
+xem
+ 
+danh
+ 
+sách
+ 
+các
+ 
+phòng
+ 
+trống
+ 
+phù
+ 
+hợp
+ 
+với
+ 
+lịch
+ 
+lưu
+ 
+trú
+ 
+của
+ 
+thú
+ 
+cưng,
+ 
+sau
+ 
+đó
+ 
+thực
+ 
+hiện
+ 
+đặt
+ 
+lịch.
+ 4.  Huỷ  lịch  hẹn:  Cung  cấp  quyền  cho  Chủ  nuôi  được  chủ  động  hủy  bỏ  một  lịch  
+khám
+ 
+hoặc
+ 
+làm
+ 
+đẹp
+ 
+đã
+ 
+đặt
+ 
+trước
+ 
+đó
+ 
+trong
+ 
+trường
+ 
+hợp
+ 
+có
+ 
+việc
+ 
+đột
+ 
+xuất.
+ 
+Lịch
+ 
+hẹn
+ 
+sẽ
+ 
+được
+ 
+huỷ
+ 
+ngay
+ 
+lập
+ 
+tức
+ 
+nếu
+ 
+nhân
+ 
+viên
+ 
+chưa
+ 
+xác
+ 
+nhận,
+ 
+nếu
+ 
+đã
+ 
+được
+ 
+xác
+ 
+nhận
+ 
+thì
+ 
+chủ
+ 
+nuôi
+ 
+cần
+ 
+cập
+ 
+nhật
+ 
+lý
+ 
+do
+ 
+huỷ
+ 
+và
+ 
+đợi
+ 
+nhân
+ 
+viên
+ 
+xác
+ 
+nhận
+ 
+lại
+ 
+một
+ 
+lần
+ 
+nữa.
+ 5.  Cập  nhật  lịch  hẹn:  Cho  phép  Chủ  nuôi  chỉnh  sửa  lại  thông  tin  của  một  lịch  hẹn  
+hiện
+ 
+có
+ 
+(ví
+ 
+dụ:
+ 
+đổi
+ 
+ngày,
+ 
+rời
+ 
+giờ,
+ 
+hoặc
+ 
+thay
+ 
+đổi
+ 
+loại
+ 
+dịch
+ 
+vụ)
+ 
+mà
+ 
+không
+ 
+cần
+ 
+phải
+ 
+thao
+ 
+tác
+ 
+hủy
+ 
+và
+ 
+đặt
+ 
+lại
+ 
+từ
+ 
+đầu.
+ 
+      
+
+
+     Tác  nhân  "Chủ  nuôi"  tương  tác  trực  tiếp  với  5  chức  năng  chính  trong  Use  
+Case
+ 
+Sử
+ 
+dụng
+ 
+dịch
+ 
+vụ
+ 
+lưu
+ 
+trú
+ 
+như
+ 
+sau:
+ 1.  Đăng  ký  lưu  trú:  Cho  phép  Chủ  nuôi  đăng  ký  dịch  vụ  lưu  trú  cho  thú  cưng  bằng  
+cách
+ 
+cung
+ 
+cấp
+ 
+thông
+ 
+tin
+ 
+thú
+ 
+cưng,
+ 
+thời
+ 
+gian
+ 
+gửi
+ 
+và
+ 
+lựa
+ 
+chọn
+ 
+loại
+ 
+phòng
+ 
+phù
+ 
+hợp.
+ 
+Hệ
+ 
+thống
+ 
+sẽ
+ 
+tiếp
+ 
+nhận
+ 
+và
+ 
+xác
+ 
+nhận
+ 
+yêu
+ 
+cầu
+ 
+lưu
+ 
+trú
+ 
+khi
+ 
+có
+ 
+phòng
+ 
+trống.
+ 2.  Kiểm  tra  phòng  lưu  trú:  Cho  phép  Chủ  nuôi  xem  danh  sách  các  phòng  lưu  trú  
+hiện
+ 
+có,
+ 
+kiểm
+ 
+tra
+ 
+tình
+ 
+trạng
+ 
+phòng
+ 
+(còn
+ 
+trống
+ 
+hoặc
+ 
+đã
+ 
+được
+ 
+đặt),
+ 
+cũng
+ 
+như
+ 
+tham
+ 
+khảo
+ 
+thông
+ 
+tin
+ 
+chi
+ 
+tiết
+ 
+về
+ 
+loại
+ 
+phòng
+ 
+và
+ 
+điều
+ 
+kiện
+ 
+lưu
+ 
+trú
+ 
+trước
+ 
+khi
+ 
+đăng
+ 
+ký.
+ 3.  Theo  dõi  tình  trạng  thú  cưng:  Giúp  Chủ  nuôi  theo  dõi  quá  trình  lưu  trú  của  thú  
+cưng
+ 
+thông
+ 
+qua
+ 
+các
+ 
+thông
+ 
+tin
+ 
+được
+ 
+cập
+ 
+nhật
+ 
+từ
+ 
+cơ
+ 
+sở
+ 
+lưu
+ 
+trú
+ 
+như
+ 
+tình
+ 
+trạng
+ 
+sức
+ 
+khỏe,
+ 
+hoạt
+ 
+động
+ 
+hằng
+ 
+ngày,
+ 
+chế
+ 
+độ
+ 
+ăn
+ 
+uống
+ 
+hoặc
+ 
+các
+ 
+ghi
+ 
+chú
+ 
+chăm
+ 
+sóc
+ 
+đặc
+ 
+biệt.
+ 4.  Cập  nhật  chế  độ  ăn  uống  và  chăm  sóc:  Cho  phép  Chủ  nuôi  bổ  sung  hoặc  chỉnh  
+sửa
+ 
+các
+ 
+yêu
+ 
+cầu
+ 
+liên
+ 
+quan
+ 
+đến
+ 
+việc
+ 
+chăm
+ 
+sóc
+ 
+thú
+ 
+cưng
+ 
+trong
+ 
+thời
+ 
+gian
+ 
+lưu
+ 
+trú,
+ 
+bao
+ 
+gồm
+ 
+khẩu
+ 
+phần
+ 
+ăn,
+ 
+thời
+ 
+gian
+ 
+ăn,
+ 
+thuốc
+ 
+cần
+ 
+sử
+ 
+dụng
+ 
+hoặc
+ 
+các
+ 
+lưu
+ 
+ý
+ 
+đặc
+ 
+biệt
+ 
+khác.
+ 5.  Gia  hạn  thời  gian  lưu  trú:  Cung  cấp  cho  Chủ  nuôi  khả  năng  kéo  dài  thời  gian  lưu  
+trú
+ 
+của
+ 
+thú
+ 
+cưng
+ 
+khi
+ 
+có
+ 
+nhu
+ 
+cầu
+ 
+phát
+ 
+sinh.
+ 
+Hệ
+ 
+thống
+ 
+sẽ
+ 
+kiểm
+ 
+tra
+ 
+tình
+ 
+trạng
+ 
+phòng
+ 
+và
+ 
+xác
+ 
+nhận
+ 
+việc
+ 
+gia
+ 
+hạn
+ 
+nếu
+ 
+đáp
+ 
+ứng
+ 
+điều
+ 
+kiện.
+ 
+     
+
+     
+ Tác  nhân  "Nhân  viên"  tương  tác  trực  tiếp  với  4  chức  năng  chính  trong  Use  
+Case
+ 
+Quản
+ 
+lý
+ 
+lịch
+ 
+hẹn
+ 
+như
+ 
+sau:
+ 1.  Xem  danh  sách  lịch  hẹn:  Cho  phép  nhân  viên  truy  xuất  và  xem  danh  sách  tổng  
+hợp
+ 
+tất
+ 
+cả
+ 
+các
+ 
+lịch
+ 
+hẹn
+ 
+đã
+ 
+được
+ 
+đặt
+ 
+trên
+ 
+hệ
+ 
+thống.
+ 2.  Xác  nhận  lịch  hẹn:  Nhân  viên  sử  dụng  chức  năng  này  để  duyệt  và  xác  nhận  các  
+yêu
+ 
+cầu
+ 
+đặt
+ 
+lịch
+ 
+hẹn
+ 
+mới
+ 
+(hoặc
+ 
+đang
+ 
+ở
+ 
+trạng
+ 
+thái
+ 
+chờ)
+ 
+từ
+ 
+khách
+ 
+hàng.
+ 3.  Cập  nhật  lịch  hẹn:  Cung  cấp  khả  năng  chỉnh  sửa  hoặc  thay  đổi  thông  tin  chi  tiết  
+của
+ 
+một
+ 
+lịch
+ 
+hẹn
+ 
+đã
+ 
+tồn
+ 
+tại
+ 
+(ví
+ 
+dụ:
+ 
+đổi
+ 
+ngày
+ 
+giờ,
+ 
+thay
+ 
+đổi
+ 
+nội
+ 
+dung
+ 
+dịch
+ 
+vụ,
+ 
+thông
+ 
+tin
+ 
+khách
+ 
+hàng...).
+ 4.  Huỷ  lịch  hẹn:  Cho  phép  nhân  viên  thao  tác  huỷ  bỏ  các  lịch  hẹn  không  còn  hiệu  
+lực
+ 
+hoặc
+ 
+khi
+ 
+khách
+ 
+hàng
+ 
+yêu
+ 
+cầu
+ 
+huỷ.
+ 
+     
+
+
+     
+ Tác  nhân  "Nhân  viên"  tương  tác  trực  tiếp  với  6  chức  năng  chính  trong  Use  
+Case
+ 
+Quản
+ 
+lý
+ 
+lưu
+ 
+trú
+ 
+như
+ 
+sau:
+ 1.  Check-in  thú  cưng:  Cho  phép  Nhân  viên  tiếp  nhận  thú  cưng  khi  đến  lưu  trú,  xác  
+nhận
+ 
+thông
+ 
+tin
+ 
+đặt
+ 
+phòng,
+ 
+kiểm
+ 
+tra
+ 
+tình
+ 
+trạng
+ 
+ban
+ 
+đầu
+ 
+của
+ 
+thú
+ 
+cưng
+ 
+và
+ 
+hoàn
+ 
+tất
+ 
+thủ
+ 
+tục
+ 
+nhận
+ 
+lưu
+ 
+trú
+ 
+trên
+ 
+hệ
+ 
+thống.
+ 2.  Kiểm  tra  phòng  lưu  trú:  Cho  phép  Nhân  viên  theo  dõi  danh  sách  phòng  lưu  trú,  
+kiểm
+ 
+tra
+ 
+tình
+ 
+trạng
+ 
+sử
+ 
+dụng
+ 
+của
+ 
+từng
+ 
+phòng
+ 
+và
+ 
+xác
+ 
+định
+ 
+các
+ 
+phòng
+ 
+còn
+ 
+trống
+ 
+hoặc
+ 
+đang
+ 
+được
+ 
+sử
+ 
+dụng
+ 
+để
+ 
+phục
+ 
+vụ
+ 
+công
+ 
+tác
+ 
+sắp
+ 
+xếp
+ 
+lưu
+ 
+trú.
+ 
+     
+
+
+     3.  Theo  dõi  tình  trạng  thú  cưng:  Giúp  Nhân  viên  cập  nhật  và  quản  lý  tình  trạng  sức  
+khỏe,
+ 
+hoạt
+ 
+động
+ 
+sinh
+ 
+hoạt
+ 
+và
+ 
+các
+ 
+thông
+ 
+tin
+ 
+liên
+ 
+quan
+ 
+đến
+ 
+thú
+ 
+cưng
+ 
+trong
+ 
+suốt
+ 
+thời
+ 
+gian
+ 
+lưu
+ 
+trú
+ 
+nhằm
+ 
+đảm
+ 
+bảo
+ 
+việc
+ 
+chăm
+ 
+sóc
+ 
+được
+ 
+thực
+ 
+hiện
+ 
+đúng
+ 
+yêu
+ 
+cầu.
+ 4.  Cập  nhật  chế  độ  ăn  uống  và  chăm  sóc:  Cho  phép  Nhân  viên  ghi  nhận  và  điều  
+chỉnh
+ 
+các
+ 
+thông
+ 
+tin
+ 
+về
+ 
+khẩu
+ 
+phần
+ 
+ăn,
+ 
+lịch
+ 
+cho
+ 
+ăn,
+ 
+sử
+ 
+dụng
+ 
+thuốc
+ 
+hoặc
+ 
+các
+ 
+yêu
+ 
+cầu
+ 
+chăm
+ 
+sóc
+ 
+đặc
+ 
+biệt
+ 
+theo
+ 
+hướng
+ 
+dẫn
+ 
+của
+ 
+Chủ
+ 
+nuôi
+ 
+hoặc
+ 
+quy
+ 
+định
+ 
+của
+ 
+cơ
+ 
+sở
+ 
+lưu
+ 
+trú.
+ 5.  Check-out  thú  cưng:  Cho  phép  Nhân  viên  thực  hiện  thủ  tục  trả  thú  cưng  cho  Chủ  
+nuôi
+ 
+khi
+ 
+kết
+ 
+thúc
+ 
+thời
+ 
+gian
+ 
+lưu
+ 
+trú,
+ 
+kiểm
+ 
+tra
+ 
+lại
+ 
+thông
+ 
+tin
+ 
+lưu
+ 
+trú,
+ 
+xác
+ 
+nhận
+ 
+tình
+ 
+trạng
+ 
+thú
+ 
+cưng
+ 
+và
+ 
+hoàn
+ 
+tất
+ 
+quá
+ 
+trình
+ 
+bàn
+ 
+giao.
+ 6.  Cập  nhật  trạng  thái  lưu  trú:  Cho  phép  Nhân  viên  thay  đổi  và  quản  lý  trạng  thái  
+lưu
+ 
+trú
+ 
+của
+ 
+thú
+ 
+cưng
+ 
+trong
+ 
+hệ
+ 
+thống,
+ 
+chẳng
+ 
+hạn
+ 
+như
+ 
+đã
+ 
+nhận
+ 
+phòng,
+ 
+đang
+ 
+lưu
+ 
+trú,
+ 
+sắp
+ 
+trả
+ 
+phòng
+ 
+hoặc
+ 
+đã
+ 
+trả
+ 
+phòng,
+ 
+giúp
+ 
+theo
+ 
+dõi
+ 
+chính
+ 
+xác
+ 
+quá
+ 
+trình
+ 
+lưu
+ 
+trú
+ 
+của
+ 
+từng
+ 
+thú
+ 
+cưng.
+  
+      
+
+
+     Tác  nhân  "Bác  sĩ"  tương  tác  trực  tiếp  với  4  chức  năng  chính  trong  UseCase  
+Quản
+ 
+lý
+ 
+hồ
+ 
+sơ
+ 
+bệnh
+ 
+án
+ 
+như
+ 
+sau:
+ 1.  Xem  hồ  sơ  bệnh  án:  Cho  phép  Bác  sĩ  truy  cập  và  xem  thông  tin  bệnh  án  của  thú  
+cưng,
+ 
+bao
+ 
+gồm
+ 
+thông
+ 
+tin
+ 
+cá
+ 
+nhân,
+ 
+tình
+ 
+trạng
+ 
+sức
+ 
+khỏe,
+ 
+chẩn
+ 
+đoán,
+ 
+kết
+ 
+quả
+ 
+khám
+ 
+và
+ 
+các
+ 
+lần
+ 
+điều
+ 
+trị
+ 
+trước
+ 
+đó
+ 
+để
+ 
+hỗ
+ 
+trợ
+ 
+quá
+ 
+trình
+ 
+khám
+ 
+chữa
+ 
+bệnh.
+ 2.  Cập  nhật  bệnh  án:  Cho  phép  Bác  sĩ  ghi  nhận  và  cập  nhật  các  thông  tin  mới  vào  
+bệnh
+ 
+án
+ 
+sau
+ 
+mỗi
+ 
+lần
+ 
+khám,
+ 
+bao
+ 
+gồm
+ 
+triệu
+ 
+chứng,
+ 
+kết
+ 
+quả
+ 
+chẩn
+ 
+đoán,
+ 
+phương
+ 
+pháp
+ 
+điều
+ 
+trị,
+ 
+tình
+ 
+trạng
+ 
+sức
+ 
+khỏe
+ 
+và
+ 
+các
+ 
+ghi
+ 
+chú
+ 
+chuyên
+ 
+môn
+ 
+liên
+ 
+quan.
+ 
+Bác
+ 
+sĩ
+ 
+cũng
+ 
+có
+ 
+thể
+ 
+chỉ
+ 
+định
+ 
+khám
+ 
+thêm
+ 
+các
+ 
+dịch
+ 
+vụ
+ 
+chuyên
+ 
+sâu
+ 
+khác
+ 
+như
+ 
+chụp
+ 
+X-quang,
+ 
+siêu
+ 
+âm,....
+ 3.  Tra  cứu  bệnh  án:  Hỗ  trợ  Bác  sĩ  tìm  kiếm  bệnh  án  của  thú  cưng  dựa  trên  các  tiêu  
+chí
+ 
+như
+ 
+mã
+ 
+bệnh
+ 
+án,
+ 
+tên
+ 
+thú
+ 
+cưng,
+ 
+tên
+ 
+chủ
+ 
+nuôi
+ 
+hoặc
+ 
+thông
+ 
+tin
+ 
+khám
+ 
+bệnh
+ 
+nhằm
+ 
+phục
+ 
+vụ
+ 
+việc
+ 
+theo
+ 
+dõi
+ 
+và
+ 
+điều
+ 
+trị
+ 
+nhanh
+ 
+chóng.
+ 4.  Xem  lịch  sử  khám:  Cho  phép  Bác  sĩ  xem  lại  toàn  bộ  các  lần  khám,  điều  trị  và  
+chăm
+ 
+sóc
+ 
+y
+ 
+tế
+ 
+trước
+ 
+đây
+ 
+của
+ 
+thú
+ 
+cưng,
+ 
+giúp
+ 
+đánh
+ 
+giá
+ 
+diễn
+ 
+biến
+ 
+sức
+ 
+khỏe
+ 
+và
+ 
+đưa
+ 
+ra
+ 
+hướng
+ 
+điều
+ 
+trị
+ 
+phù
+ 
+hợp.
+ 
+     
+
+     
+ Tác  nhân  “ Bác  sĩ”  tương  tác  trực  tiếp  với  4  chức  năng  trong  Use  Case  Khám  
+chữa
+ 
+bệnh
+ 
+như
+ 
+sau:
+ 1.  Chẩn  đoán  bệnh :  Cho  phép  Bác  sĩ  thực  hiện  việc  khám  và  đưa  ra  kết  luận  về  tình  
+trạng
+ 
+sức
+ 
+khỏe
+ 
+của
+ 
+thú
+ 
+cưng
+ 
+dựa
+ 
+trên
+ 
+các
+ 
+kết
+ 
+quả
+ 
+xét
+ 
+nghiệm
+ 
+và
+ 
+chỉ
+ 
+số
+ 
+đo
+ 
+được
+ 
+hiện
+ 
+tại.
+ 
+Thông
+ 
+tin
+ 
+chẩn
+ 
+đoán
+ 
+được
+ 
+lưu
+ 
+trữ
+ 
+trên
+ 
+hệ
+ 
+thống
+ 
+để
+ 
+phục
+ 
+vụ
+ 
+cho
+ 
+quá
+ 
+trình
+ 
+điều
+ 
+trị
+ 
+và
+ 
+theo
+ 
+dõi
+ 
+sau
+ 
+này.
+  2.  Kê  đơn  thuốc:  Cho  phép  Bác  sĩ  tạo  và  quản  lý  đơn  thuốc  cho  thú  cưng  sau  khi  
+hoàn
+ 
+tất
+ 
+quá
+ 
+trình
+ 
+khám
+ 
+bệnh.
+ 
+Chức
+ 
+năng
+ 
+này
+ 
+hỗ
+ 
+trợ
+ 
+lựa
+ 
+chọn
+ 
+thuốc,
+ 
+nhập
+ 
+liều
+ 
+lượng,
+ 
+thời
+ 
+gian
+ 
+sử
+ 
+dụng,
+ 
+hướng
+ 
+dẫn
+ 
+chăm
+ 
+sóc
+ 
+và
+ 
+các
+ 
+lưu
+ 
+ý
+ 
+cần
+ 
+thiết
+ 
+cho
+ 
+chủ
+ 
+nuôi.
+ 
+Đơn
+ 
+thuốc
+ 
+được
+ 
+lưu
+ 
+trữ
+ 
+trên
+ 
+hệ
+ 
+thống
+ 
+để
+ 
+dễ
+ 
+dàng
+ 
+tra
+ 
+cứu
+ 
+trong
+ 
+các
+ 
+lần
+ 
+khám
+ 
+tiếp
+ 
+theo.
+ 3.  Tạo  và  chỉnh  sửa  bệnh  án :  Cho  phép  Bác  sĩ  tạo  mới  hoặc  cập  nhật  hồ  sơ  bệnh  án  
+của
+ 
+thú
+ 
+cưng
+ 
+trong
+ 
+suốt
+ 
+quá
+ 
+trình
+ 
+điều
+ 
+trị.
+ 
+Chức
+ 
+năng
+ 
+này
+ 
+hỗ
+ 
+trợ
+ 
+lưu
+ 
+trữ
+ 
+thông
+ 
+tin
+ 
+khám
+ 
+bệnh,
+ 
+kết
+ 
+quả
+ 
+xét
+ 
+nghiệm,
+ 
+lịch
+ 
+sử
+ 
+điều
+ 
+trị,
+ 
+đơn
+ 
+thuốc
+ 
+đã
+ 
+sử
+ 
+dụng
+ 
+và
+ 
+diễn
+ 
+biến
+      
+
+
+     sức  khỏe  của  thú  cưng.  Việc  quản  lý  bệnh  án  tập  trung  giúp  Bác  sĩ  theo  dõi  chính  
+xác
+ 
+tình
+ 
+trạng
+ 
+sức
+ 
+khỏe
+ 
+và
+ 
+đưa
+ 
+ra
+ 
+các
+ 
+quyết
+ 
+định
+ 
+điều
+ 
+trị
+ 
+phù
+ 
+hợp.
+ 4.  Hẹn  lịch  tái  khám :  Bác  sĩ  cập  nhật  lịch  tái  khám  của  bệnh  nhân  lên  hệ  thống  
+ Tác  nhân  "Admin"  tương  tác  trực  tiếp  với  4  chức  năng  chính  trong  Use  Case  
+Quản
+ 
+lý
+ 
+dịch
+ 
+vụ
+ 
+như
+ 
+sau:
+ 1.  Xem  danh  sách  dịch  vụ:  Cho  phép  Admin  truy  cập  và  xem  toàn  bộ  danh  sách  các  
+dịch
+ 
+vụ
+ 
+đang
+ 
+được
+ 
+cung
+ 
+cấp
+ 
+trong
+ 
+hệ
+ 
+thống.
+ 
+Thông
+ 
+tin
+ 
+hiển
+ 
+thị
+ 
+có
+ 
+thể
+ 
+bao
+ 
+gồm
+ 
+tên
+ 
+dịch
+ 
+vụ,
+ 
+mô
+ 
+tả,
+ 
+giá
+ 
+dịch
+ 
+vụ,
+ 
+trạng
+ 
+thái
+ 
+hoạt
+ 
+động
+ 
+và
+ 
+các
+ 
+thông
+ 
+tin
+ 
+liên
+ 
+quan
+ 
+khác
+ 
+nhằm
+ 
+hỗ
+ 
+trợ
+ 
+việc
+ 
+quản
+ 
+lý
+ 
+và
+ 
+theo
+ 
+dõi
+ 
+dịch
+ 
+vụ.
+ 2.  Tạo  dịch  vụ  mới:  Cho  phép  Admin  thêm  một  dịch  vụ  mới  vào  hệ  thống  bằng  cách  
+nhập
+ 
+các
+ 
+thông
+ 
+tin
+ 
+cần
+ 
+thiết
+ 
+như
+ 
+tên
+ 
+dịch
+ 
+vụ,
+ 
+mô
+ 
+tả,
+ 
+giá
+ 
+dịch
+ 
+vụ,
+ 
+thời
+ 
+hạn
+ 
+sử
+ 
+dụng
+ 
+hoặc
+ 
+các
+ 
+thuộc
+ 
+tính
+ 
+liên
+ 
+quan.
+ 
+Sau
+ 
+khi
+ 
+tạo
+ 
+thành
+ 
+công,
+ 
+dịch
+ 
+vụ
+ 
+sẽ
+ 
+được
+ 
+lưu
+ 
+và
+ 
+hiển
+ 
+thị
+ 
+trong
+ 
+danh
+ 
+sách
+ 
+dịch
+ 
+vụ.
+ 
+     
+
+
+     3.  Cập  nhật  dịch  vụ:  Cho  phép  Admin  chỉnh  sửa  và  cập  nhật  thông  tin  của  các  dịch  
+vụ
+ 
+đã
+ 
+tồn
+ 
+tại
+ 
+trong
+ 
+hệ
+ 
+thống.
+ 
+Các
+ 
+thông
+ 
+tin
+ 
+có
+ 
+thể
+ 
+được
+ 
+thay
+ 
+đổi
+ 
+bao
+ 
+gồm
+ 
+tên
+ 
+dịch
+ 
+vụ,
+ 
+mô
+ 
+tả,
+ 
+giá
+ 
+tiền,
+ 
+trạng
+ 
+thái
+ 
+hoạt
+ 
+động
+ 
+hoặc
+ 
+các
+ 
+thông
+ 
+tin
+ 
+khác
+ 
+nhằm
+ 
+đảm
+ 
+bảo
+ 
+dữ
+ 
+liệu
+ 
+luôn
+ 
+chính
+ 
+xác
+ 
+và
+ 
+phù
+ 
+hợp
+ 
+với
+ 
+nhu
+ 
+cầu
+ 
+kinh
+ 
+doanh.
+ 4.  Xóa  dịch  vụ:  Cho  phép  Admin  xóa  các  dịch  vụ  không  còn  được  sử  dụng  hoặc  
+không
+ 
+còn
+ 
+phù
+ 
+hợp
+ 
+khỏi
+ 
+hệ
+ 
+thống.
+ 
+Hệ
+ 
+thống
+ 
+có
+ 
+thể
+ 
+yêu
+ 
+cầu
+ 
+xác
+ 
+nhận
+ 
+trước
+ 
+khi
+ 
+thực
+ 
+hiện
+ 
+thao
+ 
+tác
+ 
+xóa
+ 
+nhằm
+ 
+tránh
+ 
+việc
+ 
+mất
+ 
+dữ
+ 
+liệu
+ 
+ngoài
+ 
+ý
+ 
+muốn
+ 
+và
+ 
+đảm
+ 
+bảo
+ 
+tính
+ 
+an
+ 
+toàn
+ 
+trong
+ 
+quá
+ 
+trình
+ 
+quản
+ 
+lý
+ 
+dịch
+ 
+vụ.
+ 
+ Tác  nhân  "Admin"  tương  tác  trực  tiếp  với  4  chức  năng  chính  trong  Use  Case  
+Quản
+ 
+lý
+ 
+người
+ 
+dùng
+ 
+như
+ 
+sau:
+ 1.  Xem  danh  sách  người  dùng:  Cho  phép  Admin  truy  cập  và  xem  toàn  bộ  danh  
+sách
+ 
+người
+ 
+dùng
+ 
+trong
+ 
+hệ
+ 
+thống.
+ 
+Thông
+ 
+tin
+ 
+hiển
+ 
+thị
+ 
+có
+ 
+thể
+ 
+bao
+ 
+gồm
+ 
+họ
+ 
+tên,
+ 
+tài
+ 
+khoản,
+ 
+vai
+ 
+trò,
+ 
+trạng
+ 
+thái
+ 
+hoạt
+ 
+động
+ 
+và
+ 
+các
+ 
+thông
+ 
+tin
+ 
+liên
+ 
+quan
+ 
+khác
+ 
+nhằm
+ 
+hỗ
+ 
+trợ
+ 
+việc
+ 
+quản
+ 
+lý
+ 
+và
+ 
+theo
+ 
+dõi
+ 
+người
+ 
+dùng.
+ 
+     
+
+
+     2.  Thêm  người  dùng  mới:  Cho  phép  Admin  tạo  mới  tài  khoản  người  dùng  bằng  
+cách
+ 
+nhập
+ 
+các
+ 
+thông
+ 
+tin
+ 
+cần
+ 
+thiết
+ 
+như
+ 
+họ
+ 
+tên,
+ 
+mật
+ 
+khẩu,
+ 
+email,
+ 
+số
+ 
+điện
+ 
+thoại,
+ 
+vai
+ 
+trò
+ 
+và
+ 
+các
+ 
+thông
+ 
+tin
+ 
+liên
+ 
+quan.
+ 
+Sau
+ 
+khi
+ 
+tạo
+ 
+thành
+ 
+công,
+ 
+người
+ 
+dùng
+ 
+sẽ
+ 
+được
+ 
+thêm
+ 
+vào
+ 
+hệ
+ 
+thống
+ 
+và
+ 
+có
+ 
+thể
+ 
+sử
+ 
+dụng
+ 
+các
+ 
+chức
+ 
+năng
+ 
+tương
+ 
+ứng
+ 
+với
+ 
+quyền
+ 
+được
+ 
+cấp.
+ 3.  Cập  nhật  thông  tin  người  dùng:  Cho  phép  Admin  chỉnh  sửa  và  cập  nhật  thông  
+tin
+ 
+của
+ 
+người
+ 
+dùng
+ 
+đã
+ 
+tồn
+ 
+tại
+ 
+trong
+ 
+hệ
+ 
+thống.
+ 
+Các
+ 
+thông
+ 
+tin
+ 
+có
+ 
+thể
+ 
+được
+ 
+thay
+ 
+đổi
+ 
+bao
+ 
+gồm
+ 
+thông
+ 
+tin
+ 
+cá
+ 
+nhân,
+ 
+thông
+ 
+tin
+ 
+liên
+ 
+hệ,
+ 
+vai
+ 
+trò
+ 
+hoặc
+ 
+trạng
+ 
+thái
+ 
+tài
+ 
+khoản
+ 
+nhằm
+ 
+đảm
+ 
+bảo
+ 
+dữ
+ 
+liệu
+ 
+luôn
+ 
+chính
+ 
+xác
+ 
+và
+ 
+đáp
+ 
+ứng
+ 
+yêu
+ 
+cầu
+ 
+quản
+ 
+lý.
+ 4.  Khóa  tài  khoản  người  dùng:  Cho  phép  Admin  khóa  hoặc  vô  hiệu  hóa  tài  khoản  
+của
+ 
+những
+ 
+người
+ 
+dùng
+ 
+vi
+ 
+phạm
+ 
+quy
+ 
+định
+ 
+hoặc
+ 
+không
+ 
+còn
+ 
+nhu
+ 
+cầu
+ 
+sử
+ 
+dụng
+ 
+hệ
+ 
+thống.
+ 
+Sau
+ 
+khi
+ 
+tài
+ 
+khoản
+ 
+bị
+ 
+khóa,
+ 
+người
+ 
+dùng
+ 
+sẽ
+ 
+không
+ 
+thể
+ 
+đăng
+ 
+nhập
+ 
+hoặc
+ 
+sử
+ 
+dụng
+ 
+các
+ 
+chức
+ 
+năng
+ 
+của
+ 
+hệ
+ 
+thống
+ 
+cho
+ 
+đến
+ 
+khi
+ 
+tài
+ 
+khoản
+ 
+được
+ 
+kích
+ 
+hoạt
+ 
+lại.
+  
+2.3.  Đặc  tả  usecase    Đặc  tả  use  case  UC001  “Đăng  Nhập”         Mã  Use  case  
+UC001    
+Tên  Use  case  Đăng  nhập  
+Tác  nhân  User  (Chủ  nuôi,  Nhân  viên,  Admin,  Bác  sĩ)   
+Tiền  điều  kiện  
+Không    
+  
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.  User   Chọn  chức  năng  Đăng  nhập   2.  Hệ  thống  Hiển  thị  giao  diện  đăng  nhập   
+3.  User   Nhập  email/tên  đăng  nhập  và  mật  khẩu   
+4.  User   Yêu  cầu  Đăng  nhập   
+5.  Hệ  thống  Kiểm  tra  xem  khách  đã  nhập  các  trường  bắt  buộc  chưa        
+
+     6.  Hệ  thống  Kiểm  tra  thông  tin  có  hợp  lệ  trong  cơ  sở  dữ  liệu  không    7.  Hệ  thống  Chuyển  hướng  người  dùng  vào  trang  chủ  tương  ứng  với  quyền   Luồng  sự  kiện  thay  thế  
+     
+ STT  Thực  hiện  bởi  
+Hành  động   
+5a.  Hệ  thống  Thông  báo  lỗi:  Cần  nhập  các  trường  bắt  buộc  nếu  nhập  thiếu   6a.  Hệ  thống  Thông  báo  lỗi:  Sai  tài  khoản  hoặc  mật  khẩu  nếu  không  tìm  thấy    Hậu  điều  kiện  
+Trạng  thái  hệ  thống  chuyển  sang  đã  đăng  nhập   
+•  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:    
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  email   có    nguyenduckhai@gmail.com  
+2  mật  khẩu   có   kh123@  
+ Đặc  tả  use  case  UC002  “Đăng  ký”          Mã  Use  case  
+UC001    
+Tên  Use  case  Đăng  ký  
+Tác  nhân  Khách    
+  
+     
+
+     Tiền  điều  kiện  
+Không    
+  
+Luồng  sự  kiện  chính  (Thành  công)  
+     
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.  Khách  Chọn  chức  năng  Đăng  ký  2.  Hệ  thống  Hiển  thị  giao  diện  đăng  ký  
+3.  Khách  Nhập  các  thông  tin  đăng  ký  
+4.  Khách  Yêu  cầu  đăng  ký  
+5.  Hệ  thống  Kiểm  tra  xem  khách  đã  nhập  các  trường  bắt  buộc  nhập  hay  chưa  6.  Hệ  thống  Kiểm  tra  địa  chỉ  email  của  khách  có  hợp  lệ  không   7.  Hệ  thống  Kiểm  tra  mật  khẩu  nhập  lại  và  mật  khẩu  có  trùng  nhau  hay  không   8.  Hệ  thống  Kiểm  tra  mật  khẩu  có  đủ  mức  độ  an  toàn  hay  không   9.  Hệ  thống  Lưu  thông  tin  tài  khoản  và  thông  báo  đăng  ký  thành  công   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+6a.  Hệ  thống  Thông  báo  lỗi:  Cần  nhập  các  trường  bắt  buộc  nhập  nếu  khách  nhập  thiếu  7a.  Hệ  thống  Thông  báo  lỗi:  Địa  chỉ  email  không  hợp  lệ  nếu  địa  chỉ  email  không  hợp  lệ   8a.  Hệ  thống  Thông  báo  lỗi:  Mật   khẩu  xác  nhận  không  trùng  với  Mật  khẩu  nếu  hai  mật  khẩu  không  trùng  nhau   
+     
+
+     9a.  Hệ  thống  Thông  báo  lỗi:  Mật  khẩu  cần  đảm  bảo  độ  an  toàn   nếu  mật  khẩu  không  đảm  bảo  độ  an  toàn  được  quy  định  bởi  hệ  thống  (có  ít  nhất  8  ký  tự,  trong  đó  có  cả  chữ  cái  thường  và  chữ  cái  hoa,  ít  nhất  1  chữ  số  và  1  ký  tự  đặc  biệt)   Hậu  điều  kiện  
+Không      
+   Đặc  tả  use  case  UC003  “Quản  lý  hồ  sơ  thú  cưng  ”   Mã  Use  case  
+UC003    
+Tên  Use  case  Quản  lý  hồ  sơ  thú  cưng  
+Tác  nhân  Chủ  nuôi    
+ 
+Tiền  điều  kiện  
+Đã  đăng  nhập  vào  hệ  thống                                              Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.  Chủ  nuôi  Chọn  chức  năng  "Quản  lý  hồ  sơ  thú  cưng"   2.  Chủ  nuôi  Chọn  "Thêm  mới  thú  cưng"   
+3.  Hệ  thống  Hiển  thị  biểu  mẫu  điền  thông  tin  thú  cưng   
+4.  Chủ  nuôi  Nhập:  Tên  thú  cưng,  Loài,  Giống,  Tuổi,  Cân  nặng   5.  Chủ   Yêu  cầu  lưu  thông  tin   
+6.  Hệ  thống  Kiểm  tra  tính  hợp  lệ  của  dữ  liệu  (các  trường  bắt  buộc,  định  dạng  số)   
+     
+
+     7.  Hệ  thống  Lưu  hồ  sơ  thú  cưng  vào  CSDL  và  hiển  thị  thông  báo  thành  công   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+6a.  Hệ  thống  Thông  báo  lỗi:  "Vui  lòng  nhập  các  thông  tin  bắt  buộc"  nếu  nhập  thiếu   6b.  Hệ  thống  Thông  báo  lỗi:  "Tuổi  hoặc  cân  nặng  phải  là  số  dương"  nếu  dữ  liệu  sai  định  dạng   
+Hậu  điều  kiện  
+Hồ  sơ  thú  cưng  mới  sẽ  được  lưu  vào  cơ  sở  dữ  liệu   
+ 
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Tên  thú  cưng   Tên  gọi  của  pet   
+có   Không  quá  50  ký  tự   
+Milu   
+2  Loài   Chó,  Mèo,  Chim...   
+có  Chọn  từ  danh  sách   
+Chó   
+3  Tuổi   Số  tuổi   không  Số  nguyên  dương   
+2   
+4  Cân  nặng   Trọng  lượng  (kg)   
+ Số  dương  (>0)   
+5.5   
+     Đặc  tả  use  case  UC004  “Thanh  toán”   Mã  Use  case  
+UC004  Tên  Use  case  Thanh  toán  
+     
+
+       Tác  nhân  Chủ  nuôi     
+Tiền  điều  kiện  
+ Có  hóa  đơn  chưa  thanh  toán    
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.  Chủ  nuôi  Chọn  hóa  đơn  và  nhấn  Thanh  toán    2.  Hệ  thống   Hiển  thị  phương  thức:  Chuyển  khoản  (Mã  QR)  hoặc  Tiền  mặt     
+3.  Chủ  nuôi   Thực  hiện  thanh  toán  (quét  QR  hoặc  nộp  tiền  mặt)   4.  Chủ  nuôi    Nhấn  "Đã  thanh  toán"     
+5.  Hệ  thống    Chuyển  trạng  thái  hóa  đơn  sang  "Chờ  xác  nhận"   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+3a.  Chủ  nuôi    Nhấn  Hủy  thanh  toán   Hậu  điều  kiện  
+Hóa  đơn  được  cập  nhật  trạng  thái  "Đã  thanh  toán   
+•  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:   
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Mã  hóa  đơn   ID  Invoice    có   Tồn  tại  trong  hệ  thống   
+INV-001   
+       
+
+       Đặc  tả  use  case  UC005  “Phân  lịch  làm  việc  cho  bác  sĩ  và  nhân  viên  ”   Mã  Use  case  
+UC005    Tên  Use  case  Phân  lịch  làm  việc  cho  bác  sĩ  và  nhân  viên  Tác  nhân  Admin      
+ 
+Tiền  điều  kiện  
+Đăng  nhập  bằng  quyền  Admin   
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.  Admin   Chọn  Phân  lịch  làm  việc    2.  Hệ  thống   Hiển  thị  danh  sách  nhân  sự  (Bác  sĩ,  Nhân  viên)  và  các  ca  trống   
+3.  Admin    Chọn  nhân  sự  và  gán  vào  ca  trực  tương  ứng  
+4.  Admin    Nhấn  Lưu  lịch  làm  việc    
+5.  Hệ  thống     Lưu  vào  CSDL  và  tự  động  thông  báo  tới  nhân  sự  được  phân  lịch   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+3a.  Hệ  thống  
+Cảnh  báo:  Nhân  sự  đã  có  lịch  trùng  hoặc  nghỉ  phép    Hậu  điều  kiện  
+Lịch  làm  việc  được  lưu  và  cập  nhật  cho  từng  nhân  sự   
+ •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:  
+     
+
+        
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Mã  nhân  sự    Bác  sĩ/NV   có   Đang  làm  việc   NV001   
+2  Ca  trực   Sáng/Chiều   có  Ngày  tương  lai   
+Ca  Sáng  15/06   
+  Đặc  tả  use  case  UC006  “Quản  lý  tài  khoản  cá  nhân”   Mã  Use  case  
+UC006   Tên  Use  case  quản  lý  tài  khoản  cá  nhân  
+Tác  nhân  User     
+Tiền  điều  kiện  
+Đã  đăng  nhập    
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+STT  
+Thực  hiện  bởi  
+Hành  động  
+  
+1.  User   Chọn  Quản  lý  tài  khoản  cá  nhân   
+2.  Hệ  thống   Hiển  thị  thông  tin  hồ  sơ  hiện  tại    
+3.  User    Thay  đổi  thông  tin  (địa  chỉ,  số  điện  thoại,  mật  khẩu...)   4.  User   Yêu  cầu  Cập  nhật     
+5.  Hệ  thống    Kiểm  tra  dữ  liệu  và  lưu  vào  CSDL   
+     
+
+     6.  Hệ  thống    Thông  báo  cập  nhật  thành  công   
+Luồng  sự  kiện  thay  thế  
+      
+STT  
+Thực  hiện  bởi  
+Hành  động  
+  
+a.  Hệ  thống  Báo  lỗi  nếu  mật  khẩu  cũ  không  khớp  (trường  hợp  đổi  mật  khẩu)   
+Hậu  điều  kiện  
+Thông  tin  người  dùng  được  cập  nhật  mới     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:    
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Địa  chỉ   Nơi  ở   Text  thường   
+Tồn  tại  trong  hệ  thống   
+ 
+2  Mật  khẩu  cũ   
+MK  hiện  tại   có  Khớp  CSDL   ***   
+3  Mật  khẩu  mới   
+MK  muốn  đổi   Có   >  6  ký  tự   ***   
+ Đặc  tả  use  case  UC007  “Quản  lý  lịch  khám/làm  đẹp”   Mã  Use  case  
+UC007    
+Tên  Use  case  quản  lý  lịch  khám  /làm  đẹp  
+Tác  nhân  Chủ  nuôi      
+ 
+     
+
+     Tiền  điều  kiện  
+ Đã  đăng  nhập  và  có  hồ  sơ  thú  cưng   
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+STT  Thực  hiện  bởi  
+Hành  động    
+1.  Chủ  nuôi    Chọn  Đặt  lịch  khám/làm  đẹp   2.  Hệ  thống   Hiển  thị  danh  sách  dịch  vụ  và  ca  trống   
+3.  Chủ  nuôi    Chọn  thú  cưng,  dịch  vụ,  bác  sĩ  và  khung  giờ   
+4.  Chủ  nuôi   Nhấn  Đặt  lịch     
+5.  Hệ  thống    Kiểm  tra  lịch  trống  và  tạo  mã  lịch  hẹn   
+6.  Hệ  thống    Thông  báo  đặt  lịch  thành  công   
+Luồng  sự  kiện  thay  thế  
+      
+    
+STT  
+Thực  hiện  bởi  
+Hành  động    
+  5a.  Hệ  thống     Báo  lỗi:  Khung  giờ  đã  bị  trùng,  yêu  cầu  chọn  lại   Hậu  điều  kiện  
+Lịch  hẹn  được  đưa  vào  trạng  thái  "Chờ  xác  nhận"  
+•  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Thú  cưng   ID  thú  cưng    Có    Thuộc  sở  hữu   Pet_01   
+2  Dịch  vụ    Loại  DV   có  Có  trong  list    Khám  tổng  quát   
+3  Thời  gian   Ngày  giờ    Có   Ngày  giờ  15/06/2026  10:00   
+     
+
+     tương  la   
+ Đặc  tả  use  case  UC008“Sử  dụng  lịch  lưu  trú”   Mã  Use  case  
+ UC008  Tên  Use  case  sử  dụng  lịch  lưu  trú  Tác  nhân  Chủ  nuôi      
+ 
+Tiền  điều  kiện  
+Đã  đăng  nhập   
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+STT  Thực  hiện  bởi  
+Hành  động   
+1.  Chủ  nuôi    Chọn  Đăng  ký  gửi  thú  cưng  (lưu  trú)   
+2.  Hệ  thống   Hiển  thị  loại  chuồng  và  ngày  khả  dụng   
+3.  Chủ  nuôi    Nhập  ngày  gửi,  ngày  nhận  và  loại  chuồng   
+4.  Chủ  nuôi   Nhấn  Đăng  ký      
+5.  Hệ  thống    Kiểm  tra  sức  chứa  của  phòng  khám  trong  khoảng  thời  gian  đó   6.  Hệ  thống    Xác  nhận  và  tạo  phiếu  lưu  trú   
+Luồng  sự  kiện  thay  thế  
+      
+STT  Thực  hiện  bởi  
+Hành  động   
+5a.  Hệ  thống     Báo  lỗi:  Đã  hết  chuồng  loại  này,  gợi  ý  loại  khác   5.b.  Hệ  thống   Báo  lỗi:  Ngày  nhận  phải  sau  ngày  gửi   Hậu  điều  kiện  
+Phiếu  yêu  cầu  lưu  trú  được  tạo     
+     
+
+     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Ngày  gửi   Ngày  bắt  đầu   Có    >=  Hiện  tại   15/06/2026   
+2  Ngày  nhận   Ngày  kết  thúc   có  >  Ngày  gửi   20/06/2026   
+3  Loại  chuồng   
+VIP/Thường   Có   Chọn  từ  list   Chuồng  VIP   
+ Đặc  tả  use  case  UC009  “Nhận  thông  báo”   Mã  Use  case  
+ UC009  Tên  Use  case  Nhận  thông  báo  
+Tác  nhân  Chủ  nuôi      
+ 
+Tiền  điều  kiện  
+ Đã  đăng  nhập   
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+STT  Thực  hiện  bởi  
+Hành  động   
+1.  Chủ  nuôi    Phát  sinh  sự  kiện  (đến  lịch  tái  khám,  đã  xong  dịch  vụ...)    2.  Hệ  thống   Gửi  thông  báo  vào  tài  khoản  Chủ  nuôi   
+3.  Chủ  nuôi    Nhấn  vào  biểu  tượng  chuông/thông  báo   
+4.  Chủ  nuôi   Hiển  thị  danh  sách  chi  tiết  thông  báo     
+     
+
+     Luồng  sự  kiện  thay  thế  
+      
+STT  Thực  hiện  bởi  
+Hành  động   
+Hậu  điều  kiện  
+Thông  báo  chuyển  sang  trạng  thái  "Đã  đọc"    
+•  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Ngày  gửi   Ngày  bắt  đầu   Có    >=  Hiện  tại   15/06/2026   
+2  Ngày  nhận   Ngày  kết  thúc   có  >  Ngày  gửi   20/06/2026   
+3  Loại  chuồng   
+VIP/Thường   Có   Chọn  từ  list   Chuồng  VIP   
+  Đặc  tả  use  case  UC010“Xem  thống  kê”   Mã  Use  case  
+UC010    
+Tên  Use  case  Xem  thống  kê  
+Tác  nhân  Admin     
+ 
+Tiền  điều  kiện  
+  Đăng  nhập  bằng  quyền  Admin     Luồng  sự  kiện  
+      
+     
+
+     chính  (Thành  công)  
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.  Admin   Chọn  Xem  thống  kê   2.  Hệ  thống   Hiển  thị  bộ  lọc  (theo  ngày,  tháng,  loại  doanh  thu)    
+3.  Admin     Nhập  khoảng  thời  gian  và  nhấn  Lọc   
+4.  Hệ  thống   Nhập  khoảng  thời  gian  và  nhấn  Lọc   
+Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+a.  Hệ  thống     Báo  "Không  có  dữ  liệu"  nếu  khoảng  thời  gian  đó  không  có  giao  dịch    Hậu  điều  kiện  
+Không  thay  đổi  dữ  liệu  hệ  thống     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Từ  ngày   Ngày  bắt  đầu     Có    Định  dạng  ngày   
+01/01/2026   
+2  Đến  ngày    Ngày  kết  thúc   có  >=  Từ  ngày    31/01/2026   
+     
+     
+
+      Đặc  tả  use  case  UC011  “Quản  lý  lịch  hẹn”   Mã  Use  case  
+UC011    
+Tên  Use  case  Xác  nhận  thanh  toán  
+Tác  nhân  Nhân  viên     
+ 
+Tiền  điều  kiện  
+  Đăng  nhập  bằng  quyền  Nhân  viên     Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    1.  Nhân  viên   Vào  mục  Danh  sách  lịch  hẹn   2.  Hệ  thống   Hiển  thị  lịch  hẹn  khách  vừa  đặt     
+3.  Nhân  viên     Gọi  điện  xác  nhận  với  Chủ  nuôi   
+4.  Hệ  thống   Chuyển  trạng  thái  lịch  hẹn  sang  "Đã  xác  nhận"   5.  Hệ  thống  Lưu  trạng  thái  và  gửi  thông  báo  cho  Chủ  nuôi   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+4a..  Nhân  viên     Hủy  lịch  nếu  khách  báo  bận  hoặc  không  nghe  máy   
+Hậu  điều  kiện  
+Lịch  hẹn  được  chốt  để  Bác  sĩ  chuẩn  bị     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:  
+STT  Trường  dữ  Mô  tả   Bắt  Điều  kiện  Ví  dụ   
+     
+
+     liệu   buộc?   hợp  lệ   
+1  Thao  tác  nút  bấm   
+Trạng  thái  duyệt     
+Có    N/A   Xác  nhận/Hủy   
+ Đặc  tả  use  case  UC012  “Quản  lý  dịch  vụ  chăm  sóc,  làm  đẹp  ”   Mã  Use  case  
+   
+Tên  Use  case  quản  lý  dịch  vụ  chăm  sóc,làm  đẹp  và  lưu  trú  Tác  nhân  Nhân  viên     
+ 
+Tiền  điều  kiện  
+  Đăng  nhập  bằng  quyền  Nhân  viên     Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    1.  Nhân  viên   Chọn  Quản  lý  dịch  vụ   2.  Hệ  thống   Hiển  thị  danh  sách  các  gói  dịch  vụ  (Spa,  Tỉa  lông...)     3.  Nhân  viên     Chọn  Thêm/Sửa  gói  dịch  vụ    
+4.  Nhân  viên   Nhập  Tên  dịch  vụ,  Giá  tiền,  Mô  tả   
+5.  Hệ  thống  Lưu  thông  tin  vào  danh  mục  dịch  vụ   
+Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+   5a..  Hệ  thống     Báo  lỗi:  Giá  tiền  phải  >  0   
+     
+
+     Hậu  điều  kiện  
+Danh  mục  dịch  vụ  được  cập  nhật     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:  
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Tên  dịch  vụ    Tên  gọi   Có    Text  thông  thường   
+Tỉa  lông  nghệ  thuật   
+2  Giá  tiền   Đơn  giá   có  Số  dương   200000   
+ Đặc  tả  use  case  UC013  “Quản  lý  lưu  trú  ”   Mã  Use  case  
+UC01    
+Tên  Use  case  Quản  lý  lưu  trú  
+Tác  nhân  Nhân  viên     
+ 
+Tiền  điều  kiện  
+  Đăng  nhập  bằng  quyền  Nhân  viên      Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    1.   Nhân  viên   Chọn  Quản  lý  phòng/chuồng  lưu  trú   2.  Hệ  thống   Hiển  thị  sơ  đồ  chuồng  trại  và  trạng  thái  (Trống/Đang  sử  dụng)      3.  Nhân  viên     Nhận  thú  cưng  từ  khách,  chọn  chuồng  Trống  và  gán  thú  cưng  vào   4.  Nhân  viên   Cập  nhật  hệ  thống    
+5.  Hệ  thống  Đổi  trạng  thái  chuồng  thành  "Đang  sử  dụng"       
+
+     Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    3a..  Nhân  viên     Thực  hiện  thao  tác  "Trả  thú  cưng",  chuyển  chuồng  về  "Trống"   Hậu  điều  kiện  
+Trạng  thái  cơ  sở  vật  chất  (chuồng)  được  cập  nhật     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:  
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Mã  chuồng   ID  Chuồng   Có    Có  trong  CSDL   
+CH01   
+ Mã  thú  cưng   
+ID  Pet   Có  Có  trong  CSDL   
+PET009   
+ Đặc  tả  use  case  UC014  “Xác  nhận  thanh  toán  ”   Mã  Use  case  
+UC014    
+Tên  Use  case  quản  lý  lịch  làm   
+Tác  nhân  Nhân  viên    
+Tiền  điều  kiện  
+ Đăng  nhập  bằng  quyền  Nhân  viên     Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    1.   Nhân  viên   Kiểm  tra  hóa  đơn  tiền  mặt  hoặc  chuyển  khoản  thủ  công    
+     
+
+     2.  Nhân  viên    Chọn  hóa  đơn  và  nhấn  "Xác  nhận  đã  thu  tiền   3.  Hệ  thống      Hiển  thị  popup  xác  nhận    
+4.  Nhân  viên    Đồng  ý   
+5.  Hệ  thống  Cập  nhật  trạng  thái  hóa  đơn  thành  "Đã  thanh  toán"   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    4a..  Nhân  viên     Nhấn  Hủy  nếu  kiểm  tra  thấy  chưa  nhận  được  tiền   
+Hậu  điều  kiện  
+Hóa  đơn  được  duyệt,  hệ  thống  ghi  nhận  doanh  thu     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Mã  hóa  đơn   ID  Invoice    Có    Tồn  tại  hệ  thống   
+INV-002   
+ Đặc  tả  use  case  UC015  “Quản  lý  hồ  sơ  bệnh  án   ”   Mã  Use  case  
+UC015    
+Tên  Use  case  Quản  lý  hồ  sơ  bệnh  án  
+Tác  nhân  Bác  sĩ     
+ 
+     
+
+     Tiền  điều  kiện  
+  Đăng  nhập  bằng  quyền  Bác  sĩ     Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    1.   Bác  sĩ    Chọn  Quản  lý  hồ  sơ  bệnh  án    2.  Hệ  thống   Hiển  thị  danh  sách  hồ  sơ  y  tế  của  các  thú  cưng     
+3.  Bác  sĩ      Tìm  kiếm  theo  Mã  thú  cưng  hoặc  Tên  chủ  nuôi   4.  Bác  sĩ    Xem  lịch  sử  khám  trước  đây  hoặc  cập  nhật  ghi  chú  y  khoa   5  Hệ  thống  Lưu  các  thay  đổi  vào  hồ  sơ  bảo  mật   
+Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+Hậu  điều  kiện  
+Thông  tin  y  tế,  lịch  sử  khám  bệnh  được  lưu  trữ        •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:  
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Mã  thú  cưng    
+ID  Pet   Có    Tồn  tại  hệ  thống   
+P1234   
+     
+
+     
+2  Ghi  chú  y  tế    Dị  ứng,  vắc  xin    
+Không   Text   
+Dị  ứng  kháng  sinh  
+  Đặc  tả  use  case  UC016  “Khám  chữa  bệnh   ”   Mã  Use  case  
+UC014    
+Tên  Use  case  Khám  chữa  bệnh   
+Tác  nhân  Bác  sĩ     
+Tiền  điều  kiện  
+ Đăng  nhập  bằng  quyền  Bác  sĩ     
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.     Bác  sĩ    Chọn  Ca  khám  đang  diễn  ra  trong  lịch     2.    Hệ  thống     Tự  động  mở  hồ  sơ  bệnh  án  của  thú  cưng  đó   
+3.   Bác  sĩ       Thực  hiện  khám  lâm  sàng,  nhập  Triệu  chứng  và  Chẩn  đoán    4.   Bác  sĩ     Chọn  Kê  đơn  thuốc  từ  kho  hoặc  chỉ  định  thêm  Dịch  vụ  y  tế   5.   Bác  sĩ   Nhấn  Hoàn  thành  ca  khám   
+6.     Hệ  thống   Lưu  bệnh  án,  đẩy  chi  phí  thuốc/dịch  vụ  sang  Hóa  đơn  của  khách   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+    4a..  Bác  sĩ      Chỉ  định  xét  nghiệm  thêm  trước  khi  đưa  ra  chẩn  đoán        
+
+     Hậu  điều  kiện  
+Chẩn  đoán  và  đơn  thuốc  được  tạo,  kết  nối  với  hóa  đơn     •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Chẩn  đoán    Kết  luận  bệnh    Có    Text   Viêm  ruột   
+2  Đơn  thuốc   Loại  &  SL  thuốc   
+Không   Thuốc  có  trong  kho   
+Men  tiêu  hóa  x2  
+  Đặc  tả  use  case  UC017  “Gửi  thông  báo  đến  người  dùng    ”   Mã  Use  case  
+UC017   Tên  Use  case  gửi  thông  báo  đến  người  dùng  Tác  nhân  PetCare  System  (Hệ  thống  tự  động)   
+ 
+Tiền  điều  kiện  
+Hệ  thống  hoạt  động  bình  thường    
+Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+1.    PetCare  System     
+Rà  soát  cơ  sở  dữ  liệu  định  kỳ  (lịch  tái  khám,  hóa  đơn,  trạng  thái  dịch  vụ)     2.   PetCare  System     
+Phát  hiện  sự  kiện  cần  thông  báo  (VD:  Thú  cưng  đã  tắm  xong)   
+     
+
+     3.   PetCare  System        
+Tạo  nội  dung  thông  báo    
+4.   PetCare  System      
+Đẩy  thông  báo  (Push  Notification/Email)  đến  tài  khoản  User   Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động   
+Hậu  điều  kiện  
+Thông  báo  được  gửi  đến  tài  khoản  đích      •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:   
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Mã  User    Người  nhận    Có    Tồn  tại  hệ  thống   
+KH012   
+   Đặc  tả  use  case  UC018  “Phân  lịch  làm  việc  cho  bác  sĩ  và  nhân  viên    ”   Mã  Use  case  
+UC018  Tên  Use  case  Phân  lịch  làm  việc  cho  nhân  viên  và  bác  sĩ  Tác  nhân  Admin   
+Tiền  điều  kiện  
+ Tài  khoản  nhân  sự  đã  tồn  tại  và  hoạt  động  ổn  định  trên  hệ  thống.    
+Luồng  sự  kiện  chính  
+      
+     
+
+     (Thành  công)  
+ STT  Thực  hiện  bởi  
+Hành  động    
+     1.   Admin    Truy  cập  tính  năng  "Cấu  hình  &  Phân  lịch  làm  việc  ca  trực".       2  Hệ  thống  Hiển  thị  giao  diện  lịch  làm  việc  theo  dạng  thời  khóa  biểu  (Calendar  Grid)  theo  tuần/tháng.       3  Admin        Chọn  một  nhân  sự  (Bác  sĩ/Nhân  viên),  kéo  thả  hoặc  click  chọn  vào  các  ô  ngày  và  ca  trực  tương  ứng  (Ca  sáng/Ca  chiều/Ca  gãy)  để  xếp  lịch  cho  họ.       4  Admin    Nhấn  nút  "Xuất  bản  lịch  làm  việc".  
+     5  Hệ  thống  Lưu  lịch  làm  việc  mới,  đồng  thời  tự  động  cập  nhật  quỹ  thời  gian  trống  (Availability  slots)  của  từng  dịch  vụ  hiển  thị  bên  phía  app  của  Chủ  nuôi  để  đặt  lịch  chuẩn  xác.  
+ 
+Luồng  sự  kiện  thay  thế  
+       STT  Thực  hiện  bởi  
+Hành  động    
+   4a  Hệ  thống  Báo  lỗi:  Lịch  phân  phối  mới  bị  xung  đột  (ví  dụ  xếp  một  bác  sĩ  trực  cùng  lúc  tại  2  phòng  khám  chi  nhánh  khác  nhau  trong  cùng  một  ca)  ->  Hệ  thống  cảnh  báo  đỏ:  "Trùng  lặp  lịch  công  tác  của  nhân  sự".  
+ 
+Hậu  điều  kiện  
+Lịch  trực  tuần/tháng  của  nhân  sự  được  thiết  lập  thành  công.  
+       •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+     
+
+     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Tuần  xếp  lịch   
+Chọn  tuần  làm  việc  cụ  thể    
+Có    Không  xếp  lịch  cho  tuần  trong  quá  khứ  
+Tuần  25  (22/06  -  28/06/2026)  
+2  Ca  làm  việc  
+Khung  giờ  trực  cụ  thể  
+Có  Ca  sáng  (08h-12h)  /  Ca  chiều  (13h-17h)  
+Ca  sáng  
+Đặc  tả  use  case  UC019  “Quản  lý  dịch  vụ   ”   Mã  Use  case  
+UC019  Tên  Use  case  Quản  lý  dịch  vụ  
+Tác  nhân  Admin   
+Tiền  điều  kiện  
+ Hệ  thống  đang  hoạt  động  bình  thường.    Luồng  sự  kiện  chính  (Thành  công)  
+      
+ STT  Thực  hiện  bởi  
+Hành  động    
+1   Admin   Chọn  danh  mục  phân  hệ  "Quản  lý  danh  mục  Dịch  vụ  &  Bảng  giá".    
+2   Hệ  thống   Hiển  thị  danh  sách  toàn  bộ  dịch  vụ  phòng  khám  đang  cung  cấp  (Các  gói  khám,  các  gói  tiêm  vắc-xin,  dịch  vụ  spa,  bảng  giá  phòng  lưu  trú).  3  Admin      Thực  hiện:  "Thêm  gói  dịch  vụ  mới",  "Sửa  đơn  giá  dịch  vụ  cũ"  hoặc  đổi  trạng  thái  một  dịch  vụ  thành  "Ngừng  cung  cấp".  4  Admin    Nhấn  "Lưu  cấu  hình  dịch  vụ".       
+
+     5  Hệ  thống  Cập  nhật  thông  tin  dịch  vụ  và  bảng  giá  mới  nhất.  Toàn  bộ  các  hóa  đơn  khởi  tạo  sau  thời  điểm  này  sẽ  tự  động  áp  dụng  biểu  giá  mới.  
+ 
+Luồng  sự  kiện  thay  thế  
+      
+ STT  Thực  hiện  bởi  
+Hành  động    
+4a  Hệ  thống  Báo  lỗi:  Giá  tiền  của  dịch  vụ  nhập  vào  là  một  giá  trị  âm  hoặc  chuỗi  chữ  ->  Báo  lỗi  "Đơn  giá  dịch  vụ  phải  là  số  dương  lớn  hơn  0".  
+ 
+Hậu  điều  kiện  
+Thông  báo  được  gửi  đến  tài  khoản  đích      •  Dữ  liệu  đầu  vào  của  thông  tin  cá  nhân  gồm  các  trường  dữ  liệu  sau:     
+STT  Trường  dữ  liệu   
+Mô  tả   Bắt  buộc?   
+Điều  kiện  hợp  lệ   
+Ví  dụ   
+1  Tên  dịch  vụ  
+Tên  dịch  vụ  mới/cập  nhật   
+Có    Không  trùng  tên  dịch  vụ  đang  có  
+Cạo  vôi  răng  thú  cưng  
+2  Đơn  giá  Giá  tiền  dịch  vụ  (VND)  
+có  Là  số  nguyên  dương  >  0  
+350000  
+ 
+     
+
+     2.4.   Biểu  đồ  hoạt  động   UC001:Đăng  nhập   
+   UC002:Đăng  ký  
+     
+
+
+     
+ 
+     
+
+
+     UC003:Quản  lý  hồ  sơ  thú  cưng  
+ 
+     
+
+
+              UC004:Thanh  toán   
+     
+
+     
+  
+     
+
+
+               UC005:Quản  lý  lịch  làm  việc  
+     
+
+     
+                 
+
+
+        UC006:Quản  lý  tài  khoản  cá  nhân  
+ 
+     
+
+
+     UC007:Đặt  lịch  khám  và  làm  đẹp  
+ UC008:Sử  dụng  lưu  trú   
+     
+
+
+     
+     
+
+
+     UC009:Nhận  thông  báo  
+  
+     
+
+
+     UC010:Xem  thống  kê  
+ 
+     
+
+
+     UC011:Danh  sách  lịch  hẹn  
+ 
+     
+
+
+     UC012:Quản  lý  dịch  vụ  chăm  sóc,  làm  đẹp  và  lưu  trú  
+ 
+     
+
+
+     UC013:Quản  lý  lưu  trú  
+ 
+     
+
+
+     UC014:Xác  nhận  thanh  toán  
+  UC015:Quản  lý  hồ  sơ  bệnh  án   
+     
+
+
+     
+  
+     
+
+
+     Đặc  tả  use  case  UC016  “Khám  chữa  bệnh   ”  
+  
+     
+
+
+     Đặc  tả  use  case  UC017  “Gửi  thông  báo  đến  người  dùng    ”      
+ 
+     
+
+
+     Đặc  tả  use  case  UC018  “Phân  lịch  làm  việc  cho  bác  sĩ  và  nhân  viên    ”  
+  
+     
+
+
+     Đặc  tả  use  case  UC019  “Quản  lý  dịch  vụ   ”  
+ 2.5.   Các  yêu  cầu  phi  chức  năng          2.5.1.Tính  khả  dụng  và  độ  tin  cậy  •  Tính  sẵn  sàng  (Availability):         +  Hệ  thống  phải  đạt  chỉ  số  sẵn  sàng  tối  thiểu  là  99.9%  (Three  Nines)  trong  điều  
+kiện
+ 
+vận
+ 
+hành
+ 
+bình
+ 
+thường,
+ 
+tương
+ 
+đương
+ 
+với
+ 
+tổng
+ 
+thời
+ 
+gian
+ 
+chết
+ 
+(downtime)
+ 
+không
+ 
+mong
+ 
+muốn
+ 
+không
+ 
+quá
+ 
+43.8
+ 
+phút
+ 
+mỗi
+ 
+tháng.
+         +Bảo  trì  định  kỳ  (Scheduled  Maintenance):  Chỉ  được  thực  hiện  vào  khung  
+giờ
+ 
+thấp
+ 
+điểm
+ 
+(từ
+ 
+01:00
+ 
+AM
+ 
+đến
+ 
+04:00
+ 
+AM
+ 
+giờ
+ 
+địa
+ 
+phương
+ 
+GMT+7).
+ 
+Thông
+ 
+báo
+ 
+     
+
+
+     bảo  trì  phải  được  hiển  thị  trên  hệ  thống  trước  ít  nhất  48  giờ.  Tổng  thời  gian  bảo  trì  
+định
+ 
+kỳ
+ 
+không
+ 
+vượt
+ 
+quá
+ 
+3
+ 
+giờ/tháng
+ 
+(tương
+ 
+đương
+ 
+khoảng
+ 
+0.4%
+ 
+tổng
+ 
+thời
+ 
+gian
+ 
+trong
+ 
+tháng,
+ 
+tối
+ 
+ưu
+ 
+hơn
+ 
+rất
+ 
+nhiều
+ 
+so
+ 
+với
+ 
+hạn
+ 
+mức
+ 
+10%).
+ •  Khả  năng  phục  hồi  (Recoverability  /  Disaster  Recovery):            +RTO  (Recovery  Time  Objective):  Khi  xảy  ra  sự  cố  nghiêm  trọng  (sập  máy  
+chủ
+ 
+trung
+ 
+tâm,
+ 
+lỗi
+ 
+database
+ 
+core),
+ 
+thời
+ 
+gian
+ 
+tối
+ 
+đa
+ 
+để
+ 
+hệ
+ 
+thống
+ 
+khôi
+ 
+phục
+ 
+hoàn
+ 
+toàn
+ 
+trạng
+ 
+thái
+ 
+hoạt
+ 
+động
+ 
+bình
+ 
+thường
+ 
+là
+ 
+45
+ 
+phút
+ 
+kể
+ 
+từ
+ 
+khi
+ 
+hệ
+ 
+thống
+ 
+cảnh
+ 
+báo
+ 
+tự
+ 
+động
+ 
+(Monitoring
+ 
+Alert)
+ 
+kích
+ 
+hoạt.
+        +RPO  (Recovery  Point  Objective):  Hệ  thống  phải  đảm  bảo  dữ  liệu  không  bị  
+mất
+ 
+mát
+ 
+quá
+ 
+5
+ 
+phút
+ 
+trước
+ 
+khi
+ 
+xảy
+ 
+ra
+ 
+sự
+ 
+cố
+ 
+nhờ
+ 
+cơ
+ 
+chế
+ 
+replication
+ 
+(sao
+ 
+lưu
+ 
+bất
+ 
+đồng
+ 
+bộ
+ 
+liên
+ 
+tục)
+ 
+và
+ 
+tự
+ 
+động
+ 
+backup
+ 
+log
+ 
+dữ
+ 
+liệu.
+        +Cơ  chế  dự  phòng  (Failover):  Hệ  thống  phải  triển  khai  kiến  trúc  Multi-Region  
+hoặc
+ 
+Load
+ 
+Balancer
+ 
+có
+ 
+khả
+ 
+năng
+ 
+tự
+ 
+động
+ 
+chuyển
+ 
+hướng
+ 
+lưu
+ 
+lượng
+ 
+truy
+ 
+cập
+ 
+sang
+ 
+máy
+ 
+chủ
+ 
+dự
+ 
+phòng
+ 
+(Backup/Secondary
+ 
+Server)
+ 
+trong
+ 
+vòng
+ 
+60
+ 
+giây
+ 
+nếu
+ 
+máy
+ 
+chủ
+ 
+chính
+ 
+(Primary
+ 
+Server)
+ 
+bị
+ 
+ngắt
+ 
+kết
+ 
+nối.
+       2.5.2.Tính  dễ  dùng  •  Trực  quan  hóa  và  Tối  ưu  thao  tác  (UI/UX  Optimization):         +Quy  tắc  3  lần  nhấp  chuột  (3-Click  Rule):  Người  dùng  (Chủ  nuôi,  Bác  sĩ,  
+Nhân
+ 
+viên)
+ 
+phải
+ 
+tìm
+ 
+thấy
+ 
+và
+ 
+thực
+ 
+hiện
+ 
+xong
+ 
+các
+ 
+tác
+ 
+vụ
+ 
+cốt
+ 
+lõi
+ 
+(Đặt
+ 
+lịch
+ 
+khám,
+ 
+Tạo
+ 
+bệnh
+ 
+án
+ 
+mới,
+ 
+Thanh
+ 
+toán
+ 
+hóa
+ 
+đơn)
+ 
+từ
+ 
+trang
+ 
+chủ/trang
+ 
+tổng
+ 
+quan
+ 
+với
+ 
+tối
+ 
+đa
+ 
+3
+ 
+lần
+ 
+click
+ 
+chuột
+ 
+hoặc
+ 
+chạm
+ 
+màn
+ 
+hình.
+         +Thiết  kế  đáp  ứng  (Responsive  Design):  Giao  diện  phải  tự  động  tương  thích  
+hoàn
+ 
+hảo
+ 
+trên
+ 
+các
+ 
+độ
+ 
+phân
+ 
+giải
+ 
+màn
+ 
+hình
+ 
+phổ
+ 
+biến:
+ 
+Desktop
+ 
+(1920x1080,
+ 
+1366x768),
+ 
+Máy
+ 
+tính
+ 
+bảng
+ 
+(iPad
+ 
+1024x768),
+ 
+và
+ 
+Điện
+ 
+thoại
+ 
+di
+ 
+động
+ 
+(iOS/Android
+ 
+từ
+ 
+375x812
+ 
+trở
+ 
+lên).
+         +Tốc  độ  học  sử  dụng  (Learnability):  Người  dùng  phổ  thông  (Chủ  nuôi)  không  
+cần
+ 
+tài
+ 
+liệu
+ 
+hướng
+ 
+dẫn
+ 
+vẫn
+ 
+có
+ 
+thể
+ 
+tự
+ 
+hoàn
+ 
+thành
+ 
+luồng
+ 
+đặt
+ 
+lịch
+ 
+khám
+ 
+trong
+ 
+vòng
+ 
+2
+ 
+phút.
+ 
+Nhân
+ 
+viên
+ 
+phòng
+ 
+khám
+ 
+có
+ 
+thể
+ 
+thành
+ 
+thạo
+ 
+các
+ 
+thao
+ 
+tác
+ 
+nghiệp
+ 
+vụ
+ 
+cốt
+ 
+lõi
+ 
+sau
+ 
+tối
+ 
+đa
+ 
+2
+ 
+giờ
+ 
+đào
+ 
+tạo.
+ •  Cơ  chế  xử  lý  và  Hiển  thị  lỗi  (Error  Handling  &  Messaging):           +Định  vị  trực  quan  (Visual  Localization):  Khi  người  dùng  nhập  liệu  sai  
+(Validation
+ 
+Error),
+ 
+hệ
+ 
+thống
+ 
+không
+ 
+chỉ
+ 
+báo
+ 
+lỗi
+ 
+chung
+ 
+chung
+ 
+mà
+ 
+phải
+ 
+đổi
+ 
+màu
+ 
+viền
+      
+
+     trường  dữ  liệu  đó  sang  màu  đỏ  (Hex:  #FF0000),  tập  trung  con  trỏ  chuột  (Focus)  
+vào
+ 
+trường
+ 
+lỗi
+ 
+đầu
+ 
+tiên
+ 
+và
+ 
+hiển
+ 
+thị
+ 
+text
+ 
+thông
+ 
+báo
+ 
+ngay
+ 
+dưới
+ 
+trường
+ 
+đó.
+           +Phân  loại  rõ  ràng  (Clear  Classification):  Phân  biệt  rõ  lỗi  do  người  dùng  
+nhập
+ 
+liệu
+ 
+(Mã
+ 
+lỗi
+ 
+4xx)
+ 
+và
+ 
+lỗi
+ 
+hệ
+ 
+thống/mạng
+ 
+(Mã
+ 
+lỗi
+ 
+5xx).
+ 
+Lời
+ 
+nhắn
+ 
+không
+ 
+chứa
+ 
+mã
+ 
+code
+ 
+kỹ
+ 
+thuật
+ 
+khó
+ 
+hiểu
+ 
+(như
+ 
+"NullPointerException"),
+ 
+mà
+ 
+phải
+ 
+dùng
+ 
+ngôn
+ 
+ngữ
+ 
+tự
+ 
+nhiên.
+      2.5.3.Hiệu  suất  •  Khả  năng  đáp  ứng  tải  (Concurrency):         +Hệ  thống  trung  tâm  (Cloud/Main  Server):  Phải  chịu  tải  tối  thiểu  1,000  người  
+dùng
+ 
+hoạt
+ 
+động
+ 
+đồng
+ 
+thời
+ 
+(Concurrent
+ 
+Users)
+ 
+tại
+ 
+cùng
+ 
+một
+ 
+thời
+ 
+điểm
+ 
+mà
+ 
+không
+ 
+làm
+ 
+tỷ
+ 
+lệ
+ 
+lỗi
+ 
+vượt
+ 
+quá
+ 
+0.1%.
+ 
+Hệ
+ 
+thống
+ 
+phải
+ 
+chịu
+ 
+được
+ 
+mức
+ 
+tải
+ 
+đỉnh
+ 
+(Peak
+ 
+Load)
+ 
+lên
+ 
+tới
+ 
+2,500
+ 
+kết
+ 
+nối
+ 
+đồng
+ 
+thời
+ 
+(ví
+ 
+dụ
+ 
+trong
+ 
+các
+ 
+đợt
+ 
+chiến
+ 
+dịch
+ 
+tiêm
+ 
+phòng
+ 
+hoặc
+ 
+khuyến
+ 
+mãi
+ 
+lớn).
+        +Hệ  thống  cục  bộ  (Local/Edge  Server  tại  các  chi  nhánh  phòng  khám):  Mỗi  
+server
+ 
+thành
+ 
+phần
+ 
+tại
+ 
+chi
+ 
+nhánh
+ 
+phải
+ 
+đáp
+ 
+ứng
+ 
+tối
+ 
+thiểu
+ 
+500
+ 
+kết
+ 
+nối
+ 
+nội
+ 
+bộ
+ 
+đồng
+ 
+thời
+ 
+từ
+ 
+các
+ 
+thiết
+ 
+bị
+ 
+IoT,
+ 
+máy
+ 
+quét
+ 
+mã
+ 
+vạch,
+ 
+máy
+ 
+tính
+ 
+của
+ 
+Bác
+ 
+sĩ
+ 
+và
+ 
+Nhân
+ 
+viên
+ 
+mà
+ 
+không
+ 
+bị
+ 
+nghẽn
+ 
+mạng
+ 
+cục
+ 
+bộ
+ 
+(LAN).
+ •  Độ  trễ  và  Thời  gian  phản  hồi  (Latency  &  Response  Time):       +Tác  vụ  thông  thường  (Hot  Data):  Các  truy  vấn  đọc/ghi  dữ  liệu  hiện  tại  (Đặt  
+lịch,
+ 
+xem
+ 
+lịch
+ 
+trong
+ 
+ngày,
+ 
+hồ
+ 
+sơ
+ 
+đang
+ 
+mở)
+ 
+phải
+ 
+có
+ 
+thời
+ 
+gian
+ 
+phản
+ 
+hồi
+ 
+của
+ 
+API
+ 
+dưới
+ 
+1.5
+ 
+giây
+ 
+(lý
+ 
+tưởng
+ 
+là
+ 
+<
+ 
+500ms).
+       +Tác  vụ  dữ  liệu  cũ  (Legacy/Archived  Data):  Đối  với  việc  kết  xuất,  tìm  kiếm  
+các
+ 
+báo
+ 
+cáo
+ 
+tài
+ 
+chính
+ 
+cũ,
+ 
+lịch
+ 
+sử
+ 
+bệnh
+ 
+án
+ 
+từ
+ 
+nhiều
+ 
+năm
+ 
+trước
+ 
+(Dữ
+ 
+liệu
+ 
+đã
+ 
+được
+ 
+nén
+ 
+hoặc
+ 
+chuyển
+ 
+vào
+ 
+kho
+ 
+lưu
+ 
+trữ
+ 
+cold
+ 
+storage),
+ 
+thời
+ 
+gian
+ 
+phản
+ 
+hồi
+ 
+tối
+ 
+đa
+ 
+cho
+ 
+phép
+ 
+là
+ 
+10
+ 
+giây
+.
+ 
+Trong
+ 
+suốt
+ 
+thời
+ 
+gian
+ 
+này,
+ 
+hệ
+ 
+thống
+ 
+phải
+ 
+hiển
+ 
+thị
+ 
+thanh
+ 
+tiến
+ 
+trình
+ 
+(Loading
+ 
+Indicator)
+ 
+để
+ 
+người
+ 
+dùng
+ 
+biết
+ 
+hệ
+ 
+thống
+ 
+đang
+ 
+xử
+ 
+lý,
+ 
+tránh
+ 
+cảm
+ 
+giác
+ 
+bị
+ 
+treo
+ 
+máy.
+       2.5.4.Tính  bảo  mật  và  phần  quyền  •  Xác  thực  (Authentication):       +Mọi  phiên  kết  nối  vào  hệ  thống  bắt  buộc  phải  được  xác  thực  thông  qua  giao  thức  
+bảo
+ 
+mật
+ 
+mã
+ 
+hóa
+ 
+HTTPS
+ 
+(TLS
+ 
+1.3)
+.
+ 
+     
+
+           +Mật  khẩu  người  dùng  phải  được  băm  (hash)  bằng  thuật  toán  mã  hóa  mạnh  (ví  
+dụ:
+ 
+Bcrypt
+ 
+với
+ 
+độ
+ 
+phức
+ 
+tạp/work
+ 
+factor
+ 
+tối
+ 
+thiểu
+ 
+là
+ 
+10)
+ 
+trước
+ 
+khi
+ 
+lưu
+ 
+vào
+ 
+database.
+ 
+Không
+ 
+lưu
+ 
+mật
+ 
+khẩu
+ 
+dưới
+ 
+dạng
+ 
+văn
+ 
+bản
+ 
+thuần
+ 
+(Plaintext).
+        +Áp  dụng  xác  thực  2  yếu  tố  (2FA/OTP  via  SMS/Email)  đối  với  các  tài  khoản  có  
+quyền
+ 
+quản
+ 
+trị
+ 
+tối
+ 
+cao
+ 
+(Admin)
+ 
+hoặc
+ 
+khi
+ 
+nhân
+ 
+viên
+ 
+đăng
+ 
+nhập
+ 
+từ
+ 
+một
+ 
+địa
+ 
+chỉ
+ 
+IP
+ 
+lạ
+ 
+nằm
+ 
+ngoài
+ 
+mạng
+ 
+phòng
+ 
+khám.
+        +Thời  gian  hết  hạn  của  phiên  đăng  nhập  (Session  Timeout)  tự  động  kích  hoạt  sau  
+30
+ 
+phút
+ 
+nếu
+ 
+người
+ 
+dùng
+ 
+không
+ 
+có
+ 
+bất
+ 
+kỳ
+ 
+tương
+ 
+tác
+ 
+nào
+ 
+với
+ 
+hệ
+ 
+thống.
+ •  Phân  quyền  dựa  trên  vai  trò  (Role-Based  Access  Control  -  RBAC):    +Hệ  thống  phải  phân  tách  tường  minh  quyền  hạn  của  4  nhóm  tác  nhân  cốt  lõi  thông  
+qua
+ 
+Ma
+ 
+trận
+ 
+phân
+ 
+quyền
+ 
+(CRUD
+ 
+Matrix):
+ .Chủ  nuôi  (Pet  Owner):  Chỉ  có  quyền  Đọc/Xem  thông  tin  thú  cưng  của  mình,  
+Tạo/Đọc/Hủy
+ 
+lịch
+ 
+khám
+ 
+cá
+ 
+nhân.
+ 
+Tuyệt
+ 
+đối
+ 
+không
+ 
+được
+ 
+xem
+ 
+dữ
+ 
+liệu
+ 
+của
+ 
+chủ
+ 
+nuôi
+ 
+khác
+ 
+hay
+ 
+can
+ 
+thiệp
+ 
+vào
+ 
+hồ
+ 
+sơ
+ 
+bệnh
+ 
+án.
+ .Bác  sĩ  (Veterinarian):  Có  quyền  Đọc/Cập  nhật  hồ  sơ  bệnh  án,  kê  đơn  thuốc,  xem  
+lịch
+ 
+khám
+ 
+được
+ 
+chỉ
+ 
+định
+ 
+cho
+ 
+mình.
+ 
+Không
+ 
+có
+ 
+quyền
+ 
+xóa
+ 
+bệnh
+ 
+án
+ 
+hoặc
+ 
+chỉnh
+ 
+sửa
+ 
+cấu
+ 
+hình
+ 
+hệ
+ 
+thống,
+ 
+hóa
+ 
+đơn
+ 
+tài
+ 
+chính.
+ .Nhân  viên  (Staff/Receptionist):  Có  quyền  Tạo/Đọc/Cập  nhật  lịch  khám,  hồ  sơ  Chủ  
+nuôi,
+ 
+Thú
+ 
+cưng,
+ 
+và
+ 
+lập
+ 
+Hóa
+ 
+đơn
+ 
+thanh
+ 
+toán.
+ 
+Không
+ 
+có
+ 
+quyền
+ 
+can
+ 
+thiệp
+ 
+vào
+ 
+chuyên
+ 
+môn
+ 
+điều
+ 
+trị
+ 
+(Kê
+ 
+đơn,
+ 
+chẩn
+ 
+đoán
+ 
+của
+ 
+Bác
+ 
+sĩ).
+ .Quản  trị  viên  (Admin):  Có  toàn  quyền  (CRUD)  trên  toàn  bộ  hệ  thống  bao  gồm:  
+quản
+ 
+lý
+ 
+tài
+ 
+khoản
+ 
+nhân
+ 
+viên,
+ 
+cấu
+ 
+hình
+ 
+danh
+ 
+mục
+ 
+dịch
+ 
+vụ,
+ 
+xem
+ 
+báo
+ 
+cáo
+ 
+doanh
+ 
+thu
+ 
+tổng,
+ 
+sao
+ 
+lưu
+ 
+và
+ 
+khôi
+ 
+phục
+ 
+dữ
+ 
+liệu.
+ •  Nhật  ký  hệ  thống  (Audit  Trail):  Mọi  hành  động  nhạy  cảm  liên  quan  đến  Tạo  
+(Create),
+ 
+Sửa
+ 
+(Update),
+ 
+Xóa
+ 
+(Delete)
+ 
+trên
+ 
+cơ
+ 
+sở
+ 
+dữ
+ 
+liệu
+ 
+phải
+ 
+được
+ 
+ghi
+ 
+lại
+ 
+tự
+ 
+động
+ 
+vào
+ 
+file
+ 
+Log
+ 
+hệ
+ 
+thống
+ 
+(gồm:
+ 
+ID
+ 
+người
+ 
+thực
+ 
+hiện,
+ 
+Thời
+ 
+gian,
+ 
+IP
+ 
+thiết
+ 
+bị,
+ 
+Nội
+ 
+dung
+ 
+trước
+ 
+và
+ 
+sau
+ 
+khi
+ 
+thay
+ 
+đổi)
+ 
+và
+ 
+không
+ 
+ai
+ 
+có
+ 
+quyền
+ 
+sửa
+ 
+xóa
+ 
+file
+ 
+Log
+ 
+này.
+       2.5.5.Khả  năng  mở  rộng  và  bảo  trì  •  Kiến  trúc  hệ  thống  (Modular  /  Microservices  Ready  Architecture):        +Hệ  thống  phải  được  thiết  kế  theo  hướng  Module  hóa  (Modular  Architecture)  
+hoặc
+ 
+Kiến
+ 
+trúc
+ 
+hướng
+ 
+dịch
+ 
+vụ
+ 
+(SOA/Microservices)
+.
+ 
+Các
+ 
+thành
+ 
+phần:
+ 
+Quản
+ 
+lý
+ 
+lịch
+ 
+khám
+ 
+(Booking
+ 
+Module)
+,
+ 
+Quản
+ 
+lý
+ 
+hồ
+ 
+sơ
+ 
+bệnh
+ 
+án
+ 
+(Medical
+ 
+Record
+ 
+Module)
+,
+ 
+và
+      
+
+     Quản  lý  dịch  vụ/thanh  toán  (Billing  Module)  phải  hoạt  động  độc  lập  và  chỉ  giao  
+tiếp
+ 
+với
+ 
+nhau
+ 
+qua
+ 
+các
+ 
+giao
+ 
+diện
+ 
+lập
+ 
+trình
+ 
+ứng
+ 
+dụng
+ 
+nội
+ 
+bộ
+ 
+(Internal
+ 
+APIs).
+       +Sự  thay  đổi  logic  code  hoặc  nâng  cấp  của  module  này  tuyệt  đối  không  được  làm  
+ảnh
+ 
+hưởng
+ 
+hay
+ 
+phá
+ 
+vỡ
+ 
+cấu
+ 
+trúc
+ 
+hoạt
+ 
+động
+ 
+của
+ 
+các
+ 
+module
+ 
+khác
+ 
+(Loose
+ 
+Coupling).
+         +Hệ  thống  sẵn  sàng  cung  cấp  các  cổng  API  mở  (Restful  API)  chuẩn  hóa  (định  
+dạng
+ 
+dữ
+ 
+liệu
+ 
+JSON)
+ 
+để
+ 
+tương
+ 
+lai
+ 
+dễ
+ 
+dàng
+ 
+tích
+ 
+hợp
+ 
+với
+ 
+các
+ 
+hệ
+ 
+thống
+ 
+bên
+ 
+thứ
+ 
+ba
+ 
+(Cổng
+ 
+thanh
+ 
+toán
+ 
+VNPay/Momo,
+ 
+Hệ
+ 
+thống
+ 
+gửi
+ 
+SMS
+ 
+tự
+ 
+động,
+ 
+Phần
+ 
+mềm
+ 
+kế
+ 
+toán
+ 
+doanh
+ 
+nghiệp).
+ •  Tính  nhất  quán  của  tài  liệu  và  mã  nguồn  (Coding  &  Documentation  Standards):       +Chuẩn  hóa  Thuật  ngữ  (Terminology  Consistency):  Toàn  bộ  giao  diện  người  
+dùng,
+ 
+mã
+ 
+nguồn
+ 
+(Tên
+ 
+biến,
+ 
+Tên
+ 
+bảng
+ 
+Database,
+ 
+API
+ 
+Endpoint),
+ 
+và
+ 
+tài
+ 
+liệu
+ 
+kỹ
+ 
+thuật
+ 
+liên
+ 
+quan
+ 
+bắt
+ 
+buộc
+ 
+phải
+ 
+sử
+ 
+dụng
+ 
+đồng
+ 
+nhất
+ 
+danh
+ 
+xưng
+ 
+đối
+ 
+tượng.
+ 
+Ví
+ 
+dụ:
+ 
+Sử
+ 
+dụng
+ 
+duy
+ 
+nhất
+ 
+thuật
+ 
+ngữ
+ 
+"Chủ
+ 
+nuôi"
+ 
+(Mã
+ 
+nguồn
+ 
+dùng
+ 
+Customer
+ 
+hoặc
+ 
+PetOwner),
+ 
+tuyệt
+ 
+đối
+ 
+không
+ 
+dùng
+ 
+xen
+ 
+kẽ
+ 
+với
+ 
+các
+ 
+từ
+ 
+đồng
+ 
+nghĩa
+ 
+như
+ 
+"Khách
+ 
+hàng"
+,
+ 
+"Người
+ 
+nuôi"
+,
+ 
+"Thành
+ 
+viên"
+.
+       +Quy  chuẩn  mã  nguồn  (Coding  Convention):  Mã  nguồn  phải  tuân  thủ  nghiêm  
+ngặt
+ 
+quy
+ 
+chuẩn
+ 
+của
+ 
+ngôn
+ 
+ngữ
+ 
+phát
+ 
+triển
+ 
+(Ví
+ 
+dụ:
+ 
+Airbnb
+ 
+Style
+ 
+Guide
+ 
+nếu
+ 
+dùng
+ 
+JavaScript/TypeScript,
+ 
+PSR-12
+ 
+nếu
+ 
+dùng
+ 
+PHP).
+ 
+100%
+ 
+các
+ 
+hàm
+ 
+xử
+ 
+lý
+ 
+logic
+ 
+nghiệp
+ 
+vụ
+ 
+phức
+ 
+tạp
+ 
+phải
+ 
+được
+ 
+viết
+ 
+ghi
+ 
+chú
+ 
+(Comment
+ 
+inline)
+ 
+giải
+ 
+thích
+ 
+rõ
+ 
+ràng
+ 
+mục
+ 
+đích.
+         +Độ  phủ  kiểm  thử  (Unit  Test  Coverage):  Các  module  cốt  lõi  liên  quan  đến  
+tính
+ 
+toán
+ 
+tiền
+ 
+tệ
+ 
+(Thanh
+ 
+toán),
+ 
+kiểm
+ 
+tra
+ 
+trùng
+ 
+lặp
+ 
+thời
+ 
+gian
+ 
+(Đặt
+ 
+lịch)
+ 
+phải
+ 
+đạt
+ 
+độ
+ 
+phủ
+ 
+kiểm
+ 
+thử
+ 
+tự
+ 
+động
+ 
+(Unit
+ 
+Test
+ 
+Coverage)
+ 
+tối
+ 
+thiểu
+ 
+là
+ 
+80%
+ 
+trước
+ 
+khi
+ 
+triển
+ 
+khai
+ 
+thực
+ 
+tế
+ 
+(Deploy
+ 
+Production).
+    
+     
+
+     CHƯƠNG  3.  PHÂN  TÍCH  YÊU  CẦU    　 3.1.  Xác  định  các  lớp  phân  tích    3.1.1.  Biểu  đồ  lớp  phân  tích  của  Customer  
+ 
+     
+
+
+     3.1.2  Biểu  đồ  lớp  phân  tích  của  staff:
+3.1.3  Biểu  đồ  lớp  phân  tích  của  Doctor
+     
+
+
+     
+ 3.1.4 　 Biểu  đồ  lớp  phân  tích  của  Admin:  
+     
+
+
+     
+ 
+3.2.  Biểu  đồ  trình  tự    1.  Đăng  nhập:  
+     
+
+
+     
+ 3.2.1  Customer:  1.  Quản  lý  hồ  sơ  thú  cưng  
+     
+
+
+     
+   1.  Đặt  lịch  hẹn  
+     
+
+
+     
+ 1.  Hủy  lịch  hẹn  
+ 
+     
+
+
+          1.  Xem  lịch  sử:  
+  •  Đánh  giá:  
+     
+
+
+     
+   3.2.2  Staff  1.  Quản  lý  lịch  hẹn  
+     
+
+
+     
+  1.   Quản  lý  thú  cưng:  
+     
+
+
+     
+    1.  Quản  lý  lưu  trú:  
+     
+
+
+     
+ 1.  Quản  lý  thanh  toán,  hóa  đơn  
+     
+
+
+     
+  3.2.3.  Doctor  1.  Xem  hồ  sơ,  bệnh  án  của  thú  cưng:  
+     
+
+
+     
+ 1.  Khám  chữa  bệnh:  
+ 
+     
+
+
+          1.  Xem  lịch  làm  việc:  
+         
+     
+
+
+                        3.2.4  Admin:  1.  Quản  lý  tài  khoản  người  dùng:  
+     
+
+     
+ 
+     
+
+
+      1.  Quản  lý  dịch  vụ:  
+ 1.  Xem  báo  cáo,  thống  kê:  
+      
+
+
+     CHƯƠNG  4.  THIẾT  KẾ  CHƯƠNG  TRÌNH    　 4.1.  Thiết  kế  kiến  trúc   Để  phát  triển  cũng  như  là  xây  dựng  trang  web  ,  về  phía  backend  nhóm  sử  
+dụng
+ 
+các
+ 
+công
+ 
+nghệ
+  
+như
+ 
+là
+ 
+NodeJS,
+ 
+ExpressJS,
+ 
+RESTFul
+ 
+APIs,
+ 
+nên
+ 
+kiến
+ 
+trúc
+ 
+của
+ 
+trang
+ 
+web
+ 
+tuân
+ 
+theo
+ 
+mô
+ 
+hình
+ 
+MVC
+ 
+(Model
+ 
+-
+ 
+View
+ 
+-
+ 
+Controller).
+ Mỗi  thành  phần  có  một  nhiệm  vụ  riêng  biệt  và  độc  lập  với  nhau.  Đây  là  một  cách  đơn  giản  để  mô  tả  lại  luồng  sự  kiện  được  xử  lý  trong  MVC:  •  View  là  nơi  người  dùng  nhập  dữ  liệu  như  nhập  form  hoặc  nhận  sự  kiện  click  của  
+User
+ 
+sau
+ 
+đó
+ 
+cung
+ 
+cấp
+ 
+đầu
+ 
+vào
+ 
+đúng
+ 
+định
+ 
+dạng
+ 
+cho
+ 
+Controller.
+ •  Controller  nhận  đầu  vào,  xử  lý  logic  và  gọi  phương  thức  tương  tác  với  database  ở  
+Model.
+ •  Model  tương  tác  với  database,  trả  dữ  liệu  về  cho  Controller.  •  View  nhận  kết  quả  từ  Controller  và  trả  về  định  dạng  dữ  liệu  để  có  thể  hiển  thị  lại  
+được
+ 
+cho
+ 
+người
+ 
+dùng.
+ Việc  tách  riêng  vai  trò  của  Controller,  Model  và  View  giúp  cho  cho  chúng  ta  
+phân
+ 
+định
+ 
+rõ
+ 
+ràng
+ 
+các
+ 
+công
+ 
+việc
+ 
+xử
+ 
+lý
+ 
+nghiệp
+ 
+vụ,
+ 
+xử
+ 
+lý
+ 
+dữ
+ 
+liệu
+ 
+và
+ 
+trình
+ 
+bày
+ 
+dữ
+ 
+liệu.
+ 
+Do
+ 
+vậy
+ 
+việc
+ 
+cập
+ 
+nhật
+ 
+chỉnh
+ 
+sửa
+ 
+một
+ 
+thành
+ 
+phần
+ 
+không
+ 
+làm
+ 
+ảnh
+ 
+hưởng
+ 
+đến
+ 
+các
+ 
+thành
+ 
+phần
+ 
+khác.
+ 
+Cùng
+ 
+với
+ 
+đó
+ 
+là
+ 
+rất
+ 
+nhiều
+ 
+tiện
+ 
+lợi
+ 
+mà
+ 
+mô
+ 
+hình
+ 
+MVC
+ 
+mang
+ 
+lại.
+ 
+     
+
+
+     　 4.2.  Thiết  kế  cơ  sở  dữ  liệu              4.2.1:Mô  hình  khái  niệm:   
+ Link  đến  sơ  đồ   a.  Cụm  Quản  lý  Người  dùng  &  Phân  quyền  (User  Management)  Hệ  thống  áp  dụng  mô  hình  kế  thừa/phân  mảnh  người  dùng  từ  một  bảng  gốc:  1.  User:  Lưu  trữ  thông  tin  đăng  nhập  cốt  lõi  (email,  password,  role,  status).  2.  Các  thực  thể  Customer  (Khách  hàng) ,  Doctor  (Bác  sĩ) ,  và  Staff  (Nhân  viên)  đều  
+có
+ 
+mối
+ 
+quan
+ 
+hệ
+ 
+(IS-A
+ 
+hoặc
+ 
+1-1
+ 
+qua
+ user_id)  với  bảng  User.  1.  Doctor:  Có  thêm  các  thuộc  tính  chuyên  môn  như  specialization (chuyên  
+khoa),
+ degree (bằng  cấp),  experience_years (số  năm  kinh  nghiệm).  Bác  sĩ  
+được
+ 
+liên
+ 
+kết
+ 
+với
+ 
+hệ
+ 
+thống
+ 
+Lịch
+ 
+làm
+ 
+việc
+ 
+/
+ 
+Ca
+ 
+làm
+ 
+việc
+ 
+để
+ 
+quản
+ 
+lý
+ 
+thời
+ 
+gian
+ 
+trống.
+ 2.  Staff:  Lưu  trữ  thông  tin  nhân  sự  cơ  bản  (department,  position).  b.  Cụm  Quản  lý  Khách  hàng  &  Thú  cưng  (Customer  &  Pet  Profile)  
+     
+
+
+     1.  Customer:  Có  mối  quan  hệ  1-N  (Một-Nhiều)  với  thực  thể  Pet .  Một  khách  hàng  có  
+thể
+ 
+sở
+ 
+hữu
+ 
+nhiều
+ 
+thú
+ 
+cưng.
+ 2.  Pet:  Là  đối  tượng  phục  vụ  chính  của  hệ  thống.  Chứa  thông  tin  chi  tiết:  name (tên),  dob (ngày  sinh),  species (loài),  breed (giống),  gender (giới  tính),  weight (cân  
+nặng),
+ allergies (dị  ứng),  chronic_diseases (bệnh  mãn  tính)  và  img_url (hình  ảnh).  3.  Vaccination  (Tiêm  phòng):  Mối  quan  hệ  1-N  với  Pet.  Lưu  trữ  lịch  sử  tiêm  phòng  
+(vaccine_name,  date_given,  next_due_date).  c.  Cụm  Cốt  lõi:  Xử  lý  Cuộc  hẹn  (Appointment  Core)  Thực  thể  Appointment  là  trái  tim  của  hệ  thống.  Nó  ghi  nhận  một  yêu  cầu  dịch  
+vụ
+ 
+cụ
+ 
+thể:
+ 1.  Được  đặt  bởi  một  Customer  cho  một  Pet  cụ  thể.  2.  Được  phụ  trách  bởi  một  Doctor  (nếu  là  khám  bệnh)  hoặc  một  Staff  (nếu  là  chăm  
+sóc,
+ 
+cắt
+ 
+tỉa
+ 
+lông).
+ 3.  Chứa  trạng  thái  cuộc  hẹn  (status),  loại  cuộc  hẹn  (appointment_type),  và  các  ghi  
+chú
+ 
+(note).  4.  Một  Appointment  có  thể  bao  gồm  nhiều  dịch  vụ  thông  qua  bảng  trung  gian  
+Appointment_Service
+ 
+(kết
+ 
+nối
+ 
+N-N
+ 
+giữa
+ 
+Appointment
+ 
+và
+ 
+Service),
+ 
+lưu
+ 
+trữ
+ 
+số
+ 
+lượng
+ 
+(quantity)  và  giá  tại  thời  điểm  đặt  (computed_price).  d.  Cụm  Dịch  vụ  &  Y  tế  (Medical  &  Care  Services)  Tùy  thuộc  vào  loại  cuộc  hẹn,  Appointment  sẽ  sinh  ra  các  bản  ghi  ở  các  mảng  
+nghiệp
+ 
+vụ
+ 
+tương
+ 
+ứng:
+ 1.  Khám  chữa  bệnh  (Medical):  1.  Medical_visit:  Ghi  nhận  thông  tin  khám  lâm  sàng  (symptoms,  clinical_exam,  diagnosis).  2.  Từ  Medical_visit,  bác  sĩ  có  thể  kê  Prescriptions  (Đơn  thuốc) .  3.  Mỗi  đơn  thuốc  chứa  nhiều  Prescription_items  (Chi  tiết  đơn  thuốc)  như  medicine_name,  dosage,  frequency,  instructions.  2.  Chăm  sóc  sắc  đẹp  (Grooming):  1.  Sinh  ra  grooming_records  để  nhân  viên  ghi  nhận  trạng  thái  cắt  tỉa,  có  thể  bao  
+gồm
+ 
+hình
+ 
+ảnh
+ 
+trước/sau
+ 
+và
+ 
+ghi
+ 
+chú
+ 
+chi
+ 
+tiết.
+ 3.  Lưu  trú  nội  trú  (Boarding):  
+     
+
+     1.  Boarding:  Liên  kết  Cuộc  hẹn  với  một  Cage  (Lồng)  cụ  thể,  ghi  nhận  thời  gian  check_in,  check_out.  2.  Trong  thời  gian  lưu  trú,  nhân  viên  sẽ  tạo  các  bản  ghi  Boarding_daily_update  
+để
+ 
+cập
+ 
+nhật
+ 
+trạng
+ 
+thái
+ 
+hàng
+ 
+ngày
+ 
+của
+ 
+thú
+ 
+cưng
+ 
+(eating_status,  health_status,  img_url).  e.  Cụm  Tài  chính  &  Chăm  sóc  khách  hàng  (Billing  &  CRM)  1.  Invoice  (Hóa  đơn):  Mỗi  Cuộc  hẹn  sau  khi  hoàn  tất  sẽ  được  xuất  một  Hóa  đơn  
+(Quan
+ 
+hệ
+ 
+1-1).
+ 
+Lưu
+ 
+trữ
+ total_amount (tổng  tiền),  status (trạng  thái  thanh  toán),  payment_method (phương  thức  thanh  toán).  2.  Review  (Đánh  giá):  Sau  khi  sử  dụng  dịch  vụ,  Khách  hàng  có  thể  để  lại  rating 
+(điểm
+ 
+số)
+ 
+và
+ feedback (nhận  xét)  cho  Cuộc  hẹn.  3.  Notification  (Thông  báo):  Hệ  thống  gửi  thông  báo  (nhắc  lịch,  xác  nhận  thanh  
+toán,
+ 
+báo
+ 
+cáo
+ 
+sức
+ 
+khỏe)
+ 
+đến
+ User.      4.2.2:Thiết  kế  cơ  sở  dữ  liệu:   a.Mô  hình  dữ  liệu  logic:  
+  Link  đến  sơ  đồ  
+     
+
+
+      b.  Mô  hình  dữ  liệu  vật  lý:  Trong  phần  này,  chúng  ta  sẽ  thiết  kế  chi  tiết  cho  từng  phần  tử  trong  biểu  đồ  trên.  
+Ví
+ 
+dụ,
+ 
+trong
+ 
+biểu
+ 
+đồ
+ 
+cơ
+ 
+sở
+ 
+dữ
+ 
+liệu
+ 
+quan
+ 
+hệ
+ 
+(RDBMS),
+ 
+ta
+ 
+thiết
+ 
+kế
+ 
+chi
+ 
+tiết
+ 
+cho
+ 
+từng
+ 
+bảng
+ 
+và
+ 
+ràng
+ 
+buộc
+  Chú  thích:  PK:  Primary  Key  FK:  Foreign  Key    b.1:NHóm  quản  lý  hệ  thống  và  tài  khoản  •  prisma_migrations  :Lưu  lịch  sử  cập  nhật  cấu  trúc  cơ  sở  dữ  liệu  (migration)  của  
+công
+ 
+cụ
+ 
+Prisma
+ 
+ORM.
+ 
+ •  users:  Lưu  tài  khoản  đăng  nhập  của  tất  cả  mọi  người     
+       
+*Users        
+ID  PK  FK  Field  Data  type  Madatory  Description  
+1  x   id  integer  x  Auto  increment  
+2    email  varchar  x   
+3    password_hash  varchar  x   
+4    role  enum  x  Default:  'CUSTOMER'::"Role"  
+5    status  enum  x  Default:  'ACTIVE'::"UserStatus"  
+     
+
+     
+6    created_at  timestamp  x  Default:  CURRENT_TIMESTAMP  
+7    updated_at  timestamp  x   
+8    deleted_at  timestamp    
+9    auth_version  integer  x  Default:  0  
+       
+       
+ •  password_reset_tokens:  Lưu  các  mã  (token)  phục  vụ  cho  tính  năng  quên/đổi  mật  
+khẩu.
+  
+  
+*Password_reset_tokens  
+ID  PK  FK  Field  Data  type  Madatory  
+Description   
+1  x   id  integer  x  Auto  increment   
+2   users(id)  user_id  integer  x    
+3    code_hash  
+varchar  x    
+4    expires_at  timestamp  x    
+5    used_at  timestamp     
+6    created_at  timestamp  x  Default:  CURRENT_TIMESTAMP  
+ 
+     
+
+      •  app_settings:  Lưu  các  cài  đặt  cấu  hình  chung  của  ứng  dụng  dưới  dạng  JSON.    
+        
+        
+ID  PK  FK  Field  Data  type  
+Madatory  Description   
+1  x   key  varchar  x    
+2    value  jsonb  x    
+3    updated_at  timestamp  
+x  Default:  CURRENT_TIMESTAMP  
+ 
+        
+        
+ •  notifications:  Lưu  thông  báo  gửi  tới  người  dùng  trong  hệ  thống.    
+        
+ID  PK  FK  Field  Data  type  
+Madatory  
+Description   
+1  x   id  integer  x  Auto  increment   
+2   users(id)  user_id  integer  x    
+3    title  varchar  x    
+     
+
+     
+4    content  text  x    
+5    type  enum  x    
+6    is_read  boolean  x  Default:  false   
+7    created_at  
+timestamp  
+x  Default:  CURRENT_TIMESTAMP  
+ 
+        
+        
+ b.2:Nhóm  con  người  •  customers:  Lưu  thông  tin  cá  nhân  của  Khách  hàng    
+        
+ID  PK  FK  Field  Data  type  
+Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+2   users(id)  user_id  integer  x    
+3    full_name  varchar  x    
+4    phone  varchar     
+5    address  text     
+        
+      
+
+     •  staffs:  Lưu  thông  tin  của  Nhân  viên  phòng  khám    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   users(id)  user_id  integer  x    
+3    full_name  varchar  x    
+4    phone  varchar     
+5    address  text     
+6    department  varchar     
+7    position  varchar     
+        
+        
+ •  doctors:  Lưu  thông  tin  riêng  của  các  Bác  sĩ  thú  y    
+ID  PK  FK  Field  Data  type  
+Madatory  
+Description   
+1  x   id  integer  x  Auto  increment   
+2   users(id)  user_id  integer  x    
+3    full_name  varchar  x    
+     
+
+     
+4    specialization  
+varchar     
+5    degree  varchar     
+6    experience_years  
+integer     
+7    room_name  varchar     
+        
+        
+ b.3:Nhóm  quản  lý  lịch  làm  việc  •  doctor_schedules:  Lưu  lịch  đăng  ký  ca  làm  việc  tổng  quan  của  bác  sĩ  theo  ngày   
+ID  PK  FK  Field  Data  type  
+Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+2   doctors(id)  
+doctor_id  integer  x    
+3    work_date  date  x    
+4    start_time  time  x    
+5    end_time  time  x    
+6    room_name  varchar     
+     
+
+     
+7    created_at  timestamp  
+x  Default:  CURRENT_TIMESTAMP  
+ 
+8    updated_at  timestamp  
+x    
+        
+  •  doctor_schedule_slots:  Chia  nhỏ  ca  làm  việc  của  bác  sĩ  thành  các  khung  giờ  nhỏ    
+ID  PK  FK  Field  Data  type  
+Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   doctor_schedules(id)  
+doctor_schedule_id  
+integer  x    
+3   doctors(id)  doctor_id  integer  x    
+4    slot_date  date  x    
+5    start_time  time  x    
+6    end_time  time  x    
+7    status  enum  x  Default:  'AVAILABLE'::"ScheduleStatus"  
+ 
+8    created_at  timestamp  
+x  Default:  CURRENT_
+ 
+     
+
+     TIMESTAMP  
+9    updated_at  timestamp  
+x  Default:  CURRENT_TIMESTAMP  
+ 
+ b.4:Nhóm  quản  lý  thú  cưng  •  animal_species:  Lưu  danh  mục  các  Loài  động  vật    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2    name  varchar  x    
+3    description  text     
+4    care_instruction  
+text     
+        
+ •  breeds:  Lưu  danh  mục  các  Giống  loài  chi  tiết  thuộc  một  loài  nào  đó   
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+2   animal_species(id)  
+species_id  
+integer  x    
+     
+
+     
+3    name  varchar  x    
+4    description  
+text     
+  •  pets:  Lưu  thông  tin  chi  tiết  của  Thú  cưng    
+ID  PK  FK  Field  Data  type  Madatory  
+Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   customers(id)  
+customer_id  
+integer  x    
+3   animal_species(id)  
+species_id  
+integer  x    
+4   breeds(id)  
+breed_id  integer     
+5    name  varchar  x    
+6    gender  enum  x  Default:  'UNKNOWN'::"PetGender"  
+ 
+7    dob  date     
+8    weight  numeric     
+9    color  varchar     
+     
+
+     
+10    img_url  text     
+11    allergies  text     
+12    chronic_diseases  
+text     
+13    special_note  
+text     
+14    created_at  
+timestamp  x  Default:  CURRENT_TIMESTAMP  
+ 
+15    updated_at  
+timestamp  x    
+ b.5:Nhóm  đặt  lịch  và  dịch   •  appointments:  Lưu  thông  tin  Lịch  hẹn  đặt  trước  của  khách  hàng    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   pets(id)  pet_id  integer  x    
+3   staffs(id)  
+staff_id  integer     
+4    appointment_type  
+enum  x  Default:  'MEDICAL'::"AppointmentType"  
+ 
+     
+
+     
+5    status  enum  x  Default:  'PENDING'::"AppointmentStatus"  
+ 
+6    note  text     
+7    cancel_reason  
+text     
+8    created_at  
+timestamp  x  Default:  CURRENT_TIMESTAMP  
+ 
+9    updated_at  
+timestamp  x    
+10   doctors(id)  
+doctor_id  
+integer     
+11    appointment_date  
+timestamp     
+12    appointment_time  
+time     
+13    requested_date  
+date     
+14    requested_time  
+time     
+15   doctor_schedule_slots(id)  
+doctor_schedule_slot_id  
+integer     
+     
+
+      •  services:  Danh  mục  các  Dịch  vụ  mà  phòng  khám  cung  cấp   
+ID  PK  FK  Field  Data  type  Madatory  
+Description   
+1  x   id  integer  x  Auto  increment   
+2    name  varchar  x    
+3    type  enum  x    
+4    price  numeric  x    
+5    description  
+text     
+6    is_active  boolean  x  Default:  true   
+  •  appointment_services:  Chi  tiết  các  dịch  vụ  được  sử  dụng   
+ID  PK  FK  Field  Data  type  Madatory  
+Description   
+1  x   id  integer  x  Auto  increment   
+2   appointments(id)  
+appointment_id  
+integer  x    
+3   services(id)  service_id  
+integer  x    
+4    quantity  integer  x  Default:  1   
+     
+
+     
+5    unit_price  
+numeric  x    
+6    status  enum  x  Default:  'PENDING'::"ServiceStatus"  
+ 
+  b.6:Nhóm  khám  bệnh  và  điều   •  diseases:  Danh  mục  các  Loại  bệnh   
+ID  PK  FK  Field  Data  type  
+Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2    name  varchar  x    
+3    description  text     
+4    symptoms  text     
+        
+  •  medical_visits:  Lưu  chi  tiết  Ca  khám  bệnh  lâm  sàng    
+ID  PK  FK  Field  Data  type  
+Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+     
+
+     
+2   appointments(id)  
+appointment_id  
+integer  x    
+3    symptoms  
+text     
+4    clinical_exam  
+text     
+5    diagnosis_note  
+text     
+6    next_visit_date  
+date     
+7    created_at  
+timestamp  
+x  Default:  CURRENT_TIMESTAMP  
+ 
+8    updated_at  
+timestamp  
+x    
+        
+ •  medical_visit_diseases:  Bảng  trung  gian  ghi  nhận  ca  khám  bệnh  đó  được  chẩn  
+đoán
+ 
+ mắc  những  bệnh  cụ  thể  nào  từ  danh  mục  bệnh.   
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+     
+
+     
+2   medical_visits(id)  
+medical_visit_id  
+integer  x    
+3   diseases(id)  
+disease_id  
+integer  x    
+4    note  text     
+  •  prescriptions:  Lưu  thông  tin  đơn  thuốc  chung  do  bác  sĩ  kê  sau  ca  khám.    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   medical_visits(id)  
+medical_visit_id  
+integer  x    
+3    notes  text     
+4    created_at  
+timestamp  x  Default:  CURRENT_TIMESTAMP  
+ 
+5    updated_at  
+timestamp  x    
+ •  prescription_items:  Chi  tiết  các  mã  thuốc  có  trong  đơn    
+ID  PK  FK  Field  Data  type  
+Madatory  
+Description   
+     
+
+     
+1  x   id  integer  x  Auto  increment   
+2   prescriptions(id)  
+prescription_id  
+integer  x    
+3    medicine_name  
+varchar  x    
+4    dosage  varchar  x    
+5    frequency  varchar  x    
+6    duration_days  
+integer     
+7    instructions  
+text     
+        
+ •  vaccinations:  Lưu  nhật  ký  Tiêm  phòng  của  thú  cưng    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+2   pets(id)  pet_id  integer  x    
+3   appointments(id)  
+appointment_id  
+integer     
+4    vaccine_name  
+varchar  x    
+     
+
+     
+5    date_given  
+date  x    
+6    next_due_date  
+date     
+7    note  text     
+ b.7:Nhóm  dịch  vụ  chăm   •  grooming_records:  Nhật  ký  dịch  vụ  Làm  đẹp/Spa  cho  thú  cưng    
+ID  PK  FK  Field  Data  type  Madatory  Description    
+1  x   id  integer  x  Auto  increment  
+  
+2   appointments(id)  
+appointment_id  
+integer  x     
+3   appointment_services(id)  
+appointment_service_id  
+integer      
+4   staffs(id)  
+staff_id  integer      
+5    status  enum  x  Default:  'PENDING'::"GroomingStatus"  
+  
+6    started_at  
+timestamp      
+     
+
+     
+7    completed_at  
+timestamp      
+8    before_image_url  
+text      
+9    after_image_url  
+text      
+10    notes  text      
+ b.8:Nhóm  dịch  vụ  lưu   •  cages:  Quản  lý  danh  sách  các  Chuồng/Phòng  nội  trú    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+2    cage_number  
+varchar  x    
+3    status  enum  x  Default:  'AVAILABLE'::"CageStatus"  
+ 
+4    note  text     
+        
+ •  boarding:  Lưu  thông  tin  thú  cưng  Gửi  nội  trú    
+     
+
+     
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   appointments(id)  
+appointment_id  
+integer  x    
+3   cages(id)  
+cage_id  integer  x    
+4    check_in  timestamp  
+   
+5    check_out  timestamp  
+   
+6    feeding_instruction  
+text     
+7    habit_note  
+text     
+8    special_note  
+text     
+9    pickup_reminder_at  
+timestamp  
+   
+10    current_status  
+enum  x  Default:  'BOOKED'::"BoardingStatus"  
+ 
+        
+ 
+     
+
+     •  boarding_daily_updates:  Nhật  ký  Cập  nhật  hàng  ngày    
+ID  PK  FK  Field  Data  type  
+Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   boarding(id)  
+boarding_id  
+integer  x    
+3   staffs(id)  
+staff_id  integer  x    
+4    date  date  x    
+5    eating_status  
+varchar     
+6    health_status  
+varchar     
+7    activity_status  
+varchar     
+8    note  text     
+9    img_url  text     
+ b.9:Nhóm  hóa  đơn  và  đánh   •  invoices:  Lưu  thông  tin  tổng  quan  của  Hóa  đơn  thanh  toán    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+     
+
+     
+1  x   id  integer  x  Auto  increment   
+2   appointments(id)  
+appointment_id  
+integer  x    
+3    subtotal_amount  
+numeric  x  Default:  0   
+4    discount_amount  
+numeric  x  Default:  0   
+5    tax_amount  
+numeric  x  Default:  0   
+6    total_amount  
+numeric  x  Default:  0   
+7    payment_method  
+enum     
+8    payment_status  
+enum  x  Default:  'UNPAID'::"PaymentStatus"  
+ 
+9    transaction_code  
+varchar     
+10    paid_at  timestamp  
+   
+11    status  enum  x  Default:  'DRAFT'::"InvoiceStatus"  
+ 
+12    created_at  timestamp  
+x  Default:  CURRENT_TIMESTAMP  
+ 
+     
+
+     
+13    updated_at  timestamp  
+x    
+ •  invoice_items:  Chi  tiết  các  khoản  tiền  trong  hóa  đơn   
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment   
+2   invoices(id)  
+invoice_id  
+integer  x    
+3   services(id)  
+service_id  
+integer     
+4   appointment_services(id)  
+appointment_service_id  
+integer     
+5   medical_visits(id)  
+medical_visit_id  
+integer     
+6   vaccinations(id)  
+vaccination_id  
+integer     
+7   grooming_reco
+grooming_record_id  
+integer     
+     
+
+     rds(id)  
+8   boarding(id)  
+boarding_id  
+integer     
+9    source_type  
+enum  x    
+10    description  
+varchar  x    
+11    quantity  integer  x  Default:  1   
+12    unit_price  
+numeric  x    
+13    total_price  
+numeric  x    
+        
+  •  reviews:  Lưu  Đánh  giá  và  phản  hồi  của  khách  hàng    
+ID  PK  FK  Field  Data  type  Madatory  Description   
+1  x   id  integer  x  Auto  increment  
+ 
+2   customers(id)  
+customer_id  
+integer  x    
+3   appointments(id)  
+appointment_id  
+integer     
+     
+
+     
+4    target_type  
+enum  x    
+5    target_id  integer     
+6    rating  integer  x    
+7    feedback  text     
+8    reply_content  
+text     
+9   users(id)  replied_by_user_id  
+integer     
+10    replied_at  timestamp     
+11    created_at  timestamp  x  Default:  CURRENT_TIMESTAMP  
+ 
+12    updated_at  
+timestamp  x    
+ 
+     
+
+     CHƯƠNG  5.  XÂY  DỰNG  CHƯƠNG  TRÌNH  MINH  HỌA    　 5.1.  Công  nghệ  sử  dụng     •  Backend,  Database       +  NodeJS,  ExpressJS                       +  Supabase  •  Frontend                         +React                         +Tailwind  CSS      　 5.2.  Cấu  trúc  thư  mục              a.Cấu  trúc  tổng  quan  
+                      •  >  Sơ  đồ  thư  mục:  📁  Tên_Dự_Án_Của_Bạn/   ├──  📁  backend/   ├──  📁  docs/   ├──  📁  frontend/        
+
+
+     ├──  📄  .env.example   ├──  📄  .gitattributes   ├──  📄  .gitignore   ├──  📄  agent.mdx  (hoặc  AGENTS.md)   ├──  📄  index.html   ├──  📄  package-lock.json   ├──  📄  package.json   ├──  📄  README.md   └──  📄  table.sql   A.  Các  thư  mục  mã  nguồn  chính  (Core  Directories)  1.  backend/:  Thư  mục  chứa  toàn  bộ  mã  nguồn  xử  lý  logic  phía  máy  chủ  
+(Server-side).
+ 
+Bao
+ 
+gồm
+ 
+các
+ 
+cấu
+ 
+hình
+ 
+API,
+ 
+bộ
+ 
+điều
+ 
+khiển
+ 
+(Controllers),
+ 
+mô
+ 
+hình
+ 
+dữ
+ 
+liệu
+ 
+(Models)
+ 
+và
+ 
+các
+ 
+tệp
+ 
+kết
+ 
+nối
+ 
+trực
+ 
+tiếp
+ 
+với
+ 
+cơ
+ 
+sở
+ 
+dữ
+ 
+liệu.
+ 2.  frontend/:  Thư  mục  chứa  toàn  bộ  mã  nguồn  giao  diện  người  dùng  (Client-side).  
+Nơi
+ 
+đây
+ 
+lưu
+ 
+trữ
+ 
+các
+ 
+thành
+ 
+phần
+ 
+hiển
+ 
+thị
+ 
+(Components),
+ 
+giao
+ 
+diện
+ 
+người
+ 
+dùng
+ 
+(UI),
+ 
+hình
+ 
+ảnh,
+ 
+và
+ 
+logic
+ 
+tương
+ 
+tác
+ 
+với
+ 
+người
+ 
+dùng
+ 
+trên
+ 
+trình
+ 
+duyệt.
+ 3.  docs/:  Thư  mục  lưu  trữ  các  tài  liệu  (Documentation)  liên  quan  đến  quá  trình  phát  
+triển
+ 
+dự
+ 
+án,
+ 
+đặc
+ 
+tả
+ 
+API,
+ 
+hoặc
+ 
+hướng
+ 
+dẫn
+ 
+sử
+ 
+dụng
+ 
+cho
+ 
+người
+ 
+bảo
+ 
+trì.
+ B.  Các  tệp  cấu  hình  và  quản  lý  gói  (Configuration  &  Package  Management)  1.  package.json:  Tệp  cốt  lõi  của  hệ  sinh  thái  Node.js.  Chứa  thông  tin  mô  tả  dự  án,  
+danh
+ 
+sách
+ 
+các
+ 
+thư
+ 
+viện/framework
+ 
+phụ
+ 
+thuộc
+ 
+(dependencies)
+ 
+cần
+ 
+thiết
+ 
+để
+ 
+chạy
+ 
+dự
+ 
+án,
+ 
+và
+ 
+các
+ 
+tập
+ 
+lệnh
+ 
+(scripts)
+ 
+để
+ 
+khởi
+ 
+chạy,
+ 
+kiểm
+ 
+thử
+ 
+hoặc
+ 
+build
+ 
+mã
+ 
+nguồn.
+ 2.  package-lock.json:  Tệp  tự  động  tạo  bởi  npm,  giúp  khóa  chính  xác  phiên  bản  của  
+các
+ 
+thư
+ 
+viện
+ 
+phụ
+ 
+thuộc,
+ 
+đảm
+ 
+bảo
+ 
+tính
+ 
+nhất
+ 
+quán
+ 
+của
+ 
+mã
+ 
+nguồn
+ 
+khi
+ 
+cài
+ 
+đặt
+ 
+trên
+ 
+các
+ 
+máy
+ 
+tính
+ 
+hoặc
+ 
+môi
+ 
+trường
+ 
+khác
+ 
+nhau.
+ 3.  .env.example:  Tệp  khuôn  mẫu  lưu  trữ  các  biến  môi  trường  (Environment  
+Variables)
+ 
+cấu
+ 
+hình
+ 
+hệ
+ 
+thống
+ 
+(như
+ 
+Cổng
+ 
+chạy
+ 
+server,
+ 
+chuỗi
+ 
+kết
+ 
+nối
+ 
+cơ
+ 
+sở
+ 
+dữ
+ 
+liệu,
+ 
+API
+ 
+keys
+ 
+bí
+ 
+mật).
+ 
+Tệp
+ 
+này
+ 
+được
+ 
+dùng
+ 
+để
+ 
+hướng
+ 
+dẫn
+ 
+các
+ 
+nhà
+ 
+phát
+ 
+triển
+ 
+khác
+ 
+tạo
+ 
+file
+ .env thực  tế  cho  máy  của  họ.  C.  Quản  lý  phiên  bản  mã  nguồn  (Version  Control  -  Git)  
+     
+
+     1.  .gitignore:  Danh  sách  khai  báo  các  tệp  và  thư  mục  (như  node_modules/,  file  .env 
+thật)
+ 
+sẽ
+ 
+bị
+ 
+bỏ
+ 
+qua,
+ 
+không
+ 
+được
+ 
+đẩy
+ 
+lên
+ 
+kho
+ 
+lưu
+ 
+trữ
+ 
+Git
+ 
+để
+ 
+đảm
+ 
+bảo
+ 
+bảo
+ 
+mật
+ 
+và
+ 
+tránh
+ 
+làm
+ 
+phình
+ 
+to
+ 
+kích
+ 
+thước
+ 
+repo.
+ 2.  .gitattributes:  Tệp  cấu  hình  các  thuộc  tính  riêng  cho  Git,  giúp  chuẩn  hóa  định  
+dạng
+ 
+tệp
+ 
+tin
+ 
+(ví
+ 
+dụ:
+ 
+cách
+ 
+xử
+ 
+lý
+ 
+ký
+ 
+tự
+ 
+xuống
+ 
+dòng
+ 
+CRLF/LF
+ 
+giữa
+ 
+Windows
+ 
+và
+ 
+Mac/Linux).
+ D.  Tài  liệu  và  Cơ  sở  dữ  liệu  (Docs  &  Database)  1.  README.md:  Tài  liệu  hướng  dẫn  chính  yếu  của  dự  án.  Chứa  thông  tin  giới  
+thiệu,
+ 
+các
+ 
+bước
+ 
+cài
+ 
+đặt
+ 
+(installation
+ 
+steps),
+ 
+cách
+ 
+chạy
+ 
+dự
+ 
+án
+ 
+(getting
+ 
+started)
+ 
+dành
+ 
+cho
+ 
+người
+ 
+mới
+ 
+tiếp
+ 
+cận.
+ 2.  agent.mdx (hoặc  AGENTS.md) :  Tài  liệu  đặc  tả  các  tác  vụ  tự  động,  cấu  hình  
+công
+ 
+cụ
+ 
+AI,
+ 
+hoặc
+ 
+các
+ 
+luồng
+ 
+nghiệp
+ 
+vụ
+ 
+cụ
+ 
+thể
+ 
+của
+ 
+dự
+ 
+án
+ 
+(nếu
+ 
+có).
+ 3.  table.sql:  Tệp  kịch  bản  dữ  liệu  (SQL  Script)  chứa  các  câu  lệnh  DDL  (CREATE  
+TABLE,  ALTER  TABLE)  dùng  để  khởi  tạo  toàn  bộ  cấu  trúc  các  bảng  cơ  sở  dữ  
+liệu
+ 
+(Schema)
+ 
+cần
+ 
+thiết
+ 
+cho
+ 
+dự
+ 
+án.
+ 4.  index.html:  Tệp  giao  diện  gốc  (Entry  point)  có  thể  dùng  để  làm  trang  chủ  tĩnh  giới  
+thiệu
+ 
+dự
+ 
+án
+ 
+hoặc
+ 
+điểm
+ 
+neo
+ 
+khởi
+ 
+chạy
+ 
+cho
+ 
+các
+ 
+ứng
+ 
+dụng
+ 
+Single
+ 
+Page
+ 
+Application
+ 
+(SPA).
+    b.Backend  
+            
+     
+
+
+     •  >  sơ  đồ  cây  thu  mục  backend    📁  backend/   ├──  📁  node_modules/   ├──  📁  prisma/   ├──  📁  scripts/   ├──  📁  src/   ├──  📄  .env  ├──  📄  database.sql   ├──  📄  inspect_db.js   ├──  📄  package-lock.json   ├──  📄  package.json   ├──  📄  prisma.config.ts   └──  📄  vercel.json         A.  Các  thư  mục  chính  (Core  Directories)  1.  node_modules /:  Thư  mục  tự  động  sinh  ra  khi  cài  đặt  dự  án,  chứa  toàn  bộ  mã  
+nguồn
+ 
+của
+ 
+các
+ 
+thư
+ 
+viện
+ 
+và
+ 
+module
+ 
+phụ
+ 
+thuộc
+ 
+(dependencies)
+ 
+cần
+ 
+thiết
+ 
+để
+ 
+chạy
+ 
+backend
+ 
+(thư
+ 
+mục
+ 
+này
+ 
+thường
+ 
+rất
+ 
+nặng
+ 
+và
+ 
+không
+ 
+được
+ 
+đưa
+ 
+lên
+ 
+Git).
+ 2.  prisma /:  Thư  mục  đặc  trưng  của  công  cụ  Prisma  ORM.  Thường  chứa  tệp  schema.prisma :  (định  nghĩa  cấu  trúc  các  bảng  cơ  sở  dữ  liệu)  và  thư  mục  migrations / :(lưu  trữ  lịch  sử  các  lần  thay  đổi  cấu  trúc  DB).  3.  scripts /:  Chứa  các  kịch  bản  (scripts)  tiện  ích  tự  động  hóa.  Ví  dụ:  kịch  bản  tạo  dữ  
+liệu
+ 
+mẫu
+ 
+(seeding),
+ 
+kịch
+ 
+bản
+ 
+dọn
+ 
+dẹp
+ 
+dữ
+ 
+liệu,
+ 
+hoặc
+ 
+hỗ
+ 
+trợ
+ 
+quá
+ 
+trình
+ 
+build/deploy.
+ 4.  src /:  Thư  mục  quan  trọng  nhất  chứa  toàn  bộ  mã  nguồn  logic  chính  của  Backend  
+(Source
+ 
+Code).
+ 
+Bên
+ 
+trong
+ 
+thường
+ 
+chia
+ 
+thành
+ 
+các
+ 
+lớp
+ 
+kiến
+ 
+trúc
+ 
+như
+ 
+Controllers
+ 
+(xử
+ 
+lý
+ 
+request),
+ 
+Services
+ 
+(xử
+ 
+lý
+ 
+logic),
+ 
+Routes
+ 
+(định
+ 
+tuyến
+ 
+API),
+ 
+v.v.
+ B.  Các  tệp  cấu  hình  và  môi  trường  (Config  &  Environment  Files)  1.  .env:  Tệp  chứa  các  biến  môi  trường  thực  tế  đang  hoạt  động  trên  máy  lập  trình  viên  
+(như
+ 
+chuỗi
+ 
+kết
+ 
+nối
+ 
+Database
+ 
+thật,
+ 
+Secret
+ 
+Key
+ 
+của
+ 
+JWT).
+ 
+Tệp
+ 
+này
+ 
+mang
+ 
+tính
+ 
+bảo
+ 
+mật
+ 
+cao
+ 
+và
+ 
+chỉ
+ 
+tồn
+ 
+tại
+ 
+ở
+ 
+local.
+      
+
+     2.  package.json &  package-lock.json:  Quản  lý  thông  tin  dự  án  backend,  các  câu  
+lệnh
+ 
+script
+ 
+(start,
+ 
+dev,
+ 
+build)
+ 
+và
+ 
+danh
+ 
+sách
+ 
+chính
+ 
+xác
+ 
+phiên
+ 
+bản
+ 
+các
+ 
+thư
+ 
+viện
+ 
+Node.js
+ 
+được
+ 
+sử
+ 
+dụng.
+ 3.  prisma.config.ts:  Tệp  cấu  hình  bằng  TypeScript  dành  riêng  cho  Prisma  ORM,  
+giúp
+ 
+tùy
+ 
+chỉnh
+ 
+các
+ 
+hành
+ 
+vi
+ 
+kết
+ 
+nối
+ 
+hoặc
+ 
+biên
+ 
+dịch
+ 
+của
+ 
+công
+ 
+cụ
+ 
+này.
+ 4.  vercel.json:  Tệp  cấu  hình  triển  khai  (deployment).  Định  nghĩa  cách  thức  máy  chủ  
+Vercel
+ 
+sẽ
+ 
+build
+ 
+và
+ 
+điều
+ 
+hướng
+ 
+các
+ 
+API
+ 
+(serverless
+ 
+functions)
+ 
+khi
+ 
+đưa
+ 
+dự
+ 
+án
+ 
+lên
+ 
+môi
+ 
+trường
+ 
+thực
+ 
+tế
+ 
+(production).
+ c.Frontend  
+          •  Sơ  đồ  cây  thư  mục  frontend  📁  frontend/   
+     
+
+
+     ├──  📁  dist/   ├──  📁  node_modules/   ├──  📁  public/   ├──  📁  src/   ├──  📄  .env.local.example   ├──  📄  .gitignore  ├──  📄  default_shadcn_theme.css   ├──  📄  eslint.config.js   ├──  📄  index.html   ├──  📄  package-lock.json   ├──  📄  package.json   ├──  📄  pnpm-workspace.yaml  ├──  📄  postcss.config.mjs   ├──  📄  README.md   ├──  📄  vercel.json   └──  📄  vite.config.ts   A.  Các  thư  mục  chính  (Core  Directories)  1.  dist/ (Distribution) :  Thư  mục  chứa  mã  nguồn  đã  được  biên  dịch  và  nén  lại  (build)  
+để
+ 
+sẵn
+ 
+sàng
+ 
+đưa
+ 
+lên
+ 
+môi
+ 
+trường
+ 
+thực
+ 
+tế
+ 
+(production).
+ 
+Mã
+ 
+trong
+ 
+này
+ 
+đã
+ 
+được
+ 
+tối
+ 
+ưu
+ 
+hóa
+ 
+dung
+ 
+lượng
+ 
+mức
+ 
+tối
+ 
+đa.
+ 2.  node_modules/:  Thư  mục  lưu  trữ  các  gói  thư  viện  phụ  thuộc  của  phía  giao  diện  
+(React/Vue,
+ 
+Tailwind,
+ 
+v.v.).
+ 3.  public/:  Thư  mục  chứa  các  tài  nguyên  tĩnh  (Static  assets)  không  cần  đi  qua  trình  
+đóng
+ 
+gói
+ 
+(bundler)
+ 
+như
+ 
+hình
+ 
+ảnh,
+ 
+favicon,
+ 
+hoặc
+ 
+các
+ 
+file
+ 
+font
+ 
+chữ.
+ 4.  src/ (Source) :  Nơi  chứa  toàn  bộ  mã  nguồn  lập  trình  giao  diện  chính.  Thường  bao  
+gồm
+ 
+các
+ 
+thư
+ 
+mục
+ 
+con
+ 
+như
+ components/ (các  nút  bấm,  thẻ  thông  tin  tái  sử  dụng),  pages/ (các  trang  hiển  thị),  assets/,  và  utils/.  B.  Các  tệp  cấu  hình  Build  &  Giao  diện  (Build  &  Styling  Config)  
+     
+
+     1.  vite.config.ts:  Tệp  cấu  hình  của  Vite  -  trình  đóng  gói  mã  nguồn  (bundler)  thế  hệ  
+mới,
+ 
+giúp
+ 
+biên
+ 
+dịch
+ 
+TypeScript,
+ 
+tối
+ 
+ưu
+ 
+hóa
+ 
+file
+ 
+tĩnh
+ 
+và
+ 
+cung
+ 
+cấp
+ 
+server
+ 
+phát
+ 
+triển
+ 
+cục
+ 
+bộ
+ 
+cực
+ 
+nhanh.
+ 2.  postcss.config.mjs:  Tệp  cấu  hình  PostCSS,  công  cụ  cốt  lõi  để  biên  dịch  các  bộ  
+quy
+ 
+tắc
+ 
+của
+ 
+Tailwind
+ 
+CSS
+ 
+thành
+ 
+mã
+ 
+CSS
+ 
+thuần
+ 
+mà
+ 
+trình
+ 
+duyệt
+ 
+có
+ 
+thể
+ 
+hiểu
+ 
+được.
+ 3.  default_shadcn_theme.css:  Tệp  định  nghĩa  các  biến  màu  sắc,  bộ  khung  giao  diện  
+mặc
+ 
+định
+ 
+cho
+ 
+thư
+ 
+viện
+ 
+component
+ 
+Shadcn
+ 
+UI
+ 
+mà
+ 
+dự
+ 
+án
+ 
+đang
+ 
+sử
+ 
+dụng.
+                 　 5.3.  Sơ  đồ  dịch  chuyển  màn  hình    a.  Khách  hàng  
+   
+     
+
+
+     b.  Bác  sĩ  
+ 
+     
+
+
+     c.  Nhân  viên  
+    
+     
+
+
+     d.  Admin  
+ 　 5.4.  Giao  diện  minh  họa    Giao  diện  đăng  nhập/đăng  ký:   
+     
+
+
+     
+ 
+  Giao  diện  trang  chủ  khách  hàng  
+     
+
+
+     
+ Giao  diện  lịch  hẹn  của  chủ  nuôi  
+     
+
+
+     
+  Popup  đặt  lịch  hẹn  
+     
+
+
+     
+   Giao  diện  thú  cưng  
+     
+
+
+     
+  Giao  diện  lịch  thuốc  
+     
+
+
+     
+ Giao  diện  lưu  trú  
+      
+
+
+     Giao  diện  lịch  sử  
+ Giao  diện  thông  báo     
+     
+
+
+     
+ Giao  diện  hồ  sơ  của  nhân  viên  
+ Giao  diện  quản  lý  lịch  hẹn  của  nhân  viên  
+     
+
+
+     
+ Giao  diện  quản  lý  dịch  vụ  của  nhân  viên  
+  Giao  diện  quản  lý  lưu  chú  của  nhân  viên  
+     
+
+
+     
+ 
+      
+
+
+     Giao  diện  quản  lý  thanh  toán  của  nhân  viên   
+  Giao  diện  lịch  khám  của  bác  sĩ  
+ Giao  diện  trong  quá  trình  khám  của  thú  cưng  
+     
+
+
+     
+     
+
+
+     
+     
+
+
+     
+ Giao  diện  lịch  sử  khám  
+ Giao  diện  hồ  sơ  bệnh  án  từng  thú  cưng  
+     
+
+
+     
+     
+
+
+     
+ Giao  diện  dịch  vụ  chuyên  sâu  
+     
+
+
+     
+ Giao  diện  thống  kê  
+ Giao  diện  cài  đặt  để  bác  sĩ  lên  lịch  làm  việc  
+     
+
+
+     
+  Giao  diện  xem  chi  tiết  ca  khám  của  admin  
+  Giao  diện  lịch  hẹn  
+     
+
+
+     
+ Giao  diện  quản  lý  người  dùng  
+     
+
+
+     
+ Giao  diện  quản  lý  dịch  vụ  
+     
+
+
+     
+  Giao  diện  quản  lý  nhân  sự  
+     
+
+
+     
+ 
+  Giao  diện  phân  lịch  làm  việc  cho  bác  sĩ  
+     
+
+
+     
+ Giao  diện  quản  lý  doanh  thu  
+ Giao  diện  thống  kê  về  sức  khỏe  thú  cưng  đến  khám  tại  phòng  khám  
+     
+
+
+     
+  Giao  diện  cài  đặt  của  admin  
+     
+
+
+     
+ 
+     
+
+
+     
+      
+
+
+      
+  Giao  diện  trợ  giúp  của  admin  
+     
+
+
+     
+ 
+     
+
+
+     CHƯƠNG  6.  KIỂM  THỬ    
+     Test  Driven  Development         
+
+
+       
+           6.1  Bảng  Kiểm  thử  Đăng  nhập  &  Phân  quyền  TC  ID  Mô  tả  Input  Expected  Result  
+Status  
+     
+
+
+     TC-AUTH-01  
+Đăng  nhập  đúng  
+Email  +  Password  hợp  lệ  
+Login  thành  công  
+PASS  
+TC-AUTH-02  
+Sai  mật  khẩu  Email  đúng,  Password  sai  
+Báo  lỗi  đăng  nhập  
+PASS  
+TC-AUTH-03  
+Account  bị  khóa  
+Account  LOCKED  Không  cho  login  
+PASS  
+TC-AUTH-04  
+Thiếu  dữ  liệu  Email  hoặc  Password  rỗng  
+Validation  lỗi  PASS  
+TC-AUTH-05  
+Đăng  ký  mới  Email  mới  Tạo  tài  khoản  thành  công  
+PASS  
+TC-AUTH-06  
+Email  trùng  Email  tồn  tại  Báo  email  đã  sử  dụng  
+PASS  
+TC-AUTH-07  
+Reset  password  OTP  đúng  
+OTP  hợp  lệ  Đổi  mật  khẩu  thành  công  
+PASS  
+TC-AUTH-08  
+OTP  sai  OTP  sai  Báo  lỗi  PASS  
+     
+
+          
+     
+     
+6.2  Bảng  Kiểm  thử  Hồ  sơ  &  Thú  cưng  TC  ID  Chức  năng  Input  Expected  Result  Status  
+TC-PRO-01  Xem  hồ  sơ  Customer  Login  Hiển  thị  đúng  thông  tin  
+PASS  
+TC-PRO-02  Sửa  hồ  sơ  Phone,  Address  mới  
+Lưu  thành  công  PASS  
+TC-PRO-03  Sửa  email  Email  mới  Không  thay  đổi  email  
+PASS  
+TC-PRO-04  DOB  không  hợp  lệ  
+Ngày  tương  lai  Báo  lỗi  PASS  
+TC-PET-01  Thêm  thú  cưng  Dữ  liệu  hợp  lệ  Tạo  thành  công  PASS  
+TC-PET-02  Thiếu  dữ  liệu  Tên  rỗng  Báo  lỗi  PASS  
+     
+
+     TC-PET-03  Sửa  thú  cưng  Weight  mới  Update  thành  công  
+PASS  
+ 
+6.3  Bảng  Kiểm  thử  Lịch  hẹn  TC  ID  Chức  năng  Expected  Result  Status  
+TC-APT-01  Đặt  lịch  hợp  lệ  Tạo  appointment  PENDING  
+PASS  
+TC-APT-02  Pet  không  thuộc  owner  Không  tạo  lịch  PASS  
+TC-APT-03  Đặt  lịch  quá  khứ  Báo  lỗi  PASS  
+TC-APT-04  Slot  đã  BOOKED  Báo  lỗi  PASS  
+TC-APT-05  Concurrent  booking  Chỉ  1  request  thành  công  PASS  
+TC-APT-06  Xem  lịch  Chỉ  hiện  lịch  của  owner  PASS  
+TC-APT-07  Đổi  lịch  Slot  cũ  AVAILABLE  PASS  
+     
+
+     TC-APT-08  Đổi  lịch  đã  xác  nhận  Pending  đợi  nhân  viên  xác  nhận  
+PASS  
+TC-APT-09  Hủy  lịch  Status  CANCELLED  PASS  
+TC-APT-10  Hủy  lịch  đã  xác  nhận  Pending  đợi  nhân  viên  xác  nhận  
+ 
+PASS  
+TC-APT-11  Staff  check-in  Chuyển  trạng  thái  PASS  
+TC-APT-12  Check-in  lần  2  Từ  chối  PASS  
+ 6.4  Bảng  Kiểm  thử  Khám  bệnh  TC  ID  Chức  năng  Expected  Result  Status  
+TC-MED-01  Start  khám  IN_PROGRESS  PASS  
+TC-MED-02  Load  dữ  liệu  khám  Hiển  thị  đầy  đủ  PASS  
+TC-MED-03  Hoàn  thành  khám  COMPLETED  +  Medical  Record  
+PASS  
+     
+
+     TC-MED-04  Complete  sai  trạng  thái  Từ  chối  PASS  
+TC-MED-05  Sinh  hóa  đơn  Invoice  UNPAID  PASS  
+TC-MED-06  Gửi  cảnh  báo  Customer  nhận  notification  PASS  
+ 6.5  Bảng  Kiểm  thử  Grooming  TC  ID  Chức  năng  Expected  Result  Status  
+TC-GRM-01  Start  grooming  IN_PROGRESS  PASS  
+TC-GRM-02  Complete  grooming  COMPLETED  PASS  
+TC-GRM-03  Double  complete  Không  tạo  invoice  trùng  PASS  
+ 6.6  Bảng  Kiểm  thử  Boarding  TC  ID  Chức  năng  Expected  Result  Status  
+TC-BRD-01  Đặt  phòng  hợp  lệ  BOOKED  PASS  
+TC-BRD-02  Ngày  không  hợp  lệ  Báo  lỗi  PASS  
+     
+
+     TC-BRD-03  Phòng  bảo  trì  Báo  lỗi  PASS  
+TC-BRD-04  Check-in  CHECKED_IN  PASS  
+TC-BRD-05  Daily  update  Lưu  nhật  ký  PASS  
+TC-BRD-06  Sang  ngày  mới  Reset  checklist  PASS  
+TC-BRD-07  Checkout  CHECKED_OUT  
+PASS  
+TC-BRD-08  Checkout  sai  trạng  thái  Từ  chối  PASS  
+ 6.7  Bảng  Kiểm  thử  Thanh  toán  TC  ID  Chức  năng  Expected  Result  Status  
+TC-INV-01  Xem  hóa  đơn  Hiển  thị  đúng  PASS  
+TC-INV-02  Thanh  toán  PAID  PASS  
+TC-INV-03  Thanh  toán  lại  Không  thay  đổi  PASS  
+     
+
+     TC-INV-04  Tải  PDF  PDF  chính  xác  PASS  
+ 6.8  Bảng  Kiểm  thử  Notification  TC  ID  Chức  năng  Expected  Result  Status  
+TC-NOT-01  Xem  notification  Chỉ  của  owner  PASS  
+TC-NOT-02  Read/Delete  Count  cập  nhật  PASS  
+ 6.9  Bảng  Kiểm  thử  Admin  TC  ID  Chức  năng  Expected  Result  Status  
+TC-ADM-01  Lock  account  Không  login  được  PASS  
+TC-ADM-02  CRUD  Service  Thành  công  PASS  
+TC-ADM-03  Generate  Doctor  Slot  Không  trùng  slot  PASS  
+TC-ADM-04  Report  Thống  kê  chính  xác  PASS  
+ 
+     
+
+     6.10  Bảng  Kiểm  thử  End-to-End   TC  ID  Scenario  Expected  Result  Status  
+TC-E2E-01  Khám  bệnh  hoàn  chỉnh  Hoàn  thành  toàn  bộ  flow  PASS  
+TC-E2E-02  Grooming  hoàn  chỉnh  Hoàn  thành  toàn  bộ  flow  PASS  
+TC-E2E-03  Boarding  hoàn  chỉnh  Hoàn  thành  toàn  bộ  flow  PASS  
+TC-E2E-04  Đổi  lịch  +  hủy  lịch  Slot  được  giải  phóng  PASS  
+  6.11  Bảng  Tổng  hợp  Kết  quả  Module  Total  Pass  Fail  Blocked  Pass  Rate  
+Authentication  8  8  0  0  100%  
+Profile  &  Pet  7  7  0  0  100%  
+Appointment  12  12  0  0  100%  
+Medical  6  6  0  0  100%  
+     
+
+     Grooming  3  3  0  0  100%  
+Boarding  8  8  0  0  100%  
+Invoice  4  4  0  0  100%  
+Notification  2  2  0  0  100%  
+Admin  4  4  0  0  100%  
+E2E  4  4  0  0  100%  
+TOTAL  58  58  0  0  100%  
+ 
+     
+
+     CHƯƠNG  7.  NGUYÊN  LÝ  THIẾT  KẾ    Chương  trình  được  thiết  kế  theo  nguyên  tắc  SOLID.  SOLID  là  viết  tắt  của  5  chữ  cái  đầu  trong  5  nguyên  lý  thiết  kế  hướng  đối  
+tượng.
+ 
+Giúp
+ 
+cho
+ 
+lập
+ 
+trình
+ 
+viên
+ 
+viết
+ 
+ra
+ 
+những
+ 
+đoạn
+ 
+code
+ 
+dễ
+ 
+đọc,
+ 
+dễ
+ 
+hiểu,
+ 
+dễ
+ 
+maintain.
+ 
+5
+ 
+nguyên
+ 
+tắc
+ 
+đó
+ 
+bao
+ 
+gồm
+ 
+:
+ ●  S ingle  responsibility  principle  (SRP)  ●  O pen/Closed  principle  (OCP)  ●  L iskov  substitution  principle  (LSP)  ●  I nterface  segregation  principle  (ISP)  ●  D ependency  inversion  principle  (DIP)  Nguyên  tắc  số  1 :  S ingle  responsibility  principle  (SRP)  Mỗi  lớp  chỉ  nên  chịu  trách  nhiệm  về  một  nhiệm  vụ  cụ  thể  nào  đó  mà  thôi.  
+STT  Related  modules  Cải  thiện    Mô  tả  
+1  User  Entity  Tách  các  chức  năng  quản  lý  lịch  trình,  xử  lý  API  ra  khỏi  lớp  User:  -    Tạo  lớp  ScheduleManager  để  quản  lý  các  lịch  trình.  
+-  -  
+Lớp  User  chịu  trách  nhiệm  lưu  trữ  và  quản  lý  thông  tin  của  người  dùng  (như  ID,  tên,  số  điện  thoại,  địa  chỉ).  Phương  thức  getInfo  chịu  trách  nhiệm  lấy  thông  tin  người  dùng  từ  danh  sách  info.        -  Phương  thức  setPass  chịu  trách  nhiệm  thay  đổi  mật  khẩu  của  người  dùng.        -  Phương  thức  addNewHealth  chịu  trách  nhiệm  thêm  lịch  mới  cho  người  dùng.  
+     
+
+     2  Controller  -   Tạo  các  controller  như  service,  schedule,...hầu  hết  đều  có  chức  năng  CRUD.  -   Tạo  một  controller  cha  có  các  phương  thức  abstract  CRUD  và  cho  các  controller  khác  kế  thừa  
+    
+Nguyên  tắc  số  2 :  O pen/Closed  principle  (OCP)  Không  được  thay  đổi  một  class  có  sẵn,  nhưng  có  thể  mở  rộng  bằng  kế  thừa.  
+STT  Related  modules    Mô  tả  
+1  ServiceList  -  Lớp  ServiceList  là  lớp  trừu  tượng  và  có  thể  được  mở  rộng  bằng  cách  kế  thừa  và  thêm  các  phương  thức  cụ  thể  cho  các  loại  dịch  vụ  khác  nhau  mà  không  cần  thay  đổi  mã  nguồn  của  lớp  ServiceList.      -  Lớp  SalonServiceList,  HotelServiceList,  healthServiceList  mở  rộng  từ  lớp  trừu  tượng  ServiceList  và  có  thể  thêm  các  chức  năng  mới  mà  không  cần  thay  đổi  mã  nguồn  của  lớp  cha.  
+Nguyên  tắc  số  3 :  L iskov  substitution  principle  (LSP)  Các  đối  tượng  (instance)  kiểu  class  con  có  thể  thay  thế  các  đối  tượng  kiểu  
+class
+ 
+cha
+ 
+mà
+ 
+không
+ 
+gây
+ 
+ra
+ 
+lỗi.
+ 
+STT  Related  modules  Mô  tả  
+1  Service,  HotelService,  HealthService,  SalonService  
+Class  con  HotelService,  HealthService,  SalonService  kế  thừa  từ  lớp  cha  Service,  có  thể  thay  thế  các  đối  tượng  kiểu  class  cha  Service  
+Nguyên  tắc  số  4 :  I nterface  segregation  principle  (ISP)  
+     
+
+     Thay  vì  dùng  1  interface  lớn,  ta  nên  tách  thành  nhiều  interface  nhỏ,  với  nhiều  
+mục
+ 
+đích
+ 
+cụ
+ 
+thể.
+ Nguyên  tắc  số  5 :  D ependency  inversion  principle  (DIP)  1.         Các  module  cấp  cao  không  nên  phụ  thuộc  vào  các  modules  cấp  thấp.  
+Cả
+ 
+2
+ 
+nên
+ 
+phụ
+ 
+thuộc
+ 
+vào
+ 
+abstraction.
+ 2.         Interface  (abstraction)  không  nên  phụ  thuộc  vào  chi  tiết,  mà  ngược  lại  
+(Các
+ 
+class
+ 
+giao
+ 
+tiếp
+ 
+với
+ 
+nhau
+ 
+thông
+ 
+qua
+ 
+interface
+ 
+(abstraction),
+ 
+không
+ 
+phải
+ 
+thông
+ 
+qua
+ 
+implementation.)
+ Chương  trình  được  áp  dụng  nguyên  tắc  SOLID  bằng  cách  phân  chia  chương  
+trình
+ 
+theo
+ 
+mô
+ 
+hình
+ 
+MVC.
+ 
+Mỗi
+ 
+phần
+ 
+có
+ 
+một
+ 
+nhiệm
+ 
+vụ
+ 
+cụ
+ 
+thể.
+ 
+Các
+ 
+file,
+ 
+thư
+ 
+mục
+ 
+được
+ 
+chia
+ 
+rõ
+ 
+ràng,
+ 
+mỗi
+ 
+phần
+ 
+có
+ 
+một
+ 
+nhiệm
+ 
+vụ
+ 
+riêng.
+ Nguyên  lý  thiết  kế  SOLID  đã  được  áp  dụng  vào  project  như  sau:  •  Phân  chia  module  backend  và  frontend  thành  2  modules  tách  biệt  không  ảnh  
+hưởng
+ 
+tới
+ 
+nhau
+ 
+(nguyên
+ 
+tắc
+ 
+số
+ 
+5)
+ •  Mỗi  đối  tượng  sẽ  có  một  controller  xử  lý  riêng  (nguyên  tắc  số  1)  •  Một  số  thư  viện  đã  cài  đặt,  nhưng  đã  mở  rộng,  tái  tạo  để  sử  dụng  phù  hợp  cho  
+project
+ 
+(nguyên
+ 
+tắc
+ 
+số
+ 
+2)
+    
+     
+
+     CHƯƠNG  8.  HƯỚNG  DẪN  SỬ  DỤNG    Hướng  dẫn  chi  tiết  cài  đặt  và  sử  dụng  :  
+8.1.  Frontend:  •  Bước  1:  Cài  đặt  Node.js  trước.  Chỉ  cần  cài  1  lần  duy  nhất,  nếu  máy  tính  đã  cài  rồi  
+thì
+ 
+không
+ 
+cần
+ 
+cài
+ 
+nữa.
+ •  Bước  2:  Gõ  lệnh  npm  install  -g  create-react-app.  Chỉ  cần  cài  1  lần  duy  
+nhất.Create-react-app
+ 
+là
+ 
+cách
+ 
+để
+ 
+đơn
+ 
+giản
+ 
+hóa
+ 
+quá
+ 
+trình
+ 
+cài
+ 
+đặt
+ 
+và
+ 
+cấu
+ 
+hình
+ 
+môi
+ 
+trường.
+ •  2  bước  đầu  tiên  tạo  một  lần  •  Bước  3:  Gõ  lệnh  npx  create-react-app  ten-du-an.  Để  tạo  mới  một  dự  án  ReactJS.  •  bước  số  3  mỗi  lần  tạo  project  là  tạo   •  Bước  4:  Gõ  lệnh  cd  ten-du-an.  Để  đi  vào  thư  mục  dự  án.  •  Bước  5:  Gõ  lệnh  npm  start.  Để  khởi  chạy  dự  án.Nhấn  phím  Windows,  gõ  
+PowerShell.
+ 
+8.2.  Backend:    ●  Tạo  dự  án  product-management     ●  Khởi  tạo  NPM:  npm  init     ●  Cài  đặt  Express:  npm  i  express     ●  Cài  đặt  Nodemon:  npm  i  --save-dev  nodemon     ●  Sửa  file  package.json:  "start":  "nodemon  --inspect  index.js"     ●  Tạo  file  index.js  trong  thư  mục  gốc     
+     
+
+     TÀI  LIỆU  THAM  KHẢO    [1]  Slide  bài  giảng  học  phần    Phát  triển  phần  mềm  theo  chuẩn  ITSS  -  ThS.  Nguyễn  Mạnh  Tuấn    [2]  Express.js  [3]  https://www.npmjs.com/     
+     
